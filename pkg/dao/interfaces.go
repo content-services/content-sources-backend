@@ -32,6 +32,7 @@ type DaoRegistry struct {
 	Uploads          UploadDao
 	Memo             MemoDao
 	MavenPackages    MavenPackagesDao
+	UserPreference   UserPreferenceDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -72,9 +73,10 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			db:         db,
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
-		Uploads:       uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
-		Memo:          memoDaoImpl{db: db},
-		MavenPackages: mavenPackagesDaoImpl{db: db},
+		Uploads:        uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
+		Memo:           memoDaoImpl{db: db},
+		MavenPackages:  mavenPackagesDaoImpl{db: db},
+		UserPreference: userPreferenceDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -253,4 +255,9 @@ type MemoDao interface {
 type MavenPackagesDao interface {
 	Create(ctx context.Context, mavenPackage *models.MavenPackage) error
 	Fetch(ctx context.Context, groupID, name string) (*models.MavenPackage, error)
+}
+
+type UserPreferenceDao interface {
+	List(ctx context.Context, orgID string, userID string) (api.UserPreferencesResponse, error)
+	Set(ctx context.Context, orgID string, userID string, label string, value string) (api.UserPreferenceResponse, error)
 }

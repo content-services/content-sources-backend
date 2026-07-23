@@ -18,6 +18,7 @@ type MockDaoRegistry struct {
 	Template         MockTemplateDao
 	ModuleStream     MockModuleStreamDao
 	MavenPackages    MockMavenPackagesDao
+	UserPreference   MockUserPreferenceDao
 }
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
@@ -35,6 +36,7 @@ func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 		Template:         &m.Template,
 		ModuleStream:     &m.ModuleStream,
 		MavenPackages:    &m.MavenPackages,
+		UserPreference:   &m.UserPreference,
 	}
 	return &r
 }
@@ -54,6 +56,7 @@ func GetMockDaoRegistry(t *testing.T) *MockDaoRegistry {
 		Template:         *NewMockTemplateDao(t),
 		ModuleStream:     *NewMockModuleStreamDao(t),
 		MavenPackages:    *NewMockMavenPackagesDao(t),
+		UserPreference:   *NewMockUserPreferenceDao(t),
 	}
 	return &reg
 }
