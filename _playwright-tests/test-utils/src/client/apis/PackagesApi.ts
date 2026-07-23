@@ -24,6 +24,16 @@ import {
     ApiMavenPackageVersionsResponseToJSON,
 } from '../models/ApiMavenPackageVersionsResponse';
 import {
+    type ApiNpmPackageDetailResponse,
+    ApiNpmPackageDetailResponseFromJSON,
+    ApiNpmPackageDetailResponseToJSON,
+} from '../models/ApiNpmPackageDetailResponse';
+import {
+    type ApiNpmPackageVersionsResponse,
+    ApiNpmPackageVersionsResponseFromJSON,
+    ApiNpmPackageVersionsResponseToJSON,
+} from '../models/ApiNpmPackageVersionsResponse';
+import {
     type ApiPackageResponse,
     ApiPackageResponseFromJSON,
     ApiPackageResponseToJSON,
@@ -43,6 +53,19 @@ import {
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
 } from '../models/ErrorsErrorResponse';
+
+export interface GetNpmPackageDetailRequest {
+    uuid: string;
+    scope: string;
+    name: string;
+    version: string;
+}
+
+export interface GetNpmPackageVersionsRequest {
+    uuid: string;
+    scope: string;
+    name: string;
+}
 
 export interface GetPackageDetailRequest {
     uuid: string;
@@ -79,6 +102,140 @@ export interface ListPackagesRequest {
  * 
  */
 export class PackagesApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for getNpmPackageDetail without sending the request
+     */
+    async getNpmPackageDetailRequestOpts(requestParameters: GetNpmPackageDetailRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling getNpmPackageDetail().'
+            );
+        }
+
+        if (requestParameters['scope'] == null) {
+            throw new runtime.RequiredError(
+                'scope',
+                'Required parameter "scope" was null or undefined when calling getNpmPackageDetail().'
+            );
+        }
+
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling getNpmPackageDetail().'
+            );
+        }
+
+        if (requestParameters['version'] == null) {
+            throw new runtime.RequiredError(
+                'version',
+                'Required parameter "version" was null or undefined when calling getNpmPackageDetail().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/repositories/{uuid}/npm_packages/{scope}/{name}/{version}`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{scope}', encodeURIComponent(String(requestParameters['scope'])));
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+        urlPath = urlPath.replace('{version}', encodeURIComponent(String(requestParameters['version'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
+     * Get NPM Package Detail
+     */
+    async getNpmPackageDetailRaw(requestParameters: GetNpmPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageDetailResponse>> {
+        const requestOptions = await this.getNpmPackageDetailRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiNpmPackageDetailResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
+     * Get NPM Package Detail
+     */
+    async getNpmPackageDetail(requestParameters: GetNpmPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageDetailResponse> {
+        const response = await this.getNpmPackageDetailRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getNpmPackageVersions without sending the request
+     */
+    async getNpmPackageVersionsRequestOpts(requestParameters: GetNpmPackageVersionsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling getNpmPackageVersions().'
+            );
+        }
+
+        if (requestParameters['scope'] == null) {
+            throw new runtime.RequiredError(
+                'scope',
+                'Required parameter "scope" was null or undefined when calling getNpmPackageVersions().'
+            );
+        }
+
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling getNpmPackageVersions().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/repositories/{uuid}/npm_packages/{scope}/{name}`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{scope}', encodeURIComponent(String(requestParameters['scope'])));
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.
+     * Get NPM Package Versions
+     */
+    async getNpmPackageVersionsRaw(requestParameters: GetNpmPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageVersionsResponse>> {
+        const requestOptions = await this.getNpmPackageVersionsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiNpmPackageVersionsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.
+     * Get NPM Package Versions
+     */
+    async getNpmPackageVersions(requestParameters: GetNpmPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageVersionsResponse> {
+        const response = await this.getNpmPackageVersionsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for getPackageDetail without sending the request
@@ -372,7 +529,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.
+     * List packages for Maven (group and name), Python (name), or npm (scope and name) repositories. Returns empty results for other content types.
      * List Packages
      */
     async listPackagesRaw(requestParameters: ListPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPackageResponse>> {
@@ -383,7 +540,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List packages for Maven (group and name) or Python (name) repositories. Returns empty results for other content types.
+     * List packages for Maven (group and name), Python (name), or npm (scope and name) repositories. Returns empty results for other content types.
      * List Packages
      */
     async listPackages(requestParameters: ListPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPackageResponse> {

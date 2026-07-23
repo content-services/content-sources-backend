@@ -1553,6 +1553,7 @@ func (suite *RepositoryConfigSuite) TestList() {
 		Arch:    "",
 		Version: "",
 		Origin:  originCustom,
+		Partner: "false",
 	}
 	var err error
 
@@ -1625,6 +1626,7 @@ func (suite *RepositoryConfigSuite) TestListErrorGettingEntitledFeatures() {
 		Arch:    "",
 		Version: "",
 		Origin:  originCustom,
+		Partner: "false",
 	}
 	var err error
 
@@ -1669,6 +1671,7 @@ func (suite *RepositoryConfigSuite) TestListPageDataLimit0() {
 		Arch:    "",
 		Version: "",
 		Origin:  originCustom,
+		Partner: "false",
 	}
 	var err error
 
@@ -1706,6 +1709,7 @@ func (suite *RepositoryConfigSuite) TestListNoRepositories() {
 		Arch:    "",
 		Version: "",
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	result := suite.tx.Where("org_id = ?", orgID).Find(&repoConfigs).Count(&total)
@@ -1736,6 +1740,7 @@ func (suite *RepositoryConfigSuite) TestListPageLimit() {
 		Arch:    "",
 		Version: "",
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	var total int64
@@ -1838,7 +1843,7 @@ func (suite *RepositoryConfigSuite) TestListFilterFeature() {
 	suite.mockPulpForListOrFetch(5)
 	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{"feature1", "feature2", "feature3"}, nil)
 
-	filterData := api.FilterData{Origin: originCustom}
+	filterData := api.FilterData{Origin: originCustom, Partner: "false"}
 
 	// Create repos with different feature names
 	feature1 := "feature1"
@@ -1966,6 +1971,7 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 		Arch:    "",
 		Version: config.El9,
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	_, err := seeds.SeedRepositoryConfigurations(suite.tx, nonEUSQuantity, seeds.SeedOptions{OrgID: orgID, Versions: &[]string{config.El9}})
@@ -1993,6 +1999,7 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 		Arch:    "",
 		Version: extendedReleaseVersion,
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
@@ -2006,6 +2013,7 @@ func (suite *RepositoryConfigSuite) TestListFilterVersion() {
 		Arch:    "",
 		Version: fmt.Sprintf("%v,%v", config.El9, extendedReleaseVersion),
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	response, total, err = repoConfigDao.List(context.Background(), orgID, pageData, filterData)
@@ -2125,6 +2133,7 @@ func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	filterData := api.FilterData{
 		ContentType: config.ContentTypeRpm,
 		Origin:      originCustom,
+		Partner:     "false",
 	}
 
 	var total int64
@@ -2436,6 +2445,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleArch() {
 		Arch:    "x86_64,s390x",
 		Version: "",
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	quantity := 20
@@ -2480,6 +2490,7 @@ func (suite *RepositoryConfigSuite) TestListFilterMultipleVersions() {
 		Arch:    "",
 		Version: config.El7 + "," + config.El9,
 		Origin:  originCustom,
+		Partner: "false",
 	}
 
 	quantity := 20
@@ -4074,7 +4085,7 @@ func (suite *RepositoryConfigSuite) TestListPartnerFilter() {
 
 	// partner=true should include only partner repos
 	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), ownerOrg).Return([]string{}, nil)
-	suite.mockPulpForListOrFetch(3)
+	suite.mockPulpForListOrFetch(2)
 
 	response, _, err := rDao.List(context.Background(), ownerOrg, api.PaginationData{Limit: 100},
 		api.FilterData{Origin: config.OriginUpload, Partner: "true"})
