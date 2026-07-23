@@ -11,6 +11,7 @@ apis/RpmsApi.ts
 apis/SnapshotsApi.ts
 apis/TasksApi.ts
 apis/TemplatesApi.ts
+apis/UserPreferencesApi.ts
 apis/index.ts
 index.ts
 models/ApiAddUploadsRequest.ts
@@ -88,6 +89,7 @@ models/ApiUUIDListRequest.ts
 models/ApiUpload.ts
 models/ApiUploadResponse.ts
 models/ApiUrlValidationResponse.ts
+models/ApiUserPreferenceResponse.ts
 models/ConfigDistributionArch.ts
 models/ConfigDistributionMinorVersion.ts
 models/ConfigDistributionVersion.ts

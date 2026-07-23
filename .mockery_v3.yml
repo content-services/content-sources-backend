@@ -39,6 +39,7 @@ packages:
       SnapshotDao: {}
       TaskInfoDao: {}
       TemplateDao: {}
+      UserPreferenceDao: {}
   github.com/content-services/content-sources-backend/pkg/tasks/client:
     interfaces:
       TaskClient: {}

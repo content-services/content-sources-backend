@@ -13,3 +13,4 @@ export * from './RpmsApi';
 export * from './SnapshotsApi';
 export * from './TasksApi';
 export * from './TemplatesApi';
+export * from './UserPreferencesApi';

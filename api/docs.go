@@ -4231,6 +4231,103 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/user_preferences/": {
+            "get": {
+                "description": "List preference labels and values for the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user_preferences"
+                ],
+                "summary": "List user preferences",
+                "operationId": "listUserPreferences",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.UserPreferenceResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/user_preferences/{label}": {
+            "put": {
+                "description": "Create or update a user preference for the given label. The request body is a JSON string value (for example ` + "`" + `\"true\"` + "`" + `).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user_preferences"
+                ],
+                "summary": "Set a user preference",
+                "operationId": "setUserPreference",
+                "parameters": [
+                    {
+                        "enum": [
+                            "lightwell-notification-enabled",
+                            "lightwell-notification-minimum"
+                        ],
+                        "type": "string",
+                        "description": "Preference label",
+                        "name": "label",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Preference value as a JSON string",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.UserPreferenceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -6622,6 +6719,19 @@ const docTemplate = `{
                 "valid": {
                     "description": "Valid if not skipped and the provided attribute is valid",
                     "type": "boolean"
+                }
+            }
+        },
+        "api.UserPreferenceResponse": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "description": "Preference label",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "Preference value",
+                    "type": "string"
                 }
             }
         },

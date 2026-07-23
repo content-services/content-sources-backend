@@ -75,6 +75,7 @@ export * from './ApiUUIDListRequest';
 export * from './ApiUpload';
 export * from './ApiUploadResponse';
 export * from './ApiUrlValidationResponse';
+export * from './ApiUserPreferenceResponse';
 export * from './ConfigDistributionArch';
 export * from './ConfigDistributionMinorVersion';
 export * from './ConfigDistributionVersion';

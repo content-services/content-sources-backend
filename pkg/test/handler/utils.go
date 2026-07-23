@@ -11,14 +11,15 @@ import (
 
 var MockAccountNumber = seeds.RandomAccountId()
 var MockOrgId = seeds.RandomOrgId()
+var MockUserID = "mock-user-id"
 var MockIdentity = identity.XRHID{
 	Identity: identity.Identity{
 		AccountNumber: MockAccountNumber,
 		Internal: identity.Internal{
 			OrgID: MockOrgId,
 		},
-		User: &identity.User{Username: "user"},
-		Type: "Associate",
+		User: &identity.User{Username: "user", UserID: MockUserID},
+		Type: "User",
 	},
 }
 
