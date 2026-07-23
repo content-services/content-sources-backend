@@ -3068,6 +3068,14 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Filter repositories by type partner",
+                        "in": "query",
+                        "name": "partner",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
