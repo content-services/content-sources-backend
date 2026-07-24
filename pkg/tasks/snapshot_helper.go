@@ -73,11 +73,13 @@ func (sh *SnapshotHelper) Run(versionHref string) error {
 		return fmt.Errorf("unable to save distribution task href: %w", err)
 	}
 
-	latestPathIdent := helpers.GetLatestRepoDistPath(sh.repo.UUID)
-
-	_, _, err = helper.CreateOrUpdateDistribution(sh.repo, publicationHref, sh.repo.UUID, latestPathIdent)
-	if err != nil {
-		return err
+	if helpers.ShouldUpdateLatestDistributionOnCreate(sh.repo) {
+		_, _, err = helper.CreateOrUpdateLatestDistribution(sh.repo, publicationHref)
+		if err != nil {
+			return err
+		}
+	} else {
+		sh.logger.Debug().Str("repo_uuid", sh.repo.UUID).Msg("Skipping latest distribution update for partner repository on snapshot create")
 	}
 	version, err := sh.pulpClient.GetRpmRepositoryVersion(sh.ctx, versionHref)
 	if err != nil {
@@ -170,7 +172,7 @@ func (sh *SnapshotHelper) Cleanup() error {
 		return err
 	}
 	if latestDistro != nil {
-		latestSnap, err := sh.daoReg.Snapshot.FetchLatestSnapshotModel(sh.ctx, sh.repo.UUID)
+		latestSnap, err := sh.daoReg.Snapshot.FetchLatestSnapshotForDistribution(sh.ctx, sh.repo.UUID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				deleteDistributionHref, err := sh.pulpClient.DeleteRpmDistribution(sh.ctx, *latestDistro.PulpHref)
@@ -188,7 +190,7 @@ func (sh *SnapshotHelper) Cleanup() error {
 			return err
 		}
 
-		_, _, err = helper.CreateOrUpdateDistribution(sh.repo, latestSnap.PublicationHref, sh.repo.UUID, latestPathIdent)
+		_, _, err = helper.CreateOrUpdateLatestDistribution(sh.repo, latestSnap.PublicationHref)
 		if err != nil {
 			return err
 		}

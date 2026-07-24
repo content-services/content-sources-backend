@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type SnapshotSuite struct {
@@ -223,6 +224,47 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	assert.Equal(t, response, repoConfigFile)
 }
 
+func (suite *SnapshotSuite) TestGetLatestRepoConfigurationFile() {
+	t := suite.T()
+
+	orgID := test_handler.MockOrgId
+	repoUUID := uuid.NewString()
+	snapUUID := uuid.NewString()
+	repoConfigFile := "latest-file"
+
+	suite.reg.Snapshot.WithContextMock().On("FetchLatestSnapshot", test.MockCtx(), repoUUID).Return(api.SnapshotResponse{
+		UUID:      snapUUID,
+		Published: true,
+	}, nil).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", test.MockCtx(), orgID, snapUUID, true).Return(repoConfigFile, nil).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/config.repo", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, repoConfigFile, string(body))
+}
+
+func (suite *SnapshotSuite) TestGetLatestRepoConfigurationFileNotFound() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	suite.reg.Snapshot.WithContextMock().On("FetchLatestSnapshot", test.MockCtx(), repoUUID).Return(
+		api.SnapshotResponse{}, gorm.ErrRecordNotFound,
+	).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/config.repo", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
 func (suite *SnapshotSuite) TestDelete() {
 	t := suite.T()
 
@@ -237,7 +279,7 @@ func (suite *SnapshotSuite) TestDelete() {
 	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
 	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
 	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID, false).Return(collection, nil)
-	suite.reg.Snapshot.On("Fetch", test.MockCtx(), snapUUID).Return(snap, nil)
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapUUID).Return(snap, nil)
 	suite.reg.Snapshot.On("SoftDelete", test.MockCtx(), snapUUID).Return(nil)
 	mockDeleteSnapshotEnqueue(suite.tcMock, repoUUID, requestID, snapUUID).Return(uuid.New(), nil)
 
@@ -630,6 +672,61 @@ func createSnapshotCollection(size, limit, offset int) api.SnapshotCollectionRes
 	params := fmt.Sprintf("?offset=%d&limit=%d", offset, limit)
 	setCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
 	return collection
+}
+
+func (suite *SnapshotSuite) TestDeletePublishedSnapshotForbidden() {
+	t := suite.T()
+
+	orgID := test_handler.MockOrgId
+	requestID := uuid.NewString()
+	repoUUID := uuid.NewString()
+	collection := createSnapshotModels(4, repoUUID)
+	collection[0].Published = true
+	snapUUID := collection[0].UUID
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
+	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID, false).Return(collection, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapUUID)
+	req := httptest.NewRequest(http.MethodDelete, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(config.HeaderRequestId, requestID)
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Cannot delete a published snapshot")
+}
+
+func (suite *SnapshotSuite) TestBulkDeletePublishedSnapshotForbidden() {
+	t := suite.T()
+
+	orgID := test_handler.MockOrgId
+	requestID := uuid.NewString()
+	repoUUID := uuid.NewString()
+	collection := createSnapshotModels(4, repoUUID)
+	collection[1].Published = true
+	snapUUIDs := []string{collection[0].UUID, collection[1].UUID}
+
+	suite.reg.RepositoryConfig.On("Fetch", test.MockCtx(), orgID, repoUUID).Return(api.RepositoryResponse{}, nil)
+	suite.reg.TaskInfo.On("FetchActiveTasks", test.MockCtx(), orgID, repoUUID, config.DeleteRepositorySnapshotsTask, config.DeleteSnapshotsTask).Return([]string{}, nil)
+	suite.reg.Snapshot.On("FetchForRepoConfigUUID", test.MockCtx(), repoUUID, false).Return(collection, nil)
+
+	body, err := json.Marshal(api.UUIDListRequest{UUIDs: snapUUIDs})
+	assert.NoError(t, err)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/bulk_delete/", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(config.HeaderRequestId, requestID)
+
+	code, respBody, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(respBody), "Cannot delete a published snapshot")
+	suite.reg.Snapshot.AssertNotCalled(t, "BulkDelete", mock.Anything, mock.Anything)
 }
 
 func createSnapshotModels(size int, repoUUID string) []models.Snapshot {

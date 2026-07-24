@@ -69,13 +69,14 @@ func (sDao *snapshotDaoImpl) List(
 	var totalSnaps int64
 	var repoConfig models.RepositoryConfiguration
 
-	// First check if repo config exists
-	result := sDao.db.WithContext(ctx).Where(
-		"repository_configurations.org_id IN (?,?,?) AND uuid = ?",
-		orgID,
-		config.RedHatOrg,
-		config.CommunityOrg,
-		UuidifyString(repoConfigUUID)).
+	// First check if repo config exists and is readable by the viewer
+	result := sDao.db.WithContext(ctx).
+		Where("uuid = ?", UuidifyString(repoConfigUUID)).
+		Where(
+			"(org_id IN ?) OR ("+foreignPartnerVisibleSQL+")",
+			[]string{orgID, config.RedHatOrg, config.CommunityOrg},
+			orgID,
+		).
 		First(&repoConfig)
 
 	if result.Error != nil {
@@ -177,14 +178,35 @@ func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
 	return db.Model(&models.Snapshot{}).
 		Preload("RepositoryConfiguration").
 		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
-		Where("repository_configurations.org_id IN (?,?,?)", orgId, config.RedHatOrg, config.CommunityOrg).
+		Where(
+			`(repository_configurations.org_id IN ?)
+			 OR (
+				repository_configurations.partner = true
+				AND repository_configurations.org_id != ?
+				AND snapshots.published = true
+			)`,
+			[]string{orgId, config.RedHatOrg, config.CommunityOrg},
+			orgId,
+		).
 		Where("snapshots.deleted_at IS NULL")
 }
 
-func (sDao *snapshotDaoImpl) Fetch(ctx context.Context, uuid string) (api.SnapshotResponse, error) {
+// denyUnpublishedForeignPartnerAccess returns a not-found error when a foreign viewer
+// attempts to access an unpublished snapshot of a partner repository.
+func denyUnpublishedForeignPartnerAccess(viewerOrgID string, snap models.Snapshot) error {
+	if IsForeignPartnerView(snap.RepositoryConfiguration, viewerOrgID) && !snap.Published {
+		return SnapshotsDBToApiError(gorm.ErrRecordNotFound, &snap.UUID)
+	}
+	return nil
+}
+
+func (sDao *snapshotDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.SnapshotResponse, error) {
 	var snapAPI api.SnapshotResponse
 	snapModel, err := sDao.fetch(ctx, uuid)
 	if err != nil {
+		return api.SnapshotResponse{}, err
+	}
+	if err := denyUnpublishedForeignPartnerAccess(orgID, snapModel); err != nil {
 		return api.SnapshotResponse{}, err
 	}
 	SnapshotModelToApi(snapModel, &snapAPI)
@@ -248,11 +270,19 @@ func (sDao *snapshotDaoImpl) GetRepositoryConfigurationFile(ctx context.Context,
 	if err != nil {
 		return "", err
 	}
-
-	rcDao := repositoryConfigDaoImpl{db: sDao.db, fsClient: sDao.fsClient}
-	repoConfig, err := rcDao.fetchRepoConfig(ctx, orgID, snapshot.RepositoryConfigurationUUID, true)
-	if err != nil {
+	if err := denyUnpublishedForeignPartnerAccess(orgID, snapshot); err != nil {
 		return "", err
+	}
+
+	var repoConfig models.RepositoryConfiguration
+	if IsForeignPartnerView(snapshot.RepositoryConfiguration, orgID) {
+		repoConfig = snapshot.RepositoryConfiguration
+	} else {
+		rcDao := repositoryConfigDaoImpl{db: sDao.db, fsClient: sDao.fsClient}
+		repoConfig, err = rcDao.fetchRepoConfig(ctx, orgID, snapshot.RepositoryConfigurationUUID, true)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	pc := sDao.pulpClient
@@ -425,8 +455,7 @@ func (sDao *snapshotDaoImpl) ClearDeletedAt(ctx context.Context, snapUUID string
 }
 
 func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error) {
-	var snap models.Snapshot
-	snap, err := sDao.FetchLatestSnapshotModel(ctx, repoConfigUUID)
+	snap, err := sDao.FetchLatestSnapshotForDistribution(ctx, repoConfigUUID)
 	if err != nil {
 		return api.SnapshotResponse{}, err
 	}
@@ -446,6 +475,39 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoC
 		return models.Snapshot{}, result.Error
 	}
 	return snap, nil
+}
+
+func (sDao *snapshotDaoImpl) FetchLatestPublishedSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+	var snap models.Snapshot
+	result := sDao.db.WithContext(ctx).
+		Preload("RepositoryConfiguration").
+		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUUID)).
+		Where("snapshots.published = ?", true).
+		Where("snapshots.deleted_at IS NULL").
+		Order("created_at DESC").
+		First(&snap)
+	if result.Error != nil {
+		return models.Snapshot{}, result.Error
+	}
+	return snap, nil
+}
+
+// FetchLatestSnapshotForDistribution returns the snapshot that should back Pulp "{repo}/latest".
+// Partner repos use the newest published snapshot; others use the newest snapshot overall.
+// Callers need not load the repository configuration first.
+func (sDao *snapshotDaoImpl) FetchLatestSnapshotForDistribution(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+	var repoConfig models.RepositoryConfiguration
+	err := sDao.db.WithContext(ctx).
+		Select("uuid", "partner").
+		Where("uuid = ?", UuidifyString(repoConfigUUID)).
+		First(&repoConfig).Error
+	if err != nil {
+		return models.Snapshot{}, err
+	}
+	if repoConfig.Partner {
+		return sDao.FetchLatestPublishedSnapshotModel(ctx, repoConfigUUID)
+	}
+	return sDao.FetchLatestSnapshotModel(ctx, repoConfigUUID)
 }
 
 func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
@@ -471,6 +533,8 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 	snaps := []models.Snapshot{}
 	date := request.Date.UTC().Format(time.RFC3339)
 
+	readableOrgs := []string{orgID, config.RedHatOrg, config.CommunityOrg}
+
 	// finds the snapshot for each repo that is just before (or equal to) our date
 	beforeQuery := sDao.db.WithContext(ctx).Raw(`
 		SELECT DISTINCT ON (s.repository_configuration_uuid) s.uuid
@@ -478,10 +542,10 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
 			WHERE s.repository_configuration_uuid IN ?
 			AND s.deleted_at IS NULL
-			AND repository_configurations.org_id IN ?
+			AND `+readableSnapshotOrgFilterSQL+`
 			AND date_trunc('second', s.created_at::timestamptz) <= ?
 			ORDER BY s.repository_configuration_uuid,  s.created_at DESC
-	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg, config.CommunityOrg}, date)
+	`, UuidifyStrings(request.RepositoryUUIDS), readableOrgs, orgID, date)
 
 	// finds the snapshot for each repo that is the first one after our date
 	afterQuery := sDao.db.WithContext(ctx).Raw(`SELECT DISTINCT ON (s.repository_configuration_uuid) s.uuid
@@ -489,10 +553,10 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsModelByDateAndRepository(ctx context.
 			INNER JOIN repository_configurations ON s.repository_configuration_uuid = repository_configurations.uuid
 			WHERE s.repository_configuration_uuid IN ?
 			AND s.deleted_at IS NULL
-			AND repository_configurations.org_id IN ?
+			AND `+readableSnapshotOrgFilterSQL+`
 			AND date_trunc('second', s.created_at::timestamptz)  > ?
 			ORDER BY s.repository_configuration_uuid, s.created_at ASC
-	`, UuidifyStrings(request.RepositoryUUIDS), []string{orgID, config.RedHatOrg, config.CommunityOrg}, date)
+	`, UuidifyStrings(request.RepositoryUUIDS), readableOrgs, orgID, date)
 	// For each repo, pick the oldest of this combined set (ideally the one just before our date, if that doesn't exist, the one after)
 	combined := sDao.db.WithContext(ctx).Raw(`
 			select DISTINCT ON (s2.repository_configuration_uuid) s2.uuid
@@ -517,7 +581,14 @@ func (sDao *snapshotDaoImpl) FetchSnapshotsByDateAndRepository(ctx context.Conte
 	date = date.AddDate(0, 0, 1) // Set the date to 24 hours later, inclusive of the current day
 
 	var count int64
-	resp := sDao.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id = ? or org_id = ? or org_id = ?", orgID, config.RedHatOrg, config.CommunityOrg).Where("uuid in ?", UuidifyStrings(request.RepositoryUUIDS)).Count(&count)
+	resp := sDao.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).
+		Where(
+			"(org_id IN ?) OR ("+foreignPartnerVisibleSQL+")",
+			[]string{orgID, config.RedHatOrg, config.CommunityOrg},
+			orgID,
+		).
+		Where("uuid in ?", UuidifyStrings(request.RepositoryUUIDS)).
+		Count(&count)
 	if resp.Error != nil {
 		return api.ListSnapshotByDateResponse{}, fmt.Errorf("could not query repository UUIDs: %w", resp.Error)
 	}

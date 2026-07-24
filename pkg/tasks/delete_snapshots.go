@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	"gorm.io/gorm"
 )
 
 type DeleteSnapshots struct {
@@ -238,19 +239,33 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		}
 	}
 
-	latestPathIdent := fmt.Sprintf("%v/%v", repo.UUID, "latest")
+	latestPathIdent := helpers.GetLatestRepoDistPath(repo.UUID)
 	latestDistro, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, latestPathIdent)
 	if err != nil {
 		return fmt.Errorf("failed to find latest distribution by path %v: %w", latestPathIdent, err)
 	}
 	if latestDistro != nil {
-		latestSnap, err := ds.daoReg.Snapshot.FetchLatestSnapshotModel(ds.ctx, repo.UUID)
+		latestSnap, err := ds.daoReg.Snapshot.FetchLatestSnapshotForDistribution(ds.ctx, repo.UUID)
 		if err != nil {
-			return fmt.Errorf("failed to fetch latest snapshot for repo %v: %w", repo.UUID, err)
-		}
-		_, _, err = ds.pulpDistHelper.CreateOrUpdateDistribution(repo, latestSnap.PublicationHref, repo.UUID, latestPathIdent)
-		if err != nil {
-			return fmt.Errorf("failed to update latest distribution for repo %v: %w", repo.UUID, err)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				deleteDistributionHref, delErr := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, *latestDistro.PulpHref)
+				if delErr != nil {
+					return fmt.Errorf("failed to delete latest distribution for repo %v: %w", repo.UUID, delErr)
+				}
+				if deleteDistributionHref != nil {
+					_, pollErr := ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref)
+					if pollErr != nil {
+						return fmt.Errorf("failed to poll latest distribution deletion for repo %v: %w", repo.UUID, pollErr)
+					}
+				}
+			} else {
+				return fmt.Errorf("failed to fetch latest snapshot for repo %v: %w", repo.UUID, err)
+			}
+		} else {
+			_, _, err = ds.pulpDistHelper.CreateOrUpdateLatestDistribution(repo, latestSnap.PublicationHref)
+			if err != nil {
+				return fmt.Errorf("failed to update latest distribution for repo %v: %w", repo.UUID, err)
+			}
 		}
 	}
 

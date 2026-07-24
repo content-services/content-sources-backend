@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -11,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 func CreateLatestDistributions(_ []string) {
@@ -54,22 +56,28 @@ func CreateLatestDistributions(_ []string) {
 			batch := repos.Data[i:end]
 			wg := sync.WaitGroup{}
 			for _, repo := range batch {
-				lastSnapshot := repo.LastSnapshot
-				if lastSnapshot == nil {
+				latestSnap, fetchErr := daoReg.Snapshot.FetchLatestSnapshotForDistribution(ctx, repo.UUID)
+				if fetchErr != nil {
+					if errors.Is(fetchErr, gorm.ErrRecordNotFound) {
+						continue
+					}
+					log.Error().Str("repo_uuid", repo.UUID).Str("org_id", domain.OrgId).Err(fetchErr).
+						Msg("failed to fetch latest snapshot for distribution")
 					continue
 				}
+				publicationHref := latestSnap.PublicationHref
 				wg.Add(1)
-				go func() {
+				go func(repo api.RepositoryResponse, publicationHref string) {
 					defer wg.Done()
-					_, err = distHelper.FindOrCreateDistribution(
+					_, createErr := distHelper.FindOrCreateDistribution(
 						repo,
-						lastSnapshot.PublicationHref,
+						publicationHref,
 						repo.UUID,
 						helpers.GetLatestRepoDistPath(repo.UUID))
-					if err != nil {
-						log.Error().Str("repo_uuid", repo.UUID).Str("org_id", domain.OrgId).Err(err).Msg("failed to create distribution")
+					if createErr != nil {
+						log.Error().Str("repo_uuid", repo.UUID).Str("org_id", domain.OrgId).Err(createErr).Msg("failed to create distribution")
 					}
-				}()
+				}(repo, publicationHref)
 			}
 			wg.Wait()
 		}
