@@ -103,6 +103,7 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	s.mockDaoRegistry.Template.On("UpdateSnapshots", ctx, template.UUID, []string{snap.RepositoryConfigurationUUID}, []models.Snapshot{snap2}).Return(nil)
 	s.mockDaoRegistry.Template.On("DeleteTemplateSnapshot", ctx, snap.UUID).Return(nil)
 	s.mockDaoRegistry.Template.On("GetDistributionHref", ctx, template.UUID, repo.UUID).Return(&distHref, nil)
+	s.mockDaoRegistry.Snapshot.On("FetchLatestSnapshotForDistribution", ctx, repo.UUID).Return(snap2, nil)
 	s.mockDaoRegistry.Snapshot.On("FetchLatestSnapshotModel", ctx, repo.UUID).Return(snap2, nil)
 	s.mockDaoRegistry.TaskInfo.On("List", ctx, orgID, api.PaginationData{Limit: 1}, taskInfoFilter).Return(taskInfoResp, int64(1), nil)
 	s.mockDaoRegistry.RepositoryConfig.On("UpdateLastSnapshot", ctx, orgID, repo.UUID, snap2.UUID).Return(nil)

@@ -386,6 +386,65 @@ func (s *SnapshotsSuite) TestFetchLatestSnapshot() {
 	assert.Equal(t, latestSnapshot.RepositoryPath, response.RepositoryPath)
 }
 
+func (s *SnapshotsSuite) TestFetchLatestSnapshotForDistributionPartnerUsesPublished() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "dist latest partner", true)
+
+	publishedOlder := createPublishedSnapshot(t, tx, repoConfig)
+	_ = createSnapshot(t, tx, repoConfig) // newer unpublished
+
+	overall, err := sDao.FetchLatestSnapshotModel(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.NotEqual(t, publishedOlder.UUID, overall.UUID)
+	assert.False(t, overall.Published)
+
+	forDist, err := sDao.FetchLatestSnapshotForDistribution(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, publishedOlder.UUID, forDist.UUID)
+	assert.True(t, forDist.Published)
+
+	// API FetchLatestSnapshot follows distribution semantics for partner repos
+	apiSnap, err := sDao.FetchLatestSnapshot(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, publishedOlder.UUID, apiSnap.UUID)
+	assert.True(t, apiSnap.Published)
+}
+
+func (s *SnapshotsSuite) TestFetchLatestSnapshotForDistributionNonPartnerUsesOverall() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createRepository(t, tx, "", false)
+	createSnapshot(t, tx, repoConfig)
+	latest := createSnapshot(t, tx, repoConfig)
+
+	forDist, err := sDao.FetchLatestSnapshotForDistribution(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, latest.UUID, forDist.UUID)
+}
+
+func (s *SnapshotsSuite) TestFetchLatestSnapshotForDistributionPartnerNoPublished() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "dist latest no published", true)
+	createSnapshot(t, tx, repoConfig)
+
+	_, err := sDao.FetchLatestSnapshotForDistribution(ctx, repoConfig.UUID)
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+}
+
 func (s *SnapshotsSuite) TestFetchLatestPublishedSnapshotModel() {
 	t := s.T()
 	tx := s.tx
@@ -1215,6 +1274,43 @@ func (s *SnapshotsSuite) TestGetRepositoryConfigurationFilePartnerAccessControl(
 	file, err = sDao.GetRepositoryConfigurationFile(ctx, viewerOrg, unpublished.UUID, false)
 	assert.Error(t, err)
 	assert.Empty(t, file)
+	var daoError *ce.DaoError
+	require.True(t, errors.As(err, &daoError))
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestGetLatestRepoConfigurationFilePartnerForeignUsesPublished() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	mockPulpClient := pulp_client.NewMockPulpClient(t)
+	sDao := snapshotDaoImpl{db: tx, pulpClient: mockPulpClient}
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner latest config.repo", true)
+	published := createPublishedSnapshot(t, tx, repoConfig)
+	_ = createSnapshot(t, tx, repoConfig) // newer unpublished tip
+
+	overall, err := sDao.FetchLatestSnapshotModel(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.False(t, overall.Published)
+
+	latest, err := sDao.FetchLatestSnapshot(ctx, repoConfig.UUID)
+	assert.NoError(t, err)
+	assert.Equal(t, published.UUID, latest.UUID)
+	assert.True(t, latest.Published)
+
+	mockPulpClient.On("GetContentPath").Return(testContentPath, nil).Once()
+	file, err := sDao.GetRepositoryConfigurationFile(ctx, viewerOrg, latest.UUID, true)
+	assert.NoError(t, err)
+	assert.Contains(t, file, repoConfig.Name)
+	assert.Contains(t, file, fmt.Sprintf("%s/latest", repoConfig.UUID))
+
+	_, err = sDao.GetRepositoryConfigurationFile(ctx, viewerOrg, overall.UUID, true)
+	assert.Error(t, err)
 	var daoError *ce.DaoError
 	require.True(t, errors.As(err, &daoError))
 	assert.True(t, daoError.NotFound)
