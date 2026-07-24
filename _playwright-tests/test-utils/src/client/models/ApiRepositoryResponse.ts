@@ -244,6 +244,12 @@ export interface ApiRepositoryResponse {
      * @memberof ApiRepositoryResponse
      */
     readonly uuid?: string;
+    /**
+     * Number of versions last read in the repository, not applicable to all repositories
+     * @type {number}
+     * @memberof ApiRepositoryResponse
+     */
+    versionCount?: number;
 }
 
 /**
@@ -298,6 +304,7 @@ export function ApiRepositoryResponseFromJSONTyped(json: any, ignoreDiscriminato
         'status': json['status'] == null ? undefined : json['status'],
         'url': json['url'] == null ? undefined : json['url'],
         'uuid': json['uuid'] == null ? undefined : json['uuid'],
+        'versionCount': json['version_count'] == null ? undefined : json['version_count'],
     };
 }
 
@@ -341,6 +348,7 @@ export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryRespo
         'snapshot': value['snapshot'],
         'status': value['status'],
         'url': value['url'],
+        'version_count': value['versionCount'],
     };
 }
 
