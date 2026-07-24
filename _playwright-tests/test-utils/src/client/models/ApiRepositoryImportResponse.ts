@@ -245,6 +245,12 @@ export interface ApiRepositoryImportResponse {
      */
     readonly uuid?: string;
     /**
+     * Number of versions last read in the repository, not applicable to all repositories
+     * @type {number}
+     * @memberof ApiRepositoryImportResponse
+     */
+    versionCount?: number;
+    /**
      * Warnings to alert user of mismatched fields if there is an existing repo with the same URL
      * @type {Array<{ [key: string]: any; }>}
      * @memberof ApiRepositoryImportResponse
@@ -304,6 +310,7 @@ export function ApiRepositoryImportResponseFromJSONTyped(json: any, ignoreDiscri
         'status': json['status'] == null ? undefined : json['status'],
         'url': json['url'] == null ? undefined : json['url'],
         'uuid': json['uuid'] == null ? undefined : json['uuid'],
+        'versionCount': json['version_count'] == null ? undefined : json['version_count'],
         'warnings': json['warnings'] == null ? undefined : json['warnings'],
     };
 }
@@ -348,6 +355,7 @@ export function ApiRepositoryImportResponseToJSONTyped(value?: Omit<ApiRepositor
         'snapshot': value['snapshot'],
         'status': value['status'],
         'url': value['url'],
+        'version_count': value['versionCount'],
         'warnings': value['warnings'],
     };
 }
