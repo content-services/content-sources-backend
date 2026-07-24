@@ -1116,6 +1116,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{repo_uuid}/snapshots/{snapshot_uuid}/published": {
+            "patch": {
+                "description": "This enables changing the published status of a specific snapshot.",
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Publish or unpublish a snapshot",
+                "operationId": "publishSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID.",
+                        "name": "repo_uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Snapshot UUID.",
+                        "name": "snapshot_uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}": {
             "get": {
                 "description": "Get repository information.",

@@ -11,6 +11,7 @@ const (
 	AddUploadsTask                = "add-uploads-repository"      // Task to add uploaded files/artifacts to a repository
 	UpdateLatestSnapshotTask      = "update-latest-snapshot"      // Task to update templates to use the latest snapshot of a repository
 	BulkRemoveRpmsTask            = "bulk-remove-rpms"            // Task to remove RPMs from an upload repository in pulp
+	UpdateSnapshotPublishedTask   = "update-snapshot-published"   // Task to update the content guard on a snapshot distribution for publish/unpublish
 )
 
 const (
@@ -32,6 +33,7 @@ var TaskTypes = []string{
 	AddUploadsTask,
 	UpdateLatestSnapshotTask,
 	BulkRemoveRpmsTask,
+	UpdateSnapshotPublishedTask,
 }
 
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}

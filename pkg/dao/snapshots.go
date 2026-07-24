@@ -332,6 +332,57 @@ func (sDao *snapshotDaoImpl) FetchForRepoConfigUUID(ctx context.Context, repoCon
 	return snaps, nil
 }
 
+func (sDao *snapshotDaoImpl) UpdatePublishedStatus(ctx context.Context, orgID string, published bool, repoConfigUUID, snapshotUUID string) (api.SnapshotResponse, error) {
+	var snapshot models.Snapshot
+
+	err := sDao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Preload("RepositoryConfiguration").Where("uuid = ?", snapshotUUID).First(&snapshot).Error; err != nil {
+			return SnapshotsDBToApiError(err, &snapshotUUID)
+		}
+		if snapshot.RepositoryConfigurationUUID != repoConfigUUID {
+			return SnapshotsDBToApiError(gorm.ErrRecordNotFound, &snapshotUUID)
+		}
+		if snapshot.RepositoryConfiguration.OrgID != orgID {
+			return &ce.DaoError{
+				Forbidden: true,
+				Message:   "Cannot (un)publish snapshots for repositories outside your organization.",
+			}
+		}
+		if !snapshot.RepositoryConfiguration.Partner {
+			return &ce.DaoError{
+				BadValidation: true,
+				Message:       "Cannot (un)publish snapshots of non-partner repositories.",
+			}
+		}
+
+		if err := tx.Model(&snapshot).UpdateColumn("published", published).Error; err != nil {
+			return SnapshotsDBToApiError(err, &snapshotUUID)
+		}
+
+		return tx.Exec(`
+			UPDATE repositories
+			SET public = EXISTS (
+				SELECT 1 FROM snapshots
+				WHERE snapshots.repository_configuration_uuid = ?
+					AND snapshots.published = true
+					AND snapshots.deleted_at IS NULL
+			)
+			WHERE uuid = (
+				SELECT repository_uuid FROM repository_configurations
+				WHERE uuid = ?
+			)`,
+			repoConfigUUID, repoConfigUUID,
+		).Error
+	})
+	if err != nil {
+		return api.SnapshotResponse{}, err
+	}
+
+	var apiSnap api.SnapshotResponse
+	SnapshotModelToApi(snapshot, &apiSnap)
+	return apiSnap, nil
+}
+
 func (sDao *snapshotDaoImpl) SoftDelete(ctx context.Context, snapUUID string) error {
 	var snap models.Snapshot
 	err := sDao.db.WithContext(ctx).Unscoped().Where("uuid = ?", snapUUID).First(&snap).Error
@@ -436,12 +487,21 @@ func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfig
 }
 
 func (sDao *snapshotDaoImpl) FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+	hasPublished, err := HasPublishedSnapshot(ctx, sDao.db, repoConfigUUID)
+	if err != nil {
+		return models.Snapshot{}, err
+	}
+
 	var snap models.Snapshot
-	result := sDao.db.WithContext(ctx).
+	query := sDao.db.WithContext(ctx).
 		Preload("RepositoryConfiguration").
-		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUUID)).
-		Order("created_at DESC").
-		First(&snap)
+		Where("snapshots.repository_configuration_uuid = ?", UuidifyString(repoConfigUUID))
+
+	if hasPublished {
+		query = query.Where("published = true")
+	}
+
+	result := query.Order("created_at DESC").First(&snap)
 	if result.Error != nil {
 		return models.Snapshot{}, result.Error
 	}

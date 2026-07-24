@@ -51,6 +51,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry, taskClie
 	addRepoRoute(group, http.MethodGet, "/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/templates/:uuid/snapshots/", sh.listSnapshotsForTemplate, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodDelete, "/repositories/:repo_uuid/snapshots/:snapshot_uuid", sh.deleteSnapshot, rbac.RbacVerbWrite)
+	addRepoRoute(group, http.MethodPatch, "/repositories/:repo_uuid/snapshots/:snapshot_uuid/published", sh.publishSnapshot, rbac.RbacVerbWrite)
 	addRepoRoute(group, http.MethodPost, "/repositories/:repo_uuid/snapshots/bulk_delete/", sh.bulkDeleteSnapshot, rbac.RbacVerbWrite)
 }
 
@@ -226,6 +227,65 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 	}
 
 	return c.String(http.StatusOK, repoConfigFile)
+}
+
+// PublishSnapshot godoc
+// @summary        Publish or unpublish a snapshot
+// @ID             publishSnapshot
+// @Description    This enables changing the published status of a specific snapshot.
+// @Tags           snapshots
+// @Param          repo_uuid     path string true "Repository UUID."
+// @Param          snapshot_uuid path string true "Snapshot UUID."
+// @Success        200 {object} api.SnapshotResponse
+// @Failure        400 {object} ce.ErrorResponse
+// @Failure        401 {object} ce.ErrorResponse
+// @Failure        403 {object} ce.ErrorResponse
+// @Failure        404 {object} ce.ErrorResponse
+// @Failure        500 {object} ce.ErrorResponse
+// @Router         /repositories/{repo_uuid}/snapshots/{snapshot_uuid}/published [patch]
+func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	repoUUID := c.Param("repo_uuid")
+	snapshotUUID := c.Param("snapshot_uuid")
+
+	params := api.SnapshotPublishedUpdateRequest{}
+	if err := c.Bind(&params); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+	}
+	if params.Published == nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error validating parameters", "Request body must include the 'published' field.")
+	}
+
+	snapshot, err := sh.DaoRegistry.Snapshot.UpdatePublishedStatus(c.Request().Context(), orgID, *params.Published, repoUUID, snapshotUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error (un)publishing snapshot", err.Error())
+	}
+
+	publishTaskID, err := enqueueUpdateSnapshotPublishedTask(c, sh.TaskClient, repoUUID, snapshotUUID, *params.Published)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
+	}
+	updateLatestSnapshotTaskID, err := enqueueUpdateLatestSnapshotTask(c, sh.TaskClient, repoUUID, publishTaskID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
+	}
+
+	templates, err := sh.DaoRegistry.Template.InternalOnlyGetTemplatesForRepoConfig(c.Request().Context(), repoUUID, false)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching templates for repository", err.Error())
+	}
+	for _, t := range templates {
+		if t.OrgID == orgID || t.UseLatest {
+			continue
+		}
+
+		_, err := enqueueUpdateTemplateContentTask(c, sh.TaskClient, repoUUID, t.UUID, t.OrgID, updateLatestSnapshotTaskID)
+		if err != nil {
+			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
+		}
+	}
+
+	return c.JSON(http.StatusOK, snapshot)
 }
 
 // DeleteSnapshot godoc
