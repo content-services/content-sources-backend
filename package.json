@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@currents/playwright": "2.4.0",
+    "@currents/playwright": "2.5.0",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
