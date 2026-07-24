@@ -1109,6 +1109,45 @@ func (s *SnapshotsSuite) TestListPartnerRepoForeignViewerSeesOnlyPublished() {
 	assert.NotEqual(t, unpublished.UUID, viewerCollection.Data[0].UUID)
 }
 
+// TestReadableSnapshotsForeignPartnerExcludesUnpublished covers the UUID-based leak path:
+// when a partner repo has at least one published snapshot, foreignPartnerVisibleSQL (EXISTS)
+// would previously unlock *all* snaps of that repo via readableSnapshots. Callers such as
+// ListSnapshotRpms / ListByTemplate filter only by snapshot UUID, so an unpublished snap UUID
+// must still be excluded for foreign viewers. Owners keep access to unpublished snaps.
+func (s *SnapshotsSuite) TestReadableSnapshotsForeignPartnerExcludesUnpublished() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), ownerOrg, "partner readableSnapshots", true)
+	unpublished := createSnapshot(t, tx, repoConfig)
+	published := createPublishedSnapshot(t, tx, repoConfig)
+
+	var viewerUUIDs []string
+	err := readableSnapshots(tx.WithContext(ctx), viewerOrg).
+		Where("snapshots.uuid IN ?", []string{unpublished.UUID, published.UUID}).
+		Pluck("snapshots.uuid", &viewerUUIDs).Error
+	assert.NoError(t, err)
+	assert.Equal(t, []string{published.UUID}, viewerUUIDs)
+
+	var unpublishedForViewer []string
+	err = readableSnapshots(tx.WithContext(ctx), viewerOrg).
+		Where("snapshots.uuid = ?", unpublished.UUID).
+		Pluck("snapshots.uuid", &unpublishedForViewer).Error
+	assert.NoError(t, err)
+	assert.Empty(t, unpublishedForViewer)
+
+	var ownerUUIDs []string
+	err = readableSnapshots(tx.WithContext(ctx), ownerOrg).
+		Where("snapshots.uuid IN ?", []string{unpublished.UUID, published.UUID}).
+		Pluck("snapshots.uuid", &ownerUUIDs).Error
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []string{unpublished.UUID, published.UUID}, ownerUUIDs)
+}
+
 func (s *SnapshotsSuite) TestListPartnerRepoUnpublishedNotVisibleToForeignViewer() {
 	t := s.T()
 	tx := s.tx
