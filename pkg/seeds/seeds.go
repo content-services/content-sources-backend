@@ -28,6 +28,7 @@ type SeedOptions struct {
 	ExtendedReleaseVersion *string
 	ExtendedRelease        *string
 	FeatureName            *string
+	Partner                *bool
 }
 
 type IntrospectionStatusMetadata struct {
@@ -78,7 +79,6 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 	for i := 0; i < size; i++ {
 		introspectionMetadata := randomIntrospectionStatusMetadata(options.Status)
 		repo := models.Repository{
-			URL:                          randomURL(),
 			LastIntrospectionTime:        introspectionMetadata.lastIntrospectionTime,
 			LastIntrospectionSuccessTime: introspectionMetadata.lastIntrospectionSuccessTime,
 			LastIntrospectionUpdateTime:  introspectionMetadata.lastIntrospectionUpdateTime,
@@ -86,6 +86,9 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 			LastIntrospectionStatus:      *introspectionMetadata.LastIntrospectionStatus,
 			Origin:                       *options.Origin,
 			ContentType:                  *options.ContentType,
+		}
+		if *options.Origin != config.OriginUpload {
+			repo.URL = randomURL()
 		}
 		repos = append(repos, repo)
 	}
@@ -112,6 +115,9 @@ func SeedRepositoryConfigurations(db *gorm.DB, size int, options SeedOptions) ([
 		}
 		if options.FeatureName != nil && *options.FeatureName != "" {
 			repoConfig.FeatureName = *options.FeatureName
+		}
+		if options.Partner != nil {
+			repoConfig.Partner = *options.Partner
 		}
 		repoConfigurations = append(repoConfigurations, repoConfig)
 	}

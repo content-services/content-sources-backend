@@ -29,6 +29,9 @@ models/ApiListSnapshotByDateRequest.ts
 models/ApiListSnapshotByDateResponse.ts
 models/ApiMavenPackageDetailResponse.ts
 models/ApiMavenPackageVersionsResponse.ts
+models/ApiNpmPackageDetailResponse.ts
+models/ApiNpmPackageVersionsResponse.ts
+models/ApiNpmTarball.ts
 models/ApiPackageItem.ts
 models/ApiPackageResponse.ts
 models/ApiPackageSourcesResponse.ts

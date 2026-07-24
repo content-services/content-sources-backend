@@ -487,6 +487,12 @@ const docTemplate = `{
                         "description": "A comma separated list of feature names to filter on (e.g. feature1,feature2)",
                         "name": "feature_name",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter repositories by type partner",
+                        "name": "partner",
+                        "in": "query"
                     }
                 ],
                 "responses": {
