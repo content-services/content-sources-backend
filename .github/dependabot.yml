@@ -27,3 +27,11 @@ updates:
       npm:
         patterns:
           - '*'
+  - package-ecosystem: "docker"
+    directory: "/mk"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 5
+    commit-message:
+      prefix: "Build: "

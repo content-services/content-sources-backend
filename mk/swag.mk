@@ -4,7 +4,11 @@
 ##
 
 SWAG=$(GO_OUTPUT)/swag
-SWAG_VERSION := latest
+# version taken from go.mod, single source of truth, updated with dependabot
+SWAG_VERSION := $(shell grep 'github.com/swaggo/swag ' go.mod | awk '{print $$2}')
+
+# version taken from docker-compose.versions.yml
+OPENAPI_GENERATOR_IMAGE := $(shell grep 'openapi-generator-cli' mk/docker-compose.versions.yml | awk -F': ' '{print $$2}')
 
 .PHONY: install-swag
 install-swag: $(SWAG) ## Install swag locally on your GO_OUTPUT (./release) directory
@@ -31,7 +35,7 @@ openapi-doc: install-swag ## Regenerate openapi json document and lint
 
 .PHONY: openapi-js
 openapi-js: 
-	$(DOCKER) run -v .:/backend:z openapitools/openapi-generator-cli:latest-release generate -i backend/api/openapi.json  -g typescript-fetch -o backend/_playwright-tests/test-utils/src/client
+	$(DOCKER) run -v .:/backend:z $(OPENAPI_GENERATOR_IMAGE) generate -i backend/api/openapi.json  -g typescript-fetch -o backend/_playwright-tests/test-utils/src/client
 
 .PHONY: openapi
 openapi: openapi-doc openapi-js
