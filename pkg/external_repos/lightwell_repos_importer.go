@@ -24,6 +24,7 @@ type LightwellAllowlistEntry struct {
 	Type        string `json:"type"`
 	BasePath    string `json:"base_path"`
 	FeatureName string `json:"feature_name"`
+	OsvPath     string `json:"osv_path"`
 }
 
 type LightwellRepoImporter struct {
@@ -41,7 +42,7 @@ func NewLightwellRepoImporter(daoReg *dao.DaoRegistry, pulpClient pulp_client.Pu
 }
 
 func (lri *LightwellRepoImporter) LoadAndSave(ctx context.Context) error {
-	entries, err := loadLightwellAllowlist()
+	entries, err := LoadLightwellAllowlist()
 	if err != nil {
 		return fmt.Errorf("error loading lightwell allowlist: %w", err)
 	}
@@ -51,7 +52,7 @@ func (lri *LightwellRepoImporter) LoadAndSave(ctx context.Context) error {
 	}
 
 	if config.Get().Options.LoadLightwellDemo {
-		demoEntries, err := loadLightwellDemoAllowlist()
+		demoEntries, err := LoadLightwellDemoAllowlist()
 		if err != nil {
 			return fmt.Errorf("error loading lightwell demo allowlist: %w", err)
 		}
@@ -98,7 +99,7 @@ func getSecurityLevel(basePath string) (securityLevel string, err error) {
 	return parts[1], nil
 }
 
-func loadLightwellAllowlist() ([]LightwellAllowlistEntry, error) {
+func LoadLightwellAllowlist() ([]LightwellAllowlistEntry, error) {
 	contents, err := lightwellFS.ReadFile("lightwell_repos.json")
 	if err != nil {
 		return nil, err
@@ -111,7 +112,7 @@ func loadLightwellAllowlist() ([]LightwellAllowlistEntry, error) {
 	return entries, nil
 }
 
-func loadLightwellDemoAllowlist() ([]LightwellAllowlistEntry, error) {
+func LoadLightwellDemoAllowlist() ([]LightwellAllowlistEntry, error) {
 	contents, err := lightwellDemoFS.ReadFile("lightwell_demo_repos.json")
 	if err != nil {
 		return nil, err

@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const testDeleteTablesQuery = `TRUNCATE repositories, snapshots, repositories_module_streams, repositories_rpms, repositories_package_groups, repositories_environments, repository_configurations, templates_repository_configurations`
+const testDeleteTablesQuery = `TRUNCATE repositories, snapshots, repositories_module_streams, repositories_rpms, repositories_package_groups, repositories_environments, repository_configurations, templates_repository_configurations, lightwell_advisories`
 
 type RepositorySuite struct {
 	*DaoSuite

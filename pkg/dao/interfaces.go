@@ -17,22 +17,23 @@ import (
 )
 
 type DaoRegistry struct {
-	RepositoryConfig RepositoryConfigDao
-	Rpm              RpmDao
-	Repository       RepositoryDao
-	Metrics          MetricsDao
-	Snapshot         SnapshotDao
-	TaskInfo         TaskInfoDao
-	AdminTask        AdminTaskDao
-	Domain           DomainDao
-	PackageGroup     PackageGroupDao
-	ModuleStream     ModuleStreamDao
-	Environment      EnvironmentDao
-	Template         TemplateDao
-	Uploads          UploadDao
-	Memo             MemoDao
-	MavenPackages    MavenPackagesDao
-	UserPreference   UserPreferenceDao
+	RepositoryConfig  RepositoryConfigDao
+	Rpm               RpmDao
+	Repository        RepositoryDao
+	Metrics           MetricsDao
+	Snapshot          SnapshotDao
+	TaskInfo          TaskInfoDao
+	AdminTask         AdminTaskDao
+	Domain            DomainDao
+	PackageGroup      PackageGroupDao
+	ModuleStream      ModuleStreamDao
+	Environment       EnvironmentDao
+	Template          TemplateDao
+	Uploads           UploadDao
+	Memo              MemoDao
+	MavenPackages     MavenPackagesDao
+	LightwellAdvisory LightwellAdvisoryDao
+	UserPreference    UserPreferenceDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -73,10 +74,11 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			db:         db,
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
-		Uploads:        uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
-		Memo:           memoDaoImpl{db: db},
-		MavenPackages:  mavenPackagesDaoImpl{db: db},
-		UserPreference: userPreferenceDaoImpl{db: db},
+		Uploads:           uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
+		Memo:              memoDaoImpl{db: db},
+		MavenPackages:     mavenPackagesDaoImpl{db: db},
+		LightwellAdvisory: lightwellAdvisoryDaoImpl{db: db},
+		UserPreference:    userPreferenceDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -109,6 +111,7 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error)
 	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 	SetPartnerRepo(ctx context.Context, repoConfigUUID string, partner bool) error
+	InternalOnly_FetchRepoConfigByName(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error)
 }
 
 type ModuleStreamDao interface {
@@ -261,6 +264,11 @@ type MemoDao interface {
 type MavenPackagesDao interface {
 	Create(ctx context.Context, mavenPackage *models.MavenPackage) error
 	Fetch(ctx context.Context, groupID, name string) (*models.MavenPackage, error)
+}
+
+type LightwellAdvisoryDao interface {
+	SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error
+	ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)
 }
 
 type UserPreferenceDao interface {

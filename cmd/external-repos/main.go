@@ -91,6 +91,17 @@ func main() {
 				},
 			},
 			{
+				Name:   "sync-lightwell-advisories",
+				Usage:  "Sync lightwell OSV advisory data",
+				Action: commands.SyncLightwellAdvisoriesAction,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "force",
+						Usage: "Skip checksum comparison and re-fetch all advisories",
+					},
+				},
+			},
+			{
 				Name:   "snapshot",
 				Usage:  "Snapshot a repository",
 				Action: commands.SnapshotAction,
