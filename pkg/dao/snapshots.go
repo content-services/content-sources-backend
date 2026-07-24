@@ -91,10 +91,6 @@ func (sDao *snapshotDaoImpl) List(
 	filteredDB := readableSnapshots(sDao.db.WithContext(ctx), orgID).
 		Where("repository_configuration_uuid = ?", UuidifyString(repoConfigUUID))
 
-	if IsForeignPartnerView(repoConfig, orgID) {
-		filteredDB = filteredDB.Where("snapshots.published = ?", true)
-	}
-
 	// Get count
 	filteredDB.Count(&totalSnaps)
 
@@ -183,7 +179,12 @@ func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
 		Preload("RepositoryConfiguration").
 		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
 		Where(
-			"(repository_configurations.org_id IN ?) OR ("+foreignPartnerVisibleSQL+")",
+			`(repository_configurations.org_id IN ?)
+			 OR (
+				repository_configurations.partner = true
+				AND repository_configurations.org_id != ?
+				AND snapshots.published = true
+			)`,
 			[]string{orgId, config.RedHatOrg, config.CommunityOrg},
 			orgId,
 		).
