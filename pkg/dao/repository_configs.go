@@ -2088,3 +2088,28 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigsForTemplate(ctx co
 
 	return repoConfigs, nil
 }
+
+func (r repositoryConfigDaoImpl) SetPartnerRepo(ctx context.Context, repoConfigUUID string, partner bool) error {
+	var repoConfig models.RepositoryConfiguration
+	err := r.db.WithContext(ctx).
+		Preload("Repository").
+		Where("uuid = ?", repoConfigUUID).
+		First(&repoConfig).Error
+	if err != nil {
+		return RepositoryDBErrorToApi(err, &repoConfigUUID)
+	}
+	if repoConfig.Repository.Origin != config.OriginUpload {
+		return &ce.DaoError{BadValidation: true, Message: "Only upload repositories can be marked as partner"}
+	}
+	if !partner {
+		hasPublished, err := HasPublishedSnapshot(ctx, r.db, repoConfigUUID)
+		if err != nil {
+			return err
+		}
+		if hasPublished {
+			return &ce.DaoError{BadValidation: true,
+				Message: "Cannot unmark partner while published snapshots exist; unpublish all snapshots first"}
+		}
+	}
+	return r.db.WithContext(ctx).Model(&repoConfig).Update("partner", partner).Error
+}

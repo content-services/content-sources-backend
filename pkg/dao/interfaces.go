@@ -106,6 +106,7 @@ type RepositoryConfigDao interface {
 	BulkImport(ctx context.Context, reposToImport []api.RepositoryRequest) ([]api.RepositoryImportResponse, []error)
 	InternalOnly_FetchRepoConfigsForTemplate(ctx context.Context, template models.Template) ([]models.RepositoryConfiguration, error)
 	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
+	SetPartnerRepo(ctx context.Context, repoConfigUUID string, partner bool) error
 }
 
 type ModuleStreamDao interface {
