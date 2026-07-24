@@ -74,10 +74,10 @@
     lazy-ass "1.6.0"
     ramda "0.26.1"
 
-"@currents/playwright@2.4.0":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@currents/playwright/-/playwright-2.4.0.tgz#5ceeec772a0b8594cdd7c0d8e5099bca9ec24c74"
-  integrity sha512-zGzieyN0h0hqWp3gAUSIa0XgAYIoJ7z1r4lTB940yynze4HT6V32pKjiXp8jicRCBjJUz+bK1OKEnUMlIcs3Xg==
+"@currents/playwright@2.5.0":
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/@currents/playwright/-/playwright-2.5.0.tgz#2f93cefa84e64be6db4ccbda8e4d14a5ec598c9f"
+  integrity sha512-MkhgqNnNT71+OMkJFz9idheyhvH7SJeVodlID9AQ5Xm3v82lBa+msB0naEyva1ggqUizdFZugFOyS14lvKA75Q==
   dependencies:
     "@babel/code-frame" "^7.29.7"
     "@commander-js/extra-typings" "^13.1.0"
