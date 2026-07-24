@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -11,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 func CreateLatestDistributions(_ []string) {
@@ -54,18 +56,16 @@ func CreateLatestDistributions(_ []string) {
 			batch := repos.Data[i:end]
 			wg := sync.WaitGroup{}
 			for _, repo := range batch {
-				publicationHref := ""
-				if repo.Partner {
-					latestPublished, fetchErr := daoReg.Snapshot.FetchLatestPublishedSnapshotModel(ctx, repo.UUID)
-					if fetchErr != nil {
+				latestSnap, fetchErr := daoReg.Snapshot.FetchLatestSnapshotForDistribution(ctx, repo.UUID)
+				if fetchErr != nil {
+					if errors.Is(fetchErr, gorm.ErrRecordNotFound) {
 						continue
 					}
-					publicationHref = latestPublished.PublicationHref
-				} else if repo.LastSnapshot != nil {
-					publicationHref = repo.LastSnapshot.PublicationHref
-				} else {
+					log.Error().Str("repo_uuid", repo.UUID).Str("org_id", domain.OrgId).Err(fetchErr).
+						Msg("failed to fetch latest snapshot for distribution")
 					continue
 				}
+				publicationHref := latestSnap.PublicationHref
 				wg.Add(1)
 				go func(repo api.RepositoryResponse, publicationHref string) {
 					defer wg.Done()

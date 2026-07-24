@@ -245,7 +245,7 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 		return fmt.Errorf("failed to find latest distribution by path %v: %w", latestPathIdent, err)
 	}
 	if latestDistro != nil {
-		latestSnap, err := ds.fetchSnapshotForLatestDistribution(repo)
+		latestSnap, err := ds.daoReg.Snapshot.FetchLatestSnapshotForDistribution(ds.ctx, repo.UUID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				deleteDistributionHref, delErr := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, *latestDistro.PulpHref)
@@ -454,13 +454,6 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 	}
 
 	return nil
-}
-
-func (ds *DeleteSnapshots) fetchSnapshotForLatestDistribution(repo api.RepositoryResponse) (models.Snapshot, error) {
-	if repo.Partner {
-		return ds.daoReg.Snapshot.FetchLatestPublishedSnapshotModel(ds.ctx, repo.UUID)
-	}
-	return ds.daoReg.Snapshot.FetchLatestSnapshotModel(ds.ctx, repo.UUID)
 }
 
 func (ds *DeleteSnapshots) updateRepoConfig(repoUUID, snapUUID string) error {

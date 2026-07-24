@@ -4240,6 +4240,72 @@ func (_c *MockSnapshotDao_FetchLatestPublishedSnapshotModel_Call) RunAndReturn(r
 	return _c
 }
 
+// FetchLatestSnapshotForDistribution provides a mock function for the type MockSnapshotDao
+func (_mock *MockSnapshotDao) FetchLatestSnapshotForDistribution(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchLatestSnapshotForDistribution")
+	}
+
+	var r0 models.Snapshot
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (models.Snapshot, error)); ok {
+		return returnFunc(ctx, repoConfigUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) models.Snapshot); ok {
+		r0 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r0 = ret.Get(0).(models.Snapshot)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockSnapshotDao_FetchLatestSnapshotForDistribution_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchLatestSnapshotForDistribution'
+type MockSnapshotDao_FetchLatestSnapshotForDistribution_Call struct {
+	*mock.Call
+}
+
+// FetchLatestSnapshotForDistribution is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshotForDistribution(ctx interface{}, repoConfigUUID interface{}) *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call {
+	return &MockSnapshotDao_FetchLatestSnapshotForDistribution_Call{Call: _e.mock.On("FetchLatestSnapshotForDistribution", ctx, repoConfigUUID)}
+}
+
+func (_c *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call) Run(run func(ctx context.Context, repoConfigUUID string)) *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call) Return(snapshot models.Snapshot, err error) *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call {
+	_c.Call.Return(snapshot, err)
+	return _c
+}
+
+func (_c *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)) *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // FetchModel provides a mock function for the type MockSnapshotDao
 func (_mock *MockSnapshotDao) FetchModel(ctx context.Context, uuid string, includeSoftDel bool) (models.Snapshot, error) {
 	ret := _mock.Called(ctx, uuid, includeSoftDel)

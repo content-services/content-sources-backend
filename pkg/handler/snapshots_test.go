@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type SnapshotSuite struct {
@@ -221,6 +222,47 @@ func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 	assert.Equal(t, response, repoConfigFile)
+}
+
+func (suite *SnapshotSuite) TestGetLatestRepoConfigurationFile() {
+	t := suite.T()
+
+	orgID := test_handler.MockOrgId
+	repoUUID := uuid.NewString()
+	snapUUID := uuid.NewString()
+	repoConfigFile := "latest-file"
+
+	suite.reg.Snapshot.WithContextMock().On("FetchLatestSnapshot", test.MockCtx(), repoUUID).Return(api.SnapshotResponse{
+		UUID:      snapUUID,
+		Published: true,
+	}, nil).Once()
+	suite.reg.Snapshot.WithContextMock().On("GetRepositoryConfigurationFile", test.MockCtx(), orgID, snapUUID, true).Return(repoConfigFile, nil).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/config.repo", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, repoConfigFile, string(body))
+}
+
+func (suite *SnapshotSuite) TestGetLatestRepoConfigurationFileNotFound() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	suite.reg.Snapshot.WithContextMock().On("FetchLatestSnapshot", test.MockCtx(), repoUUID).Return(
+		api.SnapshotResponse{}, gorm.ErrRecordNotFound,
+	).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/config.repo", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (suite *SnapshotSuite) TestDelete() {

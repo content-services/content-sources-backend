@@ -172,7 +172,7 @@ func (sh *SnapshotHelper) Cleanup() error {
 		return err
 	}
 	if latestDistro != nil {
-		latestSnap, err := sh.fetchSnapshotForLatestDistribution()
+		latestSnap, err := sh.daoReg.Snapshot.FetchLatestSnapshotForDistribution(sh.ctx, sh.repo.UUID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				deleteDistributionHref, err := sh.pulpClient.DeleteRpmDistribution(sh.ctx, *latestDistro.PulpHref)
@@ -197,16 +197,6 @@ func (sh *SnapshotHelper) Cleanup() error {
 	}
 
 	return nil
-}
-
-// fetchSnapshotForLatestDistribution returns the snapshot that should back Pulp "latest".
-// Partner repos use the newest published snapshot (caller removes latest if none exist);
-// others use the newest snapshot overall.
-func (sh *SnapshotHelper) fetchSnapshotForLatestDistribution() (models.Snapshot, error) {
-	if sh.repo.Partner {
-		return sh.daoReg.Snapshot.FetchLatestPublishedSnapshotModel(sh.ctx, sh.repo.UUID)
-	}
-	return sh.daoReg.Snapshot.FetchLatestSnapshotModel(sh.ctx, sh.repo.UUID)
 }
 
 func (sh *SnapshotHelper) findOrCreatePublication(versionHref string) (string, error) {

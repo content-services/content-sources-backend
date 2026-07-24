@@ -454,8 +454,7 @@ func (sDao *snapshotDaoImpl) ClearDeletedAt(ctx context.Context, snapUUID string
 }
 
 func (sDao *snapshotDaoImpl) FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error) {
-	var snap models.Snapshot
-	snap, err := sDao.FetchLatestSnapshotModel(ctx, repoConfigUUID)
+	snap, err := sDao.FetchLatestSnapshotForDistribution(ctx, repoConfigUUID)
 	if err != nil {
 		return api.SnapshotResponse{}, err
 	}
@@ -490,6 +489,24 @@ func (sDao *snapshotDaoImpl) FetchLatestPublishedSnapshotModel(ctx context.Conte
 		return models.Snapshot{}, result.Error
 	}
 	return snap, nil
+}
+
+// FetchLatestSnapshotForDistribution returns the snapshot that should back Pulp "{repo}/latest".
+// Partner repos use the newest published snapshot; others use the newest snapshot overall.
+// Callers need not load the repository configuration first.
+func (sDao *snapshotDaoImpl) FetchLatestSnapshotForDistribution(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
+	var repoConfig models.RepositoryConfiguration
+	err := sDao.db.WithContext(ctx).
+		Select("uuid", "partner").
+		Where("uuid = ?", UuidifyString(repoConfigUUID)).
+		First(&repoConfig).Error
+	if err != nil {
+		return models.Snapshot{}, err
+	}
+	if repoConfig.Partner {
+		return sDao.FetchLatestPublishedSnapshotModel(ctx, repoConfigUUID)
+	}
+	return sDao.FetchLatestSnapshotModel(ctx, repoConfigUUID)
 }
 
 func (sDao *snapshotDaoImpl) FetchSnapshotByVersionHref(ctx context.Context, repoConfigUUID string, versionHref string) (*api.SnapshotResponse, error) {
