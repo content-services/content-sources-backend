@@ -7,8 +7,17 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -246,4 +255,56 @@ func (suite *UtilsSuite) TestFetchSnapshotUUIDsForRepos() {
 	result, err = fetchSnapshotUUIDsForRepos(ctx, suite.reg.ToDaoRegistry(), orgID, testDate, urls, uuids)
 	assert.NoError(t, err)
 	assert.Empty(t, result)
+}
+
+func mockUpdateSnapshotPublishedEnqueue(
+	tcMock *client.MockTaskClient,
+	repoUUID, snapshotUUID, requestID string,
+	published bool,
+	dependencies ...uuid.UUID,
+) *mock.Call {
+	return tcMock.On("Enqueue", queue.Task{
+		Typename:     config.UpdateSnapshotPublishedTask,
+		Payload:      tasks.UpdateSnapshotPublishedPayload{SnapshotUUID: snapshotUUID, Published: published},
+		OrgId:        test_handler.MockOrgId,
+		AccountId:    test_handler.MockAccountNumber,
+		ObjectUUID:   utils.Ptr(repoUUID),
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+		RequestID:    requestID,
+		Dependencies: dependencies,
+	})
+}
+
+func mockUpdateLatestSnapshotEnqueue(
+	tcMock *client.MockTaskClient,
+	repoUUID, requestID string,
+	dependencies ...uuid.UUID,
+) *mock.Call {
+	return tcMock.On("Enqueue", queue.Task{
+		Typename:     config.UpdateLatestSnapshotTask,
+		Payload:      tasks.UpdateLatestSnapshotPayload{RepositoryConfigUUID: repoUUID},
+		OrgId:        test_handler.MockOrgId,
+		AccountId:    test_handler.MockAccountNumber,
+		ObjectUUID:   utils.Ptr(repoUUID),
+		ObjectType:   utils.Ptr(config.ObjectTypeRepository),
+		RequestID:    requestID,
+		Dependencies: dependencies,
+	})
+}
+
+func mockUpdateTemplateContentEnqueue(
+	tcMock *client.MockTaskClient,
+	repoUUID, templateUUID, templateOrg, requestID string,
+	dependencies ...uuid.UUID,
+) *mock.Call {
+	return tcMock.On("Enqueue", queue.Task{
+		Typename:     config.UpdateTemplateContentTask,
+		Payload:      payloads.UpdateTemplateContentPayload{TemplateUUID: templateUUID, RepoConfigUUIDs: []string{repoUUID}},
+		OrgId:        templateOrg,
+		AccountId:    test_handler.MockAccountNumber,
+		ObjectUUID:   utils.Ptr(templateUUID),
+		ObjectType:   utils.Ptr(config.ObjectTypeTemplate),
+		RequestID:    requestID,
+		Dependencies: dependencies,
+	})
 }

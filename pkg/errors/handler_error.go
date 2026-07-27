@@ -101,6 +101,8 @@ func HttpCodeForDaoError(err error) int {
 			return http.StatusBadRequest
 		} else if daoError.AlreadyExists {
 			return http.StatusConflict
+		} else if daoError.Forbidden {
+			return http.StatusForbidden
 		} else {
 			return http.StatusInternalServerError
 		}
