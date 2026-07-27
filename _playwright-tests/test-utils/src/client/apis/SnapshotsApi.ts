@@ -29,6 +29,16 @@ import {
     ApiSnapshotCollectionResponseToJSON,
 } from '../models/ApiSnapshotCollectionResponse';
 import {
+    type ApiSnapshotPublishedUpdateRequest,
+    ApiSnapshotPublishedUpdateRequestFromJSON,
+    ApiSnapshotPublishedUpdateRequestToJSON,
+} from '../models/ApiSnapshotPublishedUpdateRequest';
+import {
+    type ApiSnapshotResponse,
+    ApiSnapshotResponseFromJSON,
+    ApiSnapshotResponseToJSON,
+} from '../models/ApiSnapshotResponse';
+import {
     type ApiUUIDListRequest,
     ApiUUIDListRequestFromJSON,
     ApiUUIDListRequestToJSON,
@@ -66,6 +76,12 @@ export interface ListSnapshotsForTemplateRequest {
     sortBy?: string;
     offset?: number;
     limit?: number;
+}
+
+export interface PublishSnapshotRequest {
+    repoUuid: string;
+    snapshotUuid: string;
+    apiSnapshotPublishedUpdateRequest: ApiSnapshotPublishedUpdateRequest;
 }
 
 /**
@@ -351,6 +367,71 @@ export class SnapshotsApi extends runtime.BaseAPI {
      */
     async listSnapshotsForTemplate(requestParameters: ListSnapshotsForTemplateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiSnapshotCollectionResponse> {
         const response = await this.listSnapshotsForTemplateRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for publishSnapshot without sending the request
+     */
+    async publishSnapshotRequestOpts(requestParameters: PublishSnapshotRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['repoUuid'] == null) {
+            throw new runtime.RequiredError(
+                'repoUuid',
+                'Required parameter "repoUuid" was null or undefined when calling publishSnapshot().'
+            );
+        }
+
+        if (requestParameters['snapshotUuid'] == null) {
+            throw new runtime.RequiredError(
+                'snapshotUuid',
+                'Required parameter "snapshotUuid" was null or undefined when calling publishSnapshot().'
+            );
+        }
+
+        if (requestParameters['apiSnapshotPublishedUpdateRequest'] == null) {
+            throw new runtime.RequiredError(
+                'apiSnapshotPublishedUpdateRequest',
+                'Required parameter "apiSnapshotPublishedUpdateRequest" was null or undefined when calling publishSnapshot().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/repositories/{repo_uuid}/snapshots/{snapshot_uuid}/published`;
+        urlPath = urlPath.replace('{repo_uuid}', encodeURIComponent(String(requestParameters['repoUuid'])));
+        urlPath = urlPath.replace('{snapshot_uuid}', encodeURIComponent(String(requestParameters['snapshotUuid'])));
+
+        return {
+            path: urlPath,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ApiSnapshotPublishedUpdateRequestToJSON(requestParameters['apiSnapshotPublishedUpdateRequest']),
+        };
+    }
+
+    /**
+     * This enables changing the published status of a specific snapshot.
+     * Publish or unpublish a snapshot
+     */
+    async publishSnapshotRaw(requestParameters: PublishSnapshotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiSnapshotResponse>> {
+        const requestOptions = await this.publishSnapshotRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiSnapshotResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * This enables changing the published status of a specific snapshot.
+     * Publish or unpublish a snapshot
+     */
+    async publishSnapshot(requestParameters: PublishSnapshotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiSnapshotResponse> {
+        const response = await this.publishSnapshotRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

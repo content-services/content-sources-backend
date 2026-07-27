@@ -11,6 +11,7 @@ type DaoError struct {
 	NotFound      bool
 	BadValidation bool
 	AlreadyExists bool
+	Forbidden     bool
 }
 
 func (e *DaoError) Error() string {

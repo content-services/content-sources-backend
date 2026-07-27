@@ -1478,3 +1478,159 @@ func (s *SnapshotsSuite) TestFetchNonPartnerSnapshotByForeignOrg() {
 	assert.Equal(t, snap.UUID, fetched.UUID)
 	assert.False(t, fetched.Published)
 }
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatus() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "publish status repo", true)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	// Publish the snapshot
+	resp, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, true, repoConfig.UUID, snap.UUID)
+	assert.NoError(t, err)
+	assert.True(t, resp.Published)
+
+	// Verify snapshot is published in DB
+	var updated models.Snapshot
+	err = tx.Where("uuid = ?", snap.UUID).First(&updated).Error
+	assert.NoError(t, err)
+	assert.True(t, updated.Published)
+
+	// Verify repository.public is synced
+	var repo models.Repository
+	err = tx.Where("uuid = ?", repoConfig.RepositoryUUID).First(&repo).Error
+	assert.NoError(t, err)
+	assert.True(t, repo.Public)
+}
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatusUnpublish() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "unpublish status repo", true)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	// Publish then unpublish
+	_, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, true, repoConfig.UUID, snap.UUID)
+	assert.NoError(t, err)
+
+	resp, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, false, repoConfig.UUID, snap.UUID)
+	assert.NoError(t, err)
+	assert.False(t, resp.Published)
+
+	var updated models.Snapshot
+	err = tx.Where("uuid = ?", snap.UUID).First(&updated).Error
+	assert.NoError(t, err)
+	assert.False(t, updated.Published)
+
+	// Verify repository.public is false when no published snapshots remain
+	var repo models.Repository
+	err = tx.Where("uuid = ?", repoConfig.RepositoryUUID).First(&repo).Error
+	assert.NoError(t, err)
+	assert.False(t, repo.Public)
+}
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatusIdempotent() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "idempotent publish repo", true)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	// Publish twice — should not error
+	_, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, true, repoConfig.UUID, snap.UUID)
+	assert.NoError(t, err)
+
+	resp, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, true, repoConfig.UUID, snap.UUID)
+	assert.NoError(t, err)
+	assert.True(t, resp.Published)
+
+	var repo models.Repository
+	err = tx.Where("uuid = ?", repoConfig.RepositoryUUID).First(&repo).Error
+	assert.NoError(t, err)
+	assert.True(t, repo.Public)
+}
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatusSnapshotNotFound() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "missing snapshot repo", true)
+	bogusUUID := uuid2.NewString()
+
+	_, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, true, repoConfig.UUID, bogusUUID)
+	assert.Error(t, err)
+
+	var daoError *ce.DaoError
+	ok := errors.As(err, &daoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatusWrongRepo() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	orgID := seeds.RandomOrgId()
+	repoConfig1 := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), orgID, "wrong repo a", true)
+	repoConfig2 := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), orgID, "wrong repo b", true)
+	snap := createSnapshot(t, tx, repoConfig1)
+
+	// Snapshot belongs to repoConfig1, but we pass repoConfig2
+	_, err := sDao.UpdatePublishedStatus(ctx, repoConfig2.OrgID, true, repoConfig2.UUID, snap.UUID)
+	assert.Error(t, err)
+
+	var daoError *ce.DaoError
+	ok := errors.As(err, &daoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.NotFound)
+}
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatusNotPartner() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "non partner repo", false)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	_, err := sDao.UpdatePublishedStatus(ctx, repoConfig.OrgID, true, repoConfig.UUID, snap.UUID)
+	assert.Error(t, err)
+
+	var daoError *ce.DaoError
+	ok := errors.As(err, &daoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.BadValidation)
+	assert.Contains(t, daoError.Message, "non-partner")
+}
+
+func (s *SnapshotsSuite) TestUpdatePublishedStatusForbidden() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "forbidden publish repo", true)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	_, err := sDao.UpdatePublishedStatus(ctx, "other-org", true, repoConfig.UUID, snap.UUID)
+	assert.Error(t, err)
+
+	var daoError *ce.DaoError
+	ok := errors.As(err, &daoError)
+	assert.True(t, ok)
+	assert.True(t, daoError.Forbidden)
+	assert.Contains(t, daoError.Message, "outside your organization")
+}

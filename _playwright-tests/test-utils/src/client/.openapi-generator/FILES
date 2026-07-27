@@ -72,6 +72,7 @@ models/ApiSnapshotCollectionResponse.ts
 models/ApiSnapshotErrata.ts
 models/ApiSnapshotErrataCollectionResponse.ts
 models/ApiSnapshotForDate.ts
+models/ApiSnapshotPublishedUpdateRequest.ts
 models/ApiSnapshotResponse.ts
 models/ApiSnapshotRpm.ts
 models/ApiSnapshotRpmCollectionResponse.ts

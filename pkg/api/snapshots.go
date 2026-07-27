@@ -24,6 +24,10 @@ type ListSnapshotByDateRequest struct {
 	Date            time.Time `json:"date" validate:"required"`             // Exact date to search by.
 }
 
+type SnapshotPublishedUpdateRequest struct {
+	Published *bool `json:"published" validate:"required"` // Update snapshot published status to this value.
+}
+
 type ListSnapshotByDateResponse struct {
 	Data []SnapshotForDate `json:"data"` // Requested Data
 }
