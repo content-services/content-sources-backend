@@ -55,6 +55,12 @@ env:
     value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
   - name: FEATURES_LIGHTWELL_ENABLED
     value: ${FEATURES_LIGHTWELL_ENABLED}
+  - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
+    value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED}
+  - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS
+    value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS}
+  - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ORGANIZATIONS
+    value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ORGANIZATIONS}
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
   - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -324,6 +330,13 @@ parameters:
     description: Whether the extended relaese repos should be snapshotted
   - name: FEATURES_LIGHTWELL_ENABLED
     value: 'false'
+  - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
+    description: Whether the Admin Partner Repositories feature should be turned on
+    value: 'false'
+  - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
