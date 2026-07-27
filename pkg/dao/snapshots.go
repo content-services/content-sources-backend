@@ -16,6 +16,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	zest "github.com/content-services/zest/release/v2026"
 	rpm_version "github.com/knqyf263/go-rpm-version"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -119,6 +120,81 @@ func (sDao *snapshotDaoImpl) List(
 	resp := snapshotConvertToResponses(snaps, pulpContentPath)
 
 	return api.SnapshotCollectionResponse{Data: resp}, totalSnaps, nil
+}
+
+func (sDao *snapshotDaoImpl) FetchDetailForRepo(
+	ctx context.Context,
+	orgID string,
+	repoConfigUUID string,
+	snapshotUUID string,
+) (api.SnapshotDetailResponse, error) {
+	var repoConfig models.RepositoryConfiguration
+	result := sDao.db.WithContext(ctx).
+		Where(
+			"repository_configurations.org_id IN (?,?,?) AND repository_configurations.uuid = ?",
+			orgID,
+			config.RedHatOrg,
+			config.CommunityOrg,
+			UuidifyString(repoConfigUUID),
+		).
+		First(&repoConfig)
+	if result.Error != nil {
+		return api.SnapshotDetailResponse{}, RepositoryDBErrorToApi(result.Error, &repoConfigUUID)
+	}
+
+	var snapshot models.Snapshot
+	result = readableSnapshots(sDao.db.WithContext(ctx), orgID).
+		Where(
+			"snapshots.repository_configuration_uuid = ? AND snapshots.uuid = ?",
+			repoConfig.UUID,
+			UuidifyString(snapshotUUID),
+		).
+		First(&snapshot)
+	if result.Error != nil {
+		return api.SnapshotDetailResponse{}, SnapshotsDBToApiError(result.Error, &snapshotUUID)
+	}
+
+	domainName, err := sDao.snapshotDomainName(ctx, snapshot)
+	if err != nil {
+		return api.SnapshotDetailResponse{}, err
+	}
+
+	pulpClient := sDao.pulpClient.WithDomain(domainName)
+	pulpContentPath, err := pulpClient.GetContentPath(ctx)
+	if err != nil {
+		return api.SnapshotDetailResponse{}, err
+	}
+
+	baseSnapshot := snapshotConvertToResponses([]models.Snapshot{snapshot}, pulpContentPath)[0]
+	addedPackages := []api.SnapshotPackageDiffItem{}
+	removedPackages := []api.SnapshotPackageDiffItem{}
+
+	version, err := pulpClient.GetRpmRepositoryVersion(ctx, snapshot.VersionHref)
+	if err != nil {
+		return api.SnapshotDetailResponse{}, err
+	}
+
+	if contentSummaryPackageCount(version.GetContentSummary().Added) > 0 {
+		pkgs, err := pulpClient.ListVersionAllAddedPackages(ctx, snapshot.VersionHref)
+		if err != nil {
+			return api.SnapshotDetailResponse{}, err
+		}
+		addedPackages = snapshotPackageDiffItemsFromPulp(pkgs)
+	}
+
+	if contentSummaryPackageCount(version.GetContentSummary().Removed) > 0 {
+		pkgs, err := pulpClient.ListVersionAllRemovedPackages(ctx, snapshot.VersionHref)
+		if err != nil {
+			return api.SnapshotDetailResponse{}, err
+		}
+		removedPackages = snapshotPackageDiffItemsFromPulp(pkgs)
+	}
+
+	return api.SnapshotDetailResponse{
+		SnapshotResponse: baseSnapshot,
+		AddedPackages:    addedPackages,
+		RemovedPackages:  removedPackages,
+	}, nil
 }
 
 func (sDao *snapshotDaoImpl) ListByTemplate(
@@ -639,4 +715,61 @@ func SnapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 // pulpContentURL combines content path and repository path to get content URL
 func pulpContentURL(pulpContentPath string, repositoryPath string) string {
 	return pulpContentPath + repositoryPath + "/"
+}
+
+func (sDao *snapshotDaoImpl) snapshotDomainName(ctx context.Context, snapshot models.Snapshot) (string, error) {
+	if snapshot.RepositoryPath != "" {
+		return strings.SplitN(snapshot.RepositoryPath, "/", 2)[0], nil
+	}
+
+	if snapshot.RepositoryConfiguration.OrgID == "" {
+		return "", nil
+	}
+
+	return domainDaoImpl{db: sDao.db}.Fetch(ctx, snapshot.RepositoryConfiguration.OrgID)
+}
+
+func contentSummaryPackageCount(contentTypeSummary map[string]map[string]interface{}) int64 {
+	rpmSummary, ok := contentTypeSummary["rpm.package"]
+	if !ok {
+		return 0
+	}
+
+	switch count := rpmSummary["count"].(type) {
+	case float64:
+		return int64(count)
+	case int64:
+		return count
+	case int:
+		return int64(count)
+	default:
+		return 0
+	}
+}
+
+func snapshotPackageDiffItemsFromPulp(pkgs []zest.RpmPackageResponse) []api.SnapshotPackageDiffItem {
+	items := make([]api.SnapshotPackageDiffItem, 0, len(pkgs))
+	for _, pkg := range pkgs {
+		items = append(items, api.SnapshotPackageDiffItem{
+			Name:    pkg.GetName(),
+			Version: pkg.GetVersion(),
+			Release: pkg.GetRelease(),
+			Arch:    pkg.GetArch(),
+		})
+	}
+
+	slices.SortFunc(items, func(a, b api.SnapshotPackageDiffItem) int {
+		if diff := strings.Compare(a.Name, b.Name); diff != 0 {
+			return diff
+		}
+		if diff := strings.Compare(a.Version, b.Version); diff != 0 {
+			return diff
+		}
+		if diff := strings.Compare(a.Release, b.Release); diff != 0 {
+			return diff
+		}
+		return strings.Compare(a.Arch, b.Arch)
+	})
+
+	return items
 }

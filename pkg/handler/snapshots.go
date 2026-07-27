@@ -47,6 +47,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry, taskClie
 
 	addRepoRoute(group, http.MethodPost, "/snapshots/for_date/", sh.listSnapshotsByDate, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/snapshots/", sh.listSnapshotsForRepo, rbac.RbacVerbRead)
+	addRepoRoute(group, http.MethodGet, "/repositories/:repo_uuid/snapshots/:snapshot_uuid", sh.getSnapshot, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/repositories/:uuid/config.repo", sh.getLatestRepoConfigurationFile, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/snapshots/:snapshot_uuid/config.repo", sh.getRepoConfigurationFile, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/templates/:uuid/snapshots/", sh.listSnapshotsForTemplate, rbac.RbacVerbRead)
@@ -120,6 +121,34 @@ func (sh *SnapshotHandler) listSnapshotsForRepo(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
 	return c.JSON(200, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
+}
+
+// Get Snapshot godoc
+// @Summary      Get snapshot detail
+// @ID           getSnapshot
+// @Description  Get the details of a repository snapshot, including the package diff.
+// @Tags         snapshots
+// @Accept       json
+// @Produce      json
+// @Param        repo_uuid path string true "Repository ID."
+// @Param        snapshot_uuid path string true "Snapshot ID."
+// @Success      200 {object} api.SnapshotDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{repo_uuid}/snapshots/{snapshot_uuid} [get]
+func (sh *SnapshotHandler) getSnapshot(c echo.Context) error {
+	repoUUID := c.Param("repo_uuid")
+	snapshotUUID := c.Param("snapshot_uuid")
+	_, orgID := getAccountIdOrgId(c)
+
+	snapshot, err := sh.DaoRegistry.Snapshot.FetchDetailForRepo(c.Request().Context(), orgID, repoUUID, snapshotUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshot", err.Error())
+	}
+
+	return c.JSON(http.StatusOK, snapshot)
 }
 
 // Get Snapshots godoc

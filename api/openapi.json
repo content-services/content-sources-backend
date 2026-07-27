@@ -1692,6 +1692,76 @@
                 },
                 "type": "object"
             },
+            "api.SnapshotDetailResponse": {
+                "properties": {
+                    "added_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "description": "Count of each content type",
+                        "type": "object"
+                    },
+                    "added_packages": {
+                        "description": "Packages added in this snapshot",
+                        "items": {
+                            "$ref": "#/components/schemas/api.SnapshotPackageDiffItem"
+                        },
+                        "type": "array"
+                    },
+                    "content_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "description": "Count of each content type",
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "description": "Datetime the snapshot was created",
+                        "type": "string"
+                    },
+                    "detected_os_version": {
+                        "description": "Release version of the repository (BaseOS)",
+                        "type": "string"
+                    },
+                    "removed_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "description": "Count of each content type",
+                        "type": "object"
+                    },
+                    "removed_packages": {
+                        "description": "Packages removed in this snapshot",
+                        "items": {
+                            "$ref": "#/components/schemas/api.SnapshotPackageDiffItem"
+                        },
+                        "type": "array"
+                    },
+                    "repository_name": {
+                        "description": "Name of repository the snapshot belongs to",
+                        "type": "string"
+                    },
+                    "repository_path": {
+                        "description": "Path to repository snapshot contents",
+                        "type": "string"
+                    },
+                    "repository_uuid": {
+                        "description": "UUID of the repository the snapshot belongs to",
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "URL to the snapshot's content",
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.SnapshotErrata": {
                 "properties": {
                     "cves": {
@@ -1787,6 +1857,27 @@
                     },
                     "repository_uuid": {
                         "description": "Repository uuid for associated snapshot",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.SnapshotPackageDiffItem": {
+                "properties": {
+                    "arch": {
+                        "description": "RPM architecture of the changed package",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Name of the changed package",
+                        "type": "string"
+                    },
+                    "release": {
+                        "description": "RPM release of the changed package",
+                        "type": "string"
+                    },
+                    "version": {
+                        "description": "Raw RPM version of the changed package",
                         "type": "string"
                     }
                 },
@@ -3896,6 +3987,86 @@
                     }
                 },
                 "summary": "Delete a snapshot",
+                "tags": [
+                    "snapshots"
+                ]
+            },
+            "get": {
+                "description": "Get the details of a repository snapshot, including the package diff.",
+                "operationId": "getSnapshot",
+                "parameters": [
+                    {
+                        "description": "Repository ID.",
+                        "in": "path",
+                        "name": "repo_uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Snapshot ID.",
+                        "in": "path",
+                        "name": "snapshot_uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.SnapshotDetailResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get snapshot detail",
                 "tags": [
                     "snapshots"
                 ]

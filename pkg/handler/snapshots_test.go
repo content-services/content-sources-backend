@@ -16,6 +16,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -197,6 +198,131 @@ func (suite *SnapshotSuite) TestSnapshotList() {
 	assert.Equal(t, collection.Data[0].RepositoryPath, response.Data[0].RepositoryPath)
 	assert.Equal(t, collection.Data[0].UUID, response.Data[0].UUID)
 	assert.Equal(t, collection.Data[0].URL, response.Data[0].URL)
+}
+
+func (suite *SnapshotSuite) TestGetSnapshot() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+	detail := api.SnapshotDetailResponse{
+		SnapshotResponse: api.SnapshotResponse{
+			UUID:           snapshotUUID,
+			RepositoryUUID: repoUUID,
+			RepositoryPath: "detail-domain/path/to/snapshot",
+			URL:            "http://pulp-content/pulp/content/detail-domain/path/to/snapshot/",
+		},
+		AddedPackages: []api.SnapshotPackageDiffItem{
+			{Name: "bash", Version: "5.2.0", Release: "3.el9", Arch: "x86_64"},
+		},
+		RemovedPackages: []api.SnapshotPackageDiffItem{
+			{Name: "coreutils", Version: "9.4", Release: "1.el9", Arch: "aarch64"},
+		},
+	}
+
+	suite.reg.Snapshot.On("FetchDetailForRepo", test.MockCtx(), test_handler.MockOrgId, repoUUID, snapshotUUID).Return(detail, nil).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+
+	response := api.SnapshotDetailResponse{}
+	err = json.Unmarshal(body, &response)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, detail.UUID, response.UUID)
+	assert.Equal(t, detail.RepositoryUUID, response.RepositoryUUID)
+	assert.Equal(t, detail.AddedPackages, response.AddedPackages)
+	assert.Equal(t, detail.RemovedPackages, response.RemovedPackages)
+}
+
+func (suite *SnapshotSuite) TestGetSnapshotRepoNotFound() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+	suite.reg.Snapshot.On(
+		"FetchDetailForRepo",
+		test.MockCtx(),
+		test_handler.MockOrgId,
+		repoUUID,
+		snapshotUUID,
+	).Return(api.SnapshotDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Repository not found"}).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *SnapshotSuite) TestGetSnapshotNotFound() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+	suite.reg.Snapshot.On(
+		"FetchDetailForRepo",
+		test.MockCtx(),
+		test_handler.MockOrgId,
+		repoUUID,
+		snapshotUUID,
+	).Return(api.SnapshotDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Snapshot not found"}).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *SnapshotSuite) TestGetSnapshotNotInRepo() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+	suite.reg.Snapshot.On(
+		"FetchDetailForRepo",
+		test.MockCtx(),
+		test_handler.MockOrgId,
+		repoUUID,
+		snapshotUUID,
+	).Return(api.SnapshotDetailResponse{}, &ce.DaoError{
+		NotFound: true,
+		Message:  "snapshot with this UUID does not exist for the specified repository",
+	}).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *SnapshotSuite) TestGetSnapshotDaoError() {
+	t := suite.T()
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+	suite.reg.Snapshot.On("FetchDetailForRepo", test.MockCtx(), test_handler.MockOrgId, repoUUID, snapshotUUID).
+		Return(api.SnapshotDetailResponse{}, errors.New("test error")).Once()
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusInternalServerError, code)
 }
 
 func (suite *SnapshotSuite) TestGetRepositoryConfigurationFile() {

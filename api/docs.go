@@ -1062,6 +1062,68 @@ const docTemplate = `{
             }
         },
         "/repositories/{repo_uuid}/snapshots/{snapshot_uuid}": {
+            "get": {
+                "description": "Get the details of a repository snapshot, including the package diff.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "snapshots"
+                ],
+                "summary": "Get snapshot detail",
+                "operationId": "getSnapshot",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository ID.",
+                        "name": "repo_uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Snapshot ID.",
+                        "name": "snapshot_uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.SnapshotDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "This enables deleting a specific snapshot.",
                 "tags": [
@@ -5925,6 +5987,76 @@ const docTemplate = `{
                 }
             }
         },
+        "api.SnapshotDetailResponse": {
+            "type": "object",
+            "properties": {
+                "added_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "added_packages": {
+                    "description": "Packages added in this snapshot",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotPackageDiffItem"
+                    }
+                },
+                "content_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "created_at": {
+                    "description": "Datetime the snapshot was created",
+                    "type": "string"
+                },
+                "detected_os_version": {
+                    "description": "Release version of the repository (BaseOS)",
+                    "type": "string"
+                },
+                "removed_counts": {
+                    "description": "Count of each content type",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "removed_packages": {
+                    "description": "Packages removed in this snapshot",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.SnapshotPackageDiffItem"
+                    }
+                },
+                "repository_name": {
+                    "description": "Name of repository the snapshot belongs to",
+                    "type": "string"
+                },
+                "repository_path": {
+                    "description": "Path to repository snapshot contents",
+                    "type": "string"
+                },
+                "repository_uuid": {
+                    "description": "UUID of the repository the snapshot belongs to",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL to the snapshot's content",
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "api.SnapshotErrata": {
             "type": "object",
             "properties": {
@@ -6021,6 +6153,27 @@ const docTemplate = `{
                 },
                 "repository_uuid": {
                     "description": "Repository uuid for associated snapshot",
+                    "type": "string"
+                }
+            }
+        },
+        "api.SnapshotPackageDiffItem": {
+            "type": "object",
+            "properties": {
+                "arch": {
+                    "description": "RPM architecture of the changed package",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the changed package",
+                    "type": "string"
+                },
+                "release": {
+                    "description": "RPM release of the changed package",
+                    "type": "string"
+                },
+                "version": {
+                    "description": "Raw RPM version of the changed package",
                     "type": "string"
                 }
             }
