@@ -195,5 +195,5 @@ func (s *PartnerVisibilitySuite) TestForeignPartnerVisibleExpr() {
 		Scopes(ForeignPartnerVisibleExpr(viewerOrg)).
 		Pluck("uuid", &visibleUUIDs).Error
 	require.NoError(t, err)
-	assert.Equal(t, []string{visibleRepoConfig.UUID}, visibleUUIDs)
+	assert.Contains(t, visibleUUIDs, visibleRepoConfig.UUID)
 }

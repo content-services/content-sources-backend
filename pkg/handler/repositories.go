@@ -102,6 +102,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Param		 extended_release query string false "A comma separated list of extended release types to filter on (eus, e4s), or 'none' to filter out extended release repositories"
 // @Param		 extended_release_version query string false "A comma separated list of extended release versions to filter on (e.g. 9.4,9.6). Use 'none' to filter repositories without extended release versions."
 // @Param		 feature_name query string false "A comma separated list of feature names to filter on (e.g. feature1,feature2)"
+// @Param		 partner query string false "Filter repositories by type partner"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.RepositoryCollectionResponse

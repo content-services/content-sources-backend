@@ -176,6 +176,7 @@ func (s *DaoSuite) SetupTest() {
 	// s.tx = s.db
 	s.SeedPreexistingRHRepo()
 	s.SeedPreexistingCommunityRepo()
+	s.SeedPreexistingPartnerRepo()
 }
 
 // SeedPreexistingRHRepo seeds a red hat repo with a snapshot task to verify that tests with Red Hat repo filters
@@ -201,6 +202,27 @@ func (s *DaoSuite) SeedPreexistingCommunityRepo() {
 	require.NoError(s.T(), err)
 	_, err = seeds.SeedTasks(s.tx, 1,
 		seeds.TaskSeedOptions{OrgID: config.CommunityOrg,
+			RepoConfigUUID: repoConfigs[0].UUID,
+			Typename:       config.RepositorySnapshotTask,
+			Status:         config.TaskStatusCompleted})
+	require.NoError(s.T(), err)
+}
+
+// SeedPreexistingPartnerRepo seeds a partner repo with a published snapshot to verify that tests
+// account for preexisting partner repos visible via the foreign-partner visibility clause.
+func (s *DaoSuite) SeedPreexistingPartnerRepo() {
+	partnerOrg := seeds.RandomOrgId()
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{
+		OrgID:   partnerOrg,
+		Origin:  utils.Ptr(config.OriginUpload),
+		Partner: utils.Ptr(true),
+	})
+	require.NoError(s.T(), err)
+	snaps, err := seeds.SeedSnapshots(s.tx, repoConfigs[0].UUID, 1)
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.tx.Model(&snaps[0]).Update("published", true).Error)
+	_, err = seeds.SeedTasks(s.tx, 1,
+		seeds.TaskSeedOptions{OrgID: partnerOrg,
 			RepoConfigUUID: repoConfigs[0].UUID,
 			Typename:       config.RepositorySnapshotTask,
 			Status:         config.TaskStatusCompleted})

@@ -603,6 +603,7 @@ func (r repositoryConfigDaoImpl) List(
 		}
 	}
 
+	applyPartnerResponseOverrides(ctx, r.db, repoConfigs, OrgID)
 	repos := convertToResponses(repoConfigs, contentPath)
 
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
@@ -610,7 +611,11 @@ func (r repositoryConfigDaoImpl) List(
 
 func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
 	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg, config.LightwellDemoOrg}
-	filteredDB = filteredDB.Where("repository_configurations.org_id in ?", orgs).
+	filteredDB = filteredDB.
+		Where(
+			r.db.Where("repository_configurations.org_id in ?", orgs).
+				Or(foreignPartnerVisibleSQL, OrgID),
+		).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	if filterData.Name != "" {
@@ -725,6 +730,13 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 			FROM unnest(string_to_array(repository_configurations.feature_name, ',')) AS t(token)
 			WHERE btrim(t.token) IN ?
 		)`, features)
+	}
+
+	switch filterData.Partner {
+	case "true":
+		filteredDB = filteredDB.Where("repository_configurations.partner = true")
+	case "false":
+		filteredDB = filteredDB.Where("repository_configurations.partner = false")
 	}
 
 	if filterData.ExtendedRelease == "none" {
@@ -845,25 +857,35 @@ func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid s
 			return api.RepositoryResponse{}, err
 		}
 	}
-	repo = convertToResponses([]models.RepositoryConfiguration{repoConfig}, contentPath)[0]
+	repoConfigs := []models.RepositoryConfiguration{repoConfig}
+	applyPartnerResponseOverrides(ctx, r.db, repoConfigs, orgID)
+	repo = convertToResponses(repoConfigs, contentPath)[0]
 
 	return repo, nil
 }
 
-// fetchRepConfig: "includeSharedRepos" allows the fetching of red_hat and community repositories
+// fetchRepoConfig: "includeSharedRepos" allows the fetching of red_hat, community,
+// lightwell, and foreign partner repositories (partner repos require a published snapshot).
 func (r repositoryConfigDaoImpl) fetchRepoConfig(ctx context.Context, orgID string, uuid string, includeSharedRepos bool) (models.RepositoryConfiguration, error) {
 	found := models.RepositoryConfiguration{}
 
 	orgIdsToCheck := []string{orgID}
 
+	query := r.db.WithContext(ctx).
+		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask")
+
 	if includeSharedRepos {
 		orgIdsToCheck = append(orgIdsToCheck, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg, config.LightwellDemoOrg)
+		query = query.Where("UUID = ?", UuidifyString(uuid)).
+			Where(
+				r.db.Where("ORG_ID IN ?", orgIdsToCheck).
+					Or(foreignPartnerVisibleSQL, orgID),
+			)
+	} else {
+		query = query.Where("UUID = ? AND ORG_ID IN ?", UuidifyString(uuid), orgIdsToCheck)
 	}
 
-	result := r.db.WithContext(ctx).
-		Preload("Repository").Preload("LastSnapshot").Preload("LastSnapshotTask").
-		Where("UUID = ? AND ORG_ID IN ?", UuidifyString(uuid), orgIdsToCheck).
-		First(&found)
+	result := query.First(&found)
 
 	if result.Error != nil {
 		return found, RepositoryDBErrorToApi(result.Error, &uuid)
@@ -1647,6 +1669,35 @@ func ModelToImportRepoApi(model models.RepositoryConfiguration, warnings []map[s
 		resp.Warnings = warnings
 	} else {
 		resp.Warnings = []map[string]interface{}{}
+	}
+}
+
+// applyPartnerResponseOverrides masks a foreign partner repo as a community repo
+// and ensures LastSnapshot points to the latest published snapshot.
+func applyPartnerResponseOverrides(ctx context.Context, db *gorm.DB, repoConfigs []models.RepositoryConfiguration, viewerOrgID string) {
+	for i := range repoConfigs {
+		if !IsForeignPartnerView(repoConfigs[i], viewerOrgID) {
+			continue
+		}
+		repoConfigs[i].Repository.Origin = config.OriginCommunity
+		repoConfigs[i].OrgID = config.CommunityOrg
+		repoConfigs[i].AccountID = ""
+
+		if repoConfigs[i].LastSnapshot != nil && repoConfigs[i].LastSnapshot.Published {
+			continue
+		}
+		var snap models.Snapshot
+		err := db.WithContext(ctx).
+			Where("repository_configuration_uuid = ? AND published = true AND deleted_at IS NULL", repoConfigs[i].UUID).
+			Order("created_at DESC").
+			First(&snap).Error
+		if err != nil {
+			repoConfigs[i].LastSnapshotUUID = ""
+			repoConfigs[i].LastSnapshot = nil
+			continue
+		}
+		repoConfigs[i].LastSnapshotUUID = snap.UUID
+		repoConfigs[i].LastSnapshot = &snap
 	}
 }
 
