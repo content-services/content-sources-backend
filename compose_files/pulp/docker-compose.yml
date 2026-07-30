@@ -1,6 +1,7 @@
 services:
   postgres:
     image: "docker.io/library/postgres:16"
+    pull_policy: always
     ports:
       - "${PULP_DATABASE_PORT:-5432}:5432"
     environment:
@@ -21,6 +22,7 @@ services:
 
   migration_service:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    pull_policy: always
     platform: linux/amd64
     depends_on:
       postgres:
@@ -34,6 +36,7 @@ services:
 
   set_init_password_service:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    pull_policy: always
     platform: linux/amd64
     command: set_init_password.sh
     depends_on:
@@ -48,6 +51,7 @@ services:
 
   redis:
     image: "docker.io/library/redis:latest"
+    pull_policy: always
     volumes:
       - "redis_data:/data"
     restart: always
@@ -56,6 +60,7 @@ services:
 
   pulp_api:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    pull_policy: always
     platform: linux/amd64
     deploy:
       replicas: 1
@@ -86,6 +91,7 @@ services:
 
   pulp_content:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    pull_policy: always
     platform: linux/amd64
     deploy:
       replicas: 1
@@ -112,6 +118,7 @@ services:
 
   pulp_worker:
     image: "quay.io/redhat-services-prod/pulp-services-tenant/pulp:latest"
+    pull_policy: always
     platform: linux/amd64
     deploy:
       replicas: 2
@@ -137,6 +144,7 @@ services:
 
   pulp_proxy:
     image: docker.io/library/nginx:latest
+    pull_policy: always
     ports:
       - "8443:443"
     volumes:
