@@ -2,6 +2,7 @@
 services:
   postgres-content:
     image: "docker.io/library/postgres:16"
+    pull_policy: always
     ports:
       - ${CONTENT_DATABASE_PORT:-5433}:5432
     environment:
@@ -21,6 +22,7 @@ services:
       timeout: 3s
   candlepin:
     image: quay.io/candlepin/candlepin:dev-latest
+    pull_policy: always
     ports:
       - 8181:8080
       - 8444:8443
@@ -36,6 +38,7 @@ services:
       timeout: 3s
   kafka:
     image: docker.io/apache/kafka:latest
+    pull_policy: always
     ports:
       - "9092:9092"
     environment:
@@ -56,10 +59,12 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
   redis-content:
     image: docker.io/redis
+    pull_policy: always
     ports:
       - "6379:6379"
   minio:
     image: quay.io/minio/minio
+    pull_policy: always
     hostname: minio
     command: server /data --console-address ":9001"
     ports:
