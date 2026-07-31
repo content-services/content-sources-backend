@@ -85,3 +85,15 @@ func CheckAdminPartnerRepositoriesAccessible(ctx context.Context) (err error) {
 			"Neither the user nor account is allowed.")
 	}
 }
+
+func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.AdminNotifications.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot send test notifications",
+			"Admin notifications feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.AdminNotifications) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot send test notifications",
+			"Neither the user nor account is allowed.")
+	}
+}

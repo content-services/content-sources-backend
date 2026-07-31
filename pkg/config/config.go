@@ -79,6 +79,7 @@ type FeatureSet struct {
 	ExtendedReleaseRepos     Feature `mapstructure:"extended_release_repos"`
 	Lightwell                Feature `mapstructure:"lightwell"`
 	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
+	AdminNotifications       Feature `mapstructure:"admin_notifications"`
 }
 
 type Feature struct {
@@ -438,6 +439,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_partner_repositories.accounts", nil)
 	v.SetDefault("features.admin_partner_repositories.organizations", nil)
 	v.SetDefault("features.admin_partner_repositories.users", nil)
+	v.SetDefault("features.admin_notifications.enabled", false)
+	v.SetDefault("features.admin_notifications.accounts", nil)
+	v.SetDefault("features.admin_notifications.organizations", nil)
+	v.SetDefault("features.admin_notifications.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
