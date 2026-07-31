@@ -325,8 +325,9 @@ func (s *MavenPackagesSuite) fetchPackagesFromDistribution(repo api.RepositoryRe
 	require.NoError(t, err)
 	require.NotEmpty(t, freshRepo.PublishedDistURL, "Repository should have a published distribution URL")
 
-	// Fetch each package through the distribution
-	client := http.Client{Timeout: 10 * time.Second}
+	// Fetch each package through the distribution. The body must be fully read so Pulp's
+	// on-demand download completes and caches the artifact (closing early can abort jars).
+	client := http.Client{Timeout: 60 * time.Second}
 	for _, path := range paths {
 		url := freshRepo.PublishedDistURL + path
 
@@ -339,13 +340,13 @@ func (s *MavenPackagesSuite) fetchPackagesFromDistribution(repo api.RepositoryRe
 		req.Header.Add(api.IdentityHeader, base64.StdEncoding.EncodeToString(js))
 
 		resp, err := client.Do(req)
-		if err == nil {
-			resp.Body.Close()
-			// We don't care if it's a 404 or success - we're just triggering Pulp to fetch it
-			log.Info().Msgf("Fetched package from distribution: %s (status: %d)", path, resp.StatusCode)
-		} else {
-			log.Warn().Err(err).Msgf("Failed to fetch package from distribution: %s", path)
-		}
+		require.NoError(t, err, "Failed to fetch package from distribution: %s", path)
+		_, copyErr := io.Copy(io.Discard, resp.Body)
+		closeErr := resp.Body.Close()
+		require.NoError(t, copyErr, "Failed to read package body from distribution: %s", path)
+		require.NoError(t, closeErr)
+		require.Equal(t, http.StatusOK, resp.StatusCode, "Expected successful fetch from distribution: %s", path)
+		log.Info().Msgf("Fetched package from distribution: %s (status: %d)", path, resp.StatusCode)
 	}
 }
 
