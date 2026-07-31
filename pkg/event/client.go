@@ -2,6 +2,8 @@ package event
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
@@ -76,6 +78,53 @@ func SetEmptyToNil(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func SendTestNotification(orgID string, payload json.RawMessage) (json.RawMessage, error) {
+	if config.Get().NotificationsClient == nil {
+		return nil, fmt.Errorf("notifications client is not configured")
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(payload, &body); err != nil {
+		return nil, fmt.Errorf("failed to parse notification payload: %w", err)
+	}
+
+	body["org_id"] = orgID
+
+	overriddenPayload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal notification payload: %w", err)
+	}
+
+	bundle, _ := body["bundle"].(string)
+	eventType, _ := body["event_type"].(string)
+
+	newUUID, _ := uuid.NewRandom()
+	e := cloudevents.NewEvent()
+	e.SetID(newUUID.String())
+	e.SetSource("urn:redhat:source:console:app:repositories")
+	e.SetType("com.redhat.console.repositories." + eventType)
+	e.SetSubject("urn:redhat:subject:console:rhel:" + eventType)
+	e.SetTime(time.Now())
+	e.SetExtension("redhatorgid", orgID)
+	e.SetExtension("redhatconsolebundle", bundle)
+
+	if err := e.SetData(cloudevents.ApplicationJSON, overriddenPayload); err != nil {
+		return nil, fmt.Errorf("failed to set event data: %w", err)
+	}
+
+	ctx := cloudevents.WithEncodingStructured(context.Background())
+	if result := config.Get().NotificationsClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
+		return nil, fmt.Errorf("notification message failed to send: %v", result)
+	}
+
+	sent, err := e.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal sent event: %w", err)
+	}
+
+	return sent, nil
 }
 
 // SendTemplateEvent - Sends an event about a template to the patch service
