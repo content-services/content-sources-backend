@@ -151,7 +151,7 @@ func (r *pulpDaoImpl) CreateDomain(ctx context.Context, name string) (string, er
 		emptyConfig["location"] = fmt.Sprintf("/var/lib/pulp/%v/", name)
 		domain = *zest.NewDomain(name, localStorage, emptyConfig)
 	}
-	domain.SetPulpLabels(map[string]string{"contentsources": "true"})
+	domain.SetPulpLabels(map[string]*string{"contentsources": utils.Ptr("true")})
 	domainResp, resp, err := client.DomainsAPI.DomainsCreate(ctx, DefaultDomain).Domain(domain).Execute()
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
