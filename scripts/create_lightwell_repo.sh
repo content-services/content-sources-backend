@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Creates Maven and Python repositories in Pulp and imports them into the
 # application as lightwell repositories.
@@ -7,10 +7,16 @@
 # the corresponding Pulp remotes, repositories, and distributions under
 # the appropriate domains, then runs the Go importer.
 #
+# Idempotent: existing distributions (matched by base_path) are reused;
+# Maven populate and the CS import always run.
+#
+# Requires bash 4+ (readarray, etc.). On macOS use Homebrew/MacPorts bash
+# (e.g. /opt/local/bin/bash) rather than the system /bin/bash 3.2.
+#
 # Intended for local development against the Pulp instance started via docker-compose.
 #
 # Usage:
-#   ./scripts/create_maven_repo.sh [--remote-url URL]
+#   ./scripts/create_lightwell_repo.sh [--remote-url URL]
 #
 # Auth:
 #   Basic auth (default): set PULP_USER and PULP_PASS
@@ -18,6 +24,14 @@
 #              Leave PULP_USER unset or empty to use cert auth.
 
 set -euo pipefail
+
+if (( BASH_VERSINFO[0] < 4 )); then
+  echo "ERROR: bash 4+ required (found ${BASH_VERSION})." >&2
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "On macOS, run 'ports install bash' or 'brew install bash'." >&2
+  fi
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Configuration (override with environment variables)
@@ -178,10 +192,33 @@ ensure_domain() {
   fi
 }
 
-# Creates a remote, repository, and distribution in Pulp for the given type.
-#   create_pulp_repo <DOMAIN_NAME> <TYPE> <BASE_PATH> <REMOTE_URL>
+# Looks up a distribution by base_path. Sets RESULT to pulp_href or empty.
+#   find_distribution_by_base_path <DOMAIN_NAME> <DIST_API_TYPE> <BASE_PATH>
+find_distribution_by_base_path() {
+  local domain_name="$1"
+  local dist_api_type="$2"
+  local base_path="$3"
+  local encoded_base_path
+  encoded_base_path=$(jq -nr --arg p "$base_path" '$p|@uri')
+
+  local dist_results
+  dist_results=$(pulp_api GET \
+    "${API_ROOT}/${domain_name}/api/v3/distributions/${dist_api_type}/?base_path=${encoded_base_path}")
+  local dist_count
+  dist_count=$(echo "$dist_results" | jq -r '.count // 0')
+
+  if [[ "$dist_count" != "0" && "$dist_count" != "null" ]]; then
+    RESULT=$(echo "$dist_results" | jq -r '.results[0].pulp_href')
+  else
+    RESULT=""
+  fi
+}
+
+# Ensures a remote, repository, and distribution exist in Pulp for the given
+# type. Reuses an existing distribution matched by base_path.
+#   ensure_pulp_repo <DOMAIN_NAME> <TYPE> <BASE_PATH> <REMOTE_URL>
 #   TYPE is "maven" or "python"
-create_pulp_repo() {
+ensure_pulp_repo() {
   local domain_name="$1"
   local repo_type="$2"
   local base_path="$3"
@@ -193,6 +230,13 @@ create_pulp_repo() {
     python) api_type="python/python"; dist_api_type="python/pypi" ;;
     *)      echo "ERROR: Unsupported repo type: ${repo_type}" >&2; exit 1 ;;
   esac
+
+  echo "==> Looking up ${repo_type} distribution (base_path=${base_path})..."
+  find_distribution_by_base_path "$domain_name" "$dist_api_type" "$base_path"
+  if [[ -n "$RESULT" ]]; then
+    echo "    Distribution already exists: ${RESULT}"
+    return 0
+  fi
 
   local name_slug
   name_slug=$(echo "$base_path" | tr '/' '-')
@@ -319,7 +363,7 @@ populate_maven_repo() {
   echo "    Fetched ${success}/${count} packages successfully."
 }
 
-# Creates repos from a JSON allowlist file under the given domain.
+# Ensures repos from a JSON allowlist file under the given domain.
 #   create_repos_from_json <DOMAIN_NAME> <JSON_FILE>
 create_repos_from_json() {
   local domain_name="$1"
@@ -340,11 +384,11 @@ create_repos_from_json() {
 
     case "$entry_type" in
       maven)
-        create_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
+        ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
         populate_maven_repo "$domain_name" "$entry_base_path"
         ;;
       python)
-        create_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
+        ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
         ;;
       *)
         echo "WARN: Skipping unsupported type '${entry_type}' for ${entry_name}"
