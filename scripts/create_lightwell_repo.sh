@@ -12,6 +12,7 @@
 #
 # Requires bash 4+ (readarray, etc.). On macOS use Homebrew/MacPorts bash
 # (e.g. /opt/local/bin/bash) rather than the system /bin/bash 3.2.
+# Also requires GNU coreutils shuf (gshuf on macOS via ports/brew coreutils).
 #
 # Intended for local development against the Pulp instance started via docker-compose.
 #
@@ -29,6 +30,27 @@ if (( BASH_VERSINFO[0] < 4 )); then
   echo "ERROR: bash 4+ required (found ${BASH_VERSION})." >&2
   if [[ "$(uname -s)" == "Darwin" ]]; then
     echo "On macOS, run 'ports install bash' or 'brew install bash'." >&2
+  fi
+  exit 1
+fi
+
+# Resolve GNU shuf: on Darwin also accept gshuf (MacPorts/Homebrew coreutils).
+SHUF_CANDIDATES=(shuf)
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  SHUF_CANDIDATES=(gshuf shuf)
+fi
+
+SHUF_CMD=""
+for candidate in "${SHUF_CANDIDATES[@]}"; do
+  if command -v "$candidate" >/dev/null 2>&1; then
+    SHUF_CMD="$candidate"
+    break
+  fi
+done
+if [[ -z "$SHUF_CMD" ]]; then
+  echo "ERROR: ${SHUF_CANDIDATES[*]} required (GNU coreutils)." >&2
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "On macOS, run 'ports install coreutils' or 'brew install coreutils'." >&2
   fi
   exit 1
 fi
@@ -327,7 +349,7 @@ MAVEN_DEAL_INDEX=0
 # gets distinct packages.
 #   populate_maven_repo <DOMAIN_NAME> <BASE_PATH>
 populate_maven_repo() {
-  readarray -t SHUFFLED_MAVEN_PACKAGES < <(printf '%s\n' "${MAVEN_PACKAGES[@]}" | shuf)
+  readarray -t SHUFFLED_MAVEN_PACKAGES < <(printf '%s\n' "${MAVEN_PACKAGES[@]}" | "$SHUF_CMD")
   local domain_name="$1"
   local base_path="$2"
   local content_url="${PULP_CONTENT_URL}/api/pulp-content/${domain_name}/${base_path}"
