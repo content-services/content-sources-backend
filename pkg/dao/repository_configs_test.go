@@ -4104,6 +4104,57 @@ func (s *RepositoryConfigSuite) TestSetPartnerRepo_UnmarkWithDeletedPublishedSna
 	assert.False(t, updated.Partner)
 }
 
+func (s *RepositoryConfigSuite) TestSetPartnerRepo_DoesNotDuplicateRepositoryOrMoveRpms() {
+	t := s.T()
+	ctx := context.Background()
+	dao := s.getRepoConfigDao()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "partner no dup repo", false)
+
+	rpm := models.Rpm{
+		Base:     models.Base{UUID: uuid.NewString()},
+		Name:     "partner-pkg",
+		Arch:     "x86_64",
+		Version:  "1.0",
+		Release:  "1",
+		Epoch:    0,
+		Summary:  "pkg",
+		Checksum: uuid.NewString(),
+	}
+	require.NoError(t, s.tx.Create(&rpm).Error)
+	require.NoError(t, s.tx.Create(&models.RepositoryRpm{
+		RepositoryUUID: repo.UUID,
+		RpmUUID:        rpm.UUID,
+	}).Error)
+
+	var repoCountBefore int64
+	require.NoError(t, s.tx.Model(&models.Repository{}).
+		Where("origin = ?", config.OriginUpload).
+		Count(&repoCountBefore).Error)
+
+	err := dao.SetPartnerRepo(ctx, repoConfig.UUID, true)
+	require.NoError(t, err)
+
+	var updated models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("uuid = ?", repoConfig.UUID).First(&updated).Error)
+	assert.True(t, updated.Partner)
+	assert.Equal(t, repo.UUID, updated.RepositoryUUID, "config must keep pointing at the original repository")
+
+	var repoCountAfter int64
+	require.NoError(t, s.tx.Model(&models.Repository{}).
+		Where("origin = ?", config.OriginUpload).
+		Count(&repoCountAfter).Error)
+	assert.Equal(t, repoCountBefore, repoCountAfter, "must not insert an orphan repositories row")
+
+	var linkedRepoUUID string
+	require.NoError(t, s.tx.Model(&models.RepositoryRpm{}).
+		Select("repository_uuid").
+		Where("rpm_uuid = ?", rpm.UUID).
+		Scan(&linkedRepoUUID).Error)
+	assert.Equal(t, repo.UUID, linkedRepoUUID, "rpm join must stay on the original repository")
+}
+
 func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToForeignOrg() {
 	t := suite.T()
 	ownerOrg := seeds.RandomOrgId()

@@ -2172,5 +2172,5 @@ func (r repositoryConfigDaoImpl) SetPartnerRepo(ctx context.Context, repoConfigU
 				Message: "Cannot unmark partner while published snapshots exist; unpublish all snapshots first"}
 		}
 	}
-	return r.db.WithContext(ctx).Model(&repoConfig).Update("partner", partner).Error
+	return r.db.WithContext(ctx).Model(&repoConfig).Omit("Repository").Update("partner", partner).Error
 }
