@@ -13,7 +13,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/helpers"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
+	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/google/uuid"
 )
 
 type UpdateLatestSnapshotPayload struct {
@@ -58,6 +61,8 @@ func UpdateLatestSnapshotHandler(ctx context.Context, task *models.TaskInfo, que
 		domainName:          domainName,
 		rhDomainName:        rhDomainName,
 		communityDomainName: communityDomainName,
+		queue:               queue,
+		task:                task,
 	}
 
 	return t.Run()
@@ -72,13 +77,18 @@ type UpdateLatestSnapshot struct {
 	domainName          string
 	rhDomainName        string
 	communityDomainName string
+	queue               *queue.Queue
+	task                *models.TaskInfo
 }
 
 func (t *UpdateLatestSnapshot) Run() error {
-	var err error
+	repo, err := t.daoReg.RepositoryConfig.FetchWithoutOrgID(t.ctx, t.payload.RepositoryConfigUUID, false)
+	if err != nil {
+		return err
+	}
 
 	var templates []api.TemplateResponse
-	if t.orgID == config.RedHatOrg || t.orgID == config.CommunityOrg {
+	if t.orgID == config.RedHatOrg || t.orgID == config.CommunityOrg || repo.Partner {
 		templates, err = t.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(t.ctx, t.payload.RepositoryConfigUUID, true)
 		if err != nil {
 			return err
@@ -92,24 +102,24 @@ func (t *UpdateLatestSnapshot) Run() error {
 		templates = resp.Data
 	}
 
-	repo, err := t.daoReg.RepositoryConfig.Fetch(t.ctx, t.orgID, t.payload.RepositoryConfigUUID)
-	if err != nil {
-		return err
+	if repo.Partner {
+		hasPublishedSnapshot, err := t.daoReg.Snapshot.HasPublishedSnapshot(t.ctx, repo.UUID)
+		if err != nil {
+			return fmt.Errorf("error checking published snapshots for repository %s: %w", repo.UUID, err)
+		}
+		if !hasPublishedSnapshot {
+			return t.enqueueTemplateRemovalTasks(repo.UUID, templates)
+		}
 	}
 
-	snap, err := t.daoReg.Snapshot.FetchLatestSnapshotModel(t.ctx, repo.UUID)
+	snap, err := t.daoReg.Snapshot.FetchLatestSnapshotForDistribution(t.ctx, repo.UUID)
 	if err != nil {
 		return err
 	}
 
 	for _, template := range templates {
-		switch repo.OrgID {
-		case config.RedHatOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		case config.CommunityOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
-		default:
-			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
+		if err := t.configurePulpClientForRepo(repo); err != nil {
+			return err
 		}
 
 		err = t.updateLatestSnapshot(repo, template, snap)
@@ -126,13 +136,52 @@ func (t *UpdateLatestSnapshot) Run() error {
 	return nil
 }
 
+func (t *UpdateLatestSnapshot) enqueueTemplateRemovalTasks(repoUUID string, templates []api.TemplateResponse) error {
+	if t.queue == nil || t.task == nil {
+		return fmt.Errorf("cannot enqueue template cleanup tasks without queue and parent task metadata")
+	}
+
+	for _, template := range templates {
+		child := queue.Task{
+			Typename: config.UpdateTemplateContentTask,
+			Payload: payloads.UpdateTemplateContentPayload{
+				TemplateUUID:              template.UUID,
+				TriggeredByRepositoryUUID: utils.Ptr(repoUUID),
+			},
+			Dependencies: []uuid.UUID{t.task.Id},
+			OrgId:        template.OrgID,
+			AccountId:    t.task.AccountId,
+			ObjectUUID:   utils.Ptr(template.UUID),
+			ObjectType:   utils.Ptr(string(config.ObjectTypeTemplate)),
+			RequestID:    t.task.RequestID,
+		}
+		if _, err := (*t.queue).Enqueue(&child); err != nil {
+			return fmt.Errorf("error enqueueing template cleanup for template %s: %w", template.UUID, err)
+		}
+	}
+
+	return nil
+}
+
+// configurePulpClientForRepo points the client at the domain that owns the repo's Pulp content.
+// For custom/partner uploads that is always the repo owner's org, which may differ from task.OrgId.
+func (t *UpdateLatestSnapshot) configurePulpClientForRepo(repo api.RepositoryResponse) error {
+	domain, err := repositoryDomain(t.ctx, t.daoReg, repo, t.orgID, t.domainName, t.rhDomainName, t.communityDomainName)
+	if err != nil {
+		return err
+	}
+	t.pulpClient = t.pulpClient.WithDomain(domain)
+	return nil
+}
+
 func (t *UpdateLatestSnapshot) updateLatestSnapshot(repo api.RepositoryResponse, template api.TemplateResponse, snap models.Snapshot) error {
 	distPath, distName, err := getDistPathAndName(repo, template.UUID)
 	if err != nil {
 		return err
 	}
 
-	_, _, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo, snap.PublicationHref, distName, distPath)
+	pdh := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient)
+	_, _, err = pdh.CreateOrUpdateTemplateDistribution(repo, snap, template.OrgID, distName, distPath)
 	if err != nil {
 		return err
 	}

@@ -266,7 +266,7 @@ func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
 	}
-	updateLatestSnapshotTaskID, err := enqueueUpdateLatestSnapshotTask(c, sh.TaskClient, repoUUID, publishTaskID)
+	_, err = enqueueUpdateLatestSnapshotTask(c, sh.TaskClient, repoUUID, publishTaskID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
 	}
@@ -280,7 +280,7 @@ func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
 			continue
 		}
 
-		_, err := enqueueUpdateTemplateContentTask(c, sh.TaskClient, repoUUID, t.UUID, t.OrgID, updateLatestSnapshotTaskID)
+		_, err := enqueueUpdateTemplateContentTask(c, sh.TaskClient, repoUUID, t.UUID, t.OrgID, publishTaskID)
 		if err != nil {
 			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
 		}

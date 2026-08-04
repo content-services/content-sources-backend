@@ -150,7 +150,7 @@ func enqueueUpdateTemplateContentTask(c echo.Context, tc client.TaskClient, repo
 
 	task := queue.Task{
 		Typename:     config.UpdateTemplateContentTask,
-		Payload:      payloads.UpdateTemplateContentPayload{TemplateUUID: templateUUID, RepoConfigUUIDs: []string{repoUUID}},
+		Payload:      payloads.UpdateTemplateContentPayload{TemplateUUID: templateUUID, TriggeredByRepositoryUUID: utils.Ptr(repoUUID)},
 		OrgId:        templateOrg,
 		AccountId:    accountID,
 		ObjectUUID:   utils.Ptr(templateUUID),

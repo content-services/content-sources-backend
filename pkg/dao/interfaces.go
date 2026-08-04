@@ -160,6 +160,7 @@ type SnapshotDao interface {
 	FetchLatestSnapshot(ctx context.Context, repoConfigUUID string) (api.SnapshotResponse, error)
 	FetchLatestSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)
 	FetchLatestPublishedSnapshotModel(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)
+	HasPublishedSnapshot(ctx context.Context, repoConfigUUID string) (bool, error)
 	// FetchLatestSnapshotForDistribution returns the snapshot that should back Pulp "{repo}/latest"
 	// (newest published for partner repos; newest overall otherwise).
 	FetchLatestSnapshotForDistribution(ctx context.Context, repoConfigUUID string) (models.Snapshot, error)

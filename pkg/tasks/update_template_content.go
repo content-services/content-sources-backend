@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
-	"strings"
 	"time"
 
 	caliri "github.com/content-services/caliri/release/v4"
@@ -56,7 +55,7 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 	if template == nil || err != nil {
 		return err
 	}
-	if len(opts.RepoConfigUUIDs) == 0 {
+	if opts.TriggeredByRepositoryUUID == nil && len(opts.RepoConfigUUIDs) == 0 {
 		return fmt.Errorf("update template content: no repository config UUIDs in task payload (template %s)", opts.TemplateUUID)
 	}
 
@@ -93,6 +92,17 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 		queue:               queue,
 		ctx:                 ctxWithLogger,
 		logger:              logger,
+	}
+
+	skip, err := t.prepareTriggeredUpdate()
+	if err != nil {
+		return err
+	}
+	if skip {
+		return nil
+	}
+	if len(opts.RepoConfigUUIDs) == 0 {
+		return fmt.Errorf("update template content: no repository config UUIDs available for template %s", opts.TemplateUUID)
 	}
 
 	err = t.daoReg.Template.UpdateLastError(t.ctx, template.OrgID, template.UUID, "")
@@ -136,6 +146,69 @@ type UpdateTemplateContent struct {
 	queue               *queue.Queue
 	ctx                 context.Context
 	logger              *zerolog.Logger
+}
+
+// prepareTriggeredUpdate turns a publication-triggered task into the complete desired repository
+// state for the template. Publication state is intentionally checked at execution time so a
+// publish/unpublish race cannot remove a repository based on stale handler data.
+func (t *UpdateTemplateContent) prepareTriggeredUpdate() (bool, error) {
+	if t.payload.TriggeredByRepositoryUUID == nil {
+		return false, nil
+	}
+
+	repoUUID := *t.payload.TriggeredByRepositoryUUID
+	repo, err := t.daoReg.RepositoryConfig.FetchWithoutOrgID(t.ctx, repoUUID, false)
+	if err != nil {
+		return false, fmt.Errorf("error fetching triggering repository %s: %w", repoUUID, err)
+	}
+	if !repo.Partner {
+		return false, fmt.Errorf("repository %s triggered partner template reconciliation but is not a partner repository", repoUUID)
+	}
+
+	hasPublishedSnapshot, err := t.daoReg.Snapshot.HasPublishedSnapshot(t.ctx, repoUUID)
+	if err != nil {
+		return false, fmt.Errorf("error checking published snapshots for repository %s: %w", repoUUID, err)
+	}
+
+	t.payload.RepoConfigUUIDs = slices.Clone(t.template.RepositoryUUIDS)
+	isAssociated := slices.Contains(t.payload.RepoConfigUUIDs, repoUUID)
+	if !isAssociated {
+		// A previous attempt may already have removed the association. Keep reconciling the
+		// remaining desired state so Pulp/Candlepin cleanup can complete, but never re-add it.
+		return false, nil
+	}
+
+	if hasPublishedSnapshot {
+		if t.template.UseLatest {
+			// This task can only be a cleanup child of UpdateLatestSnapshot. A new publication
+			// has won the race, and its UpdateLatestSnapshot task owns published selection.
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if !t.template.UseLatest && repo.OrgID == t.template.OrgID {
+		// Owners of fixed-date templates retain access to their unpublished snapshots.
+		return false, nil
+	}
+
+	desired := make([]string, 0, len(t.payload.RepoConfigUUIDs)-1)
+	for _, currentRepoUUID := range t.payload.RepoConfigUUIDs {
+		if currentRepoUUID != repoUUID {
+			desired = append(desired, currentRepoUUID)
+		}
+	}
+	t.payload.RepoConfigUUIDs = desired
+	t.template.RepositoryUUIDS = slices.Clone(desired)
+	if t.logger != nil {
+		t.logger.Info().
+			Str("template_uuid", t.template.UUID).
+			Str("repository_uuid", repoUUID).
+			Bool("use_latest", t.template.UseLatest).
+			Msg("automatically removing partner repository without a published snapshot from template")
+	}
+
+	return false, nil
 }
 
 // RunPulp creates (when a repository is added), updates (if the template date has changed), or removes (when a repository is removed) pulp distributions
@@ -196,28 +269,22 @@ func (t *UpdateTemplateContent) RunPulp() error {
 	if err != nil {
 		return fmt.Errorf("error updating distribution hrefs: %w", err)
 	}
+	err = t.daoReg.Template.UpdateSnapshots(t.ctx, t.payload.TemplateUUID, t.payload.RepoConfigUUIDs, snapshots)
+	if err != nil {
+		return fmt.Errorf("error updating template snapshots: %w", err)
+	}
 
 	return nil
 }
 
 func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots []models.Snapshot, repoConfigDistributionHref map[string]string) error {
 	for _, repoConfigUUID := range reposAdded {
-		repo, err := t.daoReg.RepositoryConfig.Fetch(t.ctx, t.orgId, repoConfigUUID)
+		repo, err := t.daoReg.RepositoryConfig.FetchWithoutOrgID(t.ctx, repoConfigUUID, false)
 		if err != nil {
 			return err
 		}
-		if repo.LastSnapshot == nil {
-			continue
-		}
-
-		// Configure client for org
-		switch repo.OrgID {
-		case config.RedHatOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		case config.CommunityOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
-		default:
-			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
+		if err := t.configurePulpClientForRepo(repo); err != nil {
+			return err
 		}
 
 		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
@@ -233,7 +300,8 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 			return err
 		}
 
-		distHref, _, err := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo, snapshots[snapIndex].PublicationHref, distName, distPath)
+		pdh := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient)
+		distHref, _, err := pdh.CreateOrUpdateTemplateDistribution(repo, snapshots[snapIndex], t.orgId, distName, distPath)
 		if err != nil {
 			return err
 		}
@@ -245,22 +313,12 @@ func (t *UpdateTemplateContent) handleReposAdded(reposAdded []string, snapshots 
 
 func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, snapshots []models.Snapshot, repoConfigDistributionHref map[string]string) error {
 	for _, repoConfigUUID := range reposUnchanged {
-		repo, err := t.daoReg.RepositoryConfig.Fetch(t.ctx, t.orgId, repoConfigUUID)
+		repo, err := t.daoReg.RepositoryConfig.FetchWithoutOrgID(t.ctx, repoConfigUUID, false)
 		if err != nil {
 			return err
 		}
-		if repo.LastSnapshot == nil {
-			continue
-		}
-
-		// Configure client for org
-		switch repo.OrgID {
-		case config.RedHatOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		case config.CommunityOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
-		default:
-			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
+		if err := t.configurePulpClientForRepo(repo); err != nil {
+			return err
 		}
 
 		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
@@ -275,7 +333,8 @@ func (t *UpdateTemplateContent) handleReposUnchanged(reposUnchanged []string, sn
 			return err
 		}
 
-		_, _, err = helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient).CreateOrUpdateDistribution(repo, snapshots[snapIndex].PublicationHref, distName, distPath)
+		pdh := helpers.NewPulpDistributionHelper(t.ctx, t.pulpClient)
+		_, _, err = pdh.CreateOrUpdateTemplateDistribution(repo, snapshots[snapIndex], t.orgId, distName, distPath)
 		if err != nil {
 			return err
 		}
@@ -293,22 +352,12 @@ func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error 
 	logger := LogForTask(t.task.Id.String(), t.task.Typename, t.task.RequestID)
 
 	for _, repoConfigUUID := range reposRemoved {
-		repo, err := t.daoReg.RepositoryConfig.Fetch(t.ctx, t.orgId, repoConfigUUID)
+		repo, err := t.daoReg.RepositoryConfig.FetchWithoutOrgID(t.ctx, repoConfigUUID, false)
 		if err != nil {
 			return err
 		}
-		if repo.LastSnapshot == nil {
-			continue
-		}
-
-		// Configure client for org
-		switch repo.OrgID {
-		case config.RedHatOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.rhDomainName)
-		case config.CommunityOrg:
-			t.pulpClient = t.pulpClient.WithDomain(t.communityDomainName)
-		default:
-			t.pulpClient = t.pulpClient.WithDomain(t.domainName)
+		if err := t.configurePulpClientForRepo(repo); err != nil {
+			return err
 		}
 
 		distHref, err := t.daoReg.Template.GetDistributionHref(t.ctx, t.payload.TemplateUUID, repoConfigUUID)
@@ -335,6 +384,15 @@ func (t *UpdateTemplateContent) handleReposRemoved(reposRemoved []string) error 
 			}
 		}
 	}
+	return nil
+}
+
+func (t *UpdateTemplateContent) configurePulpClientForRepo(repo api.RepositoryResponse) error {
+	domain, err := repositoryDomain(t.ctx, t.daoReg, repo, t.orgId, t.domainName, t.rhDomainName, t.communityDomainName)
+	if err != nil {
+		return err
+	}
+	t.pulpClient = t.pulpClient.WithDomain(domain)
 	return nil
 }
 
@@ -406,7 +464,12 @@ func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 		return err
 	}
 
-	customContent, customContentIDs, rhContentIDs, err := t.getContentList()
+	contentPath, err := t.pulpClient.GetContentPath()
+	if err != nil {
+		return err
+	}
+
+	customContent, customContentIDs, rhContentIDs, err := t.getContentList(contentPath)
 	if err != nil {
 		return err
 	}
@@ -457,12 +520,7 @@ func (t *UpdateTemplateContent) RunCandlepin(env *caliri.EnvironmentDTO) error {
 		}
 	}
 
-	rhContentPath, err := t.pulpClient.GetContentPath()
-	if err != nil {
-		return err
-	}
-
-	overrideDtos, err := GenOverrideDTO(t.ctx, t.daoReg, t.orgId, t.domainName, t.rhDomainName, rhContentPath, t.template, t.payload.RepoConfigUUIDs)
+	overrideDtos, err := GenOverrideDTO(t.ctx, t.daoReg, t.orgId, t.domainName, t.rhDomainName, t.communityDomainName, contentPath, t.template, t.payload.RepoConfigUUIDs)
 	if err != nil {
 		return err
 	}
@@ -527,26 +585,33 @@ func (t *UpdateTemplateContent) demoteContent(repoConfigUUIDs []string) error {
 
 // getContentList return the list of ContentDTO that will be created in Candlepin.
 // Returns list of custom content to be created, a list of custom content IDs, a list of red hat content IDs, and an error.
-func (t *UpdateTemplateContent) getContentList() ([]caliri.ContentDTO, []string, []string, error) {
-	uuids := strings.Join(t.payload.RepoConfigUUIDs, ",")
-	if uuids == "" {
+func (t *UpdateTemplateContent) getContentList(contentPath string) ([]caliri.ContentDTO, []string, []string, error) {
+	if len(t.payload.RepoConfigUUIDs) == 0 {
 		return nil, nil, nil, fmt.Errorf("update template content: no repository config uuids available for template %s", t.payload.TemplateUUID)
 	}
-	repoConfigs, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: strings.Join([]string{config.OriginExternal, config.OriginUpload, config.OriginCommunity}, ",")})
-	if err != nil {
-		return nil, nil, nil, err
+
+	customRepos := make([]api.RepositoryResponse, 0, len(t.payload.RepoConfigUUIDs))
+	rhRepos := make([]api.RepositoryResponse, 0, len(t.payload.RepoConfigUUIDs))
+	for _, repoConfigUUID := range t.payload.RepoConfigUUIDs {
+		repo, err := t.daoReg.RepositoryConfig.FetchWithoutOrgID(t.ctx, repoConfigUUID, false)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if repo.OrgID == config.RedHatOrg {
+			rhRepos = append(rhRepos, repo)
+		} else {
+			customRepos = append(customRepos, repo)
+		}
 	}
 
-	rhRepos, _, err := t.daoReg.RepositoryConfig.List(t.ctx, t.orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: config.OriginRedHat})
+	rhContentIDs, err := t.getRedHatContentIDs(rhRepos)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	rhContentIDs, err := t.getRedHatContentIDs(rhRepos.Data)
+	contentToCreate, customContentIDs, err := t.createContentItems(customRepos, contentPath)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	contentToCreate, customContentIDs := createContentItems(repoConfigs.Data)
 
 	return contentToCreate, customContentIDs, rhContentIDs, nil
 }
@@ -583,7 +648,7 @@ func (t *UpdateTemplateContent) updatePayload() error {
 	return nil
 }
 
-func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []string) {
+func (t *UpdateTemplateContent) createContentItems(repos []api.RepositoryResponse, contentPath string) ([]caliri.ContentDTO, []string, error) {
 	var content []caliri.ContentDTO
 	var contentIDs []string
 
@@ -591,14 +656,35 @@ func createContentItems(repos []api.RepositoryResponse) ([]caliri.ContentDTO, []
 		if repo.OrgID == config.RedHatOrg {
 			continue
 		}
-		if repo.LastSnapshot == nil {
-			continue
+		contentURL, err := t.contentURLForRepo(repo, contentPath)
+		if err != nil {
+			return nil, nil, err
 		}
-		repoContent := GenContentDto(repo)
+		repoContent := genContentDto(repo, contentURL)
 		content = append(content, repoContent)
 		contentIDs = append(contentIDs, *repoContent.Id)
 	}
-	return content, contentIDs
+	return content, contentIDs, nil
+}
+
+func (t *UpdateTemplateContent) contentURLForRepo(repo api.RepositoryResponse, contentPath string) (string, error) {
+	if repo.Origin != config.OriginUpload {
+		return repo.URL, nil
+	}
+
+	domain, err := repositoryDomain(t.ctx, t.daoReg, repo, t.orgId, t.domainName, t.rhDomainName, t.communityDomainName)
+	if err != nil {
+		return "", err
+	}
+	if domain == "" {
+		return "", fmt.Errorf("cannot generate Candlepin content URL for upload repository %s: Pulp domain is empty", repo.UUID)
+	}
+
+	contentURL, err := url.JoinPath(contentPath, domain, repo.UUID, "latest")
+	if err != nil {
+		return "", fmt.Errorf("cannot generate Candlepin content URL for upload repository %s: %w", repo.UUID, err)
+	}
+	return contentURL + "/", nil
 }
 
 func getRepoVendor(repo api.RepositoryResponse) string {
