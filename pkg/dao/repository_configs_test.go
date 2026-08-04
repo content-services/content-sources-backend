@@ -4336,3 +4336,57 @@ func (suite *RepositoryConfigSuite) TestPartnerSnapshotOverrideUsesPublished() {
 	require.NoError(t, err)
 	assert.Equal(t, publishedSnap.UUID, fetched.LastSnapshotUUID, "foreign viewer should see published snapshot, not the raw unpublished one")
 }
+
+func (suite *RepositoryConfigSuite) TestPartnerPackageCountOverrideUsesPublished() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	// Stale package count as if reflecting the latest (unpublished) snapshot.
+	require.NoError(t, suite.tx.Model(&repo).Update("package_count", 100).Error)
+
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-pkg-count-override", true)
+
+	publishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/published-pkg",
+		PublicationHref:             "/pulp/publication/published-pkg",
+		DistributionPath:            "/content/published-pkg",
+		RepositoryPath:              "/content/published-pkg",
+		DistributionHref:            "/pulp/distribution/published-pkg",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(42)},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(t, suite.tx.Create(&publishedSnap).Error)
+
+	unpublishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/unpublished-pkg",
+		PublicationHref:             "/pulp/publication/unpublished-pkg",
+		DistributionPath:            "/content/unpublished-pkg",
+		RepositoryPath:              "/content/unpublished-pkg",
+		DistributionHref:            "/pulp/distribution/unpublished-pkg",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{"rpm.package": int64(100)},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   false,
+	}
+	require.NoError(t, suite.tx.Create(&unpublishedSnap).Error)
+	require.NoError(t, suite.tx.Model(&partnerRC).Update("last_snapshot_uuid", unpublishedSnap.UUID).Error)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	suite.mockPulpForListOrFetch(2)
+
+	fetched, err := rDao.Fetch(context.Background(), viewerOrg, partnerRC.UUID)
+	require.NoError(t, err)
+	assert.Equal(t, 42, fetched.PackageCount, "foreign viewer should see package count from published snapshot content counts")
+
+	fetched, err = rDao.Fetch(context.Background(), ownerOrg, partnerRC.UUID)
+	require.NoError(t, err)
+	assert.Equal(t, 100, fetched.PackageCount, "owner viewer should see package count from latest repo state")
+}
