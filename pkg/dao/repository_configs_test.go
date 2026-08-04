@@ -4171,6 +4171,86 @@ func (suite *RepositoryConfigSuite) TestListPartnerRepoNotVisibleWithoutPublishe
 	}
 }
 
+func (suite *RepositoryConfigSuite) TestListOriginCommunityIncludesForeignPartner() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-origin-community", true)
+
+	publishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/origin-community",
+		PublicationHref:             "/pulp/publication/origin-community",
+		DistributionPath:            "/content/origin-community",
+		RepositoryPath:              "/content/origin-community",
+		DistributionHref:            "/pulp/distribution/origin-community",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(t, suite.tx.Create(&publishedSnap).Error)
+	require.NoError(t, suite.tx.Model(&partnerRC).Update("last_snapshot_uuid", publishedSnap.UUID).Error)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), viewerOrg).Return([]string{}, nil).Once()
+	suite.mockPulpForListOrFetch(1)
+
+	response, total, err := rDao.List(context.Background(), viewerOrg, api.PaginationData{Limit: 100},
+		api.FilterData{Origin: config.OriginCommunity})
+	require.NoError(t, err)
+
+	var found *api.RepositoryResponse
+	for i := range response.Data {
+		if response.Data[i].UUID == partnerRC.UUID {
+			found = &response.Data[i]
+			break
+		}
+	}
+	require.NotNil(t, found, "foreign partner should match origin=community filter, total=%d", total)
+	assert.Equal(t, config.OriginCommunity, found.Origin)
+}
+
+func (suite *RepositoryConfigSuite) TestListOriginUploadExcludesForeignPartner() {
+	t := suite.T()
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := createTestUploadRepository(t, suite.tx)
+	partnerRC := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-origin-upload-excl", true)
+
+	publishedSnap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/origin-upload",
+		PublicationHref:             "/pulp/publication/origin-upload",
+		DistributionPath:            "/content/origin-upload",
+		RepositoryPath:              "/content/origin-upload",
+		DistributionHref:            "/pulp/distribution/origin-upload",
+		RepositoryConfigurationUUID: partnerRC.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(t, suite.tx.Create(&publishedSnap).Error)
+	require.NoError(t, suite.tx.Model(&partnerRC).Update("last_snapshot_uuid", publishedSnap.UUID).Error)
+
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), viewerOrg).Return([]string{}, nil).Once()
+	suite.mockPulpForListOrFetch(1)
+
+	response, _, err := rDao.List(context.Background(), viewerOrg, api.PaginationData{Limit: 100},
+		api.FilterData{Origin: config.OriginUpload})
+	require.NoError(t, err)
+
+	for _, r := range response.Data {
+		assert.NotEqual(t, partnerRC.UUID, r.UUID, "foreign partner must not match origin=upload")
+	}
+}
+
 func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToOwner() {
 	t := suite.T()
 	ownerOrg := seeds.RandomOrgId()

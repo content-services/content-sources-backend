@@ -655,7 +655,17 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 	if filterData.Origin != "" {
 		origins := strings.Split(filterData.Origin, ",")
-		filteredDB = filteredDB.Where("repositories.origin IN ?", origins)
+		// foreign partner repos are masked as "community" but remain "upload" in the DB, match that behavior for origin list filters
+		hasCommunity := slices.Contains(origins, config.OriginCommunity)
+		nonForeignOrigin := r.db.Where(
+			"repositories.origin IN ? AND NOT ("+foreignPartnerVisibleSQL+")",
+			origins, OrgID,
+		)
+		if hasCommunity {
+			filteredDB = filteredDB.Where(nonForeignOrigin.Or(foreignPartnerVisibleSQL, OrgID))
+		} else {
+			filteredDB = filteredDB.Where(nonForeignOrigin)
+		}
 	}
 
 	if filterData.Arch != "" {
