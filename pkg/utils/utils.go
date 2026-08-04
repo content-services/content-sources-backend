@@ -109,3 +109,10 @@ func SleepWithCancel(ctx context.Context, duration time.Duration) error {
 		return ctx.Err() // Cancelled or timed out
 	}
 }
+
+func OptionalStringsEqual(left, right *string) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	return *left == *right
+}

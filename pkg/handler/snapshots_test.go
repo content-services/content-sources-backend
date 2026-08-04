@@ -786,14 +786,48 @@ func (suite *SnapshotSuite) TestPublishSnapshotWithForeignTemplates() {
 	suite.reg.Template.On("InternalOnlyGetTemplatesForRepoConfig", test.MockCtx(), repoUUID, false).
 		Return([]api.TemplateResponse{
 			{UUID: templateUUID, OrgID: "foreign-org"},
-			{UUID: uuid.NewString(), OrgID: orgID}, // same org, should be skipped
+			{UUID: uuid.NewString(), OrgID: orgID},                          // same org, should be skipped
+			{UUID: uuid.NewString(), OrgID: "foreign-org", UseLatest: true}, // handled by UpdateLatestSnapshot
 		}, nil)
-	mockUpdateTemplateContentEnqueue(suite.tcMock, repoUUID, templateUUID, "foreign-org", requestID, updateLatestTaskID).
+	mockUpdateTemplateContentEnqueue(suite.tcMock, repoUUID, templateUUID, "foreign-org", requestID, publishTaskID).
 		Return(uuid.New(), nil)
 
 	body, err := json.Marshal(api.SnapshotPublishedUpdateRequest{Published: utils.Ptr(true)})
 	assert.NoError(t, err)
 
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/published", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(config.HeaderRequestId, requestID)
+
+	code, _, err := suite.serveSnapshotsRouter(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+func (suite *SnapshotSuite) TestUnpublishSnapshotEnqueuesForeignFixedTemplateFromPublicationTask() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	requestID := uuid.NewString()
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+	templateUUID := uuid.NewString()
+	publishTaskID := uuid.New()
+
+	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, false, repoUUID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: false}, nil)
+	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, false).
+		Return(publishTaskID, nil)
+	mockUpdateLatestSnapshotEnqueue(suite.tcMock, repoUUID, requestID, publishTaskID).
+		Return(uuid.New(), nil)
+	suite.reg.Template.On("InternalOnlyGetTemplatesForRepoConfig", test.MockCtx(), repoUUID, false).
+		Return([]api.TemplateResponse{{UUID: templateUUID, OrgID: "foreign-org"}}, nil)
+	mockUpdateTemplateContentEnqueue(suite.tcMock, repoUUID, templateUUID, "foreign-org", requestID, publishTaskID).
+		Return(uuid.New(), nil)
+
+	body, err := json.Marshal(api.SnapshotPublishedUpdateRequest{Published: utils.Ptr(false)})
+	assert.NoError(t, err)
 	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/published", api.FullRootPath(), repoUUID, snapshotUUID)
 	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")

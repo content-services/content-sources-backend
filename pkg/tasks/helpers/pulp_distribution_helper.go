@@ -7,6 +7,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	zest "github.com/content-services/zest/release/v2026"
 )
@@ -40,17 +41,14 @@ type PulpDistributionHelper struct {
 }
 
 func (pdh *PulpDistributionHelper) CreateDistribution(repo api.RepositoryResponse, publicationHref, distName, distPath string) (*zest.TaskResponse, error) {
-	// Create content guard
-	var contentGuardHref *string
-	if config.Get().Clients.Pulp.RepoContentGuards {
-		href, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
-		if err != nil {
-			return nil, err
-		}
-		contentGuardHref = href
+	contentGuardHref, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
+	if err != nil {
+		return nil, err
 	}
+	return pdh.createDistribution(publicationHref, distName, distPath, contentGuardHref)
+}
 
-	// Create distribution
+func (pdh *PulpDistributionHelper) createDistribution(publicationHref, distName, distPath string, contentGuardHref *string) (*zest.TaskResponse, error) {
 	distTask, err := pdh.pulpClient.CreateRpmDistribution(pdh.ctx, publicationHref, distName, distPath, contentGuardHref)
 	if err != nil {
 		return nil, err
@@ -67,33 +65,32 @@ func (pdh *PulpDistributionHelper) CreateDistribution(repo api.RepositoryRespons
 func (pdh *PulpDistributionHelper) DistributionUpdateNeeded(repo api.RepositoryResponse,
 	existingDist zest.RpmRpmDistributionResponse,
 	publicationHref string) (bool, error) {
-	var contentGuardHref *string
+	contentGuardHref, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
+	if err != nil {
+		return true, err
+	}
+	return distributionUpdateNeeded(existingDist, publicationHref, contentGuardHref), nil
+}
 
-	if config.Get().Clients.Pulp.RepoContentGuards {
-		href, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
-		if err != nil {
-			return true, err
-		}
-		contentGuardHref = href
+func distributionUpdateNeeded(existingDist zest.RpmRpmDistributionResponse, publicationHref string, contentGuardHref *string) bool {
+	if !utils.OptionalStringsEqual(existingDist.ContentGuard.Get(), contentGuardHref) {
+		return true
 	}
-	if contentGuardHref != nil && existingDist.ContentGuard.Get() != nil && *existingDist.ContentGuard.Get() != *contentGuardHref {
-		return true, nil
+	if existingDist.Publication.Get() == nil || *existingDist.Publication.Get() != publicationHref {
+		return true
 	}
-	if existingDist.Publication.Get() != nil && *existingDist.Publication.Get() != publicationHref {
-		return true, nil
-	}
-	return false, nil
+	return false
 }
 
 func (pdh *PulpDistributionHelper) UpdateDistribution(repo api.RepositoryResponse, distHref, publicationHref, distName, distPath string) (*zest.TaskResponse, error) {
-	var contentGuardHref *string
-	if config.Get().Clients.Pulp.RepoContentGuards {
-		href, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
-		if err != nil {
-			return nil, err
-		}
-		contentGuardHref = href
+	contentGuardHref, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
+	if err != nil {
+		return nil, err
 	}
+	return pdh.updateDistribution(distHref, publicationHref, distName, distPath, contentGuardHref)
+}
+
+func (pdh *PulpDistributionHelper) updateDistribution(distHref, publicationHref, distName, distPath string, contentGuardHref *string) (*zest.TaskResponse, error) {
 	distTaskHref, err := pdh.pulpClient.UpdateRpmDistribution(pdh.ctx, distHref, publicationHref, distName, distPath, contentGuardHref)
 	if err != nil {
 		return nil, err
@@ -108,6 +105,29 @@ func (pdh *PulpDistributionHelper) UpdateDistribution(repo api.RepositoryRespons
 }
 
 func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(repo api.RepositoryResponse, publicationHref, distName, distPath string) (string, string, error) {
+	contentGuardHref, err := pdh.FetchContentGuard(repo.OrgID, repo.FeatureName)
+	if err != nil {
+		return "", "", err
+	}
+	return pdh.createOrUpdateDistribution(publicationHref, distName, distPath, contentGuardHref)
+}
+
+// CreateOrUpdateUnguardedDistribution creates or reconciles a distribution with no content guard.
+func (pdh *PulpDistributionHelper) CreateOrUpdateUnguardedDistribution(publicationHref, distName, distPath string) (string, string, error) {
+	return pdh.createOrUpdateDistribution(publicationHref, distName, distPath, nil)
+}
+
+func (pdh *PulpDistributionHelper) CreateOrUpdateTemplateDistribution(repo api.RepositoryResponse, snapshot models.Snapshot, templateOrgID, distName, distPath string) (string, string, error) {
+	if repo.Partner && repo.OrgID != templateOrgID {
+		if !snapshot.Published {
+			return "", "", fmt.Errorf("refusing to create unguarded distribution for foreign partner repository %s using unpublished snapshot %s", repo.UUID, snapshot.UUID)
+		}
+		return pdh.CreateOrUpdateUnguardedDistribution(snapshot.PublicationHref, distName, distPath)
+	}
+	return pdh.CreateOrUpdateDistribution(repo, snapshot.PublicationHref, distName, distPath)
+}
+
+func (pdh *PulpDistributionHelper) createOrUpdateDistribution(publicationHref, distName, distPath string, contentGuardHref *string) (string, string, error) {
 	distTask := &zest.TaskResponse{}
 	var distTaskHref string
 
@@ -117,7 +137,7 @@ func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(repo api.Repositor
 	}
 
 	if resp == nil {
-		distTask, err = pdh.CreateDistribution(repo, publicationHref, distName, distPath)
+		distTask, err = pdh.createDistribution(publicationHref, distName, distPath, contentGuardHref)
 		if distTask != nil && distTask.PulpHref != nil {
 			distTaskHref = *distTask.PulpHref
 		}
@@ -131,14 +151,11 @@ func (pdh *PulpDistributionHelper) CreateOrUpdateDistribution(repo api.Repositor
 		return *distHrefPtr, distTaskHref, err
 	}
 
-	updateNeeded, err := pdh.DistributionUpdateNeeded(repo, *resp, publicationHref)
-	if err != nil {
-		return "", "", err
-	} else if !updateNeeded {
+	if !distributionUpdateNeeded(*resp, publicationHref, contentGuardHref) {
 		return "", "", nil
 	}
 
-	distTask, err = pdh.UpdateDistribution(repo, *resp.PulpHref, publicationHref, distName, distPath)
+	distTask, err = pdh.updateDistribution(*resp.PulpHref, publicationHref, distName, distPath, contentGuardHref)
 	if distTask != nil && distTask.PulpHref != nil {
 		distTaskHref = *distTask.PulpHref
 	}

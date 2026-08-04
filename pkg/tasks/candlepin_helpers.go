@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"strings"
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -16,6 +15,14 @@ import (
 )
 
 func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
+	contentURL := repo.URL
+	if repo.Origin == config.OriginUpload {
+		contentURL = repo.LatestSnapshotURL
+	}
+	return genContentDto(repo, contentURL)
+}
+
+func genContentDto(repo api.RepositoryResponse, contentURL string) caliri.ContentDTO {
 	repoName := repo.Name
 	id := candlepin_client.GetContentID(repo.UUID)
 	repoType := candlepin_client.YumRepoType
@@ -26,11 +33,6 @@ func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
 	if repo.OrgID != config.RedHatOrg && repo.GpgKey != "" {
 		gpgKeyUrl = models.CandlepinContentGpgKeyUrl(repo.OrgID, repo.UUID)
 	}
-	url := repo.URL
-	if repo.Origin == config.OriginUpload {
-		url = repo.LatestSnapshotURL
-	}
-
 	return caliri.ContentDTO{
 		Id:         &id,
 		Type:       &repoType,
@@ -38,7 +40,7 @@ func GenContentDto(repo api.RepositoryResponse) caliri.ContentDTO {
 		Name:       &repoName,
 		Vendor:     &repoVendor,
 		GpgUrl:     gpgKeyUrl,
-		ContentUrl: &url, // Set to upstream URL, but it is not used. Will use content overrides instead.
+		ContentUrl: &contentURL, // Set to upstream URL, but it is not used. Will use content overrides instead.
 	}
 }
 
@@ -64,30 +66,24 @@ func UnneededOverrides(existingDtos []caliri.ContentOverrideDTO, expectedDTOs []
 
 // GenOverrideDTO loads repository configs by UUID and returns Candlepin content override DTOs for the template snapshot (e.g. sslcacert, base URL).
 //
-// repoConfigUUIDs must be non-empty (UpdateTemplateContentHandler enforces this). Empty UUIDs would omit the List UUID filter and return unrelated repos.
-func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, contentPath string, template api.TemplateResponse, repoConfigUUIDs []string) ([]caliri.ContentOverrideDTO, error) {
+// repoConfigUUIDs must be non-empty (UpdateTemplateContentHandler enforces this).
+func GenOverrideDTO(ctx context.Context, daoReg *dao.DaoRegistry, orgId, domainName, rhDomainName, communityDomainName, contentPath string, template api.TemplateResponse, repoConfigUUIDs []string) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
 
-	uuids := strings.Join(repoConfigUUIDs, ",")
-	if uuids == "" {
+	if len(repoConfigUUIDs) == 0 {
 		return nil, fmt.Errorf("refusing to list repository configs for template %s: no repository config UUIDs (unfiltered list would include unrelated orgs)", template.UUID)
 	}
-	origins := strings.Join([]string{config.OriginExternal, config.OriginRedHat, config.OriginUpload, config.OriginCommunity}, ",")
-	repos, _, err := daoReg.RepositoryConfig.List(ctx, orgId, api.PaginationData{Limit: -1}, api.FilterData{UUID: uuids, Origin: origins})
-	if err != nil {
-		return mapping, err
-	}
-	for _, repo := range repos.Data {
-		var domain string
-		switch repo.OrgID {
-		case config.RedHatOrg:
-			domain = rhDomainName
-		case config.CommunityOrg:
-			domain = config.CommunityDomainName
-		default:
-			domain = domainName
+	for _, repoConfigUUID := range repoConfigUUIDs {
+		repo, err := daoReg.RepositoryConfig.FetchWithoutOrgID(ctx, repoConfigUUID, false)
+		if err != nil {
+			return mapping, err
 		}
-		repoOver, err := ContentOverridesForRepo(domain, template.UUID, contentPath, repo)
+		domain, err := repositoryDomain(ctx, daoReg, repo, orgId, domainName, rhDomainName, communityDomainName)
+		if err != nil {
+			return mapping, err
+		}
+		// The template's linked snapshot is authoritative even when last_snapshot_uuid is absent.
+		repoOver, err := contentOverridesForRepo(domain, template.UUID, contentPath, repo, false)
 		if err != nil {
 			return mapping, err
 		}
@@ -112,8 +108,12 @@ func RemoveUneededOverrides(ctx context.Context, cpClient candlepin_client.Candl
 }
 
 func ContentOverridesForRepo(domainName string, templateUUID string, pulpContentPath string, repo api.RepositoryResponse) ([]caliri.ContentOverrideDTO, error) {
+	return contentOverridesForRepo(domainName, templateUUID, pulpContentPath, repo, true)
+}
+
+func contentOverridesForRepo(domainName string, templateUUID string, pulpContentPath string, repo api.RepositoryResponse, requireLastSnapshot bool) ([]caliri.ContentOverrideDTO, error) {
 	mapping := []caliri.ContentOverrideDTO{}
-	if repo.LastSnapshot == nil { // ignore repos without a snapshot
+	if requireLastSnapshot && repo.LastSnapshot == nil { // ignore repos without a snapshot outside template content resolution
 		return mapping, nil
 	}
 

@@ -113,6 +113,68 @@ func (s *PulpDistributionHelperTest) TestRedHatDistributionUpdate() {
 	assert.NoError(s.T(), err)
 }
 
+func (s *PulpDistributionHelperTest) TestUnguardedDistributionRemovesExistingGuard() {
+	ctx := context.Background()
+	mockPulp := pulp_client.NewMockPulpClient(s.T())
+	helper := NewPulpDistributionHelper(ctx, mockPulp)
+
+	pubHref := "pubhref"
+	distPath := "distpath"
+	distName := "distname"
+	distHref := "disthref"
+	guardHref := "guardhref"
+	taskHref := "taskhref"
+	publication := zest.NullableString{}
+	publication.Set(&pubHref)
+	contentGuard := zest.NullableString{}
+	contentGuard.Set(&guardHref)
+
+	mockPulp.On("FindDistributionByPath", ctx, distPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref:     &distHref,
+		Publication:  publication,
+		ContentGuard: contentGuard,
+	}, nil)
+	mockPulp.On("UpdateRpmDistribution", ctx, distHref, pubHref, distName, distPath, (*string)(nil)).Return(taskHref, nil)
+	mockPulp.On("PollTask", ctx, taskHref).Return(&zest.TaskResponse{PulpHref: &taskHref}, nil)
+
+	resultHref, _, err := helper.CreateOrUpdateUnguardedDistribution(pubHref, distName, distPath)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), distHref, resultHref)
+}
+
+func (s *PulpDistributionHelperTest) TestDisabledGuardsRemoveExistingGuard() {
+	previous := config.Get().Clients.Pulp.RepoContentGuards
+	config.Get().Clients.Pulp.RepoContentGuards = false
+	s.T().Cleanup(func() { config.Get().Clients.Pulp.RepoContentGuards = previous })
+
+	ctx := context.Background()
+	mockPulp := pulp_client.NewMockPulpClient(s.T())
+	helper := NewPulpDistributionHelper(ctx, mockPulp)
+
+	pubHref := "pubhref"
+	distPath := "distpath"
+	distName := "distname"
+	distHref := "disthref"
+	guardHref := "guardhref"
+	taskHref := "taskhref"
+	publication := zest.NullableString{}
+	publication.Set(&pubHref)
+	contentGuard := zest.NullableString{}
+	contentGuard.Set(&guardHref)
+
+	mockPulp.On("FindDistributionByPath", ctx, distPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref:     &distHref,
+		Publication:  publication,
+		ContentGuard: contentGuard,
+	}, nil)
+	mockPulp.On("UpdateRpmDistribution", ctx, distHref, pubHref, distName, distPath, (*string)(nil)).Return(taskHref, nil)
+	mockPulp.On("PollTask", ctx, taskHref).Return(&zest.TaskResponse{PulpHref: &taskHref}, nil)
+
+	resultHref, _, err := helper.CreateOrUpdateDistribution(api.RepositoryResponse{OrgID: "owner"}, pubHref, distName, distPath)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), distHref, resultHref)
+}
+
 func (s *PulpDistributionHelperTest) TestRedHatDistributionWithFeatureCreate() {
 	ctx := context.Background()
 	mockPulp := pulp_client.NewMockPulpClient(s.T())

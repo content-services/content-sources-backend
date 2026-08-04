@@ -543,6 +543,10 @@ func (sDao *snapshotDaoImpl) FetchLatestPublishedSnapshotModel(ctx context.Conte
 	return snap, nil
 }
 
+func (sDao *snapshotDaoImpl) HasPublishedSnapshot(ctx context.Context, repoConfigUUID string) (bool, error) {
+	return HasPublishedSnapshot(ctx, sDao.db, repoConfigUUID)
+}
+
 // FetchLatestSnapshotForDistribution returns the snapshot that should back Pulp "{repo}/latest".
 // Partner repos use the newest published snapshot; others use the newest snapshot overall.
 // Callers need not load the repository configuration first.
