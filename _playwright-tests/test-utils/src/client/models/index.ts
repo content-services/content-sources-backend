@@ -11,6 +11,8 @@ export * from './ApiFeature';
 export * from './ApiFetchGPGKeyRequest';
 export * from './ApiFetchGPGKeyResponse';
 export * from './ApiGenericAttributeValidationResponse';
+export * from './ApiLightwellTokenCreateRequest';
+export * from './ApiLightwellTokenResponse';
 export * from './ApiLinks';
 export * from './ApiListSnapshotByDateRequest';
 export * from './ApiListSnapshotByDateResponse';

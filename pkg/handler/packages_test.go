@@ -53,6 +53,7 @@ func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte,
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
 	}))
+	router.Use(middleware.LightwellBearerAuth(suite.reg.ToDaoRegistry(), suite.fsClient))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(api.FullRootPath())
@@ -67,6 +68,18 @@ func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte,
 
 	body, err := io.ReadAll(response.Body)
 	return response.StatusCode, body, err
+}
+
+func (suite *PackagesSuite) TestListPackagesRequiresOrgAdmin() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
+	path := fmt.Sprintf("%s/repositories/%s/packages", api.FullRootPath(), repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, nonAdminIdentity(t))
+
+	code, _, err := suite.servePackagesRouter(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusForbidden, code)
 }
 
 func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
@@ -119,7 +132,7 @@ func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -184,7 +197,7 @@ func (suite *PackagesSuite) TestListPackagesMavenWithFilter() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -267,7 +280,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -304,7 +317,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsNonMavenRepo() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -320,7 +333,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsRepoNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -356,7 +369,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsTangError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -399,7 +412,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -460,7 +473,7 @@ func (suite *PackagesSuite) TestListPackagesPythonSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -526,7 +539,7 @@ func (suite *PackagesSuite) TestListPackagesPythonWithFilter() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -567,7 +580,7 @@ func (suite *PackagesSuite) TestListPackagesPythonTangClientError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -587,7 +600,7 @@ func (suite *PackagesSuite) TestListPackagesNonMavenReturnsEmpty() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -616,7 +629,7 @@ func (suite *PackagesSuite) TestListPackagesMissingDistBasePath() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -630,7 +643,7 @@ func (suite *PackagesSuite) TestListPackagesRepositoryNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -662,7 +675,7 @@ func (suite *PackagesSuite) TestListPackagesTangClientError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -726,7 +739,7 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -804,7 +817,7 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -861,7 +874,7 @@ func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -882,7 +895,7 @@ func (suite *PackagesSuite) TestGetPackageDetailNonMavenRepo() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -898,7 +911,7 @@ func (suite *PackagesSuite) TestGetPackageDetailRepoNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -934,7 +947,7 @@ func (suite *PackagesSuite) TestGetPackageDetailTangBuildListError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, "3.15.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -980,7 +993,7 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1054,7 +1067,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1083,7 +1096,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNonPythonRepo() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, "django")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1118,7 +1131,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1153,7 +1166,7 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsTangError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1216,7 +1229,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1254,7 +1267,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNonPythonRepo() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, "django", "5.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1290,7 +1303,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1326,7 +1339,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailTangError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1373,7 +1386,7 @@ func (suite *PackagesSuite) TestListPackagesNpmSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1431,7 +1444,7 @@ func (suite *PackagesSuite) TestListPackagesNpmWithFilter() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1467,7 +1480,7 @@ func (suite *PackagesSuite) TestListPackagesNpmTangClientError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1517,7 +1530,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/%s/%s", api.FullRootPath(), repoUUID, scope, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1571,7 +1584,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsUnscopedSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/-/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1599,7 +1612,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNonNpmRepo() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1631,7 +1644,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1663,7 +1676,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsTangError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1712,7 +1725,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1746,7 +1759,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNonNpmRepo() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1778,7 +1791,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNotFound() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
@@ -1810,7 +1823,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailTangError() {
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set(api.IdentityHeader, orgAdminIdentity(t))
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)

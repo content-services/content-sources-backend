@@ -55,6 +55,7 @@ playwright/.cache/
 .auth
 bin
 .DS_Store
+docs/demos/.lightwell_demo_env
 #ignore the cloned repo
 content-sources-frontend
 

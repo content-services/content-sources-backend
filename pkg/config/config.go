@@ -250,6 +250,10 @@ type Options struct {
 	EntitleAll              bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
 	InternalUser            string   `mapstructure:"internal_user"`
 	LoadLightwellDemo       bool     `mapstructure:"load_lightwell_demo"`
+	// Pepper used to HMAC-hash Lightwell access tokens at rest. Required for token create/validate.
+	LightwellTokenPepper string `mapstructure:"lightwell_token_pepper"`
+	// Shared secret for the internal Lightwell token validate endpoint (Pulp → CS).
+	LightwellValidateSecret string `mapstructure:"lightwell_validate_secret"`
 }
 
 type Metrics struct {
@@ -324,6 +328,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.snapshot_retain_days_limit", 365)
 	v.SetDefault("options.internal_user", "")
 	v.SetDefault("options.load_lightwell_demo", true)
+	v.SetDefault("options.lightwell_token_pepper", "local-dev-lightwell-token-pepper")
+	v.SetDefault("options.lightwell_validate_secret", "local-dev-lightwell-validate-secret")
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")

@@ -38,6 +38,7 @@ const LightwellDomainName = "lightwell"
 const LightwellDemoOrg = "-4"
 const LightwellDemoDomainName = "public-lightwell-demo"
 const OriginLightwell = "lightwell"
+const LightwellNetworkFeature = "lightwell-network"
 
 const IntrospectTimeInterval = time.Hour * 23
 

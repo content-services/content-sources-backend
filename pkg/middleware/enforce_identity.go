@@ -39,6 +39,7 @@ func SkipAuth(p string) bool {
 		"/ping",
 		"/openapi.json",
 		"/repository_gpg_key/:uuid",
+		"/internal/lightwell/tokens/validate",
 	}
 	if utils.Contains(skipped, p) || utils.Contains(skipped, strings.TrimSuffix(p, "/")) {
 		return true
@@ -70,14 +71,18 @@ func getPath(c echo.Context) (path string) {
 		return
 	}
 
-	lengthOfPrefix := len(strings.Split(api.FullRootPath(), "/"))
-	splitPath := strings.Split(path, "/")
-
-	// strip only the endpoint after the prefix from the matched route (i.e. /templates/:template_uuid/config.repo)
-	if len(splitPath) > lengthOfPrefix {
-		path = "/" + strings.Join(splitPath[lengthOfPrefix:], "/")
+	// Strip only when the matched route is under the public API prefix.
+	// Cluster-local routes (e.g. /ping, /internal/...) must keep their full path.
+	for _, root := range []string{api.FullRootPath(), api.MajorRootPath()} {
+		prefix := strings.TrimSuffix(root, "/")
+		if path == prefix {
+			return "/"
+		}
+		if strings.HasPrefix(path, prefix+"/") {
+			return strings.TrimPrefix(path, prefix)
+		}
 	}
-	return
+	return path
 }
 
 func SkipMiddleware(c echo.Context) bool {
@@ -85,11 +90,19 @@ func SkipMiddleware(c echo.Context) bool {
 	if SkipRbac(c, p) || SkipAuth(p) {
 		return true
 	}
+	// Lightwell Bearer auth injects identity and grants API access; skip platform identity/RBAC.
+	if HasLightwellBearerAuth(c) {
+		return true
+	}
 	return false
 }
 
 func EnforceOrgId(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		if SkipMiddleware(c) {
+			return next(c)
+		}
+
 		xRHID := identity.GetIdentity(c.Request().Context())
 
 		if xRHID.Identity.Internal.OrgID == config.RedHatOrg || xRHID.Identity.OrgID == config.RedHatOrg {

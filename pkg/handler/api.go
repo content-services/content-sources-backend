@@ -96,6 +96,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterCandlepinRoutes(group, &cpClient, &ch)
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
+		RegisterLightwellTokenRoutes(group, daoReg, fsClient)
 
 		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
@@ -109,6 +110,9 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
 		}
 	}
+
+	// Cluster-local only (outside /api/content-sources/); not published via console.redhat.com.
+	RegisterLightwellInternalRoutes(engine, dao.GetDaoRegistry(db.DB), fsClient)
 
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
 	if err == nil {
