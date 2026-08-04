@@ -1710,6 +1710,9 @@ func applyPartnerResponseOverrides(ctx context.Context, db *gorm.DB, repoConfigs
 		repoConfigs[i].AccountID = ""
 
 		if repoConfigs[i].LastSnapshot != nil && repoConfigs[i].LastSnapshot.Published {
+			if pkgCount, ok := repoConfigs[i].LastSnapshot.ContentCounts["rpm.package"]; ok {
+				repoConfigs[i].Repository.PackageCount = int(pkgCount)
+			}
 			continue
 		}
 		var snap models.Snapshot
@@ -1721,6 +1724,9 @@ func applyPartnerResponseOverrides(ctx context.Context, db *gorm.DB, repoConfigs
 			repoConfigs[i].LastSnapshotUUID = ""
 			repoConfigs[i].LastSnapshot = nil
 			continue
+		}
+		if pkgCount, ok := snap.ContentCounts["rpm.package"]; ok {
+			repoConfigs[i].Repository.PackageCount = int(pkgCount)
 		}
 		repoConfigs[i].LastSnapshotUUID = snap.UUID
 		repoConfigs[i].LastSnapshot = &snap
