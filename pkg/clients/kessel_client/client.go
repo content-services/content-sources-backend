@@ -60,6 +60,7 @@ func (k *kesselClientImpl) GetDefaultWorkspaceID(ctx context.Context, orgID stri
 	if err != nil {
 		return "", statusCode, fmt.Errorf("failed to get rbac url: %w", err)
 	}
+	// "with_ancestry=true" required to fetch org's default workspace (RHCLOUD-49129)
 	url := fmt.Sprintf("%s/api/rbac/v2/workspaces/?type=default&with_ancestry=true", rbacUrl)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
