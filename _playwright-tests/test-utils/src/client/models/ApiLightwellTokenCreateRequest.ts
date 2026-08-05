@@ -20,6 +20,12 @@ import { mapValues } from '../runtime';
  */
 export interface ApiLightwellTokenCreateRequest {
     /**
+     * Token scope: "validated" (validated+remediated) or "remediated" (remediated only)
+     * @type {string}
+     * @memberof ApiLightwellTokenCreateRequest
+     */
+    accessLevel?: string;
+    /**
      * Optional expiry; defaults to 365 days from creation (max 365 days)
      * @type {string}
      * @memberof ApiLightwellTokenCreateRequest
@@ -56,6 +62,7 @@ export function ApiLightwellTokenCreateRequestFromJSONTyped(json: any, ignoreDis
     }
     return {
         
+        'accessLevel': json['access_level'] == null ? undefined : json['access_level'],
         'expiresAt': json['expires_at'] == null ? undefined : json['expires_at'],
         'name': json['name'] == null ? undefined : json['name'],
         'userId': json['user_id'] == null ? undefined : json['user_id'],
@@ -73,6 +80,7 @@ export function ApiLightwellTokenCreateRequestToJSONTyped(value?: ApiLightwellTo
 
     return {
         
+        'access_level': value['accessLevel'],
         'expires_at': value['expiresAt'],
         'name': value['name'],
         'user_id': value['userId'],

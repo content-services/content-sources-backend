@@ -31,10 +31,11 @@ Do **not** fork this shape; see [lightwell_token_pulp_contract.md](lightwell_tok
 | Host | **In-cluster** Content Sources service only (example: `http://content-sources-backend-service:8000/...`). Never `console.redhat.com`. |
 | Not public | Outside `/api/content-sources/`; absent from public OpenAPI; not on 3scale. |
 | Auth | Header `X-Rh-Cs-Internal-Token` must equal CS config `options.lightwell_validate_secret` |
-| Body | `{ "token": "<raw bearer token>", "path": "/optional/request/path" }` |
-| Success | **200** `{ "org_id", "user_id", "token_uuid" }` |
-| Failure | **401** bad/missing token or secret; **403** missing `lightwell-network` entitlement |
+| Body | `{ "token": "<raw bearer token>", "path": "/request/path" }` — **path required** for content downloads |
+| Success | **200** `{ "org_id", "user_id", "token_uuid", "access_level" }` |
+| Failure | **401** bad/missing token or secret; **403** missing `lightwell-network` entitlement or insufficient `access_level` for path |
 | Entitlement | Re-checked on **every** validate call |
+| Access level | `validated` tokens may access validated+remediated; `remediated` tokens may access remediated only |
 | Cache | Prefer no positive cache; if any, seconds-scale only and documented |
 
 ## Pulp work (primary — this handoff)
@@ -47,7 +48,7 @@ Local Pulp is **not** bare upstream pulpcore. Compose runs `quay.io/redhat-servi
 2. On each content request:
    - Read `Authorization: Bearer <token>`
    - Also accept HTTP Basic with the token as the **password** if needed for Maven tooling
-3. Call CS validate with the shared secret; deny the download if CS returns non-2xx.
+3. Call CS validate with the shared secret **and the content request path**; deny the download if CS returns non-2xx.
 4. Configure: CS base URL (cluster-local) + shared secret matching `options.lightwell_validate_secret`.
 
 ### Local verification
@@ -99,5 +100,4 @@ sequenceDiagram
 
 - Console / Lightwell UI for token management ([frontend handoff](lightwell_tokens_frontend_handoff.md)).
 - CS token CRUD, Bearer middleware, or migrations (already implemented).
-- Finer token scopes than org-wide Lightwell read.
 - Demo-org (`lightwell-network-demo`) PAT path unless product asks later.

@@ -279,7 +279,7 @@ type UserPreferenceDao interface {
 }
 
 type LightwellTokenDao interface {
-	Create(ctx context.Context, orgID string, userID string, name string, expiresAt *time.Time) (api.LightwellTokenResponse, error)
+	Create(ctx context.Context, orgID string, userID string, name string, accessLevel string, expiresAt *time.Time) (api.LightwellTokenResponse, error)
 	ListByOrg(ctx context.Context, orgID string) (api.LightwellTokensResponse, error)
 	Get(ctx context.Context, orgID string, uuid string) (api.LightwellTokenResponse, error)
 	Revoke(ctx context.Context, orgID string, uuid string) error

@@ -14,6 +14,7 @@ type LightwellAccessToken struct {
 	OrgID       string     `gorm:"not null"`
 	UserID      string     `gorm:"not null"`
 	Name        string     `gorm:"not null"`
+	AccessLevel string     `gorm:"not null;default:validated"` // validated (full) or remediated-only
 	TokenPrefix string     `gorm:"not null"`
 	TokenHash   string     `gorm:"not null;uniqueIndex"`
 	ExpiresAt   time.Time  `gorm:"not null"`
@@ -45,6 +46,9 @@ func (t *LightwellAccessToken) validate() error {
 	}
 	if t.Name == "" {
 		return Error{Message: "Name cannot be blank.", Validation: true}
+	}
+	if t.AccessLevel != "validated" && t.AccessLevel != "remediated" {
+		return Error{Message: "Access level must be validated or remediated.", Validation: true}
 	}
 	if t.TokenHash == "" {
 		return Error{Message: "Token hash cannot be blank.", Validation: true}

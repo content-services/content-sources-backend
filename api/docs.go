@@ -4356,7 +4356,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a personal Lightwell access token. Only org admins may create tokens. The plaintext token is returned once.",
+                "description": "Create a personal Lightwell access token. Only org admins may create tokens. The plaintext token is returned once. access_level must be validated (validated+remediated) or remediated (remediated only).",
                 "consumes": [
                     "application/json"
                 ],
@@ -4763,6 +4763,10 @@ const docTemplate = `{
         "api.LightwellTokenCreateRequest": {
             "type": "object",
             "properties": {
+                "access_level": {
+                    "description": "Token scope: \"validated\" (validated+remediated) or \"remediated\" (remediated only)",
+                    "type": "string"
+                },
                 "expires_at": {
                     "description": "Optional expiry; defaults to 365 days from creation (max 365 days)",
                     "type": "string"
@@ -4780,6 +4784,10 @@ const docTemplate = `{
         "api.LightwellTokenResponse": {
             "type": "object",
             "properties": {
+                "access_level": {
+                    "description": "Token scope: \"validated\" or \"remediated\"",
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },

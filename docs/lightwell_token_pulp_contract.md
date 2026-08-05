@@ -8,6 +8,17 @@ Developer compose ([compose_files/pulp/docker-compose.yml](../compose_files/pulp
 
 Lightwell maven/python distributions are created **without** a `content_guard` today. Until a token guard is attached, content URLs remain publicly reachable.
 
+## Token access levels
+
+Each token has an `access_level`:
+
+| `access_level` | May access repo / path `security_level` |
+|----------------|------------------------------------------|
+| `validated` | `validated` and `remediated` |
+| `remediated` | `remediated` only |
+
+CS enforces this on Bearer package APIs and on the validate endpoint when `path` is present.
+
 ## CS validate API (cluster-local only)
 
 This endpoint is **not** part of the public Content Sources API. It is mounted at the server root (like `/ping`), **outside** `/api/content-sources/`, so it is not routed through console.redhat.com / 3scale. Pulp must call the in-cluster Content Sources service URL, never the public console hostname.
@@ -18,27 +29,28 @@ This endpoint is **not** part of the public Content Sources API. It is mounted a
 - **Auth:** header `X-Rh-Cs-Internal-Token` must match CS config `options.lightwell_validate_secret`
 - **Body:**
   ```json
-  { "token": "<raw bearer token>", "path": "/optional/request/path" }
+  { "token": "<raw bearer token>", "path": "/required/for/content/request/path" }
   ```
+  Pulp **must** send `path` for content download checks so CS can enforce `access_level` against the path's security level segment (e.g. `.../java/validated/...`).
 - **Success (200):**
   ```json
-  { "org_id": "...", "user_id": "...", "token_uuid": "..." }
+  { "org_id": "...", "user_id": "...", "token_uuid": "...", "access_level": "validated" }
   ```
-- **Failure:** `401` (bad/missing token or secret), `403` (org lacks `lightwell-network` entitlement)
+- **Failure:** `401` (bad/missing token or secret), `403` (org lacks `lightwell-network` entitlement, or token `access_level` insufficient for the path's security level)
 
-Entitlement is re-checked on **every** validate call.
+Entitlement and access level are re-checked on **every** validate call.
 
 ## Required Pulp-side behavior
 
 1. Add a content guard type usable on Lightwell domain maven/python distributions.
 2. On each content request, read `Authorization: Bearer <token>` (optionally also Basic with the token as the password for Maven tooling).
-3. Call the CS validate endpoint with the shared secret. Prefer no positive cache, or seconds-scale only, so revoke and entitlement loss apply quickly.
+3. Call the CS validate endpoint with the shared secret **and the request path**. Prefer no positive cache, or seconds-scale only, so revoke and entitlement loss apply quickly.
 4. Deny the download if CS returns non-2xx.
 5. Rollout: deploy CS validate → deploy guard → attach guard to Lightwell distributions.
 
 ## CS API Bearer auth (already in this service)
 
-Clients may call Content Sources with `Authorization: Bearer <token>` (no `x-rh-identity`). Token management routes (`/tokens/`) reject Bearer auth and require Console identity with `is_org_admin`.
+Clients may call Content Sources with `Authorization: Bearer <token>` (no `x-rh-identity`). Token management routes (`/tokens/`) reject Bearer auth and require Console identity with `is_org_admin`. Package endpoints additionally enforce the token's `access_level` against the repository `security_level`.
 
 ## See also
 

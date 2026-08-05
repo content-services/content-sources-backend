@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -39,6 +40,44 @@ const LightwellDemoOrg = "-4"
 const LightwellDemoDomainName = "public-lightwell-demo"
 const OriginLightwell = "lightwell"
 const LightwellNetworkFeature = "lightwell-network"
+
+// Lightwell token / repository security levels.
+const (
+	LightwellAccessValidated  = "validated"
+	LightwellAccessRemediated = "remediated"
+)
+
+// LightwellTokenAllows reports whether a token with the given access_level may
+// access content at the given repository security_level.
+// validated tokens may access both validated and remediated content;
+// remediated tokens may access remediated content only.
+func LightwellTokenAllows(accessLevel, securityLevel string) bool {
+	switch accessLevel {
+	case LightwellAccessValidated:
+		return securityLevel == LightwellAccessValidated || securityLevel == LightwellAccessRemediated
+	case LightwellAccessRemediated:
+		return securityLevel == LightwellAccessRemediated
+	default:
+		return false
+	}
+}
+
+// ValidLightwellAccessLevel reports whether accessLevel is a known token scope.
+func ValidLightwellAccessLevel(accessLevel string) bool {
+	return accessLevel == LightwellAccessValidated || accessLevel == LightwellAccessRemediated
+}
+
+// SecurityLevelFromContentPath extracts a Lightwell security level segment from a
+// Pulp content request path (e.g. ".../java/validated/..." → "validated").
+// Returns "" if no known level is present.
+func SecurityLevelFromContentPath(path string) string {
+	for _, part := range strings.Split(path, "/") {
+		if part == LightwellAccessValidated || part == LightwellAccessRemediated {
+			return part
+		}
+	}
+	return ""
+}
 
 const IntrospectTimeInterval = time.Hour * 23
 

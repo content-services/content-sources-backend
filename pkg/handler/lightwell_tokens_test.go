@@ -75,7 +75,7 @@ func nonAdminIdentity(t *testing.T) string {
 
 func (suite *LightwellTokensSuite) TestCreateRequiresOrgAdmin() {
 	path := fmt.Sprintf("%s/tokens/", api.FullRootPath())
-	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "t1"})
+	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "t1", AccessLevel: config.LightwellAccessValidated})
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, nonAdminIdentity(suite.T()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -94,6 +94,7 @@ func (suite *LightwellTokensSuite) TestCreateSuccess() {
 		OrgID:       orgID,
 		UserID:      userID,
 		Name:        "ci",
+		AccessLevel: config.LightwellAccessValidated,
 		TokenPrefix: "lw_abcdef12",
 		Token:       "lw_abcdef12plaintext",
 		ExpiresAt:   expires,
@@ -101,10 +102,10 @@ func (suite *LightwellTokensSuite) TestCreateSuccess() {
 	}
 
 	suite.fsClient.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{config.LightwellNetworkFeature}, nil)
-	suite.reg.LightwellToken.On("Create", mock.Anything, orgID, userID, "ci", (*time.Time)(nil)).Return(expected, nil)
+	suite.reg.LightwellToken.On("Create", mock.Anything, orgID, userID, "ci", config.LightwellAccessValidated, (*time.Time)(nil)).Return(expected, nil)
 
 	path := fmt.Sprintf("%s/tokens/", api.FullRootPath())
-	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "ci"})
+	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "ci", AccessLevel: config.LightwellAccessValidated})
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, orgAdminIdentity(suite.T()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -117,6 +118,7 @@ func (suite *LightwellTokensSuite) TestCreateSuccess() {
 	assert.NoError(suite.T(), json.Unmarshal(respBody, &resp))
 	assert.Equal(suite.T(), expected.Token, resp.Token)
 	assert.Equal(suite.T(), expected.UUID, resp.UUID)
+	assert.Equal(suite.T(), config.LightwellAccessValidated, resp.AccessLevel)
 }
 
 func (suite *LightwellTokensSuite) TestCreateMissingEntitlement() {
@@ -124,7 +126,7 @@ func (suite *LightwellTokensSuite) TestCreateMissingEntitlement() {
 	suite.fsClient.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 
 	path := fmt.Sprintf("%s/tokens/", api.FullRootPath())
-	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "ci"})
+	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "ci", AccessLevel: config.LightwellAccessValidated})
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
 	req.Header.Set(api.IdentityHeader, orgAdminIdentity(suite.T()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -137,7 +139,7 @@ func (suite *LightwellTokensSuite) TestCreateMissingEntitlement() {
 func (suite *LightwellTokensSuite) TestValidateInternal() {
 	orgID := test_handler.MockOrgId
 	suite.reg.LightwellToken.On("Validate", mock.Anything, "lw_good").Return(api.LightwellTokenValidateResponse{
-		OrgID: orgID, UserID: "u1", TokenUUID: "tok-1",
+		OrgID: orgID, UserID: "u1", TokenUUID: "tok-1", AccessLevel: config.LightwellAccessValidated,
 	}, nil)
 	suite.fsClient.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{config.LightwellNetworkFeature}, nil)
 
@@ -153,6 +155,47 @@ func (suite *LightwellTokensSuite) TestValidateInternal() {
 	var resp api.LightwellTokenValidateResponse
 	assert.NoError(suite.T(), json.Unmarshal(respBody, &resp))
 	assert.Equal(suite.T(), orgID, resp.OrgID)
+	assert.Equal(suite.T(), config.LightwellAccessValidated, resp.AccessLevel)
+}
+
+func (suite *LightwellTokensSuite) TestValidatePathAccessAllowed() {
+	orgID := test_handler.MockOrgId
+	suite.reg.LightwellToken.On("Validate", mock.Anything, "lw_rem").Return(api.LightwellTokenValidateResponse{
+		OrgID: orgID, UserID: "u1", TokenUUID: "tok-1", AccessLevel: config.LightwellAccessRemediated,
+	}, nil)
+	suite.fsClient.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{config.LightwellNetworkFeature}, nil)
+
+	body, _ := json.Marshal(api.LightwellTokenValidateRequest{
+		Token: "lw_rem",
+		Path:  "/api/pulp-content/lightwell/java/remediated/pkg.pom",
+	})
+	req := httptest.NewRequest(http.MethodPost, LightwellInternalValidatePath, bytes.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req.Header.Set(lightwellInternalValidateHeader, "test-validate-secret")
+
+	code, _, err := suite.serveRouter(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+}
+
+func (suite *LightwellTokensSuite) TestValidatePathAccessDenied() {
+	orgID := test_handler.MockOrgId
+	suite.reg.LightwellToken.On("Validate", mock.Anything, "lw_rem").Return(api.LightwellTokenValidateResponse{
+		OrgID: orgID, UserID: "u1", TokenUUID: "tok-1", AccessLevel: config.LightwellAccessRemediated,
+	}, nil)
+	suite.fsClient.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{config.LightwellNetworkFeature}, nil)
+
+	body, _ := json.Marshal(api.LightwellTokenValidateRequest{
+		Token: "lw_rem",
+		Path:  "/api/pulp-content/lightwell/java/validated/pkg.pom",
+	})
+	req := httptest.NewRequest(http.MethodPost, LightwellInternalValidatePath, bytes.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req.Header.Set(lightwellInternalValidateHeader, "test-validate-secret")
+
+	code, _, err := suite.serveRouter(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusForbidden, code)
 }
 
 func (suite *LightwellTokensSuite) TestValidateMissingSecret() {
@@ -167,7 +210,7 @@ func (suite *LightwellTokensSuite) TestValidateMissingSecret() {
 
 func (suite *LightwellTokensSuite) TestBearerRejectedOnTokenCreate() {
 	path := fmt.Sprintf("%s/tokens/", api.FullRootPath())
-	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "ci"})
+	body, _ := json.Marshal(api.LightwellTokenCreateRequest{Name: "ci", AccessLevel: config.LightwellAccessValidated})
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	req.Header.Set(echo.HeaderAuthorization, "Bearer lw_some-token")

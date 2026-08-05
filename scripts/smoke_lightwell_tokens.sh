@@ -103,7 +103,7 @@ expect_status "org-admin get packages" "200" "${code}"
 code=$(http_code GET "${PACKAGES_URL}")
 expect_status_one_of "no auth packages" "${code}" "400" "401"
 
-CREATE_BODY='{"name":"smoke-token"}'
+CREATE_BODY='{"name":"smoke-token","access_level":"validated"}'
 CREATE_RESP=$(curl -s -w '\n%{http_code}' -X POST "${TOKENS_URL}" \
   -H "$(header_admin)" \
   -H "Content-Type: application/json" \
@@ -114,10 +114,18 @@ expect_status "org-admin create token" "201" "${CREATE_CODE}"
 
 TOKEN=$(echo "${CREATE_JSON}" | jq -r '.token // empty')
 TOKEN_UUID=$(echo "${CREATE_JSON}" | jq -r '.uuid // empty')
+ACCESS_LEVEL=$(echo "${CREATE_JSON}" | jq -r '.access_level // empty')
 if [[ -z "${TOKEN}" || "${TOKEN}" == "null" ]]; then
   RESULTS+=("FAIL  create returned plaintext token")
   FAIL=$((FAIL + 1))
   TOKEN="missing"
+fi
+if [[ "${ACCESS_LEVEL}" == "validated" ]]; then
+  RESULTS+=("PASS  create returned access_level validated")
+  PASS=$((PASS + 1))
+else
+  RESULTS+=("FAIL  create returned access_level (expected validated, got ${ACCESS_LEVEL})")
+  FAIL=$((FAIL + 1))
 fi
 
 code=$(http_code GET "${PACKAGES_URL}" -H "Authorization: Bearer ${TOKEN}")
@@ -125,6 +133,36 @@ expect_status "bearer get packages" "200" "${code}"
 
 code=$(http_code GET "${PACKAGES_URL}" -H "Authorization: Bearer not-a-real-token")
 expect_status "bad bearer packages" "401" "${code}"
+
+# Remediated-scoped token: create and check validate path gating
+CREATE_REM_BODY='{"name":"smoke-remediated","access_level":"remediated"}'
+CREATE_REM_RESP=$(curl -s -w '\n%{http_code}' -X POST "${TOKENS_URL}" \
+  -H "$(header_admin)" \
+  -H "Content-Type: application/json" \
+  -d "${CREATE_REM_BODY}")
+CREATE_REM_CODE=$(echo "${CREATE_REM_RESP}" | tail -n1)
+CREATE_REM_JSON=$(echo "${CREATE_REM_RESP}" | sed '$d')
+expect_status "org-admin create remediated token" "201" "${CREATE_REM_CODE}"
+REM_TOKEN=$(echo "${CREATE_REM_JSON}" | jq -r '.token // empty')
+REM_TOKEN_UUID=$(echo "${CREATE_REM_JSON}" | jq -r '.uuid // empty')
+
+if [[ -n "${REM_TOKEN}" && "${REM_TOKEN}" != "null" ]]; then
+  code=$(http_code POST "${VALIDATE_URL}" \
+    -H "Content-Type: application/json" \
+    -H "X-Rh-Cs-Internal-Token: ${SERVICE_AUTH}" \
+    -d "{\"token\":\"${REM_TOKEN}\",\"path\":\"/api/pulp-content/lightwell/java/remediated/pkg.pom\"}")
+  expect_status "remediated token validate remediated path" "200" "${code}"
+
+  code=$(http_code POST "${VALIDATE_URL}" \
+    -H "Content-Type: application/json" \
+    -H "X-Rh-Cs-Internal-Token: ${SERVICE_AUTH}" \
+    -d "{\"token\":\"${REM_TOKEN}\",\"path\":\"/api/pulp-content/lightwell/java/validated/pkg.pom\"}")
+  expect_status "remediated token validate validated path denied" "403" "${code}"
+
+  if [[ -n "${REM_TOKEN_UUID}" && "${REM_TOKEN_UUID}" != "null" ]]; then
+    http_code DELETE "${TOKENS_URL}${REM_TOKEN_UUID}" -H "$(header_admin)" >/dev/null
+  fi
+fi
 
 code=$(http_code POST "${TOKENS_URL}" \
   -H "$(header_user)" \
@@ -137,6 +175,12 @@ code=$(http_code POST "${VALIDATE_URL}" \
   -H "X-Rh-Cs-Internal-Token: ${SERVICE_AUTH}" \
   -d "{\"token\":\"${TOKEN}\"}")
 expect_status "internal validate good token" "200" "${code}"
+
+code=$(http_code POST "${VALIDATE_URL}" \
+  -H "Content-Type: application/json" \
+  -H "X-Rh-Cs-Internal-Token: ${SERVICE_AUTH}" \
+  -d "{\"token\":\"${TOKEN}\",\"path\":\"/api/pulp-content/lightwell/java/validated/pkg.pom\"}")
+expect_status "validated token validate validated path" "200" "${code}"
 
 code=$(http_code POST "${VALIDATE_URL}" \
   -H "Content-Type: application/json" \
@@ -165,7 +209,7 @@ if [[ -n "${CONTENT_URL}" ]]; then
   CREATE_RESP=$(curl -s -w '\n%{http_code}' -X POST "${TOKENS_URL}" \
     -H "$(header_admin)" \
     -H "Content-Type: application/json" \
-    -d '{"name":"smoke-content-token"}')
+    -d '{"name":"smoke-content-token","access_level":"validated"}')
   CREATE_CODE=$(echo "${CREATE_RESP}" | tail -n1)
   CREATE_JSON=$(echo "${CREATE_RESP}" | sed '$d')
   CONTENT_TOKEN=$(echo "${CREATE_JSON}" | jq -r '.token // empty')

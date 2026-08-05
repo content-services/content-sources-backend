@@ -15,6 +15,7 @@ import (
 )
 
 const LightwellBearerAuthContextKey = "lightwell_bearer_auth"
+const LightwellBearerAccessLevelContextKey = "lightwell_bearer_access_level"
 
 // Must match dao.lightwellTokenPrefix so Console SSO Bearer JWTs are not treated as Lightwell tokens.
 const lightwellBearerTokenPrefix = "lw_"
@@ -82,6 +83,7 @@ func LightwellBearerAuth(daoReg *dao.DaoRegistry, fsClient feature_service_clien
 			ctx := identity.WithIdentity(c.Request().Context(), xrhid)
 			c.SetRequest(c.Request().WithContext(ctx))
 			c.Set(LightwellBearerAuthContextKey, true)
+			c.Set(LightwellBearerAccessLevelContextKey, validated.AccessLevel)
 
 			return next(c)
 		}
@@ -115,4 +117,10 @@ func isInternalLightwellValidatePath(path string) bool {
 func HasLightwellBearerAuth(c echo.Context) bool {
 	v, ok := c.Get(LightwellBearerAuthContextKey).(bool)
 	return ok && v
+}
+
+// LightwellBearerAccessLevel returns the access_level stashed by LightwellBearerAuth, or "".
+func LightwellBearerAccessLevel(c echo.Context) string {
+	v, _ := c.Get(LightwellBearerAccessLevelContextKey).(string)
+	return v
 }

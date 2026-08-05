@@ -23,8 +23,8 @@ func NewMockLightwellTokenDao(t interface {
 	return m
 }
 
-func (m *MockLightwellTokenDao) Create(ctx context.Context, orgID string, userID string, name string, expiresAt *time.Time) (api.LightwellTokenResponse, error) {
-	args := m.Called(ctx, orgID, userID, name, expiresAt)
+func (m *MockLightwellTokenDao) Create(ctx context.Context, orgID string, userID string, name string, accessLevel string, expiresAt *time.Time) (api.LightwellTokenResponse, error) {
+	args := m.Called(ctx, orgID, userID, name, accessLevel, expiresAt)
 	r0, _ := args.Get(0).(api.LightwellTokenResponse)
 	return r0, args.Error(1)
 }

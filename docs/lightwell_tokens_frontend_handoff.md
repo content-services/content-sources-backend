@@ -21,13 +21,22 @@ Base path: `/api/content-sources/v1/` (also `/v1.0/`). Auth: Console `x-rh-ident
 
 | Method | Path | Behavior |
 |--------|------|----------|
-| `POST` | `/tokens/` | Create. Body: `name` (required), optional `user_id` (defaults to caller), optional `expires_at` (default/max 365 days). Response **201** includes plaintext `token` **once**. |
+| `POST` | `/tokens/` | Create. Body: `name` (required), `access_level` (required: `validated` or `remediated`), optional `user_id` (defaults to caller), optional `expires_at` (default/max 365 days). Response **201** includes plaintext `token` **once**. |
 | `GET` | `/tokens/` | List org tokens. Metadata only (`token_prefix`, never full secret). |
 | `DELETE` | `/tokens/{uuid}` | Revoke. **204**. |
 
+### Access levels
+
+| `access_level` | May access repo `security_level` |
+|----------------|----------------------------------|
+| `validated` | `validated` and `remediated` |
+| `remediated` | `remediated` only |
+
+Scope applies to token Bearer use and Pulp validate only. Console org-admin browsing is unchanged.
+
 ### Response fields (list / create metadata)
 
-`uuid`, `org_id`, `user_id`, `name`, `token_prefix`, `expires_at`, `revoked_at`, `last_used_at`, `created_at`. Create also returns `token`.
+`uuid`, `org_id`, `user_id`, `name`, `access_level`, `token_prefix`, `expires_at`, `revoked_at`, `last_used_at`, `created_at`. Create also returns `token`.
 
 ### Server gates (UI must mirror)
 
@@ -71,8 +80,8 @@ OpenAPI-generated `LightwellTokensApi` exists only under Playwright (`_playwrigh
    - Org admin is **not** checked anywhere in the frontend today; backend still enforces it
 
 4. **UI**
-   - `Pages/Lightwell/Tokens/TokensTable.tsx` — columns: name, `token_prefix`, user, expires, last used, created; revoke action
-   - `CreateTokenModal.tsx` — name (+ optional expiry); on success show PatternFly `ClipboardCopy` (or `LabeledClipboardCopy`) of plaintext + clear “shown once” warning; do not persist full token in list state
+   - `Pages/Lightwell/Tokens/TokensTable.tsx` — columns: name, access level, `token_prefix`, user, expires, last used, created; revoke action
+   - `CreateTokenModal.tsx` — name, required `access_level` (validated = full network; remediated = remediated only), optional expiry; on success show PatternFly `ClipboardCopy` (or `LabeledClipboardCopy`) of plaintext + clear “shown once” warning; do not persist full token in list state
    - `RevokeTokenModal.tsx` — confirm + DELETE (mirror existing delete modals)
 
 5. **Routing / entry**

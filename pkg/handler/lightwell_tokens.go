@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"slices"
 
@@ -69,7 +70,7 @@ func RegisterLightwellInternalRoutes(e *echo.Echo, daoReg *dao.DaoRegistry, fsCl
 // CreateLightwellToken godoc
 // @Summary      Create a Lightwell access token
 // @ID           createLightwellToken
-// @Description  Create a personal Lightwell access token. Only org admins may create tokens. The plaintext token is returned once.
+// @Description  Create a personal Lightwell access token. Only org admins may create tokens. The plaintext token is returned once. access_level must be validated (validated+remediated) or remediated (remediated only).
 // @Tags         lightwell_tokens
 // @Accept       json
 // @Produce      json
@@ -101,7 +102,7 @@ func (h *LightwellTokenHandler) createToken(c echo.Context) error {
 		return err
 	}
 
-	created, err := h.DaoRegistry.LightwellToken.Create(c.Request().Context(), orgID, userID, req.Name, req.ExpiresAt)
+	created, err := h.DaoRegistry.LightwellToken.Create(c.Request().Context(), orgID, userID, req.Name, req.AccessLevel, req.ExpiresAt)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating Lightwell token", err.Error())
 	}
@@ -169,6 +170,18 @@ func (h *LightwellTokenHandler) validateToken(c echo.Context) error {
 
 	if err := h.requireLightwellNetwork(c, validated.OrgID); err != nil {
 		return err
+	}
+
+	if req.Path != "" {
+		securityLevel := config.SecurityLevelFromContentPath(req.Path)
+		if securityLevel == "" {
+			return ce.NewErrorResponse(http.StatusForbidden, "Insufficient access level",
+				"could not determine security level from path")
+		}
+		if !config.LightwellTokenAllows(validated.AccessLevel, securityLevel) {
+			return ce.NewErrorResponse(http.StatusForbidden, "Insufficient access level",
+				fmt.Sprintf("token access_level %q cannot access security_level %q", validated.AccessLevel, securityLevel))
+		}
 	}
 
 	return c.JSON(http.StatusOK, validated)

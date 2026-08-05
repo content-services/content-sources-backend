@@ -74,7 +74,19 @@ func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.R
 	if len(repos.Data) == 0 {
 		return api.RepositoryResponse{}, err
 	}
-	return repos.Data[0], nil
+	repo := repos.Data[0]
+
+	if accessLevel, ok := c.Get("lightwell_bearer_access_level").(string); ok && accessLevel != "" {
+		if !config.LightwellTokenAllows(accessLevel, repo.SecurityLevel) {
+			return api.RepositoryResponse{}, &ce.DaoError{
+				Forbidden: true,
+				Message: fmt.Sprintf("token access_level %q cannot access repository security_level %q",
+					accessLevel, repo.SecurityLevel),
+			}
+		}
+	}
+
+	return repo, nil
 }
 
 // ListPackages godoc

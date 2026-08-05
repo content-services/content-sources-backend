@@ -20,6 +20,12 @@ import { mapValues } from '../runtime';
  */
 export interface ApiLightwellTokenResponse {
     /**
+     * Token scope: "validated" or "remediated"
+     * @type {string}
+     * @memberof ApiLightwellTokenResponse
+     */
+    accessLevel?: string;
+    /**
      * 
      * @type {string}
      * @memberof ApiLightwellTokenResponse
@@ -98,6 +104,7 @@ export function ApiLightwellTokenResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
         
+        'accessLevel': json['access_level'] == null ? undefined : json['access_level'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
         'expiresAt': json['expires_at'] == null ? undefined : json['expires_at'],
         'lastUsedAt': json['last_used_at'] == null ? undefined : json['last_used_at'],
@@ -122,6 +129,7 @@ export function ApiLightwellTokenResponseToJSONTyped(value?: ApiLightwellTokenRe
 
     return {
         
+        'access_level': value['accessLevel'],
         'created_at': value['createdAt'],
         'expires_at': value['expiresAt'],
         'last_used_at': value['lastUsedAt'],

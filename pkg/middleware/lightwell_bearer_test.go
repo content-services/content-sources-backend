@@ -26,7 +26,7 @@ func TestLightwellBearerAuthSuccess(t *testing.T) {
 	orgID := "org-123"
 	userID := "user-9"
 	reg.LightwellToken.On("Validate", mock.Anything, "lw_good").Return(api.LightwellTokenValidateResponse{
-		OrgID: orgID, UserID: userID, TokenUUID: "tok-1",
+		OrgID: orgID, UserID: userID, TokenUUID: "tok-1", AccessLevel: config.LightwellAccessValidated,
 	}, nil)
 	fs.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{config.LightwellNetworkFeature}, nil)
 
@@ -38,6 +38,7 @@ func TestLightwellBearerAuthSuccess(t *testing.T) {
 		assert.Equal(t, orgID, id.Identity.Internal.OrgID)
 		assert.Equal(t, userID, id.Identity.User.UserID)
 		assert.True(t, HasLightwellBearerAuth(c))
+		assert.Equal(t, config.LightwellAccessValidated, LightwellBearerAccessLevel(c))
 		return c.NoContent(http.StatusOK)
 	})
 
@@ -54,7 +55,7 @@ func TestLightwellBearerAuthMissingEntitlement(t *testing.T) {
 
 	orgID := "org-123"
 	reg.LightwellToken.On("Validate", mock.Anything, "lw_good").Return(api.LightwellTokenValidateResponse{
-		OrgID: orgID, UserID: "u", TokenUUID: "tok-1",
+		OrgID: orgID, UserID: "u", TokenUUID: "tok-1", AccessLevel: config.LightwellAccessValidated,
 	}, nil)
 	fs.On("GetEntitledFeatures", mock.Anything, orgID).Return([]string{"RHEL-OS-x86_64"}, nil)
 

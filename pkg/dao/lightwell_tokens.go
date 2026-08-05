@@ -31,7 +31,7 @@ type lightwellTokenDaoImpl struct {
 	db *gorm.DB
 }
 
-func (d lightwellTokenDaoImpl) Create(ctx context.Context, orgID string, userID string, name string, expiresAt *time.Time) (api.LightwellTokenResponse, error) {
+func (d lightwellTokenDaoImpl) Create(ctx context.Context, orgID string, userID string, name string, accessLevel string, expiresAt *time.Time) (api.LightwellTokenResponse, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return api.LightwellTokenResponse{}, &ce.DaoError{BadValidation: true, Message: "name is required"}
@@ -44,6 +44,10 @@ func (d lightwellTokenDaoImpl) Create(ctx context.Context, orgID string, userID 
 	}
 	if orgID == "" {
 		return api.LightwellTokenResponse{}, &ce.DaoError{BadValidation: true, Message: "org_id is required"}
+	}
+	accessLevel = strings.TrimSpace(accessLevel)
+	if !config.ValidLightwellAccessLevel(accessLevel) {
+		return api.LightwellTokenResponse{}, &ce.DaoError{BadValidation: true, Message: "access_level must be validated or remediated"}
 	}
 
 	pepper := config.Get().Options.LightwellTokenPepper
@@ -72,6 +76,7 @@ func (d lightwellTokenDaoImpl) Create(ctx context.Context, orgID string, userID 
 		OrgID:       orgID,
 		UserID:      userID,
 		Name:        name,
+		AccessLevel: accessLevel,
 		TokenPrefix: plaintext[:lightwellTokenPrefixLen],
 		TokenHash:   hashLightwellToken(pepper, plaintext),
 		ExpiresAt:   expiry,
@@ -177,9 +182,10 @@ func (d lightwellTokenDaoImpl) Validate(ctx context.Context, rawToken string) (a
 		})
 
 	return api.LightwellTokenValidateResponse{
-		OrgID:     token.OrgID,
-		UserID:    token.UserID,
-		TokenUUID: token.UUID,
+		OrgID:       token.OrgID,
+		UserID:      token.UserID,
+		TokenUUID:   token.UUID,
+		AccessLevel: token.AccessLevel,
 	}, nil
 }
 
@@ -204,6 +210,7 @@ func modelToLightwellTokenResponse(token models.LightwellAccessToken) api.Lightw
 		OrgID:       token.OrgID,
 		UserID:      token.UserID,
 		Name:        token.Name,
+		AccessLevel: token.AccessLevel,
 		TokenPrefix: token.TokenPrefix,
 		ExpiresAt:   token.ExpiresAt.UTC(),
 		RevokedAt:   token.RevokedAt,
