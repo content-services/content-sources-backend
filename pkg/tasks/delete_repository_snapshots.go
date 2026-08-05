@@ -124,8 +124,7 @@ func (d *DeleteRepositorySnapshots) Run() error {
 
 		var snapErrs []error
 		for _, snap := range snaps {
-			_, err = d.deleteRpmDistribution(snap.DistributionHref)
-			if err != nil {
+			if err = d.deleteSnapshotDistribution(snap); err != nil {
 				snapErrs = append(snapErrs, err)
 				continue
 			}
@@ -169,6 +168,45 @@ func (d *DeleteRepositorySnapshots) fetchSnapshots() ([]models.Snapshot, error) 
 		Int("count", len(snaps)).
 		Msg("Successfully fetched snapshots")
 	return snaps, err
+}
+
+func (d *DeleteRepositorySnapshots) deleteSnapshotDistribution(snap models.Snapshot) error {
+	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
+
+	if snap.DistributionHref != "" {
+		_, err := d.deleteRpmDistribution(snap.DistributionHref)
+		return err
+	}
+
+	logger.Warn().
+		Str("snapshot_uuid", snap.UUID).
+		Str("distribution_path", snap.DistributionPath).
+		Msg("snapshot distribution_href is empty, looking up distribution by path")
+	return d.deleteDistributionAtPath(snap.DistributionPath)
+}
+
+func (d *DeleteRepositorySnapshots) deleteDistributionAtPath(distPath string) error {
+	logger := LogForTask(d.task.Id.String(), d.task.Typename, d.task.RequestID)
+
+	if distPath == "" {
+		logger.Warn().Msg("distribution path is empty, skipping distribution delete")
+		return nil
+	}
+
+	dist, err := d.getPulpClient().FindDistributionByPath(d.ctx, distPath)
+	if err != nil {
+		return fmt.Errorf("failed to find distribution at base path %v: %w", distPath, err)
+	}
+	if dist == nil || dist.PulpHref == nil {
+		logger.Debug().
+			Str("base_path", distPath).
+			Bool("distribution_found", dist != nil).
+			Msg("no distribution found at path")
+		return nil
+	}
+
+	_, err = d.deleteRpmDistribution(*dist.PulpHref)
+	return err
 }
 
 func (d *DeleteRepositorySnapshots) deleteRpmDistribution(snapDistributionHref string) (*zest.TaskResponse, error) {
