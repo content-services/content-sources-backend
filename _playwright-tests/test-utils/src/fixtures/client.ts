@@ -1,38 +1,77 @@
 // Define a fixture to hold the API client
-import { test as oldTest, expect } from '@playwright/test';
-import { Configuration, ResponseContext, ResponseError } from '../client';
-import { setGlobalDispatcher, ProxyAgent, Agent } from 'undici';
+import { test as oldTest, expect, APIRequestContext, APIResponse } from '@playwright/test';
+import { Configuration, ResponseError, FetchAPI } from '../client';
+import { fileNameToEnvVar, getFileNameFromAuthPath } from 'test-utils/helpers';
 
 type WithApiConfig = {
   client: Configuration;
 };
 
-// Default error handling doesn't print the error, so print it here
-const responseReader = {
-  post: async function (context: ResponseContext): Promise<void> {
-    if (context.response != undefined && context.response.status > 300) {
-      const bodyText = await context.response.text();
-      console.log('Response errored with ' + context.response.status + ': ' + bodyText);
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function constructHeaders(headers?: HeadersInit, storageState?: string, extraHTTPHeaders?: {[key: string]: string}) {
+  const out: Record<string, string> = {};
+
+  if (storageState) {
+    const tokenName = fileNameToEnvVar(getFileNameFromAuthPath(storageState));
+    const token = process.env[tokenName];
+    if (!token) {
+      throw new Error(
+        `Token environment variable "${tokenName}" is not set. Check authentication setup.`,
+      );
     }
-  },
-};
+    out['authorization'] = token;
+  } else if (extraHTTPHeaders) {
+    new Headers(extraHTTPHeaders).forEach((value, key) => { out[key] = value; });
+  }
+
+  if (headers) {
+    new Headers(headers).forEach((value, key) => { out[key] = value; });
+  };
+
+  return Object.keys(out).length ? out : undefined;
+}
+
+async function toFetchResponseBody(
+  response: APIResponse,
+): Promise<BodyInit | undefined> {
+  const nullBodyResponses = new Set([101, 103, 204, 205, 304]);
+  if (nullBodyResponses.has(response.status())) return undefined;
+
+  return response.body().then((b) => b.toString());
+}
 
 export const clientTest = oldTest.extend<WithApiConfig>({
   client:
-    // eslint-disable-next-line no-empty-pattern
-    async ({ extraHTTPHeaders }, use, r) => {
-      if (r.project?.use?.proxy?.server) {
-        const dispatcher = new ProxyAgent({ uri: new URL(r.project.use.proxy.server).toString() });
-        setGlobalDispatcher(dispatcher);
-      } else if (r.project.use.baseURL?.match('^https:\/\/\\w+\.foo\.redhat\.com:\\d+$')?.length) {
-        const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
-        setGlobalDispatcher(dispatcher);
-      }
+    async ({ extraHTTPHeaders, request, storageState }, use, r) => {
+      const pwFetch = (api: APIRequestContext): FetchAPI => async (url, init) => {
+        const storage = storageState ?? r.project.use.storageState;
+        const extraHeaders = extraHTTPHeaders ?? r.project.use.extraHTTPHeaders;
+        const response = await api.fetch(String(url), {
+          failOnStatusCode: false,
+          ignoreHTTPSErrors: true,
+          method: init?.method,
+          headers: constructHeaders(init?.headers, isString(storage) ? storage : undefined, extraHeaders),
+          data: init?.body,
+        });
+
+        try {
+          return new Response(await toFetchResponseBody(response), {
+            status: response.status(),
+            statusText: response.statusText(),
+            headers: response.headers(),
+          });
+        } finally {
+          await response.dispose();
+        }
+      };
 
       const client = new Configuration({
+        fetchApi: pwFetch(request),
         basePath: r.project.use.baseURL + '/api/content-sources/v1',
-        headers: extraHTTPHeaders ?? r.project.use.extraHTTPHeaders,
-        middleware: [responseReader],
+        middleware: [],
       });
 
       await use(client);
