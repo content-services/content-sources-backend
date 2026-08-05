@@ -48,6 +48,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20240918084003-2afd7dc6a38f
 	github.com/lzap/cloudwatchwriter2 v1.6.0
+	github.com/pandatix/go-cvss v0.6.2
 	github.com/pkg/errors v0.9.1
 	github.com/project-kessel/kessel-sdk-go v1.11.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.1.0

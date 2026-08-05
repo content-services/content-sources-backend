@@ -255,6 +255,21 @@ objects:
               - "pulp-orphan"
             env:{{ENV_VARS}}
 
+        - name: sync-lightwell-advisories
+          schedule: ${SYNC_LIGHTWELL_ADVISORIES_CRON_JOB}
+          suspend: ${{SUSPEND_CRON_JOB}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - sync-lightwell-advisories
+            env:{{ENV_VARS}}
+
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}

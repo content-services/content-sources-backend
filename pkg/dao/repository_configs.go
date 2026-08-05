@@ -837,6 +837,23 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigForOrg(ctx context.
 	return convertToResponses(repoConfigs, ""), nil
 }
 
+func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigByName(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error) {
+	var repoConfig models.RepositoryConfiguration
+	result := r.db.WithContext(ctx).
+		Where("repository_configurations.org_id = ? AND repository_configurations.name = ?", orgID, name).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Preload("Repository").
+		First(&repoConfig)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return api.RepositoryResponse{}, &ce.DaoError{NotFound: true, Message: "Could not find repository with name " + name}
+		}
+		return api.RepositoryResponse{}, result.Error
+	}
+	responses := convertToResponses([]models.RepositoryConfiguration{repoConfig}, "")
+	return responses[0], nil
+}
+
 func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error) {
 	var repo api.RepositoryResponse
 	var contentPath string

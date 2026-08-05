@@ -3,7 +3,8 @@
     "name": "lightwell/java/remediated",
     "type": "maven",
     "base_path": "java/remediated",
-    "feature_name": "lightwell-network"
+    "feature_name": "lightwell-network",
+    "osv_path": "lightwell/osv/java/remediated"
   },
   {
     "name": "lightwell/java/validated",
