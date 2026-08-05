@@ -142,6 +142,88 @@ func (s *DeleteSnapshotsSuite) TestDeleteSnapshots() {
 	assert.NoError(t, taskErr)
 }
 
+func (s *DeleteSnapshotsSuite) TestDeleteSnapshotDistributionFallsBackToPathWhenHrefEmpty() {
+	t := s.T()
+	ctx := context.Background()
+
+	repoUUID := uuid.NewString()
+	distPath := fmt.Sprintf("%s/%s", repoUUID, uuid.NewString())
+	foundDistHref := uuid.NewString()
+	deleteDistTaskHref := uuid.NewString()
+
+	snap := models.Snapshot{
+		Base: models.Base{
+			UUID: uuid.NewString(),
+		},
+		DistributionHref: "",
+		DistributionPath: distPath,
+	}
+
+	s.mockPulpClient.On("FindDistributionByPath", ctx, distPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref: &foundDistHref,
+		BasePath: distPath,
+	}, nil).Once()
+	s.mockPulpClient.On("DeleteRpmDistribution", ctx, foundDistHref).Return(&deleteDistTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, deleteDistTaskHref).Return(nil, nil).Once()
+
+	pulpClient := s.pulpClient()
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
+		ctx:        ctx,
+		task:       &task,
+		pulpClient: &pulpClient,
+	}
+
+	err := deleteSnapshotsTask.deleteSnapshotDistribution(snap)
+	assert.NoError(t, err)
+}
+
+func (s *DeleteSnapshotsSuite) TestDeleteSnapshotDistributionFallsBackToPathWhenHrefDeleteFails() {
+	t := s.T()
+	ctx := context.Background()
+
+	repoUUID := uuid.NewString()
+	distPath := fmt.Sprintf("%s/%s", repoUUID, uuid.NewString())
+	staleDistHref := uuid.NewString()
+	foundDistHref := uuid.NewString()
+	deleteDistTaskHref := uuid.NewString()
+
+	snap := models.Snapshot{
+		Base: models.Base{
+			UUID: uuid.NewString(),
+		},
+		DistributionHref: staleDistHref,
+		DistributionPath: distPath,
+	}
+
+	s.mockPulpClient.On("DeleteRpmDistribution", ctx, staleDistHref).Return(nil, errors.New("500 Internal Server Error")).Once()
+	s.mockPulpClient.On("FindDistributionByPath", ctx, distPath).Return(&zest.RpmRpmDistributionResponse{
+		PulpHref: &foundDistHref,
+		BasePath: distPath,
+	}, nil).Once()
+	s.mockPulpClient.On("DeleteRpmDistribution", ctx, foundDistHref).Return(&deleteDistTaskHref, nil).Once()
+	s.mockPulpClient.On("PollTask", ctx, deleteDistTaskHref).Return(nil, nil).Once()
+
+	pulpClient := s.pulpClient()
+	task := models.TaskInfo{
+		Id:        uuid.UUID{},
+		RequestID: uuid.NewString(),
+		Typename:  config.DeleteSnapshotsTask,
+	}
+	deleteSnapshotsTask := DeleteSnapshots{
+		ctx:        ctx,
+		task:       &task,
+		pulpClient: &pulpClient,
+	}
+
+	err := deleteSnapshotsTask.deleteSnapshotDistribution(snap)
+	assert.NoError(t, err)
+}
+
 func (s *DeleteSnapshotsSuite) TestDeleteRepositoryVersionCleansUntrackedBlockingDistributions() {
 	t := s.T()
 	ctx := context.Background()

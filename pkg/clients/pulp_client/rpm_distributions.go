@@ -51,6 +51,10 @@ func (r *pulpDaoImpl) FindDistributionByPath(ctx context.Context, path string) (
 }
 
 func (r *pulpDaoImpl) DeleteRpmDistribution(ctx context.Context, rpmDistributionHref string) (*string, error) {
+	// An empty href becomes DELETE <pulp-server>/ which Akamai/CDN rejects with 501.
+	if rpmDistributionHref == "" {
+		return nil, nil
+	}
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {
 		return nil, err
