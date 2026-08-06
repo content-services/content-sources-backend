@@ -257,7 +257,7 @@ objects:
 
         - name: sync-lightwell-advisories
           schedule: ${SYNC_LIGHTWELL_ADVISORIES_CRON_JOB}
-          suspend: ${{SUSPEND_CRON_JOB}}
+          suspend: ${{SUSPEND_SYNC_LIGHTWELL_ADVISORIES}}
           concurrencyPolicy: "Forbid"
           podSpec:
             securityContext:
