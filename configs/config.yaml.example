@@ -67,6 +67,11 @@ options:
   feature_filter: ["RHEL-OS-x86_64"]
   entitle_all: true
   internal_user: "internal-user"
+  # Used to HMAC-hash Lightwell access tokens. Override in non-local environments.
+  lightwell_token_pepper: "local-dev-lightwell-token-pepper"
+  # Shared secret for cluster-local POST /internal/lightwell/tokens/validate (header X-Rh-Cs-Internal-Token).
+  # See docs/lightwell_token_pulp_contract.md — not under /api/content-sources/.
+  lightwell_validate_secret: "local-dev-lightwell-validate-secret"
 metrics:
   path: "/metrics"
   port: 9000

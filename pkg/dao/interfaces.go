@@ -34,6 +34,7 @@ type DaoRegistry struct {
 	MavenPackages     MavenPackagesDao
 	LightwellAdvisory LightwellAdvisoryDao
 	UserPreference    UserPreferenceDao
+	LightwellToken    LightwellTokenDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -79,6 +80,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		MavenPackages:     mavenPackagesDaoImpl{db: db},
 		LightwellAdvisory: lightwellAdvisoryDaoImpl{db: db},
 		UserPreference:    userPreferenceDaoImpl{db: db},
+		LightwellToken:    lightwellTokenDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -274,4 +276,12 @@ type LightwellAdvisoryDao interface {
 type UserPreferenceDao interface {
 	List(ctx context.Context, orgID string, userID string) (api.UserPreferencesResponse, error)
 	Set(ctx context.Context, orgID string, userID string, label string, value string) (api.UserPreferenceResponse, error)
+}
+
+type LightwellTokenDao interface {
+	Create(ctx context.Context, orgID string, userID string, name string, accessLevel string, expiresAt *time.Time) (api.LightwellTokenResponse, error)
+	ListByOrg(ctx context.Context, orgID string) (api.LightwellTokensResponse, error)
+	Get(ctx context.Context, orgID string, uuid string) (api.LightwellTokenResponse, error)
+	Revoke(ctx context.Context, orgID string, uuid string) error
+	Validate(ctx context.Context, rawToken string) (api.LightwellTokenValidateResponse, error)
 }

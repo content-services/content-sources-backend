@@ -1,6 +1,7 @@
 apis/EnvironmentsApi.ts
 apis/FeaturesApi.ts
 apis/GpgKeyApi.ts
+apis/LightwellTokensApi.ts
 apis/ModuleStreamsApi.ts
 apis/PackagegroupsApi.ts
 apis/PackagesApi.ts
@@ -25,6 +26,8 @@ models/ApiFeature.ts
 models/ApiFetchGPGKeyRequest.ts
 models/ApiFetchGPGKeyResponse.ts
 models/ApiGenericAttributeValidationResponse.ts
+models/ApiLightwellTokenCreateRequest.ts
+models/ApiLightwellTokenResponse.ts
 models/ApiLinks.ts
 models/ApiListSnapshotByDateRequest.ts
 models/ApiListSnapshotByDateResponse.ts

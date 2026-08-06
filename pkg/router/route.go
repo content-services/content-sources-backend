@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
@@ -51,6 +54,14 @@ func ConfigureEcho(ctx context.Context, allRoutes bool) *echo.Echo {
 func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metrics) *echo.Echo {
 	e := ConfigureEcho(ctx, true)
 
+	daoReg := dao.GetDaoRegistry(db.DB)
+	fsClient, err := feature_service_client.NewFeatureServiceClient()
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not create feature service client")
+	}
+
+	// Bearer auth must run before EnforceIdentity so it can inject identity and mark the request.
+	e.Use(middleware.LightwellBearerAuth(daoReg, fsClient))
 	// Add additional global middlewares
 	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	e.Use(middleware.EnforceOrgId)
