@@ -25,21 +25,21 @@ import (
 const DefaultAppName = "content-sources"
 
 type Configuration struct {
-	Database            Database
-	Logging             Logging
-	Loaded              bool
-	Certs               Certs
-	Options             Options
-	Kafka               kafka.KafkaConfig
-	Cloudwatch          Cloudwatch
-	Metrics             Metrics
-	Clients             Clients            `mapstructure:"clients"`
-	Mocks               Mocks              `mapstructure:"mocks"`
-	Sentry              Sentry             `mapstructure:"sentry"`
-	NotificationsClient cloudevents.Client `mapstructure:"notification_client"`
-	TemplateEventClient cloudevents.Client `mapstructure:"template_event_client"`
-	Tasking             Tasking            `mapstructure:"tasking"`
-	Features            FeatureSet         `mapstructure:"features"`
+	Database              Database
+	Logging               Logging
+	Loaded                bool
+	Certs                 Certs
+	Options               Options
+	Kafka                 kafka.KafkaConfig
+	Cloudwatch            Cloudwatch
+	Metrics               Metrics
+	Clients               Clients `mapstructure:"clients"`
+	Mocks                 Mocks   `mapstructure:"mocks"`
+	Sentry                Sentry  `mapstructure:"sentry"`
+	NotificationsProducer *NotificationsKafkaProducer
+	TemplateEventClient   cloudevents.Client `mapstructure:"template_event_client"`
+	Tasking               Tasking            `mapstructure:"tasking"`
+	Features              FeatureSet         `mapstructure:"features"`
 }
 
 type Clients struct {
@@ -239,6 +239,7 @@ type Options struct {
 	// If true, introspection and snapshotting always runs for nightly job invocation, regardless of how soon they happened previously.  Used for testing.
 	AlwaysRunCronTasks     bool   `mapstructure:"always_run_cron_tasks"`
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
+	NotificationsTopic     string `mapstructure:"notifications_topic"`
 	TemplateEventTopic     string `mapstructure:"template_event_topic"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
 	// url (https://servername) to access the api, used to reference gpg keys
@@ -317,6 +318,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.introspect_api_time_limit_sec", DefaultIntrospectApiTimeLimitSec)
 	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("options.enable_notifications", false)
+	v.SetDefault("options.notifications_topic", "platform.notifications.ingress")
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("options.feature_filter", featureFilter)
