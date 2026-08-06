@@ -273,21 +273,11 @@ func (ds *DeleteSnapshots) deleteOrUpdatePulpContent(snap models.Snapshot, repo 
 	logger.Info().
 		Str("snapshot_uuid", snap.UUID).
 		Str("distribution_href", snap.DistributionHref).
+		Str("distribution_path", snap.DistributionPath).
 		Msg("Deleting snapshot's distribution")
 
-	deleteDistributionHref, err := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, snap.DistributionHref)
-	if err != nil {
-		logger.Warn().
-			Err(err).
-			Str("distribution_href", snap.DistributionHref).
-			Msg("Error deleting snapshot distribution")
-		return fmt.Errorf("failed to delete snapshot distribution %v: %w", snap.DistributionHref, err)
-	}
-	if deleteDistributionHref != nil {
-		_, err = ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref)
-		if err != nil {
-			return fmt.Errorf("error polling snapshot distribution deletion task for %v: %w", snap.DistributionHref, err)
-		}
+	if err := ds.deleteSnapshotDistribution(snap); err != nil {
+		return err
 	}
 
 	if err = ds.deleteRepositoryVersion(snap, repo); err != nil {
@@ -306,8 +296,50 @@ func isRepositoryVersionBlockedByDistribution(err error) bool {
 		strings.Contains(msg, "update the necessary distributions first")
 }
 
+// deleteSnapshotDistribution removes the snapshot's pulp distribution.
+// Prefer the stored distribution href; if it is missing (common on older/orphan
+// rows), look the distribution up by path so we never DELETE the pulp server root.
+func (ds *DeleteSnapshots) deleteSnapshotDistribution(snap models.Snapshot) error {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
+	if snap.DistributionHref != "" {
+		deleteDistributionHref, err := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, snap.DistributionHref)
+		if err != nil {
+			logger.Warn().
+				Err(err).
+				Str("distribution_href", snap.DistributionHref).
+				Str("distribution_path", snap.DistributionPath).
+				Msg("Error deleting snapshot distribution by href, falling back to path lookup")
+			if pathErr := ds.deleteDistributionAtPath(snap.DistributionPath); pathErr != nil {
+				return fmt.Errorf("failed to delete snapshot distribution %v: %w (path fallback also failed: %v)", snap.DistributionHref, err, pathErr)
+			}
+			return nil
+		}
+		if deleteDistributionHref != nil {
+			if _, err = ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref); err != nil {
+				return fmt.Errorf("error polling snapshot distribution deletion task for %v: %w", snap.DistributionHref, err)
+			}
+		}
+		return nil
+	}
+
+	logger.Warn().
+		Str("snapshot_uuid", snap.UUID).
+		Str("distribution_path", snap.DistributionPath).
+		Msg("snapshot distribution_href is empty, looking up distribution by path")
+	if err := ds.deleteDistributionAtPath(snap.DistributionPath); err != nil {
+		return fmt.Errorf("failed to delete snapshot distribution by path %v: %w", snap.DistributionPath, err)
+	}
+	return nil
+}
+
 func (ds *DeleteSnapshots) deleteDistributionAtPath(distPath string) error {
 	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
+	if distPath == "" {
+		logger.Warn().Msg("distribution path is empty, skipping distribution delete")
+		return nil
+	}
 
 	dist, err := ds.getPulpClient().FindDistributionByPath(ds.ctx, distPath)
 	if err != nil {
