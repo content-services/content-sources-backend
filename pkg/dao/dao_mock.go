@@ -4315,6 +4315,32 @@ func (_c *MockSnapshotDao_FetchLatestSnapshot_Call) RunAndReturn(run func(ctx co
 	return _c
 }
 
+// HasPublishedSnapshot provides a mock function for the type MockSnapshotDao
+func (_mock *MockSnapshotDao) HasPublishedSnapshot(ctx context.Context, repoConfigUUID string) (bool, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasPublishedSnapshot")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, repoConfigUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r0 = ret.Bool(0)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
 // FetchLatestSnapshotForDistribution provides a mock function for the type MockSnapshotDao
 func (_mock *MockSnapshotDao) FetchLatestSnapshotForDistribution(ctx context.Context, repoConfigUUID string) (models.Snapshot, error) {
 	ret := _mock.Called(ctx, repoConfigUUID)

@@ -130,26 +130,27 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 }
 
 func (t templateDaoImpl) validateRepositoryUUIDs(ctx context.Context, orgId string, uuids []string) error {
-	var count int64
 	orgIds := []string{orgId, config.RedHatOrg, config.CommunityOrg}
-	resp := t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).Where("org_id in ?", orgIds).Where("uuid in ?", UuidifyStrings(uuids)).Count(&count)
-	if resp.Error != nil {
-		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
-	}
-	if count != int64(len(uuids)) {
-		return &ce.DaoError{NotFound: true, Message: "One or more Repository UUIDs was invalid."}
-	}
 
 	var repos []models.RepositoryConfiguration
-	var missingSnapshotRepos []string
-	resp = t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).
-		Where("org_id in ?", orgIds).
+	resp := t.db.WithContext(ctx).Model(models.RepositoryConfiguration{}).
 		Where("uuid in ?", UuidifyStrings(uuids)).
+		Where("org_id in ? OR ("+foreignPartnerVisibleSQL+")", orgIds, orgId).
 		Find(&repos)
 	if resp.Error != nil {
 		return fmt.Errorf("could not query repository uuids: %w", resp.Error)
 	}
+
+	if len(repos) != len(uuids) {
+		return &ce.DaoError{NotFound: true, Message: "One or more Repository UUIDs was invalid."}
+	}
+
+	var missingSnapshotRepos []string
 	for _, repo := range repos {
+		if IsForeignPartnerView(repo, orgId) {
+			// Foreign partners are already constrained to having a published snapshot by the query above.
+			continue
+		}
 		if repo.LastSnapshotUUID == "" {
 			missingSnapshotRepos = append(missingSnapshotRepos, repo.Name)
 		}
@@ -720,7 +721,8 @@ func (t templateDaoImpl) InternalOnlyGetTemplatesForRepoConfig(ctx context.Conte
 	var templates []models.Template
 	filtered := t.db.Model(&models.Template{}).WithContext(ctx).
 		Joins("INNER JOIN templates_repository_configurations on templates_repository_configurations.template_uuid = templates.uuid").
-		Where("templates_repository_configurations.repository_configuration_uuid", repoUUID)
+		Where("templates_repository_configurations.repository_configuration_uuid = ?", UuidifyString(repoUUID)).
+		Where("templates_repository_configurations.deleted_at IS NULL")
 	if useLatestOnly {
 		filtered = filtered.Where("use_latest = true")
 	}

@@ -44,6 +44,157 @@ func (s *TemplateSuite) SetupTest() {
 	s.pulpClient = &pulp_client.MockPulpClient{}
 	s.pulpClient.On("GetContentPath").Return(testContentPath, nil).Maybe()
 }
+func (s *TemplateSuite) TestValidateRepositoryUUIDsForeignPartner() {
+	templateDao := s.templateDao()
+	ctx := context.Background()
+	templateOrg := orgIDTest
+	partnerOrg := seeds.RandomOrgId()
+
+	partnerRepo := createTestUploadRepository(s.T(), s.tx)
+	partnerConfig := createTestPartnerRepoConfig(s.T(), s.tx, partnerRepo, partnerOrg, "foreign partner repo", true)
+
+	// Foreign partner with no published snapshot is invalid
+	err := templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{partnerConfig.UUID})
+	var daoErr *ce.DaoError
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+	assert.Contains(s.T(), daoErr.Message, "One or more Repository UUIDs was invalid")
+
+	// Unpublished snapshot alone is still invalid for foreign org
+	unpublished := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/unpublished",
+		PublicationHref:             "/pulp/publication/unpublished",
+		DistributionPath:            "/content/unpublished/" + partnerConfig.UUID,
+		RepositoryPath:              "/content/unpublished/" + partnerConfig.UUID,
+		DistributionHref:            "/pulp/distribution/unpublished",
+		RepositoryConfigurationUUID: partnerConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   false,
+	}
+	require.NoError(s.T(), s.tx.Create(&unpublished).Error)
+
+	err = templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{partnerConfig.UUID})
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+	assert.Contains(s.T(), daoErr.Message, "One or more Repository UUIDs was invalid")
+
+	// Published snapshot makes the foreign partner repo valid (even without LastSnapshotUUID)
+	published := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/published",
+		PublicationHref:             "/pulp/publication/published",
+		DistributionPath:            "/content/published/" + partnerConfig.UUID,
+		RepositoryPath:              "/content/published/" + partnerConfig.UUID,
+		DistributionHref:            "/pulp/distribution/published",
+		RepositoryConfigurationUUID: partnerConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}
+	require.NoError(s.T(), s.tx.Create(&published).Error)
+
+	err = templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{partnerConfig.UUID})
+	assert.NoError(s.T(), err)
+
+	// Owner of the partner repo still requires LastSnapshotUUID for their own templates
+	err = templateDao.validateRepositoryUUIDs(ctx, partnerOrg, []string{partnerConfig.UUID})
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+	assert.Contains(s.T(), daoErr.Message, "No snapshots found")
+
+	// Non-partner repo from another org remains invalid
+	otherRepo := createTestUploadRepository(s.T(), s.tx)
+	otherConfig := createTestPartnerRepoConfig(s.T(), s.tx, otherRepo, partnerOrg, "non-partner foreign repo", false)
+	s.createSnapshot(otherConfig)
+	err = templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{otherConfig.UUID})
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+	assert.Contains(s.T(), daoErr.Message, "One or more Repository UUIDs was invalid")
+
+	// Duplicate and mixed valid/invalid input cannot pass validation by count.
+	err = templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{partnerConfig.UUID, partnerConfig.UUID})
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+	err = templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{partnerConfig.UUID, uuid.NewString()})
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+
+	// A soft-deleted published snapshot does not make a foreign partner visible.
+	require.NoError(s.T(), s.tx.Delete(&published).Error)
+	err = templateDao.validateRepositoryUUIDs(ctx, templateOrg, []string{partnerConfig.UUID})
+	require.ErrorAs(s.T(), err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+}
+
+func (s *TemplateSuite) TestCreateForeignPartnerSelectsPublishedSnapshotByDate() {
+	t := s.T()
+	ctx := context.Background()
+	templateOrg := orgIDTest
+	ownerOrg := seeds.RandomOrgId()
+	baseTime := time.Now().Add(-time.Hour)
+
+	partnerConfig := createTestPartnerRepoConfig(t, s.tx, createTestUploadRepository(t, s.tx), ownerOrg, "partner fixed date", true)
+	published := s.createSnapshotAtSpecifiedTime(partnerConfig, baseTime.Add(-2*time.Hour))
+	require.NoError(t, s.tx.Model(&models.Snapshot{}).Where("uuid = ?", published.UUID).Update("published", true).Error)
+	unpublished := s.createSnapshotAtSpecifiedTime(partnerConfig, baseTime)
+	require.NoError(t, s.tx.Model(&models.RepositoryConfiguration{}).Where("uuid = ?", partnerConfig.UUID).UpdateColumn("last_snapshot_uuid", nil).Error)
+
+	created, err := s.templateDao().Create(ctx, api.TemplateRequest{
+		Name:            utils.Ptr("foreign partner fixed date"),
+		RepositoryUUIDS: []string{partnerConfig.UUID},
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El9),
+		Date:            (*api.EmptiableDate)(&baseTime),
+		OrgID:           &templateOrg,
+		UseLatest:       utils.Ptr(false),
+	})
+	require.NoError(t, err)
+
+	var link models.TemplateRepositoryConfiguration
+	require.NoError(t, s.tx.Where("template_uuid = ?", created.UUID).First(&link).Error)
+	assert.Equal(t, partnerConfig.UUID, link.RepositoryConfigurationUUID)
+	assert.Equal(t, published.UUID, link.SnapshotUUID)
+	assert.NotEqual(t, unpublished.UUID, link.SnapshotUUID)
+}
+
+func (s *TemplateSuite) TestUpdateForeignPartnerUseLatestSelectsPublishedSnapshot() {
+	t := s.T()
+	ctx := context.Background()
+	templateOrg := orgIDTest
+	ownerOrg := seeds.RandomOrgId()
+	baseTime := time.Now().Add(-2 * time.Hour)
+
+	partnerConfig := createTestPartnerRepoConfig(t, s.tx, createTestUploadRepository(t, s.tx), ownerOrg, "partner latest", true)
+	published := s.createSnapshotAtSpecifiedTime(partnerConfig, baseTime)
+	require.NoError(t, s.tx.Model(&models.Snapshot{}).Where("uuid = ?", published.UUID).Update("published", true).Error)
+	unpublished := s.createSnapshotAtSpecifiedTime(partnerConfig, baseTime.Add(time.Hour))
+
+	created, err := s.templateDao().Create(ctx, api.TemplateRequest{
+		Name:            utils.Ptr("foreign partner latest"),
+		RepositoryUUIDS: []string{partnerConfig.UUID},
+		Arch:            utils.Ptr(config.X8664),
+		Version:         utils.Ptr(config.El9),
+		Date:            (*api.EmptiableDate)(&baseTime),
+		OrgID:           &templateOrg,
+		UseLatest:       utils.Ptr(false),
+	})
+	require.NoError(t, err)
+
+	updated, err := s.templateDao().Update(ctx, templateOrg, created.UUID, api.TemplateUpdateRequest{
+		RepositoryUUIDS: []string{partnerConfig.UUID},
+		Date:            utils.Ptr(api.EmptiableDate(time.Time{})),
+		UseLatest:       utils.Ptr(true),
+	})
+	require.NoError(t, err)
+	require.Len(t, updated.Snapshots, 1)
+	assert.Equal(t, published.UUID, updated.Snapshots[0].UUID)
+	assert.NotEqual(t, unpublished.UUID, updated.Snapshots[0].UUID)
+}
+
 func (s *TemplateSuite) TestCreate() {
 	templateDao := s.templateDao()
 
