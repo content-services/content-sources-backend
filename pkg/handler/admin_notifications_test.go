@@ -143,9 +143,9 @@ func (suite *AdminNotificationsSuite) TestSendTestNotificationOrgMismatch() {
 func (suite *AdminNotificationsSuite) TestSendTestNotificationNoClient() {
 	t := suite.T()
 
-	origClient := config.Get().NotificationsClient
-	config.Get().NotificationsClient = nil
-	defer func() { config.Get().NotificationsClient = origClient }()
+	origProducer := config.Get().NotificationsProducer
+	config.Get().NotificationsProducer = nil
+	defer func() { config.Get().NotificationsProducer = origProducer }()
 
 	body, err := json.Marshal(api.AdminSendTestNotificationRequest{
 		Notification: testNotificationPayload(test_handler.MockOrgId),
