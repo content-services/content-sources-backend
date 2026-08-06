@@ -10,8 +10,6 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/ProtonMail/go-crypto v1.4.1 h1:9RfcZHqEQUvP8RzecWEUafnZVtEvrBVL9BiF67IQOfM=
 github.com/ProtonMail/go-crypto v1.4.1/go.mod h1:e1OaTyu5SYVrO9gKOEhTc+5UcXtTUa+P3uLudwcgPqo=
-github.com/RedHatInsights/event-schemas-go v1.0.6 h1:8SKLtjp9tap+hRem3DPcXe61H6m3OlOgfBaptrf4dsA=
-github.com/RedHatInsights/event-schemas-go v1.0.6/go.mod h1:SLH8VFc2Hs3VQ+f9Yq32jDsq2WyYwLAkLKslkVcHMjI=
 github.com/RedHatInsights/insights-operator-utils v1.28.0 h1:4ZuClBrFA2VG5xGalmif7CjDkoanUXkl8zspNpBZ1cw=
 github.com/RedHatInsights/insights-operator-utils v1.28.0/go.mod h1:JY7L02n1AHu6U6t+eTClK9RKH7SW2OiJC/BNXY8D9AY=
 github.com/RedHatInsights/rbac-client-go v1.0.0 h1:vA6y4V/vj4T00H0+V6LxT8bKnYNjoVYiNpKAKURlUkE=

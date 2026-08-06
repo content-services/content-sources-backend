@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -229,7 +228,7 @@ func sendIntrospectionNotifications(ctx context.Context, successUuids []string, 
 					event.SendNotification(
 						repos[index].OrgID,
 						event.RepositoryIntrospected,
-						[]repositories.Repositories{event.MapRepositoryResponse(repos[index])},
+						[]event.RepositoryPayload{event.MapRepositoryPayload(repos[index])},
 					)
 					wg.Done()
 				}(j)
@@ -254,7 +253,7 @@ func sendIntrospectionNotifications(ctx context.Context, successUuids []string, 
 				event.SendNotification(
 					repos[index].OrgID,
 					event.RepositoryIntrospectionFailure,
-					[]repositories.Repositories{event.MapRepositoryResponse(repos[index])},
+					[]event.RepositoryPayload{event.MapRepositoryPayload(repos[index])},
 				)
 				wg.Done()
 			}(j)

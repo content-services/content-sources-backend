@@ -121,7 +121,13 @@ func SetupTemplateEvents() {
 	LoadedConfig.TemplateEventClient = client
 }
 
-// SetupNotifications creates the cloud event kafka client for sending event to the event service
+type NotificationsKafkaProducer struct {
+	Producer sarama.SyncProducer
+	Topic    string
+}
+
+// SetupNotifications creates a Sarama SyncProducer for sending notification
+// Action messages to the notifications ingress topic.
 func SetupNotifications() {
 	if !LoadedConfig.Options.EnableNotifications {
 		return
@@ -132,12 +138,30 @@ func SetupNotifications() {
 		return
 	}
 
-	client, err := SetupCloudEventsKafkaClient("platform.notifications.ingress")
+	kafkaServers := strings.Split(LoadedConfig.Kafka.Bootstrap.Servers, ",")
+	saramaConfig, err := GetSaramaConfig()
 	if err != nil {
-		log.Error().Err(err).Msg("SetupNotifications failed")
+		log.Error().Err(err).Msg("SetupNotifications: error getting sarama config")
 		return
 	}
-	LoadedConfig.NotificationsClient = client
+	saramaConfig.Producer.Return.Successes = true
+
+	topicTranslator := kafka.NewTopicTranslationWithClowder(clowder.LoadedConfig)
+	mappedTopic := topicTranslator.GetReal(LoadedConfig.Options.NotificationsTopic)
+	if mappedTopic == "" {
+		mappedTopic = LoadedConfig.Options.NotificationsTopic
+	}
+
+	producer, err := sarama.NewSyncProducer(kafkaServers, saramaConfig)
+	if err != nil {
+		log.Error().Err(err).Msg("SetupNotifications: failed to create Sarama SyncProducer")
+		return
+	}
+
+	LoadedConfig.NotificationsProducer = &NotificationsKafkaProducer{
+		Producer: producer,
+		Topic:    mappedTopic,
+	}
 }
 
 func GetSaramaConfig() (*sarama.Config, error) {
