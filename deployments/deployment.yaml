@@ -1965,7 +1965,7 @@ objects:
 
         - name: sync-lightwell-advisories
           schedule: ${SYNC_LIGHTWELL_ADVISORIES_CRON_JOB}
-          suspend: ${{SUSPEND_CRON_JOB}}
+          suspend: ${{SUSPEND_SYNC_LIGHTWELL_ADVISORIES}}
           concurrencyPolicy: "Forbid"
           podSpec:
             securityContext:
@@ -4807,6 +4807,10 @@ parameters:
     value: 0 6 * * *
   - name: SYNC_LIGHTWELL_ADVISORIES_CRON_JOB
     value: '*/10 * * * *'
+  - name: SUSPEND_SYNC_LIGHTWELL_ADVISORIES
+    description: whether to suspend the sync-lightwell-advisories cronjob
+    required: false
+    value: 'false'
   - name: SUSPEND_CRON_JOB
     value: 'false'
   - name: IMAGE_TAG
