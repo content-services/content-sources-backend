@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/RedHatInsights/event-schemas-go/apps/repositories/v1"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -191,7 +190,7 @@ func (r repositoryConfigDaoImpl) Create(ctx context.Context, newRepoReq api.Repo
 	event.SendNotification(
 		newRepoConfig.OrgID,
 		event.RepositoryCreated,
-		[]repositories.Repositories{event.MapRepositoryResponse(created)},
+		[]event.RepositoryPayload{event.MapRepositoryPayload(created)},
 	)
 
 	return created, nil
@@ -210,11 +209,11 @@ func (r repositoryConfigDaoImpl) BulkCreate(ctx context.Context, newRepositories
 		return err
 	})
 
-	mappedValues := []repositories.Repositories{}
-	for i := 0; i < len(responses); i++ {
-		mappedValues = append(mappedValues, event.MapRepositoryResponse(responses[i]))
+	payloads := make([]event.RepositoryPayload, len(responses))
+	for i := range responses {
+		payloads[i] = event.MapRepositoryPayload(responses[i])
 	}
-	event.SendNotification(*newRepositories[0].OrgID, event.RepositoryCreated, mappedValues)
+	event.SendNotification(*newRepositories[0].OrgID, event.RepositoryCreated, payloads)
 
 	return responses, errs
 }
@@ -1028,7 +1027,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 		event.SendNotification(
 			orgID,
 			event.RepositoryUpdated,
-			[]repositories.Repositories{event.MapRepositoryResponse(repositoryResponse)},
+			[]event.RepositoryPayload{event.MapRepositoryPayload(repositoryResponse)},
 		)
 		return nil
 	})
@@ -1042,7 +1041,7 @@ func (r repositoryConfigDaoImpl) Update(ctx context.Context, orgID, uuid string,
 	event.SendNotification(
 		orgID,
 		event.RepositoryUpdated,
-		[]repositories.Repositories{event.MapRepositoryResponse(repositoryResponse)},
+		[]event.RepositoryPayload{event.MapRepositoryPayload(repositoryResponse)},
 	)
 
 	repoConfig.Repository = models.Repository{}
@@ -1172,7 +1171,7 @@ func (r repositoryConfigDaoImpl) SoftDelete(ctx context.Context, orgID string, u
 	event.SendNotification(
 		orgID,
 		event.RepositoryDeleted,
-		[]repositories.Repositories{event.MapRepositoryResponse(repositoryResponse)},
+		[]event.RepositoryPayload{event.MapRepositoryPayload(repositoryResponse)},
 	)
 
 	return nil
@@ -1207,11 +1206,11 @@ func (r repositoryConfigDaoImpl) BulkDelete(ctx context.Context, orgID string, u
 	})
 
 	if len(responses) > 0 {
-		mappedValues := make([]repositories.Repositories, len(responses))
-		for i := 0; i < len(responses); i++ {
-			mappedValues[i] = event.MapRepositoryResponse(responses[i])
+		payloads := make([]event.RepositoryPayload, len(responses))
+		for i := range responses {
+			payloads[i] = event.MapRepositoryPayload(responses[i])
 		}
-		event.SendNotification(orgID, event.RepositoryDeleted, mappedValues)
+		event.SendNotification(orgID, event.RepositoryDeleted, payloads)
 	}
 
 	return errs
