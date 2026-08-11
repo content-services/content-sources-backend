@@ -392,7 +392,10 @@ func (ds *DeleteSnapshots) deleteDistributionIfBlockingPublication(distPath, pub
 func (ds *DeleteSnapshots) deleteDistributionsBlockingPublication(snap models.Snapshot, repo api.RepositoryResponse, publicationHref string) error {
 	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
 
-	distPaths := []string{snap.DistributionPath}
+	distPaths := []string{
+		snap.DistributionPath,
+		helpers.GetLatestRepoDistPath(repo.UUID),
+	}
 
 	templates, err := ds.daoReg.Template.InternalOnlyGetTemplatesForRepoConfig(ds.ctx, snap.RepositoryConfigurationUUID, false)
 	if err != nil {
@@ -406,8 +409,17 @@ func (ds *DeleteSnapshots) deleteDistributionsBlockingPublication(snap models.Sn
 		distPaths = append(distPaths, distPath)
 	}
 
+	checkedPaths := map[string]struct{}{}
 	deletedAny := false
 	for _, distPath := range distPaths {
+		if distPath == "" {
+			continue
+		}
+		if _, seen := checkedPaths[distPath]; seen {
+			continue
+		}
+		checkedPaths[distPath] = struct{}{}
+
 		deleted, deleteErr := ds.deleteDistributionIfBlockingPublication(distPath, publicationHref, snap.UUID)
 		if deleteErr != nil {
 			return deleteErr
@@ -417,16 +429,76 @@ func (ds *DeleteSnapshots) deleteDistributionsBlockingPublication(snap models.Sn
 		}
 	}
 
+	listedDeleted, listErr := ds.deleteBlockingDistributionsByListing(publicationHref, snap.UUID, checkedPaths)
+	if listErr != nil {
+		return listErr
+	}
+	if listedDeleted {
+		deletedAny = true
+	}
+
 	if !deletedAny {
 		logger.Warn().
 			Str("snapshot_uuid", snap.UUID).
 			Str("base_path", snap.DistributionPath).
 			Str("publication", publicationHref).
-			Int("paths_checked", len(distPaths)).
+			Int("paths_checked", len(checkedPaths)).
 			Msg("expected distribution blocking repository version deletion, but none found referencing publication")
 	}
 
 	return nil
+}
+
+// deleteBlockingDistributionsByListing deletes any domain distributions that still
+// reference publicationHref but were not covered by the known-path cleanup pass
+// (orphaned / unexpected base paths).
+func (ds *DeleteSnapshots) deleteBlockingDistributionsByListing(publicationHref, snapshotUUID string, alreadyCheckedPaths map[string]struct{}) (bool, error) {
+	logger := LogForTask(ds.task.Id.String(), ds.task.Typename, ds.task.RequestID)
+
+	allDistributions, err := ds.getPulpClient().ListDistributions(ds.ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to list distributions while cleaning blockers for publication %v: %w", publicationHref, err)
+	}
+	if allDistributions == nil {
+		return false, nil
+	}
+
+	deletedAny := false
+	for _, dist := range *allDistributions {
+		if _, checked := alreadyCheckedPaths[dist.BasePath]; checked {
+			continue
+		}
+		if dist.PulpHref == nil {
+			continue
+		}
+		if !dist.Publication.IsSet() {
+			continue
+		}
+		pub := dist.Publication.Get()
+		if pub == nil || *pub != publicationHref {
+			continue
+		}
+
+		logger.Info().
+			Str("snapshot_uuid", snapshotUUID).
+			Str("dist_href", *dist.PulpHref).
+			Str("base_path", dist.BasePath).
+			Str("publication", publicationHref).
+			Msg("Deleting listed distribution blocking repository version deletion")
+
+		deleteDistributionHref, delErr := ds.getPulpClient().DeleteRpmDistribution(ds.ctx, *dist.PulpHref)
+		if delErr != nil {
+			return deletedAny, fmt.Errorf("failed to delete listed distribution %v at path %v: %w", *dist.PulpHref, dist.BasePath, delErr)
+		}
+		if deleteDistributionHref != nil {
+			if _, pollErr := ds.getPulpClient().PollTask(ds.ctx, *deleteDistributionHref); pollErr != nil {
+				return deletedAny, fmt.Errorf("error polling listed distribution deletion task for %v: %w", *dist.PulpHref, pollErr)
+			}
+		}
+		deletedAny = true
+	}
+
+	return deletedAny, nil
 }
 
 func (ds *DeleteSnapshots) deleteRepositoryVersion(snap models.Snapshot, repo api.RepositoryResponse) error {
