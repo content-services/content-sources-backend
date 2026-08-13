@@ -293,6 +293,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -565,6 +573,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -804,6 +820,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -1030,6 +1054,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -1261,6 +1293,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -1491,6 +1531,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -1725,6 +1773,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -1956,6 +2012,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -2184,6 +2248,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -2411,6 +2483,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -2663,6 +2743,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -2891,6 +2979,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -3138,6 +3234,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -3362,6 +3466,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -3588,6 +3700,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -3812,6 +3932,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4038,6 +4166,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -4262,6 +4398,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4488,6 +4632,14 @@ objects:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
                     optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -4712,6 +4864,14 @@ objects:
                   secretKeyRef:
                     name: content-sources-appsre-log-access-pulp
                     key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4986,6 +5146,9 @@ parameters:
     value: ''
   - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
     value: 'false'
+  - name: CLIENTS_LIGHTWELL_USERNAME
+    description: Username for accessing lightwell content using basic auth
+    value: ''
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off
   - name: OPTIONS_INTERNAL_USER

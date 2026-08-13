@@ -48,6 +48,7 @@ type Clients struct {
 	RbacTimeout    int            `mapstructure:"rbac_timeout"`
 	Kessel         Kessel         `mapstructure:"kessel"`
 	Pulp           Pulp           `mapstructure:"pulp"`
+	Lightwell      Lightwell      `mapstructure:"lightwell"`
 	Redis          Redis          `mapstructure:"redis"`
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
 	FeatureService FeatureService `mapstructure:"feature_service"`
@@ -111,6 +112,11 @@ type Pulp struct {
 	ContentOrigin     string       `mapstructure:"content_origin"` // hostname of the location of pulp content
 	ContentPathPrefix string       `mapstructure:"content_path_prefix"`
 	Proxy             string       `mapstructure:"proxy"`
+}
+
+type Lightwell struct {
+	Username string
+	Password string
 }
 
 type Candlepin struct {
@@ -352,6 +358,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.candlepin.client_key", "")
 	v.SetDefault("clients.candlepin.ca_cert", "")
 	v.SetDefault("clients.candlepin.devel_org", false)
+
+	v.SetDefault("clients.lightwell.username", "")
+	v.SetDefault("clients.lightwell.password", "")
 
 	v.SetDefault("clients.pulp.server", "")
 	v.SetDefault("clients.pulp.download_policy", "immediate")

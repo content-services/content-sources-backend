@@ -741,74 +741,6 @@ func (_c *MockRepositoryConfigDao_FetchWithoutOrgID_Call) RunAndReturn(run func(
 	return _c
 }
 
-// InternalOnly_FetchRepoConfigForOrg provides a mock function for the type MockRepositoryConfigDao
-func (_mock *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error) {
-	ret := _mock.Called(ctx, orgID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for InternalOnly_FetchRepoConfigForOrg")
-	}
-
-	var r0 []api.RepositoryResponse
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]api.RepositoryResponse, error)); ok {
-		return returnFunc(ctx, orgID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []api.RepositoryResponse); ok {
-		r0 = returnFunc(ctx, orgID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]api.RepositoryResponse)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, orgID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_FetchRepoConfigForOrg'
-type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call struct {
-	*mock.Call
-}
-
-// InternalOnly_FetchRepoConfigForOrg is a helper method to define mock.On call
-//   - ctx context.Context
-//   - orgID string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigForOrg(ctx interface{}, orgID interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
-	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigForOrg", ctx, orgID)}
-}
-
-func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) Run(run func(ctx context.Context, orgID string)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) Return(repositoryResponses []api.RepositoryResponse, err error) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
-	_c.Call.Return(repositoryResponses, err)
-	return _c
-}
-
-func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) RunAndReturn(run func(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // InternalOnly_FetchRepoConfigByName provides a mock function for the type MockRepositoryConfigDao
 func (_mock *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigByName(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error) {
 	ret := _mock.Called(ctx, orgID, name)
@@ -877,6 +809,74 @@ func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call) Retur
 }
 
 func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call) RunAndReturn(run func(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InternalOnly_FetchRepoConfigForOrg provides a mock function for the type MockRepositoryConfigDao
+func (_mock *MockRepositoryConfigDao) InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error) {
+	ret := _mock.Called(ctx, orgID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnly_FetchRepoConfigForOrg")
+	}
+
+	var r0 []api.RepositoryResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]api.RepositoryResponse, error)); ok {
+		return returnFunc(ctx, orgID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []api.RepositoryResponse); ok {
+		r0 = returnFunc(ctx, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.RepositoryResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnly_FetchRepoConfigForOrg'
+type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call struct {
+	*mock.Call
+}
+
+// InternalOnly_FetchRepoConfigForOrg is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID string
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigForOrg(ctx interface{}, orgID interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigForOrg", ctx, orgID)}
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) Run(run func(ctx context.Context, orgID string)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) Return(repositoryResponses []api.RepositoryResponse, err error) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+	_c.Call.Return(repositoryResponses, err)
+	return _c
+}
+
+func (_c *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call) RunAndReturn(run func(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9452,8 +9452,8 @@ func (_m *MockLightwellAdvisoryDao) EXPECT() *MockLightwellAdvisoryDao_Expecter 
 }
 
 // ListByRepository provides a mock function for the type MockLightwellAdvisoryDao
-func (_mock *MockLightwellAdvisoryDao) ListByRepository(ctx context.Context, repoUUID string) ([]LightwellAdvisoryInput, error) {
-	ret := _mock.Called(ctx, repoUUID)
+func (_mock *MockLightwellAdvisoryDao) ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListByRepository")
@@ -9462,17 +9462,17 @@ func (_mock *MockLightwellAdvisoryDao) ListByRepository(ctx context.Context, rep
 	var r0 []LightwellAdvisoryInput
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]LightwellAdvisoryInput, error)); ok {
-		return returnFunc(ctx, repoUUID)
+		return returnFunc(ctx, repoConfigUUID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []LightwellAdvisoryInput); ok {
-		r0 = returnFunc(ctx, repoUUID)
+		r0 = returnFunc(ctx, repoConfigUUID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]LightwellAdvisoryInput)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, repoUUID)
+		r1 = returnFunc(ctx, repoConfigUUID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9486,12 +9486,12 @@ type MockLightwellAdvisoryDao_ListByRepository_Call struct {
 
 // ListByRepository is a helper method to define mock.On call
 //   - ctx context.Context
-//   - repoUUID string
-func (_e *MockLightwellAdvisoryDao_Expecter) ListByRepository(ctx interface{}, repoUUID interface{}) *MockLightwellAdvisoryDao_ListByRepository_Call {
-	return &MockLightwellAdvisoryDao_ListByRepository_Call{Call: _e.mock.On("ListByRepository", ctx, repoUUID)}
+//   - repoConfigUUID string
+func (_e *MockLightwellAdvisoryDao_Expecter) ListByRepository(ctx interface{}, repoConfigUUID interface{}) *MockLightwellAdvisoryDao_ListByRepository_Call {
+	return &MockLightwellAdvisoryDao_ListByRepository_Call{Call: _e.mock.On("ListByRepository", ctx, repoConfigUUID)}
 }
 
-func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) Run(run func(ctx context.Context, repoUUID string)) *MockLightwellAdvisoryDao_ListByRepository_Call {
+func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) Run(run func(ctx context.Context, repoConfigUUID string)) *MockLightwellAdvisoryDao_ListByRepository_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9514,14 +9514,145 @@ func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) Return(lightwellAdviso
 	return _c
 }
 
-func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) RunAndReturn(run func(ctx context.Context, repoUUID string) ([]LightwellAdvisoryInput, error)) *MockLightwellAdvisoryDao_ListByRepository_Call {
+func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)) *MockLightwellAdvisoryDao_ListByRepository_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListUnnotifiedAdvisories provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListUnnotifiedAdvisories")
+	}
+
+	var r0 []LightwellNotificationData
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]LightwellNotificationData, error)); ok {
+		return returnFunc(ctx, repoConfigUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []LightwellNotificationData); ok {
+		r0 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]LightwellNotificationData)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListUnnotifiedAdvisories'
+type MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call struct {
+	*mock.Call
+}
+
+// ListUnnotifiedAdvisories is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+func (_e *MockLightwellAdvisoryDao_Expecter) ListUnnotifiedAdvisories(ctx interface{}, repoConfigUUID interface{}) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+	return &MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call{Call: _e.mock.On("ListUnnotifiedAdvisories", ctx, repoConfigUUID)}
+}
+
+func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) Run(run func(ctx context.Context, repoConfigUUID string)) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) Return(lightwellNotificationDatas []LightwellNotificationData, err error) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+	_c.Call.Return(lightwellNotificationDatas, err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error)) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// MarkAsNotified provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error {
+	ret := _mock.Called(ctx, repoConfigUUID, data)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkAsNotified")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []LightwellNotificationData) error); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, data)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockLightwellAdvisoryDao_MarkAsNotified_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkAsNotified'
+type MockLightwellAdvisoryDao_MarkAsNotified_Call struct {
+	*mock.Call
+}
+
+// MarkAsNotified is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - data []LightwellNotificationData
+func (_e *MockLightwellAdvisoryDao_Expecter) MarkAsNotified(ctx interface{}, repoConfigUUID interface{}, data interface{}) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+	return &MockLightwellAdvisoryDao_MarkAsNotified_Call{Call: _e.mock.On("MarkAsNotified", ctx, repoConfigUUID, data)}
+}
+
+func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) Run(run func(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData)) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []LightwellNotificationData
+		if args[2] != nil {
+			arg2 = args[2].([]LightwellNotificationData)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) Return(err error) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SyncForRepository provides a mock function for the type MockLightwellAdvisoryDao
-func (_mock *MockLightwellAdvisoryDao) SyncForRepository(ctx context.Context, repoUUID string, repoName string, advisories []LightwellAdvisoryInput) error {
-	ret := _mock.Called(ctx, repoUUID, repoName, advisories)
+func (_mock *MockLightwellAdvisoryDao) SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error {
+	ret := _mock.Called(ctx, repoConfigUUID, repoName, advisories)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SyncForRepository")
@@ -9529,7 +9660,7 @@ func (_mock *MockLightwellAdvisoryDao) SyncForRepository(ctx context.Context, re
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []LightwellAdvisoryInput) error); ok {
-		r0 = returnFunc(ctx, repoUUID, repoName, advisories)
+		r0 = returnFunc(ctx, repoConfigUUID, repoName, advisories)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -9543,14 +9674,14 @@ type MockLightwellAdvisoryDao_SyncForRepository_Call struct {
 
 // SyncForRepository is a helper method to define mock.On call
 //   - ctx context.Context
-//   - repoUUID string
+//   - repoConfigUUID string
 //   - repoName string
 //   - advisories []LightwellAdvisoryInput
-func (_e *MockLightwellAdvisoryDao_Expecter) SyncForRepository(ctx interface{}, repoUUID interface{}, repoName interface{}, advisories interface{}) *MockLightwellAdvisoryDao_SyncForRepository_Call {
-	return &MockLightwellAdvisoryDao_SyncForRepository_Call{Call: _e.mock.On("SyncForRepository", ctx, repoUUID, repoName, advisories)}
+func (_e *MockLightwellAdvisoryDao_Expecter) SyncForRepository(ctx interface{}, repoConfigUUID interface{}, repoName interface{}, advisories interface{}) *MockLightwellAdvisoryDao_SyncForRepository_Call {
+	return &MockLightwellAdvisoryDao_SyncForRepository_Call{Call: _e.mock.On("SyncForRepository", ctx, repoConfigUUID, repoName, advisories)}
 }
 
-func (_c *MockLightwellAdvisoryDao_SyncForRepository_Call) Run(run func(ctx context.Context, repoUUID string, repoName string, advisories []LightwellAdvisoryInput)) *MockLightwellAdvisoryDao_SyncForRepository_Call {
+func (_c *MockLightwellAdvisoryDao_SyncForRepository_Call) Run(run func(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput)) *MockLightwellAdvisoryDao_SyncForRepository_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9583,7 +9714,7 @@ func (_c *MockLightwellAdvisoryDao_SyncForRepository_Call) Return(err error) *Mo
 	return _c
 }
 
-func (_c *MockLightwellAdvisoryDao_SyncForRepository_Call) RunAndReturn(run func(ctx context.Context, repoUUID string, repoName string, advisories []LightwellAdvisoryInput) error) *MockLightwellAdvisoryDao_SyncForRepository_Call {
+func (_c *MockLightwellAdvisoryDao_SyncForRepository_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error) *MockLightwellAdvisoryDao_SyncForRepository_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9685,6 +9816,80 @@ func (_c *MockUserPreferenceDao_List_Call) Return(userPreferencesResponse api.Us
 }
 
 func (_c *MockUserPreferenceDao_List_Call) RunAndReturn(run func(ctx context.Context, orgID string, userID string) (api.UserPreferencesResponse, error)) *MockUserPreferenceDao_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListDistinctOrgsByPreference provides a mock function for the type MockUserPreferenceDao
+func (_mock *MockUserPreferenceDao) ListDistinctOrgsByPreference(ctx context.Context, label string, value string) ([]string, error) {
+	ret := _mock.Called(ctx, label, value)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListDistinctOrgsByPreference")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]string, error)); ok {
+		return returnFunc(ctx, label, value)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []string); ok {
+		r0 = returnFunc(ctx, label, value)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, label, value)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUserPreferenceDao_ListDistinctOrgsByPreference_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListDistinctOrgsByPreference'
+type MockUserPreferenceDao_ListDistinctOrgsByPreference_Call struct {
+	*mock.Call
+}
+
+// ListDistinctOrgsByPreference is a helper method to define mock.On call
+//   - ctx context.Context
+//   - label string
+//   - value string
+func (_e *MockUserPreferenceDao_Expecter) ListDistinctOrgsByPreference(ctx interface{}, label interface{}, value interface{}) *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call {
+	return &MockUserPreferenceDao_ListDistinctOrgsByPreference_Call{Call: _e.mock.On("ListDistinctOrgsByPreference", ctx, label, value)}
+}
+
+func (_c *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call) Run(run func(ctx context.Context, label string, value string)) *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call) Return(strings []string, err error) *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call) RunAndReturn(run func(ctx context.Context, label string, value string) ([]string, error)) *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call {
 	_c.Call.Return(run)
 	return _c
 }

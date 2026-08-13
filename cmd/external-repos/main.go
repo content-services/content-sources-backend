@@ -13,6 +13,7 @@ import (
 func main() {
 	config.Load()
 	config.ConfigureLogging()
+	config.SetupNotifications()
 
 	err := db.Connect()
 	if err != nil {

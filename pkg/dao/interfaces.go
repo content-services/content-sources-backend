@@ -269,9 +269,12 @@ type MavenPackagesDao interface {
 type LightwellAdvisoryDao interface {
 	SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error
 	ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)
+	ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error)
+	MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error
 }
 
 type UserPreferenceDao interface {
 	List(ctx context.Context, orgID string, userID string) (api.UserPreferencesResponse, error)
 	Set(ctx context.Context, orgID string, userID string, label string, value string) (api.UserPreferenceResponse, error)
+	ListDistinctOrgsByPreference(ctx context.Context, label string, value string) ([]string, error)
 }

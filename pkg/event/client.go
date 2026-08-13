@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -50,6 +51,42 @@ func SendNotification(orgID string, eventName EventName, repos []RepositoryPaylo
 			log.Error().Err(err).Msg("notification message failed to send")
 			return
 		}
+	} else if config.Get().Options.EnableNotifications {
+		log.Warn().Msg("NotificationsProducer is nil")
+	}
+}
+
+func SendLightwellNotification(orgID, eventType, severity string, events []NotificationEvent) {
+	producer := config.Get().NotificationsProducer
+	if producer != nil && len(events) > 0 {
+		action := NotificationAction{
+			Version:     LightwellNotificationVersion,
+			Bundle:      LightwellNotificationBundle,
+			Application: LightwellNotificationApplication,
+			EventType:   eventType,
+			Timestamp:   time.Now().UTC().Format(time.RFC3339),
+			OrgID:       orgID,
+			Severity:    strings.ToUpper(severity),
+			Context:     map[string]any{},
+			Events:      events,
+		}
+
+		msgBytes, err := json.Marshal(action)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to marshal lightwell notification action")
+			return
+		}
+
+		_, _, err = producer.Producer.SendMessage(&sarama.ProducerMessage{
+			Topic: producer.Topic,
+			Value: sarama.ByteEncoder(msgBytes),
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("lightwell notification message failed to send")
+			return
+		}
+
+		log.Info().Str("org_id", orgID).Str("event_type", eventType).Str("severity", severity).Int("event_count", len(events)).Msg("sent lightwell notification")
 	} else if config.Get().Options.EnableNotifications {
 		log.Warn().Msg("NotificationsProducer is nil")
 	}

@@ -120,3 +120,30 @@ func (s *UserPreferenceSuite) TestListScopedToUser() {
 	assert.Len(s.T(), prefs, 1)
 	assert.Equal(s.T(), "true", prefs[0].Value)
 }
+
+func (s *UserPreferenceSuite) TestListDistinctOrgsByPreference() {
+	dao := userPreferenceDaoImpl{db: s.tx}
+
+	_, err := dao.Set(context.Background(), "org-1", "user-a", models.UserPreferenceLightwellNotificationEnabled, "true")
+	assert.NoError(s.T(), err)
+	_, err = dao.Set(context.Background(), "org-1", "user-b", models.UserPreferenceLightwellNotificationEnabled, "true")
+	assert.NoError(s.T(), err)
+	_, err = dao.Set(context.Background(), "org-2", "user-c", models.UserPreferenceLightwellNotificationEnabled, "true")
+	assert.NoError(s.T(), err)
+	_, err = dao.Set(context.Background(), "org-3", "user-d", models.UserPreferenceLightwellNotificationEnabled, "false")
+	assert.NoError(s.T(), err)
+
+	orgs, err := dao.ListDistinctOrgsByPreference(context.Background(), models.UserPreferenceLightwellNotificationEnabled, "true")
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), orgs, 2)
+	assert.Contains(s.T(), orgs, "org-1")
+	assert.Contains(s.T(), orgs, "org-2")
+}
+
+func (s *UserPreferenceSuite) TestListDistinctOrgsByPreferenceEmpty() {
+	dao := userPreferenceDaoImpl{db: s.tx}
+
+	orgs, err := dao.ListDistinctOrgsByPreference(context.Background(), models.UserPreferenceLightwellNotificationEnabled, "true")
+	assert.NoError(s.T(), err)
+	assert.Empty(s.T(), orgs)
+}

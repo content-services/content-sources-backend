@@ -9,12 +9,15 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	vp "github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -44,11 +47,7 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 		return fmt.Errorf("error loading lightwell allowlist: %w", err)
 	}
 
-	useClientCerts := config.Get().Clients.Pulp.Username == ""
-	pulpHTTPClient, err := config.GetHTTPClient(&config.PulpCertUser{}, useClientCerts)
-	if err != nil {
-		return fmt.Errorf("error creating authenticated HTTP client: %w", err)
-	}
+	httpClient := &http.Client{Timeout: 90 * time.Second}
 
 	var errs []error
 	for _, entry := range lightwellEntries {
@@ -56,7 +55,7 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 			continue
 		}
 
-		err := processOSVForEntry(ctx, daoReg, &pulpHTTPClient, entry, force)
+		err := processOSVForEntry(ctx, daoReg, httpClient, entry, force)
 		if err != nil {
 			log.Error().Err(err).
 				Str("entry", entry.Name).
@@ -112,7 +111,69 @@ func processOSVForEntry(
 
 	logger.Info().Int("total", len(advisories)).Int("updated", updated).Msg("Syncing advisories")
 
-	return daoReg.LightwellAdvisory.SyncForRepository(ctx, repoConfigUUID, entry.Name, advisories)
+	if err := daoReg.LightwellAdvisory.SyncForRepository(ctx, repoConfigUUID, entry.Name, advisories); err != nil {
+		return err
+	}
+
+	return sendAdvisoryNotifications(ctx, daoReg, logger, repoConfigUUID, entry.Name)
+}
+
+func sendAdvisoryNotifications(
+	ctx context.Context,
+	daoReg *dao.DaoRegistry,
+	logger zerolog.Logger,
+	repoConfigUUID string,
+	repoName string,
+) error {
+	eventType := event.LightwellEventType(repoName)
+	if eventType == "" {
+		return nil
+	}
+
+	unnotified, err := daoReg.LightwellAdvisory.ListUnnotifiedAdvisories(ctx, repoConfigUUID)
+	if err != nil {
+		return fmt.Errorf("error listing unnotified advisories: %w", err)
+	}
+	if len(unnotified) == 0 {
+		return nil
+	}
+
+	orgs, err := daoReg.UserPreference.ListDistinctOrgsByPreference(ctx,
+		models.UserPreferenceLightwellNotificationEnabled, "true")
+	if err != nil {
+		return fmt.Errorf("error listing opted-in orgs: %w", err)
+	}
+
+	if len(orgs) == 0 {
+		log.Debug().Msg("No orgs opted-in for lightwell notifications")
+		return nil
+	}
+
+	inputs := make([]event.LightwellNotificationInput, len(unnotified))
+	for i, u := range unnotified {
+		inputs[i] = event.LightwellNotificationInput{
+			PackageName:   u.PackageName,
+			AdvisoryID:    u.AdvisoryID,
+			Severity:      u.Severity,
+			FixedVersions: u.FixedVersions,
+			ReferenceURLs: u.ReferenceURLs,
+		}
+	}
+
+	events := event.BuildLightwellNotificationEvents(inputs)
+	severity := event.MaximumSeverity(inputs)
+
+	for _, orgID := range orgs {
+		event.SendLightwellNotification(orgID, eventType, severity, events)
+	}
+
+	logger.Info().Int("advisory_count", len(unnotified)).Int("org_count", len(orgs)).Msg("Sent lightwell advisory notifications")
+
+	if err := daoReg.LightwellAdvisory.MarkAsNotified(ctx, repoConfigUUID, unnotified); err != nil {
+		return fmt.Errorf("error marking advisories as notified: %w", err)
+	}
+
+	return nil
 }
 
 type fetchResult struct {
@@ -169,7 +230,7 @@ func buildAdvisoryInputs(
 					Details:       info.Details,
 					ReferenceURLs: info.References,
 					PackageName:   info.PackageName,
-					FixedVersion:  info.FixedVersion,
+					FixedVersions: info.FixedVersions,
 					Checksum:      entry.Checksum,
 				})
 			}
@@ -196,8 +257,8 @@ func httpGet(ctx context.Context, client *http.Client, reqURL string) ([]byte, e
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	if config.Get().Clients.Pulp.Username != "" {
-		req.SetBasicAuth(config.Get().Clients.Pulp.Username, config.Get().Clients.Pulp.Password)
+	if config.Get().Clients.Lightwell.Username != "" {
+		req.SetBasicAuth(config.Get().Clients.Lightwell.Username, config.Get().Clients.Lightwell.Password)
 	}
 
 	resp, err := client.Do(req)

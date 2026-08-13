@@ -15,6 +15,7 @@ type NotificationAction struct {
 	EventType   string                  `json:"event_type"`
 	Timestamp   string                  `json:"timestamp"`
 	OrgID       string                  `json:"org_id"`
+	Severity    string                  `json:"severity,omitempty"`
 	Context     map[string]any          `json:"context"`
 	Events      []NotificationEvent     `json:"events"`
 	Recipients  []NotificationRecipient `json:"recipients,omitempty"`

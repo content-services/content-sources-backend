@@ -71,6 +71,19 @@ func (d userPreferenceDaoImpl) Set(ctx context.Context, orgID string, userID str
 	}, nil
 }
 
+func (d userPreferenceDaoImpl) ListDistinctOrgsByPreference(ctx context.Context, label string, value string) ([]string, error) {
+	var orgIDs []string
+	result := d.db.WithContext(ctx).
+		Model(&models.UserPreference{}).
+		Where("label = ? AND value = ?", label, value).
+		Distinct("org_id").
+		Pluck("org_id", &orgIDs)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list orgs by preference: %w", result.Error)
+	}
+	return orgIDs, nil
+}
+
 func userPreferenceDBErrorToApi(e error) *ce.DaoError {
 	if dbError, ok := e.(models.Error); ok && dbError.Validation {
 		return &ce.DaoError{BadValidation: true, Message: dbError.Message}
