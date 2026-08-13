@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './CoverageReportsApi';
 export * from './EnvironmentsApi';
 export * from './FeaturesApi';
 export * from './GpgKeyApi';

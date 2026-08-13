@@ -87,6 +87,98 @@
                 },
                 "type": "object"
             },
+            "api.CoverageReportPackageItem": {
+                "properties": {
+                    "ecosystem": {
+                        "description": "Ecosystem of the package",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Package name from the manifest",
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "Package match status (in_network, not_in_network)",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.CoverageReportPackagesResponse": {
+                "properties": {
+                    "limit": {
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "type": "integer"
+                    },
+                    "results": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.CoverageReportPackageItem"
+                        },
+                        "type": "array"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "api.CoverageReportResponse": {
+                "properties": {
+                    "analysis_task_error": {
+                        "description": "Error if coverage analysis task failed",
+                        "type": "string"
+                    },
+                    "analysis_task_uuid": {
+                        "description": "UUID of the coverage analysis task",
+                        "type": "string"
+                    },
+                    "completed_at": {
+                        "description": "Timestamp when coverage analysis finished",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "description": "Timestamp when the report was created",
+                        "type": "string"
+                    },
+                    "ecosystem_coverage_summary": {
+                        "description": "Per-ecosystem breakdown",
+                        "items": {
+                            "$ref": "#/components/schemas/api.EcosystemCoverageSummary"
+                        },
+                        "type": "array"
+                    },
+                    "exact_matches": {
+                        "description": "Number of packages with name and version found",
+                        "type": "integer"
+                    },
+                    "input_format": {
+                        "description": "Detected manifest format",
+                        "type": "string"
+                    },
+                    "partial_matches": {
+                        "description": "Number of packages with name found but not version",
+                        "type": "integer"
+                    },
+                    "status": {
+                        "description": "Coverage analysis task status",
+                        "type": "string"
+                    },
+                    "total": {
+                        "description": "Total packages parsed from the manifest",
+                        "type": "integer"
+                    },
+                    "unmatched": {
+                        "description": "Number of packages with name not found",
+                        "type": "integer"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.CreateUploadRequest": {
                 "properties": {
                     "chunk_size": {
@@ -111,6 +203,26 @@
                     "sha256",
                     "size"
                 ],
+                "type": "object"
+            },
+            "api.EcosystemCoverageSummary": {
+                "properties": {
+                    "ecosystem": {
+                        "type": "string"
+                    },
+                    "exact_matches": {
+                        "type": "integer"
+                    },
+                    "partial_matches": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    },
+                    "unmatched": {
+                        "type": "integer"
+                    }
+                },
                 "type": "object"
             },
             "api.ExtendedReleaseArchitecture": {
@@ -2512,6 +2624,234 @@
     },
     "openapi": "3.0.3",
     "paths": {
+        "/coverage_reports/": {
+            "post": {
+                "description": "Upload a manifest file and start coverage analysis.",
+                "operationId": "createCoverageReport",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "description": "Manifest file (CycloneDX, SPDX, etc.)",
+                                        "format": "binary",
+                                        "type": "string",
+                                        "x-formData-name": "file"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ],
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.CoverageReportResponse"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Create coverage report",
+                "tags": [
+                    "coverage_reports"
+                ]
+            }
+        },
+        "/coverage_reports/{uuid}": {
+            "get": {
+                "description": "Return a coverage report by UUID.",
+                "operationId": "getCoverageReport",
+                "parameters": [
+                    {
+                        "description": "Coverage report UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.CoverageReportResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get coverage report",
+                "tags": [
+                    "coverage_reports"
+                ]
+            }
+        },
+        "/coverage_reports/{uuid}/packages": {
+            "get": {
+                "description": "Return paginated packages for a completed coverage report.",
+                "operationId": "listCoverageReportPackages",
+                "parameters": [
+                    {
+                        "description": "Coverage report UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by package name",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by ecosystem",
+                        "in": "query",
+                        "name": "ecosystem",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by package match status (possible values: in_network, not_in_network)",
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Starting point for pagination. Default: 0",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Number of items per page. Default: 100",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.CoverageReportPackagesResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List coverage report packages",
+                "tags": [
+                    "coverage_reports"
+                ]
+            }
+        },
         "/environments/names": {
             "post": {
                 "description": "This enables users to search for environments in a given list of repositories.",

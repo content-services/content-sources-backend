@@ -96,6 +96,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterCandlepinRoutes(group, &cpClient, &ch)
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
+		RegisterCoverageReportRoutes(group)
 
 		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
