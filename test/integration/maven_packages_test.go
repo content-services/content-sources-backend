@@ -127,6 +127,11 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	// randomize the identity for multiple test runs
 	s.identity = test_handler.MockIdentity
 	s.identity.Identity.OrgID = orgId
+	s.identity.Identity.User = &identity.User{
+		Username: "user",
+		UserID:   test_handler.MockUserID,
+		OrgAdmin: true,
+	}
 
 	t := s.T()
 
@@ -422,6 +427,11 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 	// randomize the identity for multiple test runs
 	s.identity = test_handler.MockIdentity
 	s.identity.Identity.OrgID = orgId
+	s.identity.Identity.User = &identity.User{
+		Username: "user",
+		UserID:   test_handler.MockUserID,
+		OrgAdmin: true,
+	}
 
 	t := s.T()
 

@@ -20,6 +20,7 @@ type MockDaoRegistry struct {
 	MavenPackages     MockMavenPackagesDao
 	LightwellAdvisory MockLightwellAdvisoryDao
 	UserPreference    MockUserPreferenceDao
+	LightwellToken    MockLightwellTokenDao
 }
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
@@ -39,6 +40,7 @@ func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 		MavenPackages:     &m.MavenPackages,
 		LightwellAdvisory: &m.LightwellAdvisory,
 		UserPreference:    &m.UserPreference,
+		LightwellToken:    &m.LightwellToken,
 	}
 	return &r
 }
@@ -60,6 +62,7 @@ func GetMockDaoRegistry(t *testing.T) *MockDaoRegistry {
 		MavenPackages:     *NewMockMavenPackagesDao(t),
 		LightwellAdvisory: *NewMockLightwellAdvisoryDao(t),
 		UserPreference:    *NewMockUserPreferenceDao(t),
+		LightwellToken:    *NewMockLightwellTokenDao(t),
 	}
 	return &reg
 }

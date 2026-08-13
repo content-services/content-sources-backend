@@ -35,13 +35,27 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.listMavenPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.getPythonPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.getNpmPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.getNpmPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.listMavenPackageVersions, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.getPythonPackageVersions, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.getNpmPackageVersions, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.getNpmPackageDetail, rbac.RbacVerbRead, checkOrgAdminOrLightwellBearer)
+}
+
+// checkOrgAdminOrLightwellBearer allows Console org-admins or validated Lightwell Bearer tokens.
+// Uses the same context key as middleware.LightwellBearerAuthContextKey to avoid an import cycle.
+func checkOrgAdminOrLightwellBearer(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if v, ok := c.Get("lightwell_bearer_auth").(bool); ok && v {
+			return next(c)
+		}
+		if err := requireOrgAdminFor(c, "access Lightwell packages"); err != nil {
+			return err
+		}
+		return next(c)
+	}
 }
 
 func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
@@ -60,7 +74,19 @@ func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.R
 	if len(repos.Data) == 0 {
 		return api.RepositoryResponse{}, err
 	}
-	return repos.Data[0], nil
+	repo := repos.Data[0]
+
+	if accessLevel, ok := c.Get("lightwell_bearer_access_level").(string); ok && accessLevel != "" {
+		if !config.LightwellTokenAllows(accessLevel, repo.SecurityLevel) {
+			return api.RepositoryResponse{}, &ce.DaoError{
+				Forbidden: true,
+				Message: fmt.Sprintf("token access_level %q cannot access repository security_level %q",
+					accessLevel, repo.SecurityLevel),
+			}
+		}
+	}
+
+	return repo, nil
 }
 
 // ListPackages godoc

@@ -3,6 +3,7 @@
 export * from './EnvironmentsApi';
 export * from './FeaturesApi';
 export * from './GpgKeyApi';
+export * from './LightwellTokensApi';
 export * from './ModuleStreamsApi';
 export * from './PackagegroupsApi';
 export * from './PackagesApi';

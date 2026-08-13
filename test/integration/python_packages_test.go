@@ -128,6 +128,11 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 
 	s.identity = test_handler.MockIdentity
 	s.identity.Identity.OrgID = orgId
+	s.identity.Identity.User = &identity.User{
+		Username: "user",
+		UserID:   test_handler.MockUserID,
+		OrgAdmin: true,
+	}
 
 	t := s.T()
 
@@ -166,6 +171,11 @@ func (s *PythonPackagesSuite) TestPythonPackageVersionsAPI() {
 
 	s.identity = test_handler.MockIdentity
 	s.identity.Identity.OrgID = orgId
+	s.identity.Identity.User = &identity.User{
+		Username: "user",
+		UserID:   test_handler.MockUserID,
+		OrgAdmin: true,
+	}
 
 	t := s.T()
 
@@ -197,6 +207,11 @@ func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
 
 	s.identity = test_handler.MockIdentity
 	s.identity.Identity.OrgID = orgId
+	s.identity.Identity.User = &identity.User{
+		Username: "user",
+		UserID:   test_handler.MockUserID,
+		OrgAdmin: true,
+	}
 
 	t := s.T()
 
@@ -405,6 +420,11 @@ func (s *PythonPackagesSuite) TestContentCountsForPythonRepository() {
 
 	s.identity = test_handler.MockIdentity
 	s.identity.Identity.OrgID = orgId
+	s.identity.Identity.User = &identity.User{
+		Username: "user",
+		UserID:   test_handler.MockUserID,
+		OrgAdmin: true,
+	}
 
 	t := s.T()
 
