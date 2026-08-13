@@ -1,3 +1,4 @@
+apis/CoverageReportsApi.ts
 apis/EnvironmentsApi.ts
 apis/FeaturesApi.ts
 apis/GpgKeyApi.ts
@@ -18,7 +19,11 @@ models/ApiAddUploadsRequest.ts
 models/ApiArtifact.ts
 models/ApiBulkRemoveRpmsRequest.ts
 models/ApiContentUnitSearchRequest.ts
+models/ApiCoverageReportPackageItem.ts
+models/ApiCoverageReportPackagesResponse.ts
+models/ApiCoverageReportResponse.ts
 models/ApiCreateUploadRequest.ts
+models/ApiEcosystemCoverageSummary.ts
 models/ApiExtendedReleaseArchitecture.ts
 models/ApiExtendedReleaseStream.ts
 models/ApiFeature.ts

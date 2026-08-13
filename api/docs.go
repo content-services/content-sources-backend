@@ -19,6 +19,177 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/coverage_reports/": {
+            "post": {
+                "description": "Upload a manifest file and start coverage analysis.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coverage_reports"
+                ],
+                "summary": "Create coverage report",
+                "operationId": "createCoverageReport",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Manifest file (CycloneDX, SPDX, etc.)",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.CoverageReportResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/coverage_reports/{uuid}": {
+            "get": {
+                "description": "Return a coverage report by UUID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coverage_reports"
+                ],
+                "summary": "Get coverage report",
+                "operationId": "getCoverageReport",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coverage report UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CoverageReportResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/coverage_reports/{uuid}/packages": {
+            "get": {
+                "description": "Return paginated packages for a completed coverage report.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "coverage_reports"
+                ],
+                "summary": "List coverage report packages",
+                "operationId": "listCoverageReportPackages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Coverage report UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by package name",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by ecosystem",
+                        "name": "ecosystem",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by package match status (possible values: in_network, not_in_network)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for pagination. Default: 0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page. Default: 100",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.CoverageReportPackagesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/environments/names": {
             "post": {
                 "description": "This enables users to search for environments in a given list of repositories.",
@@ -4496,6 +4667,98 @@ const docTemplate = `{
                 }
             }
         },
+        "api.CoverageReportPackageItem": {
+            "type": "object",
+            "properties": {
+                "ecosystem": {
+                    "description": "Ecosystem of the package",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Package name from the manifest",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Package match status (in_network, not_in_network)",
+                    "type": "string"
+                }
+            }
+        },
+        "api.CoverageReportPackagesResponse": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.CoverageReportPackageItem"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.CoverageReportResponse": {
+            "type": "object",
+            "properties": {
+                "analysis_task_error": {
+                    "description": "Error if coverage analysis task failed",
+                    "type": "string"
+                },
+                "analysis_task_uuid": {
+                    "description": "UUID of the coverage analysis task",
+                    "type": "string"
+                },
+                "completed_at": {
+                    "description": "Timestamp when coverage analysis finished",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Timestamp when the report was created",
+                    "type": "string"
+                },
+                "ecosystem_coverage_summary": {
+                    "description": "Per-ecosystem breakdown",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.EcosystemCoverageSummary"
+                    }
+                },
+                "exact_matches": {
+                    "description": "Number of packages with name and version found",
+                    "type": "integer"
+                },
+                "input_format": {
+                    "description": "Detected manifest format",
+                    "type": "string"
+                },
+                "partial_matches": {
+                    "description": "Number of packages with name found but not version",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "Coverage analysis task status",
+                    "type": "string"
+                },
+                "total": {
+                    "description": "Total packages parsed from the manifest",
+                    "type": "integer"
+                },
+                "unmatched": {
+                    "description": "Number of packages with name not found",
+                    "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "api.CreateUploadRequest": {
             "type": "object",
             "required": [
@@ -4518,6 +4781,26 @@ const docTemplate = `{
                 },
                 "size": {
                     "description": "Size of the upload in bytes",
+                    "type": "integer"
+                }
+            }
+        },
+        "api.EcosystemCoverageSummary": {
+            "type": "object",
+            "properties": {
+                "ecosystem": {
+                    "type": "string"
+                },
+                "exact_matches": {
+                    "type": "integer"
+                },
+                "partial_matches": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "unmatched": {
                     "type": "integer"
                 }
             }
