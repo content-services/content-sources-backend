@@ -1,0 +1,64 @@
+version: "2"
+overrides:
+  go:
+    overrides:
+      - db_type: "uuid"
+        engine: "postgresql"
+        go_type:
+          import: "github.com/google/uuid"
+          type: "UUID"
+      - db_type: "text"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "string"
+          pointer: true
+      - db_type: "pg_catalog.float8"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "float64"
+          pointer: true
+      - db_type: "date"
+        engine: "postgresql"
+        go_type:
+          import: "time"
+          type: "Time"
+      # pgx/v5 + sqlc: both pg_catalog.timestamptz and timestamptz entries are required;
+      # otherwise sqlc emits pgtype.Timestamptz.
+      - db_type: "pg_catalog.timestamptz"
+        engine: "postgresql"
+        go_type:
+          import: "time"
+          type: "Time"
+      - db_type: "pg_catalog.timestamptz"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          import: "time"
+          type: "Time"
+          pointer: true
+      - db_type: "timestamptz"
+        engine: "postgresql"
+        go_type:
+          import: "time"
+          type: "Time"
+      - db_type: "timestamptz"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          import: "time"
+          type: "Time"
+          pointer: true
+sql:
+  - engine: "postgresql"
+    queries: "queries"
+    schema: "schema.sql"
+    gen:
+      go:
+        package: "store"
+        out: "store"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_empty_slices: true
+        emit_interface: true
