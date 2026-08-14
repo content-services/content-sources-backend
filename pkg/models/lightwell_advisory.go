@@ -14,6 +14,7 @@ type LightwellAdvisory struct {
 	ReferenceURLs               pq.StringArray `json:"reference_urls" gorm:"type:text[]"`
 	PackageName                 string         `json:"package_name"`
 	FixedVersion                string         `json:"fixed_version"`
+	FixedVersions               pq.StringArray `json:"fixed_versions" gorm:"type:text[]"`
 	RepositoryConfigurationUUID string         `json:"repository_configuration_uuid" gorm:"not null"`
 	Checksum                    string         `json:"checksum"`
 }

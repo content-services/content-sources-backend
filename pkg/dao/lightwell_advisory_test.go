@@ -48,7 +48,7 @@ func (s *LightwellAdvisorySuite) TestSyncInsertsNew() {
 			Details:       "Fake advisory one",
 			ReferenceURLs: []string{"https://example.com/1"},
 			PackageName:   "com.example:fake-lib",
-			FixedVersion:  "1.0.1",
+			FixedVersions: []string{"1.0.1"},
 			Checksum:      "aaa111",
 		},
 		{
@@ -57,7 +57,7 @@ func (s *LightwellAdvisorySuite) TestSyncInsertsNew() {
 			Details:       "Fake advisory two",
 			ReferenceURLs: []string{"https://example.com/2"},
 			PackageName:   "com.example:other-lib",
-			FixedVersion:  "2.0.0",
+			FixedVersions: []string{"2.0.0"},
 			Checksum:      "bbb222",
 		},
 	}
@@ -76,11 +76,11 @@ func (s *LightwellAdvisorySuite) TestSyncUpdatesExisting() {
 
 	initial := []LightwellAdvisoryInput{
 		{
-			AdvisoryID:   "FAKE-001",
-			Details:      "Original details",
-			PackageName:  "com.example:fake-lib",
-			FixedVersion: "1.0.0",
-			Checksum:     "aaa111",
+			AdvisoryID:    "FAKE-001",
+			Details:       "Original details",
+			PackageName:   "com.example:fake-lib",
+			FixedVersions: []string{"1.0.0"},
+			Checksum:      "aaa111",
 		},
 	}
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/java/remediated", initial)
@@ -88,11 +88,11 @@ func (s *LightwellAdvisorySuite) TestSyncUpdatesExisting() {
 
 	updated := []LightwellAdvisoryInput{
 		{
-			AdvisoryID:   "FAKE-001",
-			Details:      "Updated details",
-			PackageName:  "com.example:fake-lib",
-			FixedVersion: "1.0.1",
-			Checksum:     "ccc333",
+			AdvisoryID:    "FAKE-001",
+			Details:       "Updated details",
+			PackageName:   "com.example:fake-lib",
+			FixedVersions: []string{"1.0.1"},
+			Checksum:      "ccc333",
 		},
 	}
 	err = dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/java/remediated", updated)
@@ -102,7 +102,7 @@ func (s *LightwellAdvisorySuite) TestSyncUpdatesExisting() {
 	s.NoError(err)
 	s.Len(result, 1)
 	s.Equal("Updated details", result[0].Details)
-	s.Equal("1.0.1", result[0].FixedVersion)
+	s.Equal([]string{"1.0.1"}, result[0].FixedVersions)
 	s.Equal("ccc333", result[0].Checksum)
 }
 
@@ -111,15 +111,15 @@ func (s *LightwellAdvisorySuite) TestSyncDeletesStale() {
 	repoConfigUUID := s.createLightwellRepoConfig("lightwell/java/remediated")
 
 	initial := []LightwellAdvisoryInput{
-		{AdvisoryID: "FAKE-001", Checksum: "aaa"},
-		{AdvisoryID: "FAKE-002", Checksum: "bbb"},
-		{AdvisoryID: "FAKE-003", Checksum: "ccc"},
+		{AdvisoryID: "FAKE-001", Checksum: "aaa", FixedVersions: []string{"1.0.0"}},
+		{AdvisoryID: "FAKE-002", Checksum: "bbb", FixedVersions: []string{"1.0.0"}},
+		{AdvisoryID: "FAKE-003", Checksum: "ccc", FixedVersions: []string{"1.0.0"}},
 	}
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/java/remediated", initial)
 	s.Require().NoError(err)
 
 	kept := []LightwellAdvisoryInput{
-		{AdvisoryID: "FAKE-001", Checksum: "aaa"},
+		{AdvisoryID: "FAKE-001", Checksum: "aaa", FixedVersions: []string{"1.0.0"}},
 	}
 	err = dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/java/remediated", kept)
 	s.NoError(err)
@@ -136,13 +136,13 @@ func (s *LightwellAdvisorySuite) TestListByRepository() {
 	repoConfigUUID2 := s.createLightwellRepoConfig("lightwell/java/other")
 
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID1, "repo-1", []LightwellAdvisoryInput{
-		{AdvisoryID: "FAKE-001", Checksum: "aaa"},
-		{AdvisoryID: "FAKE-002", Checksum: "bbb"},
+		{AdvisoryID: "FAKE-001", Checksum: "aaa", FixedVersions: []string{"1.0.0"}},
+		{AdvisoryID: "FAKE-002", Checksum: "bbb", FixedVersions: []string{"1.0.0"}},
 	})
 	s.Require().NoError(err)
 
 	err = dao.SyncForRepository(context.Background(), repoConfigUUID2, "repo-2", []LightwellAdvisoryInput{
-		{AdvisoryID: "FAKE-003", Checksum: "ccc"},
+		{AdvisoryID: "FAKE-003", Checksum: "ccc", FixedVersions: []string{"1.0.0"}},
 	})
 	s.Require().NoError(err)
 
@@ -153,4 +153,110 @@ func (s *LightwellAdvisorySuite) TestListByRepository() {
 	result2, err := dao.ListByRepository(context.Background(), repoConfigUUID2)
 	s.NoError(err)
 	s.Len(result2, 1)
+}
+
+func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisories() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/list-all")
+
+	advisories := []LightwellAdvisoryInput{
+		{AdvisoryID: "CVE-2026-0001", PackageName: "com.example:lib-a", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "aaa"},
+		{AdvisoryID: "CVE-2026-0002", PackageName: "com.example:lib-a", Severity: "7.5", FixedVersions: []string{"2.0.0"}, Checksum: "bbb"},
+		{AdvisoryID: "CVE-2026-0003", PackageName: "com.example:lib-b", Severity: "4.0", FixedVersions: []string{"3.0.0"}, Checksum: "ccc"},
+	}
+	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/list-all", advisories)
+	s.Require().NoError(err)
+
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.NoError(err)
+	s.Len(unnotified, 3)
+}
+
+func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesExcludesNotified() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/excludes")
+
+	advisories := []LightwellAdvisoryInput{
+		{AdvisoryID: "CVE-2026-0001", PackageName: "com.example:lib-a", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "aaa"},
+		{AdvisoryID: "CVE-2026-0002", PackageName: "com.example:lib-a", Severity: "7.5", FixedVersions: []string{"2.0.0"}, Checksum: "bbb"},
+	}
+	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/excludes", advisories)
+	s.Require().NoError(err)
+
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.Require().NoError(err)
+	s.Len(unnotified, 2)
+
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, unnotified[:1])
+	s.Require().NoError(err)
+
+	unnotified, err = dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.NoError(err)
+	s.Len(unnotified, 1)
+	s.Equal("CVE-2026-0002", unnotified[0].AdvisoryID)
+}
+
+func (s *LightwellAdvisorySuite) TestMarkAsNotifiedIdempotent() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/idempotent")
+
+	advisories := []LightwellAdvisoryInput{
+		{AdvisoryID: "CVE-2026-0001", PackageName: "com.example:lib-a", Checksum: "aaa", FixedVersions: []string{"1.0.0"}},
+	}
+	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/idempotent", advisories)
+	s.Require().NoError(err)
+
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.Require().NoError(err)
+
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, unnotified)
+	s.NoError(err)
+
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, unnotified)
+	s.NoError(err)
+
+	result, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.NoError(err)
+	s.Empty(result)
+}
+
+func (s *LightwellAdvisorySuite) TestMarkAsNotifiedEmpty() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	err := dao.MarkAsNotified(context.Background(), "some-uuid", nil)
+	s.NoError(err)
+}
+
+func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesFixedVersions() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/versions")
+
+	advisories := []LightwellAdvisoryInput{
+		{AdvisoryID: "CVE-2026-0001", PackageName: "com.example:lib-a", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "aaa"},
+	}
+	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/versions", advisories)
+	s.Require().NoError(err)
+
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.NoError(err)
+	s.Require().Len(unnotified, 1)
+	s.Equal("CVE-2026-0001", unnotified[0].AdvisoryID)
+	s.Equal("com.example:lib-a", unnotified[0].PackageName)
+	s.Equal("9.8", unnotified[0].Severity)
+	s.Equal([]string{"1.0.1"}, unnotified[0].FixedVersions)
+}
+
+func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesMultipleFixedVersions() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/multi-versions")
+
+	advisories := []LightwellAdvisoryInput{
+		{AdvisoryID: "CVE-2026-0001", PackageName: "com.example:lib-a", Severity: "9.8", FixedVersions: []string{"1.0.1", "2.0.0"}, Checksum: "aaa"},
+	}
+	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/multi-versions", advisories)
+	s.Require().NoError(err)
+
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	s.NoError(err)
+	s.Require().Len(unnotified, 1)
+	s.Equal([]string{"1.0.1", "2.0.0"}, unnotified[0].FixedVersions)
 }
