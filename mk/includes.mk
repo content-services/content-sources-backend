@@ -33,6 +33,7 @@ include mk/docker.mk
 include mk/mockery.mk
 include mk/meta-db.mk
 include mk/db.mk
+include mk/sqlc.mk
 include mk/meta-kafka.mk
 include mk/kafka.mk
 include mk/meta-docker.mk
