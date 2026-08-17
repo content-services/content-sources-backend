@@ -1,0 +1,12 @@
+[
+  { "name": "spring-core", "ecosystem": "Java", "status": "in_network" },
+  { "name": "lombok", "ecosystem": "Java", "status": "in_network" },
+  { "name": "commons-io", "ecosystem": "Java", "status": "in_network" },
+  { "name": "junit-jupiter", "ecosystem": "Java", "status": "in_network" },
+  { "name": "log4j-api", "ecosystem": "Java", "status": "in_network" },
+  { "name": "internal-sdk", "ecosystem": "Java", "status": "not_in_network" },
+  { "name": "django", "ecosystem": "Python", "status": "in_network" },
+  { "name": "celery", "ecosystem": "Python", "status": "in_network" },
+  { "name": "redis", "ecosystem": "Python", "status": "in_network" },
+  { "name": "boto3", "ecosystem": "Python", "status": "in_network" }
+]

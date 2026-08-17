@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	stubPendingReportUUID   = "660e8400-e29b-41d4-a716-446655440001"
-	stubFailedReportUUID    = "770e8400-e29b-41d4-a716-446655440002"
-	stubCompletedReportUUID = "550e8400-e29b-41d4-a716-446655440000"
+	stubPendingReportUUID      = "660e8400-e29b-41d4-a716-446655440001"
+	stubFailedReportUUID       = "770e8400-e29b-41d4-a716-446655440002"
+	stubCompletedReportUUID    = "550e8400-e29b-41d4-a716-446655440000"
+	stubHighCoverageReportUUID = "880e8400-e29b-41d4-a716-446655440003"
 )
 
 var errStubCoverageReportNotFound = errors.New("coverage report not found")
@@ -41,17 +42,25 @@ func stubGetCoverageReport(reportUUID string) (api.CoverageReportResponse, error
 		return stubFailedReport()
 	case stubCompletedReportUUID:
 		return stubCompletedReport()
+	case stubHighCoverageReportUUID:
+		return stubHighCoverageReport()
 	default:
 		return api.CoverageReportResponse{}, errStubCoverageReportNotFound
 	}
 }
 
 func stubListCoverageReportPackages(reportUUID string, req api.ListCoverageReportPackagesRequest, pageData api.PaginationData) (api.CoverageReportPackagesResponse, error) {
-	if reportUUID != stubCompletedReportUUID {
+	var allPackages []api.CoverageReportPackageItem
+	var err error
+
+	switch reportUUID {
+	case stubCompletedReportUUID:
+		allPackages, err = stubCoverageReportPackages()
+	case stubHighCoverageReportUUID:
+		allPackages, err = stubHighCoverageReportPackages()
+	default:
 		return api.CoverageReportPackagesResponse{}, errStubCoverageReportNotFound
 	}
-
-	allPackages, err := stubCoverageReportPackages()
 	if err != nil {
 		return api.CoverageReportPackagesResponse{}, err
 	}
@@ -86,6 +95,10 @@ func stubCompletedReport() (api.CoverageReportResponse, error) {
 	return loadCoverageReportStub("test_files/coverage_reports/report_completed.json")
 }
 
+func stubHighCoverageReport() (api.CoverageReportResponse, error) {
+	return loadCoverageReportStub("test_files/coverage_reports/report_completed_high.json")
+}
+
 func stubPendingReport() (api.CoverageReportResponse, error) {
 	return loadCoverageReportStub("test_files/coverage_reports/report_pending.json")
 }
@@ -95,7 +108,15 @@ func stubFailedReport() (api.CoverageReportResponse, error) {
 }
 
 func stubCoverageReportPackages() ([]api.CoverageReportPackageItem, error) {
-	raw, err := coverageReportStubFS.ReadFile("test_files/coverage_reports/report_packages.json")
+	return loadCoverageReportPackagesStub("test_files/coverage_reports/report_packages.json")
+}
+
+func stubHighCoverageReportPackages() ([]api.CoverageReportPackageItem, error) {
+	return loadCoverageReportPackagesStub("test_files/coverage_reports/report_packages_high.json")
+}
+
+func loadCoverageReportPackagesStub(path string) ([]api.CoverageReportPackageItem, error) {
+	raw, err := coverageReportStubFS.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read coverage report packages stub: %w", err)
 	}
