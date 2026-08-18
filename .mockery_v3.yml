@@ -40,6 +40,7 @@ packages:
       TaskInfoDao: {}
       TemplateDao: {}
       LightwellAdvisoryDao: {}
+      LightwellVulnerabilityDao: {}
       UserPreferenceDao: {}
   github.com/content-services/content-sources-backend/pkg/tasks/client:
     interfaces:

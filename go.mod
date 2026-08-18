@@ -56,6 +56,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
+	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.0
 )
 
@@ -126,7 +127,6 @@ require (
 	golang.org/x/exp v0.0.0-20251209150349-8475f28825e9 // indirect
 	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect

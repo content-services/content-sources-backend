@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
+	csdb "github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
@@ -17,23 +18,24 @@ import (
 )
 
 type DaoRegistry struct {
-	RepositoryConfig  RepositoryConfigDao
-	Rpm               RpmDao
-	Repository        RepositoryDao
-	Metrics           MetricsDao
-	Snapshot          SnapshotDao
-	TaskInfo          TaskInfoDao
-	AdminTask         AdminTaskDao
-	Domain            DomainDao
-	PackageGroup      PackageGroupDao
-	ModuleStream      ModuleStreamDao
-	Environment       EnvironmentDao
-	Template          TemplateDao
-	Uploads           UploadDao
-	Memo              MemoDao
-	MavenPackages     MavenPackagesDao
-	LightwellAdvisory LightwellAdvisoryDao
-	UserPreference    UserPreferenceDao
+	RepositoryConfig       RepositoryConfigDao
+	Rpm                    RpmDao
+	Repository             RepositoryDao
+	Metrics                MetricsDao
+	Snapshot               SnapshotDao
+	TaskInfo               TaskInfoDao
+	AdminTask              AdminTaskDao
+	Domain                 DomainDao
+	PackageGroup           PackageGroupDao
+	ModuleStream           ModuleStreamDao
+	Environment            EnvironmentDao
+	Template               TemplateDao
+	Uploads                UploadDao
+	Memo                   MemoDao
+	MavenPackages          MavenPackagesDao
+	LightwellAdvisory      LightwellAdvisoryDao
+	LightwellVulnerability LightwellVulnerabilityDao
+	UserPreference         UserPreferenceDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -74,11 +76,12 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			db:         db,
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
-		Uploads:           uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
-		Memo:              memoDaoImpl{db: db},
-		MavenPackages:     mavenPackagesDaoImpl{db: db},
-		LightwellAdvisory: lightwellAdvisoryDaoImpl{db: db},
-		UserPreference:    userPreferenceDaoImpl{db: db},
+		Uploads:                uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
+		Memo:                   memoDaoImpl{db: db},
+		MavenPackages:          mavenPackagesDaoImpl{db: db},
+		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db},
+		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
+		UserPreference:         userPreferenceDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -272,6 +275,11 @@ type LightwellAdvisoryDao interface {
 	ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)
 	ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error)
 	MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error
+}
+
+type LightwellVulnerabilityDao interface {
+	ListCustomerIds(ctx context.Context) ([]string, error)
+	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
 }
 
 type UserPreferenceDao interface {
