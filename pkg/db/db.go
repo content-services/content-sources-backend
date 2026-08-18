@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"math"
@@ -11,15 +12,24 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 	pg "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
+
+// LightwellQueries is the process-wide sqlc querier, initialized once in Connect().
+var LightwellQueries store.Querier
+
+// lightwellPool is kept only so Close() can shut it down. LightwellQueries holds
+// the same pool and uses it for every query after init.
+var lightwellPool *pgxpool.Pool
 
 // GetUrl Get database config and return url
 func GetUrl() string {
@@ -70,23 +80,65 @@ func Connect() error {
 		return err
 	}
 	sqlDb.SetMaxOpenConns(config.Get().Database.PoolLimit)
+
+	return connectLightwellQueries(dbURL)
+}
+
+func connectLightwellQueries(dbURL string) error {
+	if lightwellPool != nil {
+		lightwellPool.Close()
+		lightwellPool = nil
+		LightwellQueries = nil
+	}
+
+	poolConfig, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse lightwell pgx pool config: %w", err)
+	}
+
+	// Three parallel queries per List call need headroom beyond a single request.
+	poolConfig.MaxConns = lightwellPoolMaxConns(config.Get().Database.PoolLimit)
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		return fmt.Errorf("failed to connect lightwell pgx pool: %w", err)
+	}
+	if err := pool.Ping(context.Background()); err != nil {
+		pool.Close()
+		return fmt.Errorf("failed to ping lightwell pgx pool: %w", err)
+	}
+
+	lightwellPool = pool
+	LightwellQueries = store.New(pool)
 	return nil
+}
+
+func lightwellPoolMaxConns(poolLimit int) int32 {
+	const cap int32 = 10
+	if poolLimit < 1 || poolLimit > 10 {
+		return cap
+	}
+	return int32(poolLimit) //nolint:gosec // G115: poolLimit is in [1, 10]
 }
 
 // Close closes global database connection, DB
 func Close() error {
-	var sqlDB *sql.DB
-	var err error
+	if lightwellPool != nil {
+		lightwellPool.Close()
+		lightwellPool = nil
+		LightwellQueries = nil
+	}
 
-	sqlDB, err = DB.DB()
+	if DB == nil {
+		return nil
+	}
+
+	sqlDB, err := DB.DB()
 	if err != nil {
 		return err
 	}
 
-	if err = sqlDB.Close(); err != nil {
-		return err
-	}
-	return err
+	return sqlDB.Close()
 }
 
 // setupMigration connect to the DB and driver, returns pointer to migration instance.
