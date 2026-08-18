@@ -120,20 +120,6 @@ func main() {
 			}
 		}
 		log.Debug().Msg("Successfully seeded")
-	case "seed-coverage":
-		seedCoverageCmd := flag.NewFlagSet("seed-coverage", flag.ExitOnError)
-		orgID := seedCoverageCmd.String("org-id", "acme", "org ID for the seeded coverage report")
-		if err := seedCoverageCmd.Parse(args[2:]); err != nil {
-			log.Fatal().Err(err).Msg("Failed to parse seed-coverage flags")
-		}
-		if err := db.Connect(); err != nil {
-			log.Fatal().Err(err).Msg("Failed to connect to database")
-		}
-		report, err := seeds.SeedCoverageReport(db.DB, seeds.CoverageReportSeedOptions{OrgID: *orgID})
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to seed coverage report")
-		}
-		log.Info().Str("uuid", report.UUID).Msg("Successfully seeded coverage report")
 	}
 
 	maybeSeedLightwell(args[1])

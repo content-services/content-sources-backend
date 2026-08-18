@@ -68,6 +68,7 @@ options:
   entitle_all: true
   internal_user: "internal-user"
   seed_lightwell: true
+  seed_lightwell_coverage_reports: true
 metrics:
   path: "/metrics"
   port: 9000
@@ -218,6 +219,6 @@ features:
     organizations: #["partnerRepoAdminOrg"]
   lightwell_beacon_and_lens:
     enabled: false
-    accounts: #["coverageAccount"]
-    users: #["coverageUser"]
-    organizations: #["coverageOrg"]
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]

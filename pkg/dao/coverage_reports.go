@@ -5,13 +5,46 @@ import (
 	"errors"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
 )
 
+type CreateCoverageReportParams struct {
+	OrgID     string
+	AccountID *string
+}
+
+type CreateCoverageUploadParams struct {
+	UUID       string
+	StorageKey string
+	Sha256     string
+	SizeBytes  int64
+}
+
 type coverageReportDaoImpl struct {
 	db *gorm.DB
+}
+
+func (d coverageReportDaoImpl) Create(ctx context.Context, reportParams CreateCoverageReportParams, uploadParams CreateCoverageUploadParams) (api.CoverageReportResponse, error) {
+	var report models.CoverageReport
+	var upload models.CoverageUpload
+
+	d.coverageReportCreateParamsToModels(reportParams, uploadParams, &report, &upload)
+	report.Status = config.TaskStatusPending
+
+	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&upload).Error; err != nil {
+			return err
+		}
+		return tx.Create(&report).Error
+	})
+	if err != nil {
+		return api.CoverageReportResponse{}, d.toApiError(err)
+	}
+
+	return d.modelToResponse(report), nil
 }
 
 func (d coverageReportDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error) {
@@ -70,6 +103,16 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 	}
 
 	return api.CoverageReportPackageCollectionResponse{Data: items}, totalPackages, nil
+}
+
+func (d coverageReportDaoImpl) coverageReportCreateParamsToModels(report CreateCoverageReportParams, upload CreateCoverageUploadParams, modelReport *models.CoverageReport, modelUpload *models.CoverageUpload) {
+	modelReport.OrgID = report.OrgID
+	modelReport.AccountID = report.AccountID
+
+	modelUpload.UUID = upload.UUID
+	modelUpload.StorageKey = upload.StorageKey
+	modelUpload.Sha256 = upload.Sha256
+	modelUpload.SizeBytes = upload.SizeBytes
 }
 
 func (d coverageReportDaoImpl) modelToResponse(r models.CoverageReport) api.CoverageReportResponse {

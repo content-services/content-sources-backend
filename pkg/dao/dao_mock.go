@@ -10316,6 +10316,78 @@ func (_m *MockCoverageReportDao) EXPECT() *MockCoverageReportDao_Expecter {
 	return &MockCoverageReportDao_Expecter{mock: &_m.Mock}
 }
 
+// Create provides a mock function for the type MockCoverageReportDao
+func (_mock *MockCoverageReportDao) Create(ctx context.Context, report CreateCoverageReportParams, upload CreateCoverageUploadParams) (api.CoverageReportResponse, error) {
+	ret := _mock.Called(ctx, report, upload)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 api.CoverageReportResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateCoverageReportParams, CreateCoverageUploadParams) (api.CoverageReportResponse, error)); ok {
+		return returnFunc(ctx, report, upload)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateCoverageReportParams, CreateCoverageUploadParams) api.CoverageReportResponse); ok {
+		r0 = returnFunc(ctx, report, upload)
+	} else {
+		r0 = ret.Get(0).(api.CoverageReportResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateCoverageReportParams, CreateCoverageUploadParams) error); ok {
+		r1 = returnFunc(ctx, report, upload)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCoverageReportDao_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockCoverageReportDao_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - report CreateCoverageReportParams
+//   - upload CreateCoverageUploadParams
+func (_e *MockCoverageReportDao_Expecter) Create(ctx interface{}, report interface{}, upload interface{}) *MockCoverageReportDao_Create_Call {
+	return &MockCoverageReportDao_Create_Call{Call: _e.mock.On("Create", ctx, report, upload)}
+}
+
+func (_c *MockCoverageReportDao_Create_Call) Run(run func(ctx context.Context, report CreateCoverageReportParams, upload CreateCoverageUploadParams)) *MockCoverageReportDao_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CreateCoverageReportParams
+		if args[1] != nil {
+			arg1 = args[1].(CreateCoverageReportParams)
+		}
+		var arg2 CreateCoverageUploadParams
+		if args[2] != nil {
+			arg2 = args[2].(CreateCoverageUploadParams)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCoverageReportDao_Create_Call) Return(coverageReportResponse api.CoverageReportResponse, err error) *MockCoverageReportDao_Create_Call {
+	_c.Call.Return(coverageReportResponse, err)
+	return _c
+}
+
+func (_c *MockCoverageReportDao_Create_Call) RunAndReturn(run func(ctx context.Context, report CreateCoverageReportParams, upload CreateCoverageUploadParams) (api.CoverageReportResponse, error)) *MockCoverageReportDao_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Fetch provides a mock function for the type MockCoverageReportDao
 func (_mock *MockCoverageReportDao) Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error) {
 	ret := _mock.Called(ctx, orgID, uuid)

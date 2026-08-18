@@ -321,6 +321,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
             resources:
               limits:
@@ -615,6 +617,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
             resources:
               limits:
@@ -876,6 +880,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: retry-failed-tasks
           podSpec:
@@ -1125,6 +1131,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: retry-failed-deletion-tasks
           # https://crontab.guru/#0_6_*_*_*
@@ -1377,6 +1385,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: process-repos
           # https://crontab.guru/
@@ -1630,6 +1640,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: cleanup
           # https://crontab.guru/
@@ -1885,6 +1897,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
@@ -2138,6 +2152,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: sync-lightwell-advisories
           schedule: ${SYNC_LIGHTWELL_ADVISORIES_CRON_JOB}
@@ -2388,6 +2404,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
@@ -2638,6 +2656,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -2911,6 +2931,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: hotfix-transform-pulp-logs-fix
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
@@ -3162,6 +3184,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -3430,6 +3454,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: disable-snapshot-for-epel-repos
           podSpec:
@@ -3677,6 +3703,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: delete-invalid-redhat-repos
           podSpec:
@@ -3924,6 +3952,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: set-domain-label
           podSpec:
@@ -4171,6 +4201,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: set-detected-os-versions
           podSpec:
@@ -4418,6 +4450,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: move-templates-to-shared-epel
           podSpec:
@@ -4665,6 +4699,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
         - name: remove-custom-epel-repos
           podSpec:
@@ -4912,6 +4948,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
         - name: cancel-tasks
           podSpec:
             securityContext:
@@ -5159,6 +5197,8 @@ objects:
                 value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
               - name: OPTIONS_SEED_LIGHTWELL
                 value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
       database:
         name: content-sources
@@ -5364,6 +5404,9 @@ parameters:
     value: 'true'
   - name: OPTIONS_SEED_LIGHTWELL
     description: Load mock Lightwell vulnerability seed data after dbmigrate up
+    value: 'false'
+  - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+    description: Load mock completed Lightwell coverage report seed data
     value: 'false'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier

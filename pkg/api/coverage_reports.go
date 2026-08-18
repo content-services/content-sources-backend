@@ -5,17 +5,17 @@ import "time"
 // CoverageReportResponse represents the coverage report
 type CoverageReportResponse struct {
 	UUID                     string                     `json:"uuid"`
-	Status                   string                     `json:"status"`                               // Coverage analysis task status
-	InputFormat              string                     `json:"input_format,omitempty"`               // Detected manifest format
-	CreatedAt                time.Time                  `json:"created_at"`                           // Timestamp when the report was created
-	CompletedAt              *time.Time                 `json:"completed_at,omitempty"`               // Timestamp when coverage analysis finished
-	Total                    int                        `json:"total,omitempty"`                      // Total packages parsed from the manifest
-	ExactMatches             int                        `json:"exact_matches,omitempty"`              // Number of packages with name and version found
-	PartialMatches           int                        `json:"partial_matches,omitempty"`            // Number of packages with name found but not version
-	Unmatched                int                        `json:"unmatched,omitempty"`                  // Number of packages with name not found
-	EcosystemCoverageSummary []EcosystemCoverageSummary `json:"ecosystem_coverage_summary,omitempty"` // Per-ecosystem breakdown
-	AnalysisTaskError        string                     `json:"analysis_task_error,omitempty"`        // Error if coverage analysis task failed
-	AnalysisTaskUUID         string                     `json:"analysis_task_uuid,omitempty"`         // UUID of the coverage analysis task
+	Status                   string                     `json:"status"`                        // Coverage analysis task status
+	InputFormat              string                     `json:"input_format"`                  // Detected manifest format
+	CreatedAt                time.Time                  `json:"created_at"`                    // Timestamp when the report was created
+	CompletedAt              *time.Time                 `json:"completed_at"`                  // Timestamp when coverage analysis finished
+	Total                    int                        `json:"total"`                         // Total packages parsed from the manifest
+	ExactMatches             int                        `json:"exact_matches"`                 // Number of packages with name and version found
+	PartialMatches           int                        `json:"partial_matches"`               // Number of packages with name found but not version
+	Unmatched                int                        `json:"unmatched"`                     // Number of packages with name not found
+	EcosystemCoverageSummary []EcosystemCoverageSummary `json:"ecosystem_coverage_summary"`    // Per-ecosystem breakdown
+	AnalysisTaskError        string                     `json:"analysis_task_error,omitempty"` // Error if coverage analysis task failed
+	AnalysisTaskUUID         string                     `json:"analysis_task_uuid"`            // UUID of the coverage analysis task
 }
 
 // EcosystemCoverageSummary represents the ecosystem breakdown in a coverage report
