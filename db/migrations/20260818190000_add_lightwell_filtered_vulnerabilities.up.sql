@@ -1,49 +1,4 @@
--- sqlc schema snapshot: current lightwell vulnerabilities tables and filter function (see db/migrations)
-
-CREATE TABLE lightwell_vulnerabilities (
-    uuid UUID PRIMARY KEY,
-    vulnerability_id TEXT NOT NULL UNIQUE,
-    purl TEXT,
-    component_name TEXT NOT NULL,
-    component_version TEXT NOT NULL,
-    title TEXT,
-    cwe TEXT,
-    description TEXT,
-    severity TEXT NOT NULL,
-    cvss DOUBLE PRECISION,
-    cvss_vector TEXT,
-    exploit_tested BOOLEAN NOT NULL DEFAULT false,
-    reproducer_included BOOLEAN NOT NULL DEFAULT false,
-    customer_priority TEXT,
-    stage TEXT NOT NULL,
-    language TEXT,
-    complexity TEXT NOT NULL,
-    submitted_date DATE NOT NULL,
-    last_updated TIMESTAMPTZ NOT NULL,
-    embargo BOOLEAN NOT NULL DEFAULT false,
-    duplicate BOOLEAN NOT NULL DEFAULT false,
-    duplicate_of TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE lightwell_vulnerability_customers (
-    customer_id TEXT NOT NULL,
-    vulnerability_uuid UUID NOT NULL REFERENCES lightwell_vulnerabilities (uuid) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (customer_id, vulnerability_uuid)
-);
-
-CREATE TABLE lightwell_vulnerability_tickets (
-    vulnerability_uuid UUID NOT NULL,
-    customer_id TEXT NOT NULL,
-    ticket_id TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (vulnerability_uuid, ticket_id),
-    FOREIGN KEY (customer_id, vulnerability_uuid)
-        REFERENCES lightwell_vulnerability_customers (customer_id, vulnerability_uuid)
-        ON DELETE CASCADE
-);
+BEGIN;
 
 CREATE FUNCTION lightwell_filtered_vulnerabilities(
     p_customer_id TEXT,
@@ -107,3 +62,5 @@ WHERE vc.customer_id = p_customer_id
         OR v.title ILIKE '%' || p_search || '%'
     )
 $$;
+
+COMMIT;
