@@ -9962,6 +9962,72 @@ func (_c *MockLightwellVulnerabilityDao_ListCustomerIds_Call) RunAndReturn(run f
 	return _c
 }
 
+// Save provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
+
+	var r0 LightwellVulnerabilitySaveOutcome
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LightwellVulnerabilityInput) LightwellVulnerabilitySaveOutcome); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		r0 = ret.Get(0).(LightwellVulnerabilitySaveOutcome)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, LightwellVulnerabilityInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellVulnerabilityDao_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
+type MockLightwellVulnerabilityDao_Save_Call struct {
+	*mock.Call
+}
+
+// Save is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input LightwellVulnerabilityInput
+func (_e *MockLightwellVulnerabilityDao_Expecter) Save(ctx interface{}, input interface{}) *MockLightwellVulnerabilityDao_Save_Call {
+	return &MockLightwellVulnerabilityDao_Save_Call{Call: _e.mock.On("Save", ctx, input)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_Save_Call) Run(run func(ctx context.Context, input LightwellVulnerabilityInput)) *MockLightwellVulnerabilityDao_Save_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 LightwellVulnerabilityInput
+		if args[1] != nil {
+			arg1 = args[1].(LightwellVulnerabilityInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_Save_Call) Return(lightwellVulnerabilitySaveOutcome LightwellVulnerabilitySaveOutcome, err error) *MockLightwellVulnerabilityDao_Save_Call {
+	_c.Call.Return(lightwellVulnerabilitySaveOutcome, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_Save_Call) RunAndReturn(run func(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)) *MockLightwellVulnerabilityDao_Save_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockUserPreferenceDao creates a new instance of MockUserPreferenceDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockUserPreferenceDao(t interface {
