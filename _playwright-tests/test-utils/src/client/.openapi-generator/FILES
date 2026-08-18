@@ -2,6 +2,7 @@ apis/CoverageReportsApi.ts
 apis/EnvironmentsApi.ts
 apis/FeaturesApi.ts
 apis/GpgKeyApi.ts
+apis/LightwellVulnerabilitiesApi.ts
 apis/ModuleStreamsApi.ts
 apis/PackagegroupsApi.ts
 apis/PackagesApi.ts
@@ -30,6 +31,10 @@ models/ApiFeature.ts
 models/ApiFetchGPGKeyRequest.ts
 models/ApiFetchGPGKeyResponse.ts
 models/ApiGenericAttributeValidationResponse.ts
+models/ApiLightwellCustomerIdsResponse.ts
+models/ApiLightwellVulnerabilityCollectionMeta.ts
+models/ApiLightwellVulnerabilityCollectionResponse.ts
+models/ApiLightwellVulnerabilityResponse.ts
 models/ApiLinks.ts
 models/ApiListSnapshotByDateRequest.ts
 models/ApiListSnapshotByDateResponse.ts
