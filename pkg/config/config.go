@@ -253,13 +253,14 @@ type Options struct {
 	// url (https://servername) to access the api, used to reference gpg keys
 	// Supports partial hostnames (i.e. http://.server.example.com).
 	// If this is encountered (and clowder is used), it will prepend the envName from clowder
-	ExternalURL             string   `mapstructure:"external_url"`
-	SnapshotRetainDaysLimit int      `mapstructure:"snapshot_retain_days_limit"`
-	FeatureFilter           []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
-	EntitleAll              bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
-	InternalUser            string   `mapstructure:"internal_user"`
-	LoadLightwellDemo       bool     `mapstructure:"load_lightwell_demo"`
-	SeedLightwell           bool     `mapstructure:"seed_lightwell"`
+	ExternalURL                  string   `mapstructure:"external_url"`
+	SnapshotRetainDaysLimit      int      `mapstructure:"snapshot_retain_days_limit"`
+	FeatureFilter                []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
+	EntitleAll                   bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
+	InternalUser                 string   `mapstructure:"internal_user"`
+	LoadLightwellDemo            bool     `mapstructure:"load_lightwell_demo"`
+	SeedLightwell                bool     `mapstructure:"seed_lightwell"`
+	SeedLightwellCoverageReports bool     `mapstructure:"seed_lightwell_coverage_reports"`
 }
 
 type Metrics struct {
@@ -336,6 +337,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.internal_user", "")
 	v.SetDefault("options.load_lightwell_demo", true)
 	v.SetDefault("options.seed_lightwell", false)
+	v.SetDefault("options.seed_lightwell_coverage_reports", false)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")

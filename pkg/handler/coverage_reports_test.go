@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -18,9 +19,11 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -226,6 +229,14 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	require.NoError(t, err)
 	require.NoError(t, writer.Close())
 
+	expectedReport := api.CoverageReportResponse{
+		UUID:      uuid.NewString(),
+		Status:    config.TaskStatusPending,
+		CreatedAt: time.Now(),
+	}
+	suite.reg.CoverageReport.On("Create", mock.Anything, mock.Anything, mock.Anything).
+		Return(expectedReport, nil)
+
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -237,7 +248,8 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	assert.NoError(t, json.Unmarshal(body, &response))
 
 	assert.Equal(t, http.StatusCreated, code)
-	assert.Equal(t, "pending", response.Status)
+	assert.Equal(t, expectedReport.Status, response.Status)
+	assert.Equal(t, expectedReport.UUID, response.UUID)
 }
 
 func (suite *CoverageReportSuite) TestCreateCoverageReportNotAccessible() {
@@ -260,7 +272,7 @@ func (suite *CoverageReportSuite) TestCreateCoverageReportNotAccessible() {
 	assert.Contains(t, string(body), "Neither the user nor account is allowed")
 }
 
-func (suite *CoverageReportSuite) TestCreateCoverageReportMissingFile() {
+func (suite *CoverageReportSuite) TestCreateMissingFile() {
 	t := suite.T()
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), nil)
 	require.NoError(t, err)

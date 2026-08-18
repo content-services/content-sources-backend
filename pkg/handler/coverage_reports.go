@@ -1,14 +1,26 @@
 package handler
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
+
+const maxCoverageUploadSizeBytes = 50 * 1024 * 1024 // 50 MiB
 
 type CoverageReportHandler struct {
 	DaoRegistry dao.DaoRegistry
@@ -24,7 +36,9 @@ func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFu
 }
 
 func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
-	ch := CoverageReportHandler{DaoRegistry: *daoReg}
+	ch := CoverageReportHandler{
+		DaoRegistry: *daoReg,
+	}
 	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellBeaconAndLensAccessible)
 	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
 	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
@@ -44,13 +58,64 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/ [post]
 func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
-	if _, err := c.FormFile("file"); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "file is required")
+	accountID, orgID := getAccountIdOrgId(c)
+
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "File is required")
+	}
+	if fileHeader.Size <= 0 {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "Size must be greater than 0")
+	}
+	if fileHeader.Size > maxCoverageUploadSizeBytes {
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error reading upload", "File exceeds maximum upload size")
 	}
 
-	report, err := stubCreateCoverageReport()
+	file, err := fileHeader.Open()
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error loading fixture", err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error opening upload", err.Error())
+	}
+	defer file.Close()
+
+	uploadUUID := uuid.NewString()
+	storageKey := "coverage-uploads/" + uploadUUID
+
+	hash := sha256.New()
+	fileBytes, err := io.ReadAll(io.TeeReader(file, hash))
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", err.Error())
+	}
+
+	sha256Hex := hex.EncodeToString(hash.Sum(nil))
+	sizeBytes := int64(len(fileBytes))
+
+	reportParams := dao.CreateCoverageReportParams{OrgID: orgID}
+	if accountID != "" {
+		reportParams.AccountID = utils.Ptr(accountID)
+	}
+	uploadParams := dao.CreateCoverageUploadParams{
+		UUID:       uploadUUID,
+		StorageKey: storageKey,
+		Sha256:     sha256Hex,
+		SizeBytes:  sizeBytes,
+	}
+
+	report, err := ch.DaoRegistry.CoverageReport.Create(c.Request().Context(), reportParams, uploadParams)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating coverage report", err.Error())
+	}
+
+	// TODO: enqueue task, set task UUID
+
+	// TODO: remove once we don't need seeded data
+	if config.Get().Options.SeedLightwellCoverageReports {
+		go func(reportUUID string) {
+			time.Sleep(3 * time.Second)
+			if _, err := seeds.SeedCoverageReport(db.DB, seeds.CoverageReportSeedOptions{UUID: reportUUID}); err != nil {
+				log.Error().Err(err).Str("uuid", reportUUID).Msg("failed to seed coverage report")
+			}
+		}(report.UUID)
+		return c.JSON(http.StatusCreated, report)
 	}
 
 	return c.JSON(http.StatusCreated, report)

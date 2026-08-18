@@ -292,6 +292,7 @@ type UserPreferenceDao interface {
 }
 
 type CoverageReportDao interface {
+	Create(ctx context.Context, report CreateCoverageReportParams, upload CreateCoverageUploadParams) (api.CoverageReportResponse, error)
 	Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error)
 	ListPackages(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error)
 }
