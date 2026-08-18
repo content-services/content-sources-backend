@@ -184,7 +184,11 @@ clients:
       oidc_issuer:
       grpc_insecure:
     timeout: 30s
-
+  # Jira variables for syncing lightwell vulnerabilities.
+  jira:
+    url: ""
+    user: ""
+    token: ""
 
 # Configuration for the mocks
 mocks:

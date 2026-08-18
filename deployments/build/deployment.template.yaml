@@ -270,6 +270,21 @@ objects:
               - sync-lightwell-advisories
             env:{{ENV_VARS}}
 
+        - name: sync-lightwell-vulns
+          schedule: ${SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB}
+          suspend: ${{SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - sync-lightwell-vulnerabilities
+            env:{{ENV_VARS}}
+
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
