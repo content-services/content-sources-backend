@@ -51,6 +51,19 @@ jobs:
       - run: make deployment-generate
       - run: git diff --exit-code deployments/deployment.yaml
 
+  sqlcdiff:
+    name: sqlc diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+      - run: |
+          make sqlc-generate-lightwell
+      - run: |
+          git diff --exit-code pkg/lightwell/db/store/
+
   golangci:
     name: Lint
     runs-on: ubuntu-latest
