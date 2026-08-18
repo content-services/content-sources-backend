@@ -282,6 +282,234 @@ const docTemplate = `{
                 }
             }
         },
+        "/lightwell/advisories": {
+            "get": {
+                "description": "List security advisories for Lightwell remediated packages with optional filtering.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "List Lightwell Advisories",
+                "operationId": "listLightwellAdvisories",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by repository UUID",
+                        "name": "repository_uuid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by package name (substring match)",
+                        "name": "package_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Minimum severity level (low, moderate, important, critical)",
+                        "name": "severity_min",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by CVE ID (exact match)",
+                        "name": "cve_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit of results to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset into results",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellAdvisoryCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/package_versions": {
+            "get": {
+                "description": "List individual package versions aggregated across all Lightwell repositories, with optional CVE-based filtering.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "List Lightwell Package Versions (cross-repo)",
+                "operationId": "listLightwellPackageVersions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by content type (maven, python, npm)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by package name (substring match)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by security level (validated, remediated)",
+                        "name": "security_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by repository name",
+                        "name": "repository",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Show only packages that resolve this CVE",
+                        "name": "resolves_cve_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Show only packages vulnerable to this CVE",
+                        "name": "vulnerable_to_cve_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit of results to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset into results",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellPackageVersionCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/packages": {
+            "get": {
+                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by content type, name, and security level.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "List Lightwell Packages (cross-repo)",
+                "operationId": "listLightwellPackages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by content type (maven, python, npm)",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by package name (substring match)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by security level (validated, remediated)",
+                        "name": "security_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit of results to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset into results",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellPackageCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/module_streams/search": {
             "post": {
                 "description": "List modules and their streams for repositories",
@@ -4893,6 +5121,150 @@ const docTemplate = `{
                 }
             }
         },
+        "api.LightwellAdvisoryCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LightwellAdvisoryResponse"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.LightwellAdvisoryResponse": {
+            "type": "object",
+            "properties": {
+                "advisory_id": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                },
+                "fixed_versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "package_name": {
+                    "type": "string"
+                },
+                "reference_urls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.LightwellPackageCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LightwellPackageResponse"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.LightwellPackageResponse": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "group": {
+                    "type": "string"
+                },
+                "latest_releases": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReleaseInfo"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "repository_uuid": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.LightwellPackageVersionCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LightwellPackageVersionResponse"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.LightwellPackageVersionResponse": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "group": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "release": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "repository_uuid": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "api.Links": {
             "type": "object",
             "properties": {
@@ -5660,6 +6032,11 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
+                "packages_count": {
+                    "description": "Lightwell: total distinct packages",
+                    "type": "integer",
+                    "readOnly": true
+                },
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
@@ -5668,6 +6045,11 @@ const docTemplate = `{
                 "published_distribution_url": {
                     "description": "Published distribution URL from Pulp",
                     "type": "string",
+                    "readOnly": true
+                },
+                "remediations_count": {
+                    "description": "Lightwell: total security advisories",
+                    "type": "integer",
                     "readOnly": true
                 },
                 "security_level": {
@@ -5695,6 +6077,11 @@ const docTemplate = `{
                 "version_count": {
                     "description": "Number of versions last read in the repository, not applicable to all repositories",
                     "type": "integer"
+                },
+                "versions_count": {
+                    "description": "Lightwell: total distinct versions",
+                    "type": "integer",
+                    "readOnly": true
                 },
                 "warnings": {
                     "description": "Warnings to alert user of mismatched fields if there is an existing repo with the same URL",
@@ -5990,6 +6377,11 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
+                "packages_count": {
+                    "description": "Lightwell: total distinct packages",
+                    "type": "integer",
+                    "readOnly": true
+                },
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
@@ -5998,6 +6390,11 @@ const docTemplate = `{
                 "published_distribution_url": {
                     "description": "Published distribution URL from Pulp",
                     "type": "string",
+                    "readOnly": true
+                },
+                "remediations_count": {
+                    "description": "Lightwell: total security advisories",
+                    "type": "integer",
                     "readOnly": true
                 },
                 "security_level": {
@@ -6025,6 +6422,11 @@ const docTemplate = `{
                 "version_count": {
                     "description": "Number of versions last read in the repository, not applicable to all repositories",
                     "type": "integer"
+                },
+                "versions_count": {
+                    "description": "Lightwell: total distinct versions",
+                    "type": "integer",
+                    "readOnly": true
                 }
             }
         },

@@ -45,6 +45,9 @@ type RepositoryResponse struct {
 	SecurityLevel                string            `json:"security_level,omitempty" readonly:"true"`             // Security level of the repository (e.g. validated, remediated)
 	PublishedDistURL             string            `json:"published_distribution_url,omitempty" readonly:"true"` // Published distribution URL from Pulp
 	PublishedDistBasePath        string            `json:"-"`                                                    // Published dist base path from Pulp
+	PackagesCount                *int              `json:"packages_count,omitempty" readonly:"true"`             // Lightwell: total distinct packages
+	VersionsCount                *int              `json:"versions_count,omitempty" readonly:"true"`             // Lightwell: total distinct versions
+	RemediationsCount            *int              `json:"remediations_count,omitempty" readonly:"true"`         // Lightwell: total security advisories
 }
 
 // RepositoryRequest holds data received from request to create repository
