@@ -80,8 +80,8 @@ github.com/content-services/lecho/v3 v3.5.2 h1:lNGYoG/6RnPtnGtWkKSUwO2Huw6lxDrW1
 github.com/content-services/lecho/v3 v3.5.2/go.mod h1:hALn6ZuFGV3AIYlkhZDU1C5JoWM4TeIx//VO2xt8oZA=
 github.com/content-services/tang v0.0.30 h1:t/d6tYTKaq5nU0Qc9v4VW79OrJO2i8oxWSt4JGn1hLM=
 github.com/content-services/tang v0.0.30/go.mod h1:Z969TdEJaoRHxhpZ89Gi25RFVj1dBjEiFzhsGppyz8g=
-github.com/content-services/yummy v1.0.19 h1:gVevHg/GeIUk4lnjafZWdHRr/zWQES4KiYZebpjSzdM=
-github.com/content-services/yummy v1.0.19/go.mod h1:qpXbSMEJvQ1hs59Tn2tA2MAApvht867BUUUETntvO6U=
+github.com/content-services/yummy v1.0.20 h1:+RI0EeeERuQKpFu+ylYi41ypKZCViyqNwG/mSbRFPTU=
+github.com/content-services/yummy v1.0.20/go.mod h1:8XM71AH0KRrTIXbP6ySTURlsrCs/TbtpPX4uQJfYn/c=
 github.com/content-services/zest/release/v2026 v2026.8.1786113784 h1:u42FcquE+EBBi999mpxvdzC56NEhpVNZz99FrFkCbdk=
 github.com/content-services/zest/release/v2026 v2026.8.1786113784/go.mod h1:pThh4a5Qm53BZ5V3WqRkWx7WBrIaeDdAnTmmqi6j8Vw=
 github.com/cpuguy83/go-md2man/v2 v2.0.7 h1:zbFlGlXEAKlwXpmvle3d8Oe3YnkKIK4xSRTd3sHPnBo=
