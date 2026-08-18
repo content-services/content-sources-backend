@@ -280,6 +280,7 @@ type LightwellAdvisoryDao interface {
 type LightwellVulnerabilityDao interface {
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
+	Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)
 }
 
 type UserPreferenceDao interface {

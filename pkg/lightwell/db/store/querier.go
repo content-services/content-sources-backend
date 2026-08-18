@@ -11,8 +11,14 @@ import (
 type Querier interface {
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
+	DeleteVulnerabilityCustomersNotIn(ctx context.Context, arg DeleteVulnerabilityCustomersNotInParams) error
+	DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg DeleteVulnerabilityTicketsNotInParams) error
+	GetVulnerabilityByID(ctx context.Context, vulnerabilityID string) (LightwellVulnerability, error)
+	InsertVulnerabilityCustomer(ctx context.Context, arg InsertVulnerabilityCustomerParams) error
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)
+	UpsertVulnerability(ctx context.Context, arg UpsertVulnerabilityParams) (UpsertVulnerabilityRow, error)
+	UpsertVulnerabilityTicket(ctx context.Context, arg UpsertVulnerabilityTicketParams) error
 }
 
 var _ Querier = (*Queries)(nil)
