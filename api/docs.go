@@ -5118,6 +5118,10 @@ const docTemplate = `{
                     "description": "UTC calendar days since submitted_date",
                     "type": "integer"
                 },
+                "blocked": {
+                    "description": "True when stage is not Lightwell Network and age_days \u003e 30",
+                    "type": "boolean"
+                },
                 "complexity": {
                     "description": "Standard, Complex, or Extensive",
                     "type": "string"
