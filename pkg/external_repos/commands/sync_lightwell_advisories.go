@@ -125,6 +125,11 @@ func sendAdvisoryNotifications(
 	repoConfigUUID string,
 	repoName string,
 ) error {
+	if !config.Get().Features.LightwellNotifications.Enabled {
+		logger.Debug().Msg("Lightwell notifications feature is disabled, skipping notifications")
+		return nil
+	}
+
 	eventType := event.LightwellEventType(repoName)
 	if eventType == "" {
 		return nil

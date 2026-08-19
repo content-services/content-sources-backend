@@ -55,6 +55,12 @@ env:
     value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
   - name: FEATURES_LIGHTWELL_ENABLED
     value: ${FEATURES_LIGHTWELL_ENABLED}
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
+    value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED}
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
+    value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS}
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS
+    value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS}
   - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
     value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED}
   - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS
@@ -350,6 +356,13 @@ parameters:
     description: Whether the extended relaese repos should be snapshotted
   - name: FEATURES_LIGHTWELL_ENABLED
     value: 'false'
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
+    description: Whether the Lightwell Notifications feature should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
     description: Whether the Admin Partner Repositories feature should be turned on
     value: 'false'

@@ -68,6 +68,8 @@ func testEntry() external_repos.LightwellAllowlistEntry {
 }
 
 func TestProcessOsvForEntry_Success(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = true
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
 	// Serve two OSV advisory files from a test HTTP server
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
@@ -123,6 +125,36 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 	mockDao.UserPreference.AssertCalled(t, "ListDistinctOrgsByPreference", mock.Anything,
 		models.UserPreferenceLightwellNotificationEnabled, "true")
 	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, unnotified)
+}
+
+func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testManifest)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory1)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory2)
+	})
+
+	server := setupTestServer(t, mux)
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
+		return len(advisories) == 2
+	})).Return(nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "ListUnnotifiedAdvisories", mock.Anything, mock.Anything)
+	mockDao.UserPreference.AssertNotCalled(t, "ListDistinctOrgsByPreference", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestProcessOsvForEntry_SkipsExistingByChecksum(t *testing.T) {
