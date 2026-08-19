@@ -81,6 +81,7 @@ type FeatureSet struct {
 	Lightwell                Feature `mapstructure:"lightwell"`
 	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
 	AdminNotifications       Feature `mapstructure:"admin_notifications"`
+	LightwellBeaconAndLens   Feature `mapstructure:"lightwell_beacon_and_lens"`
 }
 
 type Feature struct {

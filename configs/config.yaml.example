@@ -211,3 +211,8 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
+  lightwell_beacon_and_lens:
+    enabled: false
+    accounts: #["coverageAccount"]
+    users: #["coverageUser"]
+    organizations: #["coverageOrg"]
