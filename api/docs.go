@@ -423,6 +423,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/": {
+            "get": {
+                "description": "List distinct Lightwell support ticket IDs for a customer.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "List Lightwell support ticket IDs",
+                "operationId": "listLightwellLtwlsuptTicketIds",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID (required).",
+                        "name": "customer_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellLtwlsuptTicketIdsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/module_streams/search": {
             "post": {
                 "description": "List modules and their streams for repositories",
@@ -5039,6 +5090,18 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "description": "Customer IDs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.LightwellLtwlsuptTicketIdsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Lightwell support ticket IDs",
                     "type": "array",
                     "items": {
                         "type": "string"
