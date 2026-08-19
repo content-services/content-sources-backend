@@ -116,7 +116,7 @@ func insertTestVulnerabilities(t *testing.T, ctx context.Context, tx pgx.Tx, spe
 		}
 		for _, ticketID := range ticketIDs {
 			_, err = tx.Exec(ctx,
-				`INSERT INTO lightwell_vulnerability_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ($1, $2, $3)`,
+				`INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ($1, $2, $3)`,
 				id, ticketCustomerID, ticketID,
 			)
 			require.NoError(t, err)

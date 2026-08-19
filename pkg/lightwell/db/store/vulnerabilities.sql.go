@@ -181,7 +181,7 @@ SELECT
     v.duplicate_of,
     ARRAY(
         SELECT t.ticket_id
-        FROM lightwell_vulnerability_tickets t
+        FROM lightwell_vulnerability_support_tickets t
         WHERE t.vulnerability_uuid = v.uuid
             AND t.customer_id = $1
         ORDER BY t.ticket_id

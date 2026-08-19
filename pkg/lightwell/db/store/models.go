@@ -43,7 +43,7 @@ type LightwellVulnerabilityCustomer struct {
 	CreatedAt         time.Time `json:"created_at"`
 }
 
-type LightwellVulnerabilityTicket struct {
+type LightwellVulnerabilitySupportTicket struct {
 	VulnerabilityUuid uuid.UUID `json:"vulnerability_uuid"`
 	CustomerID        string    `json:"customer_id"`
 	TicketID          string    `json:"ticket_id"`
