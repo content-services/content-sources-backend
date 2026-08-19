@@ -12,11 +12,20 @@ import (
 
 type CoverageReportHandler struct{}
 
+func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if err := CheckLightwellBeaconAndLensAccessible(c.Request().Context()); err != nil {
+			return err
+		}
+		return next(c)
+	}
+}
+
 func RegisterCoverageReportRoutes(engine *echo.Group) {
 	ch := CoverageReportHandler{}
-	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellBeaconAndLensAccessible)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
 }
 
 // CreateCoverageReport godoc

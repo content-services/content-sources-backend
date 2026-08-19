@@ -97,3 +97,15 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 			"Neither the user nor account is allowed.")
 	}
 }
+
+func CheckLightwellBeaconAndLensAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellBeaconAndLens.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access this Lightwell feature",
+			"This Lightwell feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellBeaconAndLens) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access this Lightwell feature",
+			"Neither the user nor account is allowed.")
+	}
+}
