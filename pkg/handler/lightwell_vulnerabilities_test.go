@@ -102,6 +102,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		SubmittedDate:     now,
 		LastUpdated:       now,
 		AgeDays:           19,
+		Blocked:           false,
 		Duplicate:         true,
 		DuplicateOf:       &dupOf,
 		LtwlsuptTicketIDs: []string{"batch-3"},
@@ -150,6 +151,8 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.NotContains(suite.T(), string(body), `"id":`)
 	assert.Equal(suite.T(), []string{"batch-3"}, resp.Data[0].LtwlsuptTicketIDs)
 	assert.Contains(suite.T(), string(body), `"ltwlsupt_ticket_ids":["batch-3"]`)
+	assert.False(suite.T(), resp.Data[0].Blocked)
+	assert.Contains(suite.T(), string(body), `"blocked":false`)
 	require := assert.New(suite.T())
 	require.NotNil(resp.Data[0].DuplicateOf)
 	assert.Equal(suite.T(), "LWL-2026-4027", *resp.Data[0].DuplicateOf)

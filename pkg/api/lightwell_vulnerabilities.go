@@ -25,6 +25,7 @@ type LightwellVulnerabilityResponse struct {
 	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
 	LastUpdated        time.Time `json:"last_updated"`                // Last update timestamp
 	AgeDays            int       `json:"age_days"`                    // UTC calendar days since submitted_date
+	Blocked            bool      `json:"blocked"`                     // True when stage is not Lightwell Network and age_days > 30
 	Embargo            bool      `json:"embargo"`                     // Embargo flag
 	Duplicate          bool      `json:"duplicate"`                   // Duplicate flag
 	DuplicateOf        *string   `json:"duplicate_of,omitempty"`      // Canonical vulnerability_id when duplicate
