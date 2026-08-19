@@ -42,6 +42,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.8.1
 	github.com/content-services/zest/release/v2026 v2026.8.1786113784
+	github.com/ctreminiom/go-atlassian/v2 v2.12.0
 	github.com/getsentry/sentry-go v0.48.0
 	github.com/getsentry/sentry-go/zerolog v0.48.0
 	github.com/jackc/pgx-zerolog v0.0.0-20230315001418-f978528409eb
@@ -62,6 +63,7 @@ require (
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260709200747-435963d16310.1 // indirect
+	dario.cat/mergo v1.0.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.17 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.36 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.37 // indirect
@@ -87,6 +89,7 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-yaml v1.19.1 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
@@ -109,6 +112,9 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
+	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
