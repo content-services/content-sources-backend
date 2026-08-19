@@ -103,6 +103,27 @@ func (suite *CoverageReportSuite) TestGetCoverageReport_Stub() {
 	assert.Equal(t, response.UUID, stubCompletedReportUUID)
 }
 
+func (suite *CoverageReportSuite) TestGetHighCoverageReport_Stub() {
+	t := suite.T()
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), stubHighCoverageReportUUID), nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req)
+	assert.Nil(suite.T(), err)
+
+	var response api.CoverageReportResponse
+	err = json.Unmarshal(body, &response)
+	assert.Nil(suite.T(), err)
+
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, "completed", response.Status)
+	assert.Equal(t, stubHighCoverageReportUUID, response.UUID)
+	assert.Equal(t, 10, response.Total)
+	assert.Equal(t, 8, response.ExactMatches)
+	assert.Equal(t, 1, response.PartialMatches)
+	assert.Equal(t, 1, response.Unmatched)
+}
+
 func (suite *CoverageReportSuite) TestListCoverageReportPackages_Stub() {
 	t := suite.T()
 	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), stubCompletedReportUUID)

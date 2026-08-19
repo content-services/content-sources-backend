@@ -1,4 +1,4 @@
--- sqlc schema snapshot: lightwell tables (see db/migrations)
+-- sqlc schema snapshot: current lightwell vulnerabilities tables (see db/migrations)
 -- NOTE: This file must be kept in sync with the actual migrations.
 -- sqlc uses this for code generation; it is not executed directly.
 
