@@ -757,3 +757,55 @@ func TestStore_ListCustomerIds(t *testing.T) {
 	assert.Contains(t, ids, customerA)
 	assert.Contains(t, ids, customerB)
 }
+
+func TestStore_ListLtwlsuptTicketIds(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	customerA := fmt.Sprintf("lw-tickets-a-%d", time.Now().UnixNano())
+	customerB := fmt.Sprintf("lw-tickets-b-%d", time.Now().UnixNano())
+	insertTestVulnerabilities(t, ctx, tx, []testVulnSpec{
+		{
+			vulnID:      "LWL-TICKETS-1",
+			severity:    "Moderate",
+			stage:       "Submitted",
+			language:    "java",
+			complexity:  "Standard",
+			ticketIDs:   []string{"ticket-c", "ticket-a"},
+			daysAgo:     1,
+			customerIDs: []string{customerA},
+		},
+		{
+			vulnID:      "LWL-TICKETS-2",
+			severity:    "Low",
+			stage:       "Submitted",
+			language:    "java",
+			complexity:  "Standard",
+			ticketID:    "ticket-a",
+			daysAgo:     1,
+			customerIDs: []string{customerA},
+		},
+		{
+			vulnID:      "LWL-TICKETS-3",
+			severity:    "Low",
+			stage:       "Submitted",
+			language:    "python",
+			complexity:  "Standard",
+			ticketID:    "ticket-b",
+			daysAgo:     1,
+			customerIDs: []string{customerB},
+		},
+	})
+
+	ids, err := q.ListLtwlsuptTicketIds(ctx, customerA)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ticket-a", "ticket-c"}, ids)
+
+	ids, err = q.ListLtwlsuptTicketIds(ctx, customerB)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ticket-b"}, ids)
+
+	ids, err = q.ListLtwlsuptTicketIds(ctx, "no-such-customer")
+	require.NoError(t, err)
+	assert.Empty(t, ids)
+}
