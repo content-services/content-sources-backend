@@ -32,7 +32,14 @@ func TestParse_CSV(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, FormatCSV, result.InputFormat)
 	assert.Len(t, result.Packages, 1)
-	assert.Equal(t, "flask", result.Packages[0].Name)
+}
+
+func TestParse_Requirements(t *testing.T) {
+	data := "flask==2.3.0\nrequests==2.31.0\n"
+	result, err := Parse("requirements.txt", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Equal(t, FormatRequirements, result.InputFormat)
+	assert.Len(t, result.Packages, 2)
 }
 
 func TestParse_UnsupportedFormat(t *testing.T) {

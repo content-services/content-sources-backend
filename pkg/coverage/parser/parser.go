@@ -11,7 +11,10 @@ const (
 	EcosystemPython = "Python"
 )
 
-const FormatCSV = "csv"
+const (
+	FormatCSV          = "csv"
+	FormatRequirements = "requirements.txt"
+)
 
 type Package struct {
 	Ecosystem string
@@ -41,6 +44,8 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	switch format {
 	case FormatCSV:
 		packages, err = parseCSV(data)
+	case FormatRequirements:
+		packages, err = parseRequirements(data)
 	}
 	if err != nil {
 		return nil, err
@@ -54,8 +59,11 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 
 func detectFormat(filename string) (string, error) {
 	lower := strings.ToLower(filename)
-	if strings.HasSuffix(lower, ".csv") {
+	switch {
+	case strings.HasSuffix(lower, ".csv"):
 		return FormatCSV, nil
+	case strings.HasSuffix(lower, "requirements.txt"):
+		return FormatRequirements, nil
 	}
 	return "", fmt.Errorf("unsupported manifest format for file %q", filename)
 }
