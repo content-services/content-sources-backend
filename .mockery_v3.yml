@@ -42,6 +42,7 @@ packages:
       LightwellAdvisoryDao: {}
       LightwellVulnerabilityDao: {}
       UserPreferenceDao: {}
+      CoverageReportDao: {}
   github.com/content-services/content-sources-backend/pkg/tasks/client:
     interfaces:
       TaskClient: {}

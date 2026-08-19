@@ -1,6 +1,7 @@
 package seeds
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,6 +25,18 @@ func SeedCoverageReport(db *gorm.DB, options CoverageReportSeedOptions) (*models
 		return nil, fmt.Errorf("org ID is required")
 	}
 
+	report := models.CoverageReport{}
+	result := db.Where("uuid = ?", stubCompletedReportUUID).First(&report)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("could not query coverage report: %w", result.Error)
+	}
+	if result.Error == nil {
+		if err := seedHighCoverageReport(db, options.OrgID); err != nil {
+			return nil, err
+		}
+		return &report, nil
+	}
+
 	createdAt := time.Date(2026, 8, 13, 14, 30, 0, 0, time.UTC)
 	completedAt := time.Date(2026, 8, 13, 14, 30, 42, 0, time.UTC)
 	inputFormat := "cyclonedx"
@@ -33,7 +46,7 @@ func SeedCoverageReport(db *gorm.DB, options CoverageReportSeedOptions) (*models
 		{Ecosystem: "Python", Total: 6, ExactMatches: 4, PartialMatches: 1, Unmatched: 1},
 	}
 
-	report := models.CoverageReport{
+	report = models.CoverageReport{
 		UUID:                     stubCompletedReportUUID,
 		CreatedAt:                createdAt,
 		OrgID:                    options.OrgID,
@@ -97,6 +110,15 @@ func SeedCoverageReport(db *gorm.DB, options CoverageReportSeedOptions) (*models
 }
 
 func seedHighCoverageReport(db *gorm.DB, orgID string) error {
+	var existing models.CoverageReport
+	result := db.Where("uuid = ?", stubHighCoverageReportUUID).First(&existing)
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return fmt.Errorf("could not query high coverage report: %w", result.Error)
+	}
+	if result.Error == nil {
+		return nil
+	}
+
 	createdAt := time.Date(2026, 8, 14, 10, 15, 0, 0, time.UTC)
 	completedAt := time.Date(2026, 8, 14, 10, 15, 28, 0, time.UTC)
 	inputFormat := "cyclonedx"

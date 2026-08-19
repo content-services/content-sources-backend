@@ -144,9 +144,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Filter by package match status (possible values: in_network, not_in_network)",
-                        "name": "status",
+                        "type": "boolean",
+                        "description": "Filter by coverage status (true = covered, false = not covered)",
+                        "name": "covered",
                         "in": "query"
                     },
                     {
@@ -166,7 +166,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.CoverageReportPackagesResponse"
+                            "$ref": "#/definitions/api.CoverageReportPackageCollectionResponse"
                         }
                     },
                     "400": {
@@ -4808,9 +4808,41 @@ const docTemplate = `{
                 }
             }
         },
-        "api.CoverageReportPackageItem": {
+        "api.CoverageReportPackageCollectionResponse": {
             "type": "object",
             "properties": {
+                "data": {
+                    "description": "List of packages",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.CoverageReportPackageResponse"
+                    }
+                },
+                "links": {
+                    "description": "Navigation links",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Links"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "Pagination metadata",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.ResponseMetadata"
+                        }
+                    ]
+                }
+            }
+        },
+        "api.CoverageReportPackageResponse": {
+            "type": "object",
+            "properties": {
+                "covered": {
+                    "description": "Whether the package is covered (true = exact or partial match)",
+                    "type": "boolean"
+                },
                 "ecosystem": {
                     "description": "Ecosystem of the package",
                     "type": "string"
@@ -4819,29 +4851,9 @@ const docTemplate = `{
                     "description": "Package name from the manifest",
                     "type": "string"
                 },
-                "status": {
-                    "description": "Package match status (in_network, not_in_network)",
+                "version": {
+                    "description": "Package version from the manifest",
                     "type": "string"
-                }
-            }
-        },
-        "api.CoverageReportPackagesResponse": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer"
-                },
-                "offset": {
-                    "type": "integer"
-                },
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.CoverageReportPackageItem"
-                    }
-                },
-                "total": {
-                    "type": "integer"
                 }
             }
         },

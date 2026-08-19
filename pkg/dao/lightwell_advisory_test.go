@@ -19,6 +19,12 @@ func TestLightwellAdvisorySuite(t *testing.T) {
 }
 
 func (s *LightwellAdvisorySuite) createLightwellRepoConfig(name string) string {
+	var repoConfig models.RepositoryConfiguration
+	s.tx.Where("name = ? AND org_id = ?", name, config.LightwellOrg).First(&repoConfig)
+	if repoConfig.UUID != "" {
+		return repoConfig.UUID
+	}
+
 	repo := models.Repository{
 		Origin:                  config.OriginLightwell,
 		ContentType:             config.ContentTypeMaven,
@@ -27,7 +33,7 @@ func (s *LightwellAdvisorySuite) createLightwellRepoConfig(name string) string {
 	err := s.tx.Create(&repo).Error
 	s.Require().NoError(err)
 
-	repoConfig := models.RepositoryConfiguration{
+	repoConfig = models.RepositoryConfiguration{
 		Name:           name,
 		OrgID:          config.LightwellOrg,
 		RepositoryUUID: repo.UUID,

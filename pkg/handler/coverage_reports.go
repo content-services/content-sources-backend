@@ -1,16 +1,18 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 )
 
-type CoverageReportHandler struct{}
+type CoverageReportHandler struct {
+	DaoRegistry dao.DaoRegistry
+}
 
 func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -21,8 +23,8 @@ func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFu
 	}
 }
 
-func RegisterCoverageReportRoutes(engine *echo.Group) {
-	ch := CoverageReportHandler{}
+func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
+	ch := CoverageReportHandler{DaoRegistry: *daoReg}
 	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellBeaconAndLensAccessible)
 	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
 	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
@@ -66,12 +68,11 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/{uuid} [get]
 func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
-	report, err := stubGetCoverageReport(c.Param("uuid"))
-	if errors.Is(err, errStubCoverageReportNotFound) {
-		return ce.NewErrorResponse(http.StatusNotFound, "Coverage report not found", "Report is not available or analysis is incomplete")
-	}
+	_, orgID := getAccountIdOrgId(c)
+
+	report, err := ch.DaoRegistry.CoverageReport.Fetch(c.Request().Context(), orgID, c.Param("uuid"))
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error loading fixture", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching coverage report", err.Error())
 	}
 
 	return c.JSON(http.StatusOK, report)
@@ -86,27 +87,28 @@ func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
 // @Param        uuid path string true "Coverage report UUID"
 // @Param        search query string false "Filter by package name"
 // @Param        ecosystem query string false "Filter by ecosystem"
-// @Param        status query string false "Filter by package match status (possible values: in_network, not_in_network)"
+// @Param        covered query bool false "Filter by coverage status (true = covered, false = not covered)"
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
-// @Success      200 {object} api.CoverageReportPackagesResponse
+// @Success      200 {object} api.CoverageReportPackageCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/{uuid}/packages [get]
 func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+
 	req := api.ListCoverageReportPackagesRequest{}
 	if err := c.Bind(&req); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	response, err := stubListCoverageReportPackages(c.Param("uuid"), req, ParsePagination(c))
-	if errors.Is(err, errStubCoverageReportNotFound) {
-		return ce.NewErrorResponse(http.StatusNotFound, "Coverage report not found", "Report is not available or analysis is incomplete")
-	}
+	pageData := ParsePagination(c)
+
+	response, totalCount, err := ch.DaoRegistry.CoverageReport.ListPackages(c.Request().Context(), orgID, c.Param("uuid"), pageData, req)
 	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error loading fixture", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing coverage report packages", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&response, c, totalCount))
 }

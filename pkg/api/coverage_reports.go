@@ -27,27 +27,31 @@ type EcosystemCoverageSummary struct {
 	Unmatched      int    `json:"unmatched"`
 }
 
-// CoverageReportPackageItem represents a package in a coverage report
-type CoverageReportPackageItem struct {
+// CoverageReportPackageResponse represents a package in a coverage report
+type CoverageReportPackageResponse struct {
 	Name      string `json:"name"`      // Package name from the manifest
+	Version   string `json:"version"`   // Package version from the manifest
 	Ecosystem string `json:"ecosystem"` // Ecosystem of the package
-	Status    string `json:"status"`    // Package match status (in_network, not_in_network)
+	Covered   bool   `json:"covered"`   // Whether the package is covered (true = exact or partial match)
 }
 
-// CoverageReportPackagesResponse represents the paginated response for packages in a coverage report
-type CoverageReportPackagesResponse struct {
-	Results []CoverageReportPackageItem `json:"results"`
-	Total   int                         `json:"total"`
-	Limit   int                         `json:"limit"`
-	Offset  int                         `json:"offset"`
+// CoverageReportPackageCollectionResponse represents the paginated response for packages in a coverage report
+type CoverageReportPackageCollectionResponse struct {
+	Data  []CoverageReportPackageResponse `json:"data"`  // List of packages
+	Meta  ResponseMetadata                `json:"meta"`  // Pagination metadata
+	Links Links                           `json:"links"` // Navigation links
+}
+
+func (r *CoverageReportPackageCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {
+	r.Meta = meta
+	r.Links = links
 }
 
 // ListCoverageReportPackagesRequest represents the request for listing packages in a coverage report
 type ListCoverageReportPackagesRequest struct {
-	UUID      string `param:"uuid" validate:"required"` // Identifier of the coverage report
-	Search    string `query:"search"`                   // Optional filter for package name
-	Ecosystem string `query:"ecosystem"`                // Optional filter for ecosystem
-	Status    string `query:"status"`                   // Optional filter for package match status
+	Covered   *bool  `query:"covered"`   // Optional filter for coverage status (true = covered, false = not covered)
+	Ecosystem string `query:"ecosystem"` // Optional filter for ecosystem
+	Search    string `query:"search"`    // Optional filter for package name
 }
 
 // CreateCoverageReportRequest represents the request for creating a coverage report

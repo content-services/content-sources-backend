@@ -36,6 +36,7 @@ type DaoRegistry struct {
 	LightwellAdvisory      LightwellAdvisoryDao
 	LightwellVulnerability LightwellVulnerabilityDao
 	UserPreference         UserPreferenceDao
+	CoverageReport         CoverageReportDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -82,6 +83,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db},
 		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
 		UserPreference:         userPreferenceDaoImpl{db: db},
+		CoverageReport:         coverageReportDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -286,4 +288,9 @@ type UserPreferenceDao interface {
 	List(ctx context.Context, orgID string, userID string) (api.UserPreferencesResponse, error)
 	Set(ctx context.Context, orgID string, userID string, label string, value string) (api.UserPreferenceResponse, error)
 	ListDistinctOrgsByPreference(ctx context.Context, label string, value string) ([]string, error)
+}
+
+type CoverageReportDao interface {
+	Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error)
+	ListPackages(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error)
 }
