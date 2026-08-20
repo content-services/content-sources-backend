@@ -227,6 +227,8 @@ env:
     value: ${OPTIONS_INTERNAL_USER}
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
+  - name: OPTIONS_SEED_LIGHTWELL
+    value: ${OPTIONS_SEED_LIGHTWELL}
 
 # Only for transform-pulp-logs and hotfix-transform-pulp-logs-fix (reference floorist-bucket secret).
 env_transform_pulp_logs:
@@ -379,6 +381,9 @@ parameters:
     description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
+  - name: OPTIONS_SEED_LIGHTWELL
+    description: Load mock Lightwell vulnerability seed data after dbmigrate up
+    value: 'false'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier
     value: 'false'
