@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
@@ -37,10 +38,27 @@ func (suite *LightwellVulnerabilitiesSuite) SetupTest() {
 }
 
 func (suite *LightwellVulnerabilitiesSuite) serveRouter(req *http.Request) (int, []byte, error) {
+	return suite.serveRouterWithAccess(req, true, true)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) serveRouterWithAccess(req *http.Request, enabled bool, authorized bool) (int, []byte, error) {
 	router := echo.New()
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(api.FullRootPath())
+
+	if enabled {
+		config.Get().Features.LightwellBeaconAndLens.Enabled = true
+	} else {
+		config.Get().Features.LightwellBeaconAndLens.Enabled = false
+	}
+
+	if authorized {
+		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{test_handler.MockAccountNumber}
+	} else {
+		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
+	}
+
 	RegisterLightwellVulnerabilityRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
 	rr := httptest.NewRecorder()
@@ -72,6 +90,14 @@ func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIds() {
 	assert.Equal(suite.T(), expected, resp.Data)
 }
 
+func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsNotAccessible() {
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/customers/", api.FullRootPath())
+	code, body, err := suite.serveRouterWithAccess(suite.newGet(path), true, false)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+	assert.Contains(suite.T(), string(body), "Neither the user nor account is allowed")
+}
+
 func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIds() {
 	expected := []string{"batch-1", "batch-2"}
 	suite.reg.LightwellVulnerability.On("ListLtwlsuptTicketIds", test.MockCtx(), "demo-customer-1").Return(expected, nil)
@@ -84,6 +110,14 @@ func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIds() {
 	var resp api.LightwellLtwlsuptTicketIdsResponse
 	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
 	assert.Equal(suite.T(), expected, resp.Data)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsNotAccessible() {
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1", api.FullRootPath())
+	code, body, err := suite.serveRouterWithAccess(suite.newGet(path), true, false)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+	assert.Contains(suite.T(), string(body), "Neither the user nor account is allowed")
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsRequiresCustomerID() {
@@ -118,6 +152,14 @@ func (suite *LightwellVulnerabilitiesSuite) TestListRequiresCustomerID() {
 	code, _, err := suite.serveRouter(suite.newGet(path))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusBadRequest, code)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListNotAccessible() {
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1", api.FullRootPath())
+	code, body, err := suite.serveRouterWithAccess(suite.newGet(path), true, false)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+	assert.Contains(suite.T(), string(body), "Neither the user nor account is allowed")
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListSearchOneChar() {
