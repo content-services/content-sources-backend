@@ -99,7 +99,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsNotAccessible() {
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIds() {
-	expected := []string{"batch-1", "batch-2"}
+	expected := []string{"demo-tk-1", "demo-tk-2"}
 	suite.reg.LightwellVulnerability.On("ListLtwlsuptTicketIds", test.MockCtx(), "demo-customer-1").Return(expected, nil)
 
 	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1", api.FullRootPath())
@@ -188,7 +188,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		Blocked:           false,
 		Duplicate:         true,
 		DuplicateOf:       &dupOf,
-		LtwlsuptTicketIDs: []string{"batch-3"},
+		LtwlsuptTicketIDs: []string{"demo-tk-3"},
 	}}
 	aggregates := dao.LightwellVulnerabilityAggregates{
 		TotalCount:    1,
@@ -203,7 +203,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		Severities:        []string{"Moderate", "Critical"},
 		Stages:            []string{"Validation"},
 		Complexities:      []string{"Standard"},
-		LtwlsuptTicketIDs: []string{"batch-3"},
+		LtwlsuptTicketIDs: []string{"demo-tk-3"},
 		Flags:             []string{"duplicate"},
 		Search:            &search,
 		Limit:             100,
@@ -216,7 +216,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	q.Set("severity", "Moderate,Critical")
 	q.Set("stage", "Validation")
 	q.Set("complexity", "Standard")
-	q.Set("ltwlsupt_ticket_id", "batch-3")
+	q.Set("ltwlsupt_ticket_id", "demo-tk-3")
 	q.Set("flag", "duplicate")
 	q.Set("search", "log4j")
 	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?%s", api.FullRootPath(), q.Encode())
@@ -232,8 +232,8 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.Equal(suite.T(), "00000000-0000-4000-8000-000000000020", resp.Data[0].UUID)
 	assert.Contains(suite.T(), string(body), `"uuid":"00000000-0000-4000-8000-000000000020"`)
 	assert.NotContains(suite.T(), string(body), `"id":`)
-	assert.Equal(suite.T(), []string{"batch-3"}, resp.Data[0].LtwlsuptTicketIDs)
-	assert.Contains(suite.T(), string(body), `"ltwlsupt_ticket_ids":["batch-3"]`)
+	assert.Equal(suite.T(), []string{"demo-tk-3"}, resp.Data[0].LtwlsuptTicketIDs)
+	assert.Contains(suite.T(), string(body), `"ltwlsupt_ticket_ids":["demo-tk-3"]`)
 	assert.False(suite.T(), resp.Data[0].Blocked)
 	assert.Contains(suite.T(), string(body), `"blocked":false`)
 	require := assert.New(suite.T())
