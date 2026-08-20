@@ -86,6 +86,18 @@ func CheckAdminPartnerRepositoriesAccessible(ctx context.Context) (err error) {
 	}
 }
 
+func CheckLightwellNotificationsAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellNotifications.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage lightwell notification preferences",
+			"Lightwell notifications feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellNotifications) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage lightwell notification preferences",
+			"Neither the user nor account is allowed.")
+	}
+}
+
 func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 	if !config.Get().Features.AdminNotifications.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot send test notifications",

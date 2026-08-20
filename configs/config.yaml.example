@@ -206,6 +206,10 @@ features:
     enabled: false
   lightwell:
     enabled: false
+  lightwell_notifications:
+    enabled: false
+    accounts: #["lightwellNotifAccount"]
+    organizations: #["lightwellNotifOrg"]
   admin_partner_repositories:
     enabled: false
     accounts: #["partnerRepoAdminAccount"]

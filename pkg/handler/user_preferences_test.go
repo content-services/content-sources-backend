@@ -34,6 +34,7 @@ func TestUserPreferencesSuite(t *testing.T) {
 
 func (suite *UserPreferencesSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
+	config.Get().Features.LightwellNotifications.Enabled = true
 }
 
 func (suite *UserPreferencesSuite) serveRouter(req *http.Request) (int, []byte, error) {
@@ -119,6 +120,21 @@ func (suite *UserPreferencesSuite) TestSetInvalidBody() {
 	label := models.UserPreferenceLightwellNotificationEnabled
 	path := fmt.Sprintf("%s/user_preferences/%s", api.FullRootPath(), label)
 	req := httptest.NewRequest(http.MethodPut, path, bytes.NewReader([]byte(`{"value":"true"}`)))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
+
+	code, _, err := suite.serveRouter(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+}
+
+func (suite *UserPreferencesSuite) TestSetDisabledFeature() {
+	config.Get().Features.LightwellNotifications.Enabled = false
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = true }()
+
+	label := models.UserPreferenceLightwellNotificationEnabled
+	path := fmt.Sprintf("%s/user_preferences/%s", api.FullRootPath(), label)
+	req := httptest.NewRequest(http.MethodPut, path, bytes.NewReader([]byte(`"true"`)))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
 

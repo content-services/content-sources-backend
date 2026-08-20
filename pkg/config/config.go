@@ -79,6 +79,7 @@ type FeatureSet struct {
 	Kessel                   Feature `mapstructure:"kessel"`
 	ExtendedReleaseRepos     Feature `mapstructure:"extended_release_repos"`
 	Lightwell                Feature `mapstructure:"lightwell"`
+	LightwellNotifications   Feature `mapstructure:"lightwell_notifications"`
 	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
 	AdminNotifications       Feature `mapstructure:"admin_notifications"`
 	LightwellBeaconAndLens   Feature `mapstructure:"lightwell_beacon_and_lens"`
@@ -447,6 +448,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.kessel.organizations", nil)
 	v.SetDefault("features.kessel.users", nil)
 	v.SetDefault("features.lightwell.enabled", false)
+	v.SetDefault("features.lightwell_notifications.enabled", false)
 	v.SetDefault("features.admin_partner_repositories.enabled", false)
 	v.SetDefault("features.admin_partner_repositories.accounts", nil)
 	v.SetDefault("features.admin_partner_repositories.organizations", nil)
