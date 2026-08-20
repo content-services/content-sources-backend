@@ -32,6 +32,7 @@ models/ApiFetchGPGKeyRequest.ts
 models/ApiFetchGPGKeyResponse.ts
 models/ApiGenericAttributeValidationResponse.ts
 models/ApiLightwellCustomerIdsResponse.ts
+models/ApiLightwellLtwlsuptTicketIdsResponse.ts
 models/ApiLightwellVulnerabilityCollectionMeta.ts
 models/ApiLightwellVulnerabilityCollectionResponse.ts
 models/ApiLightwellVulnerabilityResponse.ts

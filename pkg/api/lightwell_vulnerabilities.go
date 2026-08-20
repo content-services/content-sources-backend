@@ -59,3 +59,8 @@ func (r *LightwellVulnerabilityCollectionResponse) SetMetadata(meta ResponseMeta
 type LightwellCustomerIdsResponse struct {
 	Data []string `json:"data"` // Customer IDs
 }
+
+// LightwellLtwlsuptTicketIdsResponse is the distinct Lightwell support ticket IDs for a customer.
+type LightwellLtwlsuptTicketIdsResponse struct {
+	Data []string `json:"data"` // Lightwell support ticket IDs
+}

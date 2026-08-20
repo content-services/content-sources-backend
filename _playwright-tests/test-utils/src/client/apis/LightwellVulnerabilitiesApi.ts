@@ -19,6 +19,11 @@ import {
     ApiLightwellCustomerIdsResponseToJSON,
 } from '../models/ApiLightwellCustomerIdsResponse';
 import {
+    type ApiLightwellLtwlsuptTicketIdsResponse,
+    ApiLightwellLtwlsuptTicketIdsResponseFromJSON,
+    ApiLightwellLtwlsuptTicketIdsResponseToJSON,
+} from '../models/ApiLightwellLtwlsuptTicketIdsResponse';
+import {
     type ApiLightwellVulnerabilityCollectionResponse,
     ApiLightwellVulnerabilityCollectionResponseFromJSON,
     ApiLightwellVulnerabilityCollectionResponseToJSON,
@@ -28,6 +33,10 @@ import {
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
 } from '../models/ErrorsErrorResponse';
+
+export interface ListLightwellLtwlsuptTicketIdsRequest {
+    customerId: string;
+}
 
 export interface ListLightwellVulnerabilitiesRequest {
     customerId: string;
@@ -82,6 +91,56 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
      */
     async listLightwellCustomerIds(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiLightwellCustomerIdsResponse> {
         const response = await this.listLightwellCustomerIdsRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for listLightwellLtwlsuptTicketIds without sending the request
+     */
+    async listLightwellLtwlsuptTicketIdsRequestOpts(requestParameters: ListLightwellLtwlsuptTicketIdsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['customerId'] == null) {
+            throw new runtime.RequiredError(
+                'customerId',
+                'Required parameter "customerId" was null or undefined when calling listLightwellLtwlsuptTicketIds().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['customerId'] != null) {
+            queryParameters['customer_id'] = requestParameters['customerId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * List distinct Lightwell support ticket IDs for a customer.
+     * List Lightwell support ticket IDs
+     */
+    async listLightwellLtwlsuptTicketIdsRaw(requestParameters: ListLightwellLtwlsuptTicketIdsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiLightwellLtwlsuptTicketIdsResponse>> {
+        const requestOptions = await this.listLightwellLtwlsuptTicketIdsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiLightwellLtwlsuptTicketIdsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * List distinct Lightwell support ticket IDs for a customer.
+     * List Lightwell support ticket IDs
+     */
+    async listLightwellLtwlsuptTicketIds(requestParameters: ListLightwellLtwlsuptTicketIdsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiLightwellLtwlsuptTicketIdsResponse> {
+        const response = await this.listLightwellLtwlsuptTicketIdsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

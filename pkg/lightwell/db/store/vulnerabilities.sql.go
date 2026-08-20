@@ -155,6 +155,33 @@ func (q *Queries) ListCustomerIds(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
+const listLtwlsuptTicketIds = `-- name: ListLtwlsuptTicketIds :many
+SELECT DISTINCT ticket_id
+FROM lightwell_vulnerability_support_tickets
+WHERE customer_id = $1
+ORDER BY ticket_id
+`
+
+func (q *Queries) ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listLtwlsuptTicketIds, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var ticket_id string
+		if err := rows.Scan(&ticket_id); err != nil {
+			return nil, err
+		}
+		items = append(items, ticket_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listVulnerabilities = `-- name: ListVulnerabilities :many
 SELECT
     v.uuid,

@@ -3,6 +3,12 @@ SELECT DISTINCT customer_id
 FROM lightwell_vulnerability_customers
 ORDER BY customer_id;
 
+-- name: ListLtwlsuptTicketIds :many
+SELECT DISTINCT ticket_id
+FROM lightwell_vulnerability_support_tickets
+WHERE customer_id = sqlc.arg(customer_id)
+ORDER BY ticket_id;
+
 -- name: ListVulnerabilities :many
 SELECT
     v.uuid,

@@ -72,6 +72,47 @@ func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIds() {
 	assert.Equal(suite.T(), expected, resp.Data)
 }
 
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIds() {
+	expected := []string{"batch-1", "batch-2"}
+	suite.reg.LightwellVulnerability.On("ListLtwlsuptTicketIds", test.MockCtx(), "demo-customer-1").Return(expected, nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellLtwlsuptTicketIdsResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	assert.Equal(suite.T(), expected, resp.Data)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsRequiresCustomerID() {
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", api.FullRootPath())
+	code, _, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsWhitespaceCustomerID() {
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=%%20%%20", api.FullRootPath())
+	code, _, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsEmpty() {
+	suite.reg.LightwellVulnerability.On("ListLtwlsuptTicketIds", test.MockCtx(), "demo-customer-1").Return([]string{}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellLtwlsuptTicketIdsResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	assert.Empty(suite.T(), resp.Data)
+}
+
 func (suite *LightwellVulnerabilitiesSuite) TestListRequiresCustomerID() {
 	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/", api.FullRootPath())
 	code, _, err := suite.serveRouter(suite.newGet(path))
@@ -370,6 +411,15 @@ func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsDaoError() {
 	suite.reg.LightwellVulnerability.On("ListCustomerIds", test.MockCtx()).Return(nil, &ce.DaoError{Message: "db down"})
 
 	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/customers/", api.FullRootPath())
+	code, _, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusInternalServerError, code)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsDaoError() {
+	suite.reg.LightwellVulnerability.On("ListLtwlsuptTicketIds", test.MockCtx(), "demo-customer-1").Return(nil, &ce.DaoError{Message: "db down"})
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1", api.FullRootPath())
 	code, _, err := suite.serveRouter(suite.newGet(path))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusInternalServerError, code)

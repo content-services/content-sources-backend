@@ -16,6 +16,7 @@ export * from './ApiFetchGPGKeyRequest';
 export * from './ApiFetchGPGKeyResponse';
 export * from './ApiGenericAttributeValidationResponse';
 export * from './ApiLightwellCustomerIdsResponse';
+export * from './ApiLightwellLtwlsuptTicketIdsResponse';
 export * from './ApiLightwellVulnerabilityCollectionMeta';
 export * from './ApiLightwellVulnerabilityCollectionResponse';
 export * from './ApiLightwellVulnerabilityResponse';

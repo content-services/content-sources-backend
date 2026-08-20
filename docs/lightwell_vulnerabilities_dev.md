@@ -39,9 +39,10 @@ Adjust connection parameters to match your `configs/config.yaml` if they differ 
 With the API running, authenticated clients can call:
 
 - `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/customers/` — distinct customer IDs
+- `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1` — distinct Lightwell support ticket IDs for a customer
 - `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1` — filtered, paginated list with aggregates
 
-`customer_id` is required on the list endpoint. Filters (`severity`, `stage`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo`, `duplicate`, and `blocked` (OR). `search` requires at least 2 characters when provided.
+`customer_id` is required on the list and `ltwlsupt-ticket-ids` endpoints. Filters (`severity`, `stage`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo`, `duplicate`, and `blocked` (OR). `search` requires at least 2 characters when provided.
 
 ## Run tests
 

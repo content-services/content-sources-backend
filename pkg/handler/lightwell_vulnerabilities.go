@@ -26,6 +26,7 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 
 	h := LightwellVulnerabilityHandler{DaoRegistry: *daoReg}
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead)
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead)
 }
 
@@ -50,6 +51,35 @@ func (h *LightwellVulnerabilityHandler) listCustomerIds(c echo.Context) error {
 		ids = []string{}
 	}
 	return c.JSON(http.StatusOK, api.LightwellCustomerIdsResponse{Data: ids})
+}
+
+// ListLightwellLtwlsuptTicketIds godoc
+// @Summary      List Lightwell support ticket IDs
+// @ID           listLightwellLtwlsuptTicketIds
+// @Description  List distinct Lightwell support ticket IDs for a customer.
+// @Tags         lightwell_vulnerabilities
+// @Accept       json
+// @Produce      json
+// @Param        customer_id query string true "Customer ID (required)."
+// @Success      200 {object} api.LightwellLtwlsuptTicketIdsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/ [get]
+func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) error {
+	customerID := strings.TrimSpace(c.QueryParam("customer_id"))
+	if customerID == "" {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Missing customer_id", "customer_id is required")
+	}
+
+	ids, err := h.DaoRegistry.LightwellVulnerability.ListLtwlsuptTicketIds(c.Request().Context(), customerID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing lightwell support ticket ids", err.Error())
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return c.JSON(http.StatusOK, api.LightwellLtwlsuptTicketIdsResponse{Data: ids})
 }
 
 // ListLightwellVulnerabilities godoc

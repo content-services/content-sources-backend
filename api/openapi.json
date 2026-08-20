@@ -325,6 +325,18 @@
                 },
                 "type": "object"
             },
+            "api.LightwellLtwlsuptTicketIdsResponse": {
+                "properties": {
+                    "data": {
+                        "description": "Lightwell support ticket IDs",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.LightwellVulnerabilityCollectionMeta": {
                 "properties": {
                     "blocked_count": {
@@ -3324,6 +3336,69 @@
                     }
                 },
                 "summary": "List Lightwell customer IDs",
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ]
+            }
+        },
+        "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/": {
+            "get": {
+                "description": "List distinct Lightwell support ticket IDs for a customer.",
+                "operationId": "listLightwellLtwlsuptTicketIds",
+                "parameters": [
+                    {
+                        "description": "Customer ID (required).",
+                        "in": "query",
+                        "name": "customer_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.LightwellLtwlsuptTicketIdsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Lightwell support ticket IDs",
                 "tags": [
                     "lightwell_vulnerabilities"
                 ]
