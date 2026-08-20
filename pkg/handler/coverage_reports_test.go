@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,11 +12,13 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
-	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ import (
 
 type CoverageReportSuite struct {
 	suite.Suite
-	echo *echo.Echo
+	reg *dao.MockDaoRegistry
 }
 
 func TestCoverageReportSuite(t *testing.T) {
@@ -34,15 +35,7 @@ func TestCoverageReportSuite(t *testing.T) {
 }
 
 func (suite *CoverageReportSuite) SetupTest() {
-	suite.echo = echo.New()
-	suite.echo.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
-		TargetHeader: "x-rh-insights-request-id",
-	}))
-	suite.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
-}
-
-func (suite *CoverageReportSuite) TearDownTest() {
-	require.NoError(suite.T(), suite.echo.Shutdown(context.Background()))
+	suite.reg = dao.GetMockDaoRegistry(suite.T())
 }
 
 func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, enabled bool, authorized bool) (int, []byte, error) {
@@ -63,7 +56,7 @@ func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, e
 		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
-	RegisterCoverageReportRoutes(pathPrefix)
+	RegisterCoverageReportRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -75,7 +68,155 @@ func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, e
 	return response.StatusCode, body, err
 }
 
-func (suite *CoverageReportSuite) TestCreateCoverageReport_Stub() {
+func (suite *CoverageReportSuite) TestGetCoverageReport() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	expected := api.CoverageReportResponse{
+		UUID:   reportUUID,
+		Status: "completed",
+		Total:  15,
+	}
+
+	suite.reg.CoverageReport.On("Fetch", test.MockCtx(), orgID, reportUUID).Return(expected, nil)
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), reportUUID), nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.CoverageReportResponse
+	assert.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, expected.UUID, response.UUID)
+	assert.Equal(t, expected.Status, response.Status)
+	assert.Equal(t, expected.Total, response.Total)
+}
+
+func (suite *CoverageReportSuite) TestGetCoverageReportNotFound() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	reportUUID := "00000000-0000-0000-0000-000000000099"
+
+	suite.reg.CoverageReport.On("Fetch", test.MockCtx(), orgID, reportUUID).
+		Return(api.CoverageReportResponse{}, &ce.DaoError{Message: "not found", NotFound: true})
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), reportUUID), nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *CoverageReportSuite) TestGetCoverageReportNotAccessible() {
+	t := suite.T()
+	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), reportUUID), nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, false)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Neither the user nor account is allowed")
+}
+
+func (suite *CoverageReportSuite) TestListCoverageReportPackages() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	expectedData := []api.CoverageReportPackageResponse{
+		{Name: "spring-core", Version: "6.1.0", Ecosystem: "Java", Covered: true},
+		{Name: "unknown-pkg", Version: "1.0.0", Ecosystem: "Java", Covered: false},
+	}
+	expectedResp := api.CoverageReportPackageCollectionResponse{Data: expectedData}
+
+	suite.reg.CoverageReport.On("ListPackages", test.MockCtx(), orgID, reportUUID,
+		api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset, SortBy: DefaultSortBy},
+		api.ListCoverageReportPackagesRequest{},
+	).Return(expectedResp, int64(2), nil)
+
+	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), reportUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.CoverageReportPackageCollectionResponse
+	assert.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, 2, len(response.Data))
+	assert.Equal(t, int64(2), response.Meta.Count)
+}
+
+func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotFound() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	reportUUID := "00000000-0000-0000-0000-000000000099"
+
+	suite.reg.CoverageReport.On("ListPackages", test.MockCtx(), orgID, reportUUID,
+		api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset, SortBy: DefaultSortBy},
+		api.ListCoverageReportPackagesRequest{},
+	).Return(api.CoverageReportPackageCollectionResponse{}, int64(0), &ce.DaoError{Message: "not found", NotFound: true})
+
+	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), reportUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotAccessible() {
+	t := suite.T()
+	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), reportUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, false)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Neither the user nor account is allowed")
+}
+
+func (suite *CoverageReportSuite) TestListCoverageReportPackagesWithFilters() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	covered := true
+	expectedResp := api.CoverageReportPackageCollectionResponse{
+		Data: []api.CoverageReportPackageResponse{
+			{Name: "spring-core", Version: "6.1.0", Ecosystem: "Java", Covered: true},
+		},
+	}
+
+	suite.reg.CoverageReport.On("ListPackages", test.MockCtx(), orgID, reportUUID,
+		api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset, SortBy: DefaultSortBy},
+		api.ListCoverageReportPackagesRequest{Covered: &covered, Ecosystem: "Java", Search: "spring"},
+	).Return(expectedResp, int64(1), nil)
+
+	path := fmt.Sprintf("%s/coverage_reports/%s/packages?covered=true&ecosystem=Java&search=spring", api.FullRootPath(), reportUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.CoverageReportPackageCollectionResponse
+	assert.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, 1, len(response.Data))
+	assert.True(t, response.Data[0].Covered)
+}
+
+func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	t := suite.T()
 	reqBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(reqBody)
@@ -90,14 +231,13 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport_Stub() {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
+	assert.NoError(t, err)
 
 	var response api.CoverageReportResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
+	assert.NoError(t, json.Unmarshal(body, &response))
 
 	assert.Equal(t, http.StatusCreated, code)
-	assert.Equal(t, response.Status, "pending")
+	assert.Equal(t, "pending", response.Status)
 }
 
 func (suite *CoverageReportSuite) TestCreateCoverageReportNotAccessible() {
@@ -115,206 +255,27 @@ func (suite *CoverageReportSuite) TestCreateCoverageReportNotAccessible() {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, body, err := suite.serveCoverageReportRouter(req, true, false)
-	assert.Nil(suite.T(), err)
-
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
 	assert.Contains(t, string(body), "Neither the user nor account is allowed")
 }
 
-func (suite *CoverageReportSuite) TestGetCoverageReport_Stub() {
-	t := suite.T()
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), stubCompletedReportUUID), nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	var response api.CoverageReportResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, response.Status, "completed")
-	assert.Equal(t, response.UUID, stubCompletedReportUUID)
-}
-
-func (suite *CoverageReportSuite) TestGetCoverageReportNotAccessible() {
-	t := suite.T()
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), stubCompletedReportUUID), nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, false)
-	assert.Nil(suite.T(), err)
-
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, code)
-	assert.Contains(t, string(body), "Neither the user nor account is allowed")
-}
-
-func (suite *CoverageReportSuite) TestGetHighCoverageReport_Stub() {
-	t := suite.T()
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), stubHighCoverageReportUUID), nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	var response api.CoverageReportResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, "completed", response.Status)
-	assert.Equal(t, stubHighCoverageReportUUID, response.UUID)
-	assert.Equal(t, 10, response.Total)
-	assert.Equal(t, 8, response.ExactMatches)
-	assert.Equal(t, 1, response.PartialMatches)
-	assert.Equal(t, 1, response.Unmatched)
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackages_Stub() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), stubCompletedReportUUID)
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	var response api.CoverageReportPackagesResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, 15, response.Total)
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotAccessible() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), stubCompletedReportUUID)
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, false)
-	assert.Nil(suite.T(), err)
-
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, code)
-	assert.Contains(t, string(body), "Neither the user nor account is allowed")
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackagesNameFilter_Stub() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages?search=json5", api.FullRootPath(), stubCompletedReportUUID)
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	var response api.CoverageReportPackagesResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, 1, response.Total)
-	assert.Equal(t, "json5", response.Results[0].Name)
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackagesEcosystemFilter_Stub() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages?ecosystem=Java", api.FullRootPath(), stubCompletedReportUUID)
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	var response api.CoverageReportPackagesResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, 9, response.Total)
-	for _, pkg := range response.Results {
-		assert.Equal(t, "Java", pkg.Ecosystem)
-	}
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackagesStatusFilter_Stub() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages?status=in_network", api.FullRootPath(), stubCompletedReportUUID)
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, body, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	var response api.CoverageReportPackagesResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, 11, response.Total)
-	for _, pkg := range response.Results {
-		assert.Equal(t, "in_network", pkg.Status)
-	}
-}
-
-func (suite *CoverageReportSuite) TestGetCoverageReportNotFound_Stub() {
-	t := suite.T()
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), "00000000-0000-0000-0000-000000000099"), nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, _, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusNotFound, code)
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotFound_Stub() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), "00000000-0000-0000-0000-000000000099")
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, _, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusNotFound, code)
-}
-
-func (suite *CoverageReportSuite) TestListCoverageReportPackagesPendingReport_Stub() {
-	t := suite.T()
-	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), stubPendingReportUUID)
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, _, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
-	assert.Equal(t, http.StatusNotFound, code)
-}
-
-func (suite *CoverageReportSuite) TestCreateCoverageReportMissingFile_Stub() {
+func (suite *CoverageReportSuite) TestCreateCoverageReportMissingFile() {
 	t := suite.T()
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), nil)
 	require.NoError(t, err)
 
 	code, _, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
+	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 
-func (suite *CoverageReportSuite) TestCreateCoverageReportEmptyBody_Stub() {
+func (suite *CoverageReportSuite) TestCreateCoverageReportEmptyBody() {
 	t := suite.T()
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), io.NopCloser(bytes.NewReader(nil)))
 	require.NoError(t, err)
 
 	code, _, err := suite.serveCoverageReportRouter(req, true, true)
-	assert.Nil(suite.T(), err)
-
+	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
 }

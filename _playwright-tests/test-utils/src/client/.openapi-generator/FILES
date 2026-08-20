@@ -20,8 +20,8 @@ models/ApiAddUploadsRequest.ts
 models/ApiArtifact.ts
 models/ApiBulkRemoveRpmsRequest.ts
 models/ApiContentUnitSearchRequest.ts
-models/ApiCoverageReportPackageItem.ts
-models/ApiCoverageReportPackagesResponse.ts
+models/ApiCoverageReportPackageCollectionResponse.ts
+models/ApiCoverageReportPackageResponse.ts
 models/ApiCoverageReportResponse.ts
 models/ApiCreateUploadRequest.ts
 models/ApiEcosystemCoverageSummary.ts

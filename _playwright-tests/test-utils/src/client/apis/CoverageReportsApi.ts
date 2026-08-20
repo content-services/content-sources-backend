@@ -14,10 +14,10 @@
 
 import * as runtime from '../runtime';
 import {
-    type ApiCoverageReportPackagesResponse,
-    ApiCoverageReportPackagesResponseFromJSON,
-    ApiCoverageReportPackagesResponseToJSON,
-} from '../models/ApiCoverageReportPackagesResponse';
+    type ApiCoverageReportPackageCollectionResponse,
+    ApiCoverageReportPackageCollectionResponseFromJSON,
+    ApiCoverageReportPackageCollectionResponseToJSON,
+} from '../models/ApiCoverageReportPackageCollectionResponse';
 import {
     type ApiCoverageReportResponse,
     ApiCoverageReportResponseFromJSON,
@@ -41,7 +41,7 @@ export interface ListCoverageReportPackagesRequest {
     uuid: string;
     search?: string;
     ecosystem?: string;
-    status?: string;
+    covered?: boolean;
     offset?: number;
     limit?: number;
 }
@@ -186,8 +186,8 @@ export class CoverageReportsApi extends runtime.BaseAPI {
             queryParameters['ecosystem'] = requestParameters['ecosystem'];
         }
 
-        if (requestParameters['status'] != null) {
-            queryParameters['status'] = requestParameters['status'];
+        if (requestParameters['covered'] != null) {
+            queryParameters['covered'] = requestParameters['covered'];
         }
 
         if (requestParameters['offset'] != null) {
@@ -216,18 +216,18 @@ export class CoverageReportsApi extends runtime.BaseAPI {
      * Return paginated packages for a completed coverage report.
      * List coverage report packages
      */
-    async listCoverageReportPackagesRaw(requestParameters: ListCoverageReportPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiCoverageReportPackagesResponse>> {
+    async listCoverageReportPackagesRaw(requestParameters: ListCoverageReportPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiCoverageReportPackageCollectionResponse>> {
         const requestOptions = await this.listCoverageReportPackagesRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => ApiCoverageReportPackagesResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiCoverageReportPackageCollectionResponseFromJSON(jsonValue));
     }
 
     /**
      * Return paginated packages for a completed coverage report.
      * List coverage report packages
      */
-    async listCoverageReportPackages(requestParameters: ListCoverageReportPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiCoverageReportPackagesResponse> {
+    async listCoverageReportPackages(requestParameters: ListCoverageReportPackagesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiCoverageReportPackageCollectionResponse> {
         const response = await this.listCoverageReportPackagesRaw(requestParameters, initOverrides);
         return await response.value();
     }

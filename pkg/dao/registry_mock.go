@@ -21,6 +21,7 @@ type MockDaoRegistry struct {
 	LightwellAdvisory      MockLightwellAdvisoryDao
 	LightwellVulnerability MockLightwellVulnerabilityDao
 	UserPreference         MockUserPreferenceDao
+	CoverageReport         MockCoverageReportDao
 }
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
@@ -41,6 +42,7 @@ func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 		LightwellAdvisory:      &m.LightwellAdvisory,
 		LightwellVulnerability: &m.LightwellVulnerability,
 		UserPreference:         &m.UserPreference,
+		CoverageReport:         &m.CoverageReport,
 	}
 	return &r
 }
@@ -63,6 +65,7 @@ func GetMockDaoRegistry(t *testing.T) *MockDaoRegistry {
 		LightwellAdvisory:      *NewMockLightwellAdvisoryDao(t),
 		LightwellVulnerability: *NewMockLightwellVulnerabilityDao(t),
 		UserPreference:         *NewMockUserPreferenceDao(t),
+		CoverageReport:         *NewMockCoverageReportDao(t),
 	}
 	return &reg
 }

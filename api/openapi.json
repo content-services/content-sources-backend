@@ -87,8 +87,40 @@
                 },
                 "type": "object"
             },
-            "api.CoverageReportPackageItem": {
+            "api.CoverageReportPackageCollectionResponse": {
                 "properties": {
+                    "data": {
+                        "description": "List of packages",
+                        "items": {
+                            "$ref": "#/components/schemas/api.CoverageReportPackageResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/api.Links"
+                            }
+                        ],
+                        "description": "Navigation links"
+                    },
+                    "meta": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/api.ResponseMetadata"
+                            }
+                        ],
+                        "description": "Pagination metadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.CoverageReportPackageResponse": {
+                "properties": {
+                    "covered": {
+                        "description": "Whether the package is covered (true = exact or partial match)",
+                        "type": "boolean"
+                    },
                     "ecosystem": {
                         "description": "Ecosystem of the package",
                         "type": "string"
@@ -97,29 +129,9 @@
                         "description": "Package name from the manifest",
                         "type": "string"
                     },
-                    "status": {
-                        "description": "Package match status (in_network, not_in_network)",
+                    "version": {
+                        "description": "Package version from the manifest",
                         "type": "string"
-                    }
-                },
-                "type": "object"
-            },
-            "api.CoverageReportPackagesResponse": {
-                "properties": {
-                    "limit": {
-                        "type": "integer"
-                    },
-                    "offset": {
-                        "type": "integer"
-                    },
-                    "results": {
-                        "items": {
-                            "$ref": "#/components/schemas/api.CoverageReportPackageItem"
-                        },
-                        "type": "array"
-                    },
-                    "total": {
-                        "type": "integer"
                     }
                 },
                 "type": "object"
@@ -2981,11 +2993,11 @@
                         }
                     },
                     {
-                        "description": "Filter by package match status (possible values: in_network, not_in_network)",
+                        "description": "Filter by coverage status (true = covered, false = not covered)",
                         "in": "query",
-                        "name": "status",
+                        "name": "covered",
                         "schema": {
-                            "type": "string"
+                            "type": "boolean"
                         }
                     },
                     {
@@ -3010,7 +3022,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.CoverageReportPackagesResponse"
+                                    "$ref": "#/components/schemas/api.CoverageReportPackageCollectionResponse"
                                 }
                             }
                         },
