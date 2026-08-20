@@ -131,6 +131,14 @@ clients:
   lightwell:
     username:
     password:
+    s3:
+      coverage_uploads:
+        url:
+        name:
+        access_key:
+        secret_key:
+        region:
+        file_prefix:
   pulp_log_parser:
     cloudwatch:
       key:
@@ -218,6 +226,11 @@ features:
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
   lightwell_beacon_and_lens:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
+  lightwell_store_uploads:
     enabled: false
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
