@@ -67,6 +67,7 @@ options:
   feature_filter: ["RHEL-OS-x86_64"]
   entitle_all: true
   internal_user: "internal-user"
+  seed_lightwell: true
 metrics:
   path: "/metrics"
   port: 9000
