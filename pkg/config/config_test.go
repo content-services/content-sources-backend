@@ -4,12 +4,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const MockCertData = "./test_files/cert.crt"
@@ -77,6 +80,22 @@ func runTestCustomHTTPErrorHandler(t *testing.T, e *echo.Echo, method string, gi
 	} else {
 		assert.Equal(t, expected, rec.Body.String())
 	}
+}
+
+func TestLightwellBeaconAndLensEnvVarsWithoutConfigFile(t *testing.T) {
+	t.Setenv("FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED", "true")
+	t.Setenv("FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS", "20424738,20007024")
+
+	v := viper.New()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+	setDefaults(v)
+
+	var cfg Configuration
+	require.NoError(t, v.Unmarshal(&cfg))
+	assert.True(t, cfg.Features.LightwellBeaconAndLens.Enabled)
+	require.NotNil(t, cfg.Features.LightwellBeaconAndLens.Organizations)
+	assert.Equal(t, []string{"20424738", "20007024"}, *cfg.Features.LightwellBeaconAndLens.Organizations)
 }
 
 func TestClowderS3URL(t *testing.T) {

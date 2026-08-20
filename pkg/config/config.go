@@ -459,6 +459,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
 	v.SetDefault("features.admin_notifications.users", nil)
+	v.SetDefault("features.lightwell_beacon_and_lens.enabled", false)
+	v.SetDefault("features.lightwell_beacon_and_lens.accounts", nil)
+	v.SetDefault("features.lightwell_beacon_and_lens.organizations", nil)
+	v.SetDefault("features.lightwell_beacon_and_lens.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
