@@ -131,6 +131,14 @@ clients:
   lightwell:
     username:
     password:
+    s3:
+      coverage_uploads:
+        url:
+        name:
+        access_key:
+        secret_key:
+        region:
+        file_prefix:
   pulp_log_parser:
     cloudwatch:
       key:

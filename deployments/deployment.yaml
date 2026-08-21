@@ -5206,6 +5206,7 @@ objects:
       inMemoryDb: true
       objectStore:
         - content-sources-central-pulp-s3
+        - lightwell-ui-coverage-uploads
   - apiVersion: v1
     kind: Service
     metadata:

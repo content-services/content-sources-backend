@@ -23,6 +23,9 @@ packages:
   github.com/content-services/content-sources-backend/pkg/clients/roadmap_client:
     interfaces:
       RoadmapClient: {}
+  github.com/content-services/content-sources-backend/pkg/clients/s3_client:
+    interfaces:
+      S3Client: {}
   github.com/content-services/content-sources-backend/pkg/dao:
     interfaces:
       AdminTaskDao: {}
