@@ -8,7 +8,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 )
 
@@ -38,8 +37,7 @@ func RegisterJFrogBridgeRoutes(engine *echo.Group) {
 		return
 	}
 
-	reg := prometheus.NewRegistry()
-	metrics := newBridgeMetrics(reg)
+	metrics := getSharedMetrics()
 
 	registry := newRegistryClient(cfg)
 	jfrog := newJFrogClient(cfg)
@@ -50,6 +48,7 @@ func RegisterJFrogBridgeRoutes(engine *echo.Group) {
 	}
 
 	bh := NewBridgeHandler(registry, jfrog, evidence, metrics)
+	bh.registryURL = cfg.RegistryURL
 	h := &simulateHandler{bridgeHandler: bh}
 
 	engine.Add(http.MethodPost, "/admin/jfrog_bridge/simulate", h.simulate, checkBridgeEnabled)

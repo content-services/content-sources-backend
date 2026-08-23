@@ -20,10 +20,11 @@ const (
 // BridgeHandler implements sarama.ConsumerGroupHandler and orchestrates
 // the full pipeline for each remediation message.
 type BridgeHandler struct {
-	registry RegistryClient
-	jfrog    JFrogClient
-	evidence EvidenceCreator
-	metrics  *bridgeMetrics
+	registry    RegistryClient
+	jfrog       JFrogClient
+	evidence    EvidenceCreator
+	metrics     *bridgeMetrics
+	registryURL string
 	// GAV dedup: records only after successful processing
 	processed sync.Map
 }
@@ -86,20 +87,21 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 }
 
 func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error) {
-	// Try full envelope first to check application and event_type filters
 	var env struct {
 		Application string `json:"application"`
 		EventType   string `json:"event_type"`
 	}
-
-	// Attempt to decode to check filters
-	if err := safeUnmarshal(data, &env); err == nil && env.Application != "" {
-		if !strings.EqualFold(env.Application, allowedApplication) {
-			return nil, true, fmt.Errorf("application %q is not %q", env.Application, allowedApplication)
-		}
-		if env.EventType != allowedEventType {
-			return nil, true, fmt.Errorf("event_type %q is not %q", env.EventType, allowedEventType)
-		}
+	if err := safeUnmarshal(data, &env); err != nil {
+		return nil, true, fmt.Errorf("invalid message: %w", err)
+	}
+	if env.Application == "" {
+		return nil, true, fmt.Errorf("missing application field")
+	}
+	if !strings.EqualFold(env.Application, allowedApplication) {
+		return nil, true, fmt.Errorf("application %q is not %q", env.Application, allowedApplication)
+	}
+	if env.EventType != allowedEventType {
+		return nil, true, fmt.Errorf("event_type %q is not %q", env.EventType, allowedEventType)
 	}
 
 	remediations, err := ParseRemediations(data)
@@ -175,11 +177,15 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	}
 
 	// 7. Set catalog properties on JAR
+	regURL := h.registryURL
+	if regURL == "" {
+		regURL = loadConfig().RegistryURL
+	}
 	props := map[string]string{
 		"catalog.name":                   fmt.Sprintf("%s:%s", rem.GroupID, rem.ArtifactID),
 		"catalog.version":               rem.Version,
 		"catalog.compatible_with":       rem.BaseVersion,
-		"catalog.vendor_remote_repo_url": loadConfig().RegistryURL,
+		"catalog.vendor_remote_repo_url": regURL,
 		"license":                        "Apache-2.0",
 	}
 	if err := h.jfrog.SetProperties(ctx, jarPath, props); err != nil {

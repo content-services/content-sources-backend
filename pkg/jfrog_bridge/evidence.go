@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
@@ -215,8 +216,12 @@ func (e *evidenceCreator) doPost(ctx context.Context, url string, body []byte) (
 			lastErr = err
 			continue
 		}
-		defer resp.Body.Close()
-		respBody, _ := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			lastErr = fmt.Errorf("read response: %w", readErr)
+			continue
+		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			return respBody, nil
@@ -243,7 +248,13 @@ func parseECDSAPrivateKey(pemStr string) (*ecdsa.PrivateKey, error) {
 		if !ok {
 			return nil, fmt.Errorf("PKCS8 key is not ECDSA")
 		}
+		if ecKey.Curve != elliptic.P256() {
+			return nil, fmt.Errorf("signing key must be ECDSA P-256, got %s", ecKey.Curve.Params().Name)
+		}
 		return ecKey, nil
+	}
+	if key.Curve != elliptic.P256() {
+		return nil, fmt.Errorf("signing key must be ECDSA P-256, got %s", key.Curve.Params().Name)
 	}
 	return key, nil
 }

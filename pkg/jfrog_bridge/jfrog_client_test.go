@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"sync"
 	"testing"
 
@@ -62,7 +63,7 @@ func TestJFrogClient_SetProperties(t *testing.T) {
 		"path/to/file.jar",
 		map[string]string{"catalog.name": "test:pkg"})
 	require.NoError(t, err)
-	assert.Contains(t, capturedPath, "catalog.name=test:pkg")
+	assert.Contains(t, capturedPath, "catalog.name=test%3Apkg")
 }
 
 func TestJFrogClient_VerifyDelivery(t *testing.T) {
@@ -99,4 +100,72 @@ func TestJFrogClient_Ping(t *testing.T) {
 
 	err := client.Ping(context.Background())
 	require.NoError(t, err)
+}
+
+func TestJFrogClient_UploadFile_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := &httpJFrogClient{
+		httpClient:  server.Client(),
+		catalogURL:  server.URL,
+		catalogRepo: "test-repo",
+		token:       "test-token",
+		maxRetries:  0,
+	}
+
+	err := client.UploadFile(context.Background(), "path/to/file.jar", []byte("data"), "application/java-archive")
+	require.Error(t, err)
+}
+
+func TestJFrogClient_AuthHeader(t *testing.T) {
+	var capturedAuth string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer server.Close()
+
+	client := &httpJFrogClient{
+		httpClient:  server.Client(),
+		catalogURL:  server.URL,
+		catalogRepo: "test-repo",
+		token:       "test-token",
+		maxRetries:  0,
+	}
+
+	err := client.UploadFile(context.Background(), "path/to/file.jar", []byte("data"), "application/java-archive")
+	require.NoError(t, err)
+	assert.Equal(t, "Bearer test-token", capturedAuth)
+}
+
+func TestJFrogClient_SetProperties_SpecialChars(t *testing.T) {
+	var capturedQuery string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedQuery = r.URL.RawQuery
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	client := &httpJFrogClient{
+		httpClient:  server.Client(),
+		catalogURL:  server.URL,
+		catalogRepo: "test-repo",
+		token:       "test-token",
+	}
+
+	props := map[string]string{
+		"catalog.vendor_remote_repo_url": "https://packages.redhat.com/lightwell/java/remediated",
+	}
+
+	err := client.SetProperties(context.Background(), "path/to/file.jar", props)
+	require.NoError(t, err)
+
+	decoded, err := url.QueryUnescape(capturedQuery)
+	require.NoError(t, err)
+	assert.Contains(t, decoded, "catalog.vendor_remote_repo_url=https://packages.redhat.com/lightwell/java/remediated")
 }

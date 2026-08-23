@@ -87,7 +87,7 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 	entries := vulnerability_parser.ParseManifest(manifestData)
 	var records []OSVRecord
 	for _, entry := range entries {
-		if !strings.Contains(entry.Filename, baseVersion) {
+		if !strings.Contains(entry.Filename, "-"+baseVersion+".") {
 			continue
 		}
 		fileURL := c.osvURL + "/" + entry.Filename

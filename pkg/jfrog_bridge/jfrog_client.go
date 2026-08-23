@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -73,29 +74,40 @@ func (c *httpJFrogClient) UploadFile(ctx context.Context, repoPath string, data 
 func (c *httpJFrogClient) SetProperties(ctx context.Context, repoPath string, props map[string]string) error {
 	var parts []string
 	for k, v := range props {
-		parts = append(parts, fmt.Sprintf("%s=%s", k, v))
+		parts = append(parts, fmt.Sprintf("%s=%s", k, url.QueryEscape(v)))
 	}
 	propStr := strings.Join(parts, ";")
 
-	url := fmt.Sprintf("%s/artifactory/api/storage/%s/%s?properties=%s",
+	reqURL := fmt.Sprintf("%s/artifactory/api/storage/%s/%s?properties=%s",
 		c.catalogURL, c.catalogRepo, repoPath, propStr)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, nil)
-	if err != nil {
-		return fmt.Errorf("create properties request: %w", err)
-	}
-	c.setAuth(req)
+	var lastErr error
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Duration(attempt) * time.Second):
+			}
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, reqURL, nil)
+		if err != nil {
+			return fmt.Errorf("create properties request: %w", err)
+		}
+		c.setAuth(req)
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("set properties: %w", err)
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		resp.Body.Close()
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			return nil
+		}
+		lastErr = fmt.Errorf("set properties: HTTP %d", resp.StatusCode)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("set properties: HTTP %d", resp.StatusCode)
-	}
-	return nil
+	return fmt.Errorf("set properties: %w", lastErr)
 }
 
 func (c *httpJFrogClient) VerifyDelivery(ctx context.Context, repoPath string) error {

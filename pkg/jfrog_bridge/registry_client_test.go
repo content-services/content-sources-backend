@@ -2,6 +2,7 @@ package jfrog_bridge
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -119,4 +120,55 @@ func TestComputeCVSS31BaseScore(t *testing.T) {
 			assert.InDelta(t, tt.expected, score, 0.1)
 		})
 	}
+}
+
+func TestRegistryClient_BasicAuthHeader(t *testing.T) {
+	var capturedAuth string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedAuth = r.Header.Get("Authorization")
+		w.Write([]byte("<project><artifactId>test</artifactId></project>"))
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{
+		httpClient:  server.Client(),
+		registryURL: server.URL,
+		username:    "testuser",
+		password:    "testpass",
+		maxRetries:  0,
+	}
+
+	_, err := client.FetchPOM(context.Background(), "org.test", "test", "1.0.rhlw-00001")
+	require.NoError(t, err)
+
+	expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("testuser:testpass"))
+	assert.Equal(t, expected, capturedAuth)
+}
+
+func TestFetchOSVRecords_VersionFilterPrecision(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	manifest := "x_RHLW-CVE-2023-20860-5.3.18.json,abc123,1234\nx_RHLW-CVE-2099-99999-5.3.1.json,def456,1234\n"
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "PULP_MANIFEST"), []byte(manifest), 0644))
+
+	osvContent18 := `{"id": "x_RHLW-CVE-2023-20860-5.3.18", "aliases": ["CVE-2023-20860"], "details": "test18", "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]}`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2023-20860-5.3.18.json"), []byte(osvContent18), 0644))
+
+	osvContent1 := `{"id": "x_RHLW-CVE-2099-99999-5.3.1", "aliases": ["CVE-2099-99999"], "details": "test", "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]}`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2099-99999-5.3.1.json"), []byte(osvContent1), 0644))
+
+	server := httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
+	defer server.Close()
+
+	client := &httpRegistryClient{
+		httpClient: server.Client(),
+		osvURL:     server.URL,
+		maxRetries: 0,
+	}
+
+	records, err := client.FetchOSVRecords(context.Background(), "5.3.1")
+	require.NoError(t, err)
+	require.Len(t, records, 1, "only exact version 5.3.1 should match, not 5.3.18")
+	assert.Equal(t, "CVE-2099-99999", records[0].CVEID)
 }

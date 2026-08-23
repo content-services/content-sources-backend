@@ -1,6 +1,8 @@
 package jfrog_bridge
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -15,30 +17,45 @@ type bridgeMetrics struct {
 	pipelineDuration  prometheus.Histogram
 }
 
-func newBridgeMetrics(reg *prometheus.Registry) *bridgeMetrics {
+var (
+	sharedMetrics     *bridgeMetrics
+	sharedMetricsOnce sync.Once
+)
+
+// getSharedMetrics returns a singleton metrics instance registered with
+// the default Prometheus registerer (scraped via /metrics).
+func getSharedMetrics() *bridgeMetrics {
+	sharedMetricsOnce.Do(func() {
+		sharedMetrics = newBridgeMetrics(nil)
+	})
+	return sharedMetrics
+}
+
+func newBridgeMetrics(reg prometheus.Registerer) *bridgeMetrics {
 	if reg == nil {
-		reg = prometheus.NewRegistry()
+		reg = prometheus.DefaultRegisterer
 	}
+	factory := promauto.With(reg)
 	return &bridgeMetrics{
-		messagesReceived: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+		messagesReceived: factory.NewCounter(prometheus.CounterOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsSubsystem,
 			Name:      "messages_received_total",
 			Help:      "Total Kafka messages received by the JFrog bridge",
 		}),
-		messagesProcessed: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+		messagesProcessed: factory.NewCounter(prometheus.CounterOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsSubsystem,
 			Name:      "messages_processed_total",
 			Help:      "Total messages successfully processed end-to-end",
 		}),
-		messagesFailed: promauto.With(reg).NewCounter(prometheus.CounterOpts{
+		messagesFailed: factory.NewCounter(prometheus.CounterOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsSubsystem,
 			Name:      "messages_failed_total",
 			Help:      "Total messages that failed pipeline processing",
 		}),
-		pipelineDuration: promauto.With(reg).NewHistogram(prometheus.HistogramOpts{
+		pipelineDuration: factory.NewHistogram(prometheus.HistogramOpts{
 			Namespace: metricsNamespace,
 			Subsystem: metricsSubsystem,
 			Name:      "pipeline_duration_seconds",

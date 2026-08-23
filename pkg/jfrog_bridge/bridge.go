@@ -8,7 +8,6 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/kafka"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog/log"
 )
 
@@ -20,8 +19,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 		return
 	}
 
-	reg := prometheus.NewRegistry()
-	metrics := newBridgeMetrics(reg)
+	metrics := getSharedMetrics()
 
 	registry := newRegistryClient(cfg)
 	jfrog := newJFrogClient(cfg)
@@ -32,6 +30,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 	}
 
 	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
+	handler.registryURL = cfg.RegistryURL
 
 	topic := config.Get().Options.NotificationsTopic
 	if kafka.TopicTranslationConfig != nil {
