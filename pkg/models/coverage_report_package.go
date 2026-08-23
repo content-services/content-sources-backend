@@ -53,9 +53,6 @@ func (p *CoverageReportPackage) validate() error {
 	if p.Name == "" {
 		return Error{Message: "Package name cannot be blank.", Validation: true}
 	}
-	if p.Version == "" {
-		return Error{Message: "Version cannot be blank.", Validation: true}
-	}
 	if p.MatchStatus == "" {
 		return Error{Message: "Match status cannot be blank.", Validation: true}
 	}

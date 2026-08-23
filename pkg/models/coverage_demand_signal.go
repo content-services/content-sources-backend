@@ -56,9 +56,6 @@ func (d *CoverageDemandSignal) validate() error {
 	if d.Name == "" {
 		return Error{Message: "Package name cannot be blank.", Validation: true}
 	}
-	if d.Version == "" {
-		return Error{Message: "Version cannot be blank.", Validation: true}
-	}
 	if d.MatchStatus == "" {
 		return Error{Message: "Match status cannot be blank.", Validation: true}
 	}

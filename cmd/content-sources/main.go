@@ -132,8 +132,15 @@ func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) 
 		wrk.RegisterHandler(config.BulkRemoveRpmsTask, tasks.BulkRemoveRpmsHandler)
 		wrk.RegisterHandler(config.UpdateSnapshotPublishedTask, tasks.UpdateSnapshotPublishedHandler)
 		go wrk.StartWorkerPool(ctx)
+
+		// Separate pool for coverage analysis task so work isn't blocked
+		coverageWrk := worker.NewTaskWorkerPool(&pgqueue, metrics)
+		coverageWrk.RegisterHandler(config.CoverageAnalysisTask, tasks.CoverageAnalysisHandler)
+		coverageWrk.StartWorkers(ctx)
+
 		<-ctx.Done()
 		wrk.Stop()
+		coverageWrk.Stop()
 	}()
 }
 

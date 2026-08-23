@@ -12,6 +12,7 @@ const (
 	UpdateLatestSnapshotTask      = "update-latest-snapshot"      // Task to update templates to use the latest snapshot of a repository
 	BulkRemoveRpmsTask            = "bulk-remove-rpms"            // Task to remove RPMs from an upload repository in pulp
 	UpdateSnapshotPublishedTask   = "update-snapshot-published"   // Task to update the content guard on a snapshot distribution for publish/unpublish
+	CoverageAnalysisTask          = "coverage-analysis"           // Task to generate a coverage report from an uploaded SBOM or manifest
 )
 
 const (
@@ -34,6 +35,7 @@ var TaskTypes = []string{
 	UpdateLatestSnapshotTask,
 	BulkRemoveRpmsTask,
 	UpdateSnapshotPublishedTask,
+	CoverageAnalysisTask,
 }
 
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}

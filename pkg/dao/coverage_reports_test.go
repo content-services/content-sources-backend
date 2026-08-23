@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -39,6 +41,17 @@ func (s *CoverageReportDaoSuite) createReport(orgID string, status string) model
 	err := s.tx.Create(&report).Error
 	require.NoError(s.T(), err)
 	return report
+}
+
+func (s *CoverageReportDaoSuite) createUpload() models.CoverageUpload {
+	upload := models.CoverageUpload{
+		StorageKey: "storage/key",
+		Sha256:     "testsha",
+		SizeBytes:  1024,
+	}
+	err := s.tx.Create(&upload).Error
+	require.NoError(s.T(), err)
+	return upload
 }
 
 func (s *CoverageReportDaoSuite) createPackage(reportUUID string, name string, version string, ecosystem string, matchStatus string) models.CoverageReportPackage {
@@ -219,10 +232,9 @@ func (s *CoverageReportDaoSuite) TestListPackagesReportNotFound() {
 }
 
 func (s *CoverageReportDaoSuite) TestCreate() {
-	dao := coverageReportDaoImpl{db: s.tx}
-
 	uploadUUID := uuid.NewString()
-	report, err := dao.Create(context.Background(),
+
+	report, err := s.dao().Create(context.Background(),
 		CreateCoverageReportParams{
 			OrgID:     orgIDTest,
 			AccountID: utils.Ptr("account-1"),
@@ -241,6 +253,7 @@ func (s *CoverageReportDaoSuite) TestCreate() {
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), config.TaskStatusPending, readReport.Status)
 	assert.Equal(s.T(), orgIDTest, readReport.OrgID)
+	require.NotNil(s.T(), readReport.AccountID)
 	assert.Equal(s.T(), "account-1", *readReport.AccountID)
 
 	var readUpload models.CoverageUpload
@@ -249,4 +262,165 @@ func (s *CoverageReportDaoSuite) TestCreate() {
 	assert.Equal(s.T(), "coverage-uploads/"+uploadUUID, readUpload.StorageKey)
 	assert.Equal(s.T(), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", readUpload.Sha256)
 	assert.Equal(s.T(), int64(1024), readUpload.SizeBytes)
+}
+
+func (s *CoverageReportDaoSuite) TestInternalOnlyFetchCoverageUpload() {
+	modelUpload := s.createUpload()
+
+	upload, err := s.dao().InternalOnlyFetchCoverageUpload(context.Background(), modelUpload.UUID)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), modelUpload.UUID, upload.UUID)
+	assert.Equal(s.T(), modelUpload.Sha256, upload.Sha256)
+	assert.Equal(s.T(), modelUpload.SizeBytes, upload.SizeBytes)
+	assert.Equal(s.T(), modelUpload.StorageKey, upload.StorageKey)
+}
+
+func (s *CoverageReportDaoSuite) TestInternalOnlyFetchCoverageUploadNotFound() {
+	_, err := s.dao().InternalOnlyFetchCoverageUpload(context.Background(), uuid.NewString())
+	require.Error(s.T(), err)
+	var daoErr *ce.DaoError
+	ok := errors.As(err, &daoErr)
+	require.True(s.T(), ok)
+	assert.True(s.T(), daoErr.NotFound)
+}
+
+func (s *CoverageReportDaoSuite) TestSetAnalysisTaskUUID() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusCompleted)
+	taskUUID := uuid.NewString()
+
+	err := s.dao().SetAnalysisTaskUUID(context.Background(), report.UUID, taskUUID)
+	require.NoError(s.T(), err)
+
+	var readReport models.CoverageReport
+	err = s.tx.Where("uuid = ?", report.UUID).First(&readReport).Error
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), readReport.AnalysisTaskUUID)
+	assert.Equal(s.T(), taskUUID, *readReport.AnalysisTaskUUID)
+}
+
+func (s *CoverageReportDaoSuite) TestSetAnalysisTaskUUIDNotFound() {
+	err := s.dao().SetAnalysisTaskUUID(context.Background(), uuid.NewString(), uuid.NewString())
+	require.Error(s.T(), err)
+	var daoErr *ce.DaoError
+	ok := errors.As(err, &daoErr)
+	require.True(s.T(), ok)
+	assert.True(s.T(), daoErr.NotFound)
+}
+
+func (s *CoverageReportDaoSuite) TestUpdateCoverageReportStatus() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusPending)
+
+	err := s.dao().UpdateCoverageReportStatus(context.Background(), report.UUID, config.TaskStatusRunning, nil)
+	require.NoError(s.T(), err)
+	var readReport models.CoverageReport
+	err = s.tx.Where("uuid = ?", report.UUID).First(&readReport).Error
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusRunning, readReport.Status)
+	assert.Nil(s.T(), readReport.AnalysisTaskError)
+	assert.Nil(s.T(), readReport.CompletedAt)
+
+	errMsg := "analysis failed"
+	err = s.dao().UpdateCoverageReportStatus(context.Background(), report.UUID, config.TaskStatusFailed, &errMsg)
+	require.NoError(s.T(), err)
+
+	err = s.tx.Where("uuid = ?", report.UUID).First(&readReport).Error
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusFailed, readReport.Status)
+	require.NotNil(s.T(), readReport.AnalysisTaskError)
+	assert.Equal(s.T(), errMsg, *readReport.AnalysisTaskError)
+	assert.NotNil(s.T(), readReport.CompletedAt)
+}
+
+func (s *CoverageReportDaoSuite) TestUpdateCoverageReportStatusNotFound() {
+	err := s.dao().UpdateCoverageReportStatus(context.Background(), uuid.NewString(), config.TaskStatusRunning, nil)
+	require.Error(s.T(), err)
+	var daoErr *ce.DaoError
+	ok := errors.As(err, &daoErr)
+	require.True(s.T(), ok)
+	assert.True(s.T(), daoErr.NotFound)
+}
+
+func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusRunning)
+	snapshotAt := time.Now().UTC().Truncate(time.Microsecond)
+
+	err := s.dao().SaveCoverageAnalysis(context.Background(), report.UUID, SaveCoverageAnalysisParams{
+		InputFormat: "csv",
+		Results: []matcher.MatchResult{
+			{Package: matcher.Package{Ecosystem: "Java", Name: "spring-core", Version: "6.1.0", Namespace: "org.springframework"}, MatchStatus: matcher.MatchStatusExact},
+			{Package: matcher.Package{Ecosystem: "Python", Name: "flask", Version: "2.0.0"}, MatchStatus: matcher.MatchStatusPartial},
+			{Package: matcher.Package{Ecosystem: "Python", Name: "custom-lib", Version: "0.1.0"}, MatchStatus: matcher.MatchStatusNone},
+		},
+		Summary: matcher.MatchSummary{
+			Total:          3,
+			ExactMatches:   1,
+			PartialMatches: 1,
+			Unmatched:      1,
+			EcosystemCoverageSummary: []matcher.EcosystemSummary{
+				{Ecosystem: "Java", Total: 1, ExactMatches: 1},
+				{Ecosystem: "Python", Total: 2, PartialMatches: 1, Unmatched: 1},
+			},
+			CatalogSnapshotAt: snapshotAt,
+		},
+	})
+	require.NoError(s.T(), err)
+
+	var readReport models.CoverageReport
+	err = s.tx.Where("uuid = ?", report.UUID).First(&readReport).Error
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), config.TaskStatusCompleted, readReport.Status)
+	require.NotNil(s.T(), readReport.InputFormat)
+	assert.Equal(s.T(), "csv", *readReport.InputFormat)
+	require.NotNil(s.T(), readReport.Total)
+	assert.Equal(s.T(), 3, *readReport.Total)
+	require.NotNil(s.T(), readReport.ExactMatches)
+	assert.Equal(s.T(), 1, *readReport.ExactMatches)
+	require.NotNil(s.T(), readReport.PartialMatches)
+	assert.Equal(s.T(), 1, *readReport.PartialMatches)
+	require.NotNil(s.T(), readReport.Unmatched)
+	assert.Equal(s.T(), 1, *readReport.Unmatched)
+	assert.NotNil(s.T(), readReport.CompletedAt)
+	require.NotNil(s.T(), readReport.CatalogSnapshotAt)
+	assert.True(s.T(), snapshotAt.Equal(*readReport.CatalogSnapshotAt))
+	require.NotNil(s.T(), readReport.EcosystemCoverageSummary)
+	assert.Len(s.T(), *readReport.EcosystemCoverageSummary, 2)
+
+	var packages []models.CoverageReportPackage
+	err = s.tx.Where("coverage_report_uuid = ?", report.UUID).Order("name ASC").Find(&packages).Error
+	require.NoError(s.T(), err)
+	require.Len(s.T(), packages, 3)
+	assert.Equal(s.T(), "custom-lib", packages[0].Name)
+	assert.Nil(s.T(), packages[0].Namespace)
+	assert.Equal(s.T(), models.CoverageMatchStatusNone, packages[0].MatchStatus)
+	assert.Equal(s.T(), "flask", packages[1].Name)
+	assert.Equal(s.T(), models.CoverageMatchStatusPartial, packages[1].MatchStatus)
+	assert.Equal(s.T(), "spring-core", packages[2].Name)
+	require.NotNil(s.T(), packages[2].Namespace)
+	assert.Equal(s.T(), "org.springframework", *packages[2].Namespace)
+	assert.Equal(s.T(), models.CoverageMatchStatusExact, packages[2].MatchStatus)
+
+	var signals []models.CoverageDemandSignal
+	err = s.tx.Order("name ASC").Find(&signals).Error
+	require.NoError(s.T(), err)
+	require.Len(s.T(), signals, 2)
+	assert.Equal(s.T(), "custom-lib", signals[0].Name)
+	assert.Equal(s.T(), models.CoverageDemandMatchStatusNone, signals[0].MatchStatus)
+	assert.Equal(s.T(), models.CoverageDemandSourceProspectDriven, signals[0].Source)
+	assert.Equal(s.T(), "flask", signals[1].Name)
+	assert.Equal(s.T(), models.CoverageDemandMatchStatusPartial, signals[1].MatchStatus)
+}
+
+func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisNotFound() {
+	err := s.dao().SaveCoverageAnalysis(context.Background(), uuid.NewString(), SaveCoverageAnalysisParams{
+		InputFormat: "csv",
+		Summary:     matcher.MatchSummary{CatalogSnapshotAt: time.Now().UTC()},
+	})
+	require.Error(s.T(), err)
+	var daoErr *ce.DaoError
+	ok := errors.As(err, &daoErr)
+	require.True(s.T(), ok)
+	assert.True(s.T(), daoErr.NotFound)
 }

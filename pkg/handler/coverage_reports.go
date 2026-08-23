@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -16,6 +15,10 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/tasks"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -26,6 +29,7 @@ const maxCoverageUploadSizeBytes = 15 * 1024 * 1024 // 15 MiB
 
 type CoverageReportHandler struct {
 	DaoRegistry dao.DaoRegistry
+	TaskClient  client.TaskClient
 	S3          s3_client.S3Client
 }
 
@@ -38,9 +42,10 @@ func checkLightwellLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, s3Client s3_client.S3Client) {
+func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient, s3Client s3_client.S3Client) {
 	ch := CoverageReportHandler{
 		DaoRegistry: *daoReg,
+		TaskClient:  *taskClient,
 		S3:          s3Client,
 	}
 	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellLensAccessible)
@@ -85,22 +90,29 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 	storageKey := "coverage-uploads/" + uploadUUID
 
 	hash := sha256.New()
-	fileBytes, err := io.ReadAll(io.TeeReader(file, hash))
+	n, err := io.Copy(hash, io.LimitReader(file, maxCoverageUploadSizeBytes+1))
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", err.Error())
 	}
 
+	if n > maxCoverageUploadSizeBytes {
+		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error reading upload", "File exceeds maximum upload size")
+	}
+
 	if config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
+		if _, err := file.Seek(0, io.SeekStart); err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading coverage report", err.Error())
+		}
 		if ch.S3 == nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading coverage report", "s3 not configured")
 		}
-		if err := ch.S3.Put(c.Request().Context(), storageKey, bytes.NewReader(fileBytes)); err != nil {
+		if err := ch.S3.Put(c.Request().Context(), storageKey, file, n); err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading coverage report", err.Error())
 		}
 	}
 
 	sha256Hex := hex.EncodeToString(hash.Sum(nil))
-	sizeBytes := int64(len(fileBytes))
+	sizeBytes := n
 
 	reportParams := dao.CreateCoverageReportParams{OrgID: orgID}
 	if accountID != "" {
@@ -118,16 +130,18 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating coverage report", err.Error())
 	}
 
-	// TODO: enqueue task, set task UUID
-
 	// TODO: remove once we don't need seeded data
-	if config.Get().Options.SeedLightwellCoverageReports {
+	if config.Get().Options.SeedLightwellCoverageReports && !config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
 		go func(reportUUID string) {
 			time.Sleep(3 * time.Second)
 			if _, err := seeds.SeedCoverageReport(db.DB, seeds.CoverageReportSeedOptions{UUID: reportUUID}); err != nil {
 				log.Error().Err(err).Str("uuid", reportUUID).Msg("failed to seed coverage report")
 			}
 		}(report.UUID)
+	}
+
+	if config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
+		ch.enqueueCoverageAnalysisEvent(c, report, uploadUUID, fileHeader.Filename)
 	}
 
 	return c.JSON(http.StatusCreated, report)
@@ -188,4 +202,32 @@ func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) erro
 	}
 
 	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&response, c, totalCount))
+}
+
+func (ch *CoverageReportHandler) enqueueCoverageAnalysisEvent(c echo.Context, report api.CoverageReportResponse, uploadUUID string, filename string) uuid.UUID {
+	accountID, orgID := getAccountIdOrgId(c)
+	payload := payloads.CoverageAnalysisPayload{
+		CoverageReportUUID: report.UUID,
+		CoverageUploadUUID: uploadUUID,
+		Filename:           filename,
+	}
+	task := queue.Task{
+		Typename:  config.CoverageAnalysisTask,
+		Payload:   payload,
+		OrgId:     orgID,
+		AccountId: accountID,
+		RequestID: c.Response().Header().Get(config.HeaderRequestId),
+	}
+	taskID, err := ch.TaskClient.Enqueue(task)
+	logger := tasks.LogForTask(taskID.String(), task.Typename, task.RequestID)
+	if err != nil {
+		logger.Error().Msg("error enqueuing task")
+	}
+	if err == nil {
+		if err = ch.DaoRegistry.CoverageReport.SetAnalysisTaskUUID(c.Request().Context(), report.UUID, taskID.String()); err != nil {
+			logger.Error().Msg("error updating analysis task UUID")
+		}
+	}
+
+	return taskID
 }
