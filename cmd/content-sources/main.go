@@ -20,6 +20,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	m "github.com/content-services/content-sources-backend/pkg/instrumentation"
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
+	"github.com/content-services/content-sources-backend/pkg/jfrog_bridge"
 	"github.com/content-services/content-sources-backend/pkg/router"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
@@ -95,6 +96,11 @@ func main() {
 			mockKessel(ctx, &wg)
 		}
 	}
+
+	if argsContain(args, "jfrog-bridge") {
+		jfrog_bridge.Start(ctx, &wg)
+	}
+
 	config.SetupNotifications()
 	config.SetupTemplateEvents()
 

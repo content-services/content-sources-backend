@@ -40,6 +40,22 @@ type Configuration struct {
 	TemplateEventClient   cloudevents.Client `mapstructure:"template_event_client"`
 	Tasking               Tasking            `mapstructure:"tasking"`
 	Features              FeatureSet         `mapstructure:"features"`
+	JFrogBridge           JFrogBridge        `mapstructure:"jfrog_bridge"`
+}
+
+type JFrogBridge struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	CatalogURL      string `mapstructure:"catalog_url"`
+	CatalogRepo     string `mapstructure:"catalog_repo"`
+	CatalogToken    string `mapstructure:"catalog_token"`
+	RegistryURL     string `mapstructure:"registry_url"`
+	RegistryOSVURL  string `mapstructure:"registry_osv_url"`
+	SigningKeyPEM   string `mapstructure:"signing_key_pem"`
+	SigningKeyPath  string `mapstructure:"signing_key_path"`
+	SigningKeyAlias string `mapstructure:"signing_key_alias"`
+	ConsumerGroupID string `mapstructure:"consumer_group_id"`
+	MaxRetries      int    `mapstructure:"max_retries"`
+	RequestTimeout  int    `mapstructure:"request_timeout"`
 }
 
 type Clients struct {
@@ -469,6 +485,19 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
 	v.SetDefault("mocks.kessel.user_no_permissions", []string{"user-no-perms"})
+
+	v.SetDefault("jfrog_bridge.enabled", false)
+	v.SetDefault("jfrog_bridge.catalog_url", "https://jfscatalogpartners.jfrog.io")
+	v.SetDefault("jfrog_bridge.catalog_repo", "redhat-partner-maven-lightwell")
+	v.SetDefault("jfrog_bridge.catalog_token", "")
+	v.SetDefault("jfrog_bridge.registry_url", "https://packages.redhat.com/lightwell/java/remediated")
+	v.SetDefault("jfrog_bridge.registry_osv_url", "https://packages.redhat.com/lightwell/osv/java/remediated")
+	v.SetDefault("jfrog_bridge.signing_key_pem", "")
+	v.SetDefault("jfrog_bridge.signing_key_path", "")
+	v.SetDefault("jfrog_bridge.signing_key_alias", "redhat-partner-lightwell")
+	v.SetDefault("jfrog_bridge.consumer_group_id", "content-sources-jfrog-bridge")
+	v.SetDefault("jfrog_bridge.max_retries", 3)
+	v.SetDefault("jfrog_bridge.request_timeout", 60)
 
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)
