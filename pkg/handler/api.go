@@ -81,7 +81,6 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 			panic(err)
 		}
 	}
-
 	ch := cache.Initialize()
 
 	for i := 0; i < len(paths); i++ {
