@@ -8,18 +8,21 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	cfg "github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/rs/zerolog/log"
 )
 
 type S3Client interface {
-	Put(ctx context.Context, key string, body io.Reader) error
+	Put(ctx context.Context, storageKey string, body io.Reader, contentLength int64) error
+	Get(ctx context.Context, storageKey string) (io.ReadCloser, error)
 }
 
 type s3Client struct {
-	client *s3.Client
-	bucket string
+	client   *s3.Client
+	transfer *transfermanager.Client
+	bucket   string
 }
 
 func NewS3Client(store cfg.ObjectStore) (S3Client, error) {
@@ -41,18 +44,36 @@ func NewS3Client(store cfg.ObjectStore) (S3Client, error) {
 			o.BaseEndpoint = aws.String(store.URL)
 		}
 	})
-	return &s3Client{client: client, bucket: store.Name}, nil
+	return &s3Client{
+		client: client,
+		transfer: transfermanager.New(client, func(o *transfermanager.Options) {
+			o.Concurrency = 1
+		}),
+		bucket: store.Name,
+	}, nil
 }
 
-func (c *s3Client) Put(ctx context.Context, storageKey string, body io.Reader) error {
-	_, err := c.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: &c.bucket,
-		Key:    &storageKey,
-		Body:   body,
+func (c *s3Client) Put(ctx context.Context, storageKey string, body io.Reader, contentLength int64) error {
+	_, err := c.transfer.UploadObject(ctx, &transfermanager.UploadObjectInput{
+		Bucket:        &c.bucket,
+		Key:           &storageKey,
+		Body:          body,
+		ContentLength: aws.Int64(contentLength),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload %s to s3: %w", storageKey, err)
 	}
 	log.Info().Msgf("Uploaded %s to s3", storageKey)
 	return nil
+}
+
+func (c *s3Client) Get(ctx context.Context, storageKey string) (io.ReadCloser, error) {
+	out, err := c.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: &c.bucket,
+		Key:    &storageKey,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to download %s from s3: %w", storageKey, err)
+	}
+	return out.Body, nil
 }

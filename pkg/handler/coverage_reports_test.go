@@ -18,6 +18,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
+	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
@@ -33,6 +34,7 @@ type CoverageReportSuite struct {
 	suite.Suite
 	reg    *dao.MockDaoRegistry
 	s3Mock *s3_client.MockS3Client
+	tcMock *client.MockTaskClient
 }
 
 func TestCoverageReportSuite(t *testing.T) {
@@ -42,6 +44,7 @@ func TestCoverageReportSuite(t *testing.T) {
 func (suite *CoverageReportSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.s3Mock = s3_client.NewMockS3Client(suite.T())
+	suite.tcMock = client.NewMockTaskClient(suite.T())
 	config.Get().Options.SeedLightwellCoverageReports = false
 }
 
@@ -63,12 +66,13 @@ func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, e
 		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
-	h := CoverageReportHandler{
+	ch := CoverageReportHandler{
 		DaoRegistry: *suite.reg.ToDaoRegistry(),
+		TaskClient:  suite.tcMock,
 		S3:          suite.s3Mock,
 	}
 
-	RegisterCoverageReportRoutes(pathPrefix, &h.DaoRegistry, h.S3)
+	RegisterCoverageReportRoutes(pathPrefix, &ch.DaoRegistry, &ch.TaskClient, ch.S3)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -246,7 +250,10 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	}
 	suite.reg.CoverageReport.On("Create", mock.Anything, mock.Anything, mock.Anything).
 		Return(expectedReport, nil)
-	suite.s3Mock.On("Put", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	suite.s3Mock.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	suite.tcMock.On("Enqueue", mock.Anything).Return(uuid.New(), nil)
+	suite.reg.CoverageReport.On("SetAnalysisTaskUUID", mock.Anything, expectedReport.UUID, mock.Anything).
+		Return(nil)
 
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())

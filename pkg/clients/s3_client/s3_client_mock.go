@@ -38,17 +38,85 @@ func (_m *MockS3Client) EXPECT() *MockS3Client_Expecter {
 	return &MockS3Client_Expecter{mock: &_m.Mock}
 }
 
+// Get provides a mock function for the type MockS3Client
+func (_mock *MockS3Client) Get(ctx context.Context, storageKey string) (io.ReadCloser, error) {
+	ret := _mock.Called(ctx, storageKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
+
+	var r0 io.ReadCloser
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (io.ReadCloser, error)); ok {
+		return returnFunc(ctx, storageKey)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) io.ReadCloser); ok {
+		r0 = returnFunc(ctx, storageKey)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, storageKey)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockS3Client_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type MockS3Client_Get_Call struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - storageKey string
+func (_e *MockS3Client_Expecter) Get(ctx interface{}, storageKey interface{}) *MockS3Client_Get_Call {
+	return &MockS3Client_Get_Call{Call: _e.mock.On("Get", ctx, storageKey)}
+}
+
+func (_c *MockS3Client_Get_Call) Run(run func(ctx context.Context, storageKey string)) *MockS3Client_Get_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockS3Client_Get_Call) Return(readCloser io.ReadCloser, err error) *MockS3Client_Get_Call {
+	_c.Call.Return(readCloser, err)
+	return _c
+}
+
+func (_c *MockS3Client_Get_Call) RunAndReturn(run func(ctx context.Context, storageKey string) (io.ReadCloser, error)) *MockS3Client_Get_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Put provides a mock function for the type MockS3Client
-func (_mock *MockS3Client) Put(ctx context.Context, key string, body io.Reader) error {
-	ret := _mock.Called(ctx, key, body)
+func (_mock *MockS3Client) Put(ctx context.Context, storageKey string, body io.Reader, contentLength int64) error {
+	ret := _mock.Called(ctx, storageKey, body, contentLength)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Put")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, io.Reader) error); ok {
-		r0 = returnFunc(ctx, key, body)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, io.Reader, int64) error); ok {
+		r0 = returnFunc(ctx, storageKey, body, contentLength)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -62,13 +130,14 @@ type MockS3Client_Put_Call struct {
 
 // Put is a helper method to define mock.On call
 //   - ctx context.Context
-//   - key string
+//   - storageKey string
 //   - body io.Reader
-func (_e *MockS3Client_Expecter) Put(ctx interface{}, key interface{}, body interface{}) *MockS3Client_Put_Call {
-	return &MockS3Client_Put_Call{Call: _e.mock.On("Put", ctx, key, body)}
+//   - contentLength int64
+func (_e *MockS3Client_Expecter) Put(ctx interface{}, storageKey interface{}, body interface{}, contentLength interface{}) *MockS3Client_Put_Call {
+	return &MockS3Client_Put_Call{Call: _e.mock.On("Put", ctx, storageKey, body, contentLength)}
 }
 
-func (_c *MockS3Client_Put_Call) Run(run func(ctx context.Context, key string, body io.Reader)) *MockS3Client_Put_Call {
+func (_c *MockS3Client_Put_Call) Run(run func(ctx context.Context, storageKey string, body io.Reader, contentLength int64)) *MockS3Client_Put_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -82,10 +151,15 @@ func (_c *MockS3Client_Put_Call) Run(run func(ctx context.Context, key string, b
 		if args[2] != nil {
 			arg2 = args[2].(io.Reader)
 		}
+		var arg3 int64
+		if args[3] != nil {
+			arg3 = args[3].(int64)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -96,7 +170,7 @@ func (_c *MockS3Client_Put_Call) Return(err error) *MockS3Client_Put_Call {
 	return _c
 }
 
-func (_c *MockS3Client_Put_Call) RunAndReturn(run func(ctx context.Context, key string, body io.Reader) error) *MockS3Client_Put_Call {
+func (_c *MockS3Client_Put_Call) RunAndReturn(run func(ctx context.Context, storageKey string, body io.Reader, contentLength int64) error) *MockS3Client_Put_Call {
 	_c.Call.Return(run)
 	return _c
 }

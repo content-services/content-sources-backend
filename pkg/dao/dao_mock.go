@@ -10460,6 +10460,72 @@ func (_c *MockCoverageReportDao_Fetch_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// InternalOnlyFetchCoverageUpload provides a mock function for the type MockCoverageReportDao
+func (_mock *MockCoverageReportDao) InternalOnlyFetchCoverageUpload(ctx context.Context, uploadUUID string) (models.CoverageUpload, error) {
+	ret := _mock.Called(ctx, uploadUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnlyFetchCoverageUpload")
+	}
+
+	var r0 models.CoverageUpload
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (models.CoverageUpload, error)); ok {
+		return returnFunc(ctx, uploadUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) models.CoverageUpload); ok {
+		r0 = returnFunc(ctx, uploadUUID)
+	} else {
+		r0 = ret.Get(0).(models.CoverageUpload)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, uploadUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnlyFetchCoverageUpload'
+type MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call struct {
+	*mock.Call
+}
+
+// InternalOnlyFetchCoverageUpload is a helper method to define mock.On call
+//   - ctx context.Context
+//   - uploadUUID string
+func (_e *MockCoverageReportDao_Expecter) InternalOnlyFetchCoverageUpload(ctx interface{}, uploadUUID interface{}) *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call {
+	return &MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call{Call: _e.mock.On("InternalOnlyFetchCoverageUpload", ctx, uploadUUID)}
+}
+
+func (_c *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call) Run(run func(ctx context.Context, uploadUUID string)) *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call) Return(coverageUpload models.CoverageUpload, err error) *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call {
+	_c.Call.Return(coverageUpload, err)
+	return _c
+}
+
+func (_c *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call) RunAndReturn(run func(ctx context.Context, uploadUUID string) (models.CoverageUpload, error)) *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListPackages provides a mock function for the type MockCoverageReportDao
 func (_mock *MockCoverageReportDao) ListPackages(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error) {
 	ret := _mock.Called(ctx, orgID, reportUUID, pageData, filterData)
@@ -10546,6 +10612,201 @@ func (_c *MockCoverageReportDao_ListPackages_Call) Return(coverageReportPackageC
 }
 
 func (_c *MockCoverageReportDao_ListPackages_Call) RunAndReturn(run func(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error)) *MockCoverageReportDao_ListPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SaveCoverageAnalysis provides a mock function for the type MockCoverageReportDao
+func (_mock *MockCoverageReportDao) SaveCoverageAnalysis(ctx context.Context, reportUUID string, params SaveCoverageAnalysisParams) error {
+	ret := _mock.Called(ctx, reportUUID, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveCoverageAnalysis")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, SaveCoverageAnalysisParams) error); ok {
+		r0 = returnFunc(ctx, reportUUID, params)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCoverageReportDao_SaveCoverageAnalysis_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveCoverageAnalysis'
+type MockCoverageReportDao_SaveCoverageAnalysis_Call struct {
+	*mock.Call
+}
+
+// SaveCoverageAnalysis is a helper method to define mock.On call
+//   - ctx context.Context
+//   - reportUUID string
+//   - params SaveCoverageAnalysisParams
+func (_e *MockCoverageReportDao_Expecter) SaveCoverageAnalysis(ctx interface{}, reportUUID interface{}, params interface{}) *MockCoverageReportDao_SaveCoverageAnalysis_Call {
+	return &MockCoverageReportDao_SaveCoverageAnalysis_Call{Call: _e.mock.On("SaveCoverageAnalysis", ctx, reportUUID, params)}
+}
+
+func (_c *MockCoverageReportDao_SaveCoverageAnalysis_Call) Run(run func(ctx context.Context, reportUUID string, params SaveCoverageAnalysisParams)) *MockCoverageReportDao_SaveCoverageAnalysis_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 SaveCoverageAnalysisParams
+		if args[2] != nil {
+			arg2 = args[2].(SaveCoverageAnalysisParams)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCoverageReportDao_SaveCoverageAnalysis_Call) Return(err error) *MockCoverageReportDao_SaveCoverageAnalysis_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCoverageReportDao_SaveCoverageAnalysis_Call) RunAndReturn(run func(ctx context.Context, reportUUID string, params SaveCoverageAnalysisParams) error) *MockCoverageReportDao_SaveCoverageAnalysis_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetAnalysisTaskUUID provides a mock function for the type MockCoverageReportDao
+func (_mock *MockCoverageReportDao) SetAnalysisTaskUUID(ctx context.Context, reportUUID string, taskUUID string) error {
+	ret := _mock.Called(ctx, reportUUID, taskUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetAnalysisTaskUUID")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, reportUUID, taskUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCoverageReportDao_SetAnalysisTaskUUID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetAnalysisTaskUUID'
+type MockCoverageReportDao_SetAnalysisTaskUUID_Call struct {
+	*mock.Call
+}
+
+// SetAnalysisTaskUUID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - reportUUID string
+//   - taskUUID string
+func (_e *MockCoverageReportDao_Expecter) SetAnalysisTaskUUID(ctx interface{}, reportUUID interface{}, taskUUID interface{}) *MockCoverageReportDao_SetAnalysisTaskUUID_Call {
+	return &MockCoverageReportDao_SetAnalysisTaskUUID_Call{Call: _e.mock.On("SetAnalysisTaskUUID", ctx, reportUUID, taskUUID)}
+}
+
+func (_c *MockCoverageReportDao_SetAnalysisTaskUUID_Call) Run(run func(ctx context.Context, reportUUID string, taskUUID string)) *MockCoverageReportDao_SetAnalysisTaskUUID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCoverageReportDao_SetAnalysisTaskUUID_Call) Return(err error) *MockCoverageReportDao_SetAnalysisTaskUUID_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCoverageReportDao_SetAnalysisTaskUUID_Call) RunAndReturn(run func(ctx context.Context, reportUUID string, taskUUID string) error) *MockCoverageReportDao_SetAnalysisTaskUUID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateCoverageReportStatus provides a mock function for the type MockCoverageReportDao
+func (_mock *MockCoverageReportDao) UpdateCoverageReportStatus(ctx context.Context, reportUUID string, status string, errMsg *string) error {
+	ret := _mock.Called(ctx, reportUUID, status, errMsg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateCoverageReportStatus")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, *string) error); ok {
+		r0 = returnFunc(ctx, reportUUID, status, errMsg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCoverageReportDao_UpdateCoverageReportStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateCoverageReportStatus'
+type MockCoverageReportDao_UpdateCoverageReportStatus_Call struct {
+	*mock.Call
+}
+
+// UpdateCoverageReportStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - reportUUID string
+//   - status string
+//   - errMsg *string
+func (_e *MockCoverageReportDao_Expecter) UpdateCoverageReportStatus(ctx interface{}, reportUUID interface{}, status interface{}, errMsg interface{}) *MockCoverageReportDao_UpdateCoverageReportStatus_Call {
+	return &MockCoverageReportDao_UpdateCoverageReportStatus_Call{Call: _e.mock.On("UpdateCoverageReportStatus", ctx, reportUUID, status, errMsg)}
+}
+
+func (_c *MockCoverageReportDao_UpdateCoverageReportStatus_Call) Run(run func(ctx context.Context, reportUUID string, status string, errMsg *string)) *MockCoverageReportDao_UpdateCoverageReportStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 *string
+		if args[3] != nil {
+			arg3 = args[3].(*string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCoverageReportDao_UpdateCoverageReportStatus_Call) Return(err error) *MockCoverageReportDao_UpdateCoverageReportStatus_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCoverageReportDao_UpdateCoverageReportStatus_Call) RunAndReturn(run func(ctx context.Context, reportUUID string, status string, errMsg *string) error) *MockCoverageReportDao_UpdateCoverageReportStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }

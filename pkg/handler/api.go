@@ -107,7 +107,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
-		RegisterCoverageReportRoutes(group, daoReg, s3Client)
+		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client)
 
 		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
