@@ -62,3 +62,4 @@ content-sources-frontend
 compose_files/pulp/assets/certs/dev_certs
 /pkg/jfrog_bridge/testdata
 /pkg/jfrog_bridge/lightwell-catalog.key
+.env.catalog
