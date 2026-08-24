@@ -1,0 +1,17 @@
+SPDXVersion: SPDX-2.3
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: example
+
+PackageName: flask
+SPDXID: SPDXRef-Package-flask
+PackageVersion: 3.0.3
+ExternalRef: PACKAGE-MANAGER purl pkg:pypi/flask@3.0.3
+
+PackageName: spring-core
+SPDXID: SPDXRef-Package-spring-core
+PackageVersion: 5.3.20
+ExternalRef: PACKAGE-MANAGER purl pkg:maven/org.springframework/spring-core@5.3.20
+
+FileName: ./src/main.py
+SPDXID: SPDXRef-File-main

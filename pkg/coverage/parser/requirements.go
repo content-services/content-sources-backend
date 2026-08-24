@@ -2,15 +2,16 @@ package parser
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
+	"io"
 	"strings"
 )
 
-func parseRequirements(data []byte) ([]Package, error) {
+// parseRequirements streams a pip requirements file; only ==/=== specifiers produce a pinned version.
+func parseRequirements(r io.Reader) ([]Package, error) {
 	var packages []Package
 	var continuation strings.Builder
-	scanner := bufio.NewScanner(bytes.NewReader(data))
+	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
 		line := scanner.Text()

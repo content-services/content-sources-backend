@@ -1,0 +1,31 @@
+{
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [
+    {
+      "type": "SpdxDocument",
+      "spdxId": "https://example.com/doc",
+      "name": "example"
+    },
+    {
+      "type": "software_Package",
+      "name": "flask",
+      "software_packageVersion": "3.0.3",
+      "software_packageUrl": "pkg:pypi/flask@3.0.3"
+    },
+    {
+      "type": ["software_Package", "Element"],
+      "name": "spring-web",
+      "externalIdentifier": [
+        {
+          "externalIdentifierType": "packageUrl",
+          "identifier": "pkg:maven/org.springframework/spring-web@6.1.5"
+        }
+      ]
+    },
+    {
+      "type": "software_File",
+      "name": "main.py",
+      "software_packageUrl": "pkg:pypi/should-skip@1.0.0"
+    }
+  ]
+}

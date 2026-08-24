@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1">
+  <metadata>
+    <tools>
+      <component type="application">
+        <name>syft</name>
+        <purl>pkg:golang/github.com/anchore/syft@1.0.0</purl>
+      </component>
+    </tools>
+  </metadata>
+  <components>
+    <component type="library">
+      <group>org.springframework</group>
+      <name>spring-web</name>
+      <version>6.1.5</version>
+      <purl>pkg:maven/org.springframework/spring-web@6.1.5</purl>
+    </component>
+    <component type="library">
+      <name>flask</name>
+      <version>3.0.3</version>
+      <purl>pkg:pypi/flask@3.0.3</purl>
+    </component>
+  </components>
+</bom>

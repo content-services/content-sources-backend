@@ -1,0 +1,44 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "example",
+  "files": [
+    {"fileName": "a.py", "SPDXID": "SPDXRef-File-a"},
+    {"fileName": "b.py", "SPDXID": "SPDXRef-File-b"}
+  ],
+  "packages": [
+    {
+      "name": "flask",
+      "SPDXID": "SPDXRef-Package-flask",
+      "versionInfo": "3.0.3",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:pypi/flask@3.0.3"
+        }
+      ]
+    },
+    {
+      "name": "spring-core",
+      "versionInfo": "5.3.20",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE_MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:maven/org.springframework/spring-core@5.3.20"
+        }
+      ]
+    },
+    {
+      "name": "express",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/express@4.18.2"
+        }
+      ]
+    }
+  ]
+}
