@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
@@ -389,4 +390,149 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsEmptyResult() {
 	assert.Equal(t, int64(0), resp.Meta.Count)
 	assert.NotNil(t, resp.Data)
 	assert.Empty(t, resp.Data)
+}
+
+// --- resolves_cve_id / vulnerable_to_cve_id filter tests ---
+
+func (s *LightwellPackagesSuite) TestListPackageVersionsResolvesCveFilter() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
+	href := "/api/pulp/repos/maven/1/"
+	s.stubRepoHref(mavenRepo, href)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenTangResponse(), nil)
+
+	s.querier.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-9999").Return([]store.ListAdvisoriesByCveIDRow{
+		{
+			PackageName:   "jackson-databind",
+			FixedVersions: []string{"2.15.3.rhlw-00001"},
+			RepoName:      "lightwell/java/remediated",
+			Severity:      "critical",
+		},
+	}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions?resolves_cve_id=CVE-2024-9999", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(1), resp.Meta.Count)
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
+	assert.Equal(t, "2.15.3.rhlw-00001", resp.Data[0].Version)
+}
+
+func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
+	href := "/api/pulp/repos/maven/1/"
+	s.stubRepoHref(mavenRepo, href)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenTangResponse(), nil)
+
+	// Advisory says jackson-databind is fixed at 2.15.3.rhlw-00001, so
+	// the older version 2.14.2.rhlw-00001 should be returned as vulnerable.
+	s.querier.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-8888").Return([]store.ListAdvisoriesByCveIDRow{
+		{
+			PackageName:   "jackson-databind",
+			FixedVersions: []string{"2.15.3.rhlw-00001"},
+			RepoName:      "lightwell/java/remediated",
+			Severity:      "important",
+		},
+	}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions?vulnerable_to_cve_id=CVE-2024-8888", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(1), resp.Meta.Count)
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
+	assert.Equal(t, "2.14.2.rhlw-00001", resp.Data[0].Version)
+}
+
+// --- nested repo-scoped alias tests ---
+
+func (s *LightwellPackagesSuite) TestNestedRepoPackagesAlias() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	mavenRepo.Name = "java-remediated"
+	s.reg.RepositoryConfig.On(
+		"List", test.MockCtx(), test_handler.MockOrgId,
+		mock.MatchedBy(func(p api.PaginationData) bool { return p.Limit == MaxLimit }),
+		mock.MatchedBy(func(f api.FilterData) bool { return f.Origin == config.OriginLightwell }),
+	).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{mavenRepo}}, int64(1), nil)
+
+	href := "/api/pulp/repos/maven/1/"
+	s.stubRepoHref(mavenRepo, href)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenTangResponse(), nil)
+
+	path := fmt.Sprintf("%s/lightwell/repositories/java-remediated/packages", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(1), resp.Meta.Count)
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
+}
+
+func (s *LightwellPackagesSuite) TestNestedRepoPackageVersionsAlias() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	mavenRepo.Name = "java-remediated"
+	s.reg.RepositoryConfig.On(
+		"List", test.MockCtx(), test_handler.MockOrgId,
+		mock.MatchedBy(func(p api.PaginationData) bool { return p.Limit == MaxLimit }),
+		mock.MatchedBy(func(f api.FilterData) bool { return f.Origin == config.OriginLightwell }),
+	).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{mavenRepo}}, int64(1), nil)
+
+	href := "/api/pulp/repos/maven/1/"
+	s.stubRepoHref(mavenRepo, href)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenTangResponse(), nil)
+
+	path := fmt.Sprintf("%s/lightwell/repositories/java-remediated/package_versions", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(2), resp.Meta.Count)
+	assert.Len(t, resp.Data, 2)
 }

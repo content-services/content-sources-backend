@@ -165,6 +165,45 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByRepoName() {
 	assert.Equal(t, http.StatusOK, code)
 }
 
+func (s *LightwellAdvisorySuite) TestNestedRepoAdvisoriesAlias() {
+	t := s.T()
+
+	s.mockQuerier.On("ListAdvisories", mock.Anything, mock.MatchedBy(func(arg store.ListAdvisoriesParams) bool {
+		return arg.RepoName != nil && *arg.RepoName == "java-remediated"
+	})).Return([]store.ListAdvisoriesRow{
+		{
+			Uuid:          uuid.New(),
+			AdvisoryID:    "CVE-2024-5678",
+			Severity:      "important",
+			SeverityOrder: 3,
+			Details:       "Test advisory via nested route",
+			ReferenceUrls: []string{},
+			PackageName:   "spring-core",
+			FixedVersions: []string{"5.3.18.rhlw-00003"},
+			RepoName:      "java-remediated",
+			CreatedAt:     time.Now(),
+			TotalCount:    1,
+		},
+	}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/repositories/java-remediated/advisories", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellAdvisoryCollectionResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(1), resp.Meta.Count)
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "CVE-2024-5678", resp.Data[0].AdvisoryID)
+	assert.Equal(t, "java-remediated", resp.Data[0].Repository)
+}
+
 func (s *LightwellAdvisorySuite) TestListAdvisoriesEmptyResult() {
 	t := s.T()
 
