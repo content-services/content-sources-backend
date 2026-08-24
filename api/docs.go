@@ -144,9 +144,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Filter by package match status (possible values: in_network, not_in_network)",
-                        "name": "status",
+                        "type": "boolean",
+                        "description": "Filter by coverage status (true = covered, false = not covered)",
+                        "name": "covered",
                         "in": "query"
                     },
                     {
@@ -166,7 +166,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.CoverageReportPackagesResponse"
+                            "$ref": "#/definitions/api.CoverageReportPackageCollectionResponse"
                         }
                     },
                     "400": {
@@ -277,6 +277,198 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.FeatureSet"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/beacon/vulnerabilities/": {
+            "get": {
+                "description": "List Lightwell vulnerabilities for a customer, with filters, pagination, and aggregate counts.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "List Lightwell vulnerabilities",
+                "operationId": "listLightwellVulnerabilities",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID (required).",
+                        "name": "customer_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated severities to filter on.",
+                        "name": "severity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated stages to filter on.",
+                        "name": "stage",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated complexities to filter on (Standard, Complex, Extensive).",
+                        "name": "complexity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated Lightwell support ticket IDs to filter on.",
+                        "name": "ltwlsupt_ticket_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated flags to filter on (embargo, duplicate, blocked).",
+                        "name": "flag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search vulnerability_id, component_name, and title. Minimum 2 characters.",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Default value:` + "`" + `0` + "`" + `.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Default value: ` + "`" + `100` + "`" + `. Maximum: ` + "`" + `200` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellVulnerabilityCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/beacon/vulnerabilities/customers/": {
+            "get": {
+                "description": "List distinct customer IDs that have Lightwell vulnerabilities.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "List Lightwell customer IDs",
+                "operationId": "listLightwellCustomerIds",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellCustomerIdsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/": {
+            "get": {
+                "description": "List distinct Lightwell support ticket IDs for a customer.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "List Lightwell support ticket IDs",
+                "operationId": "listLightwellLtwlsuptTicketIds",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID (required).",
+                        "name": "customer_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellLtwlsuptTicketIdsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     }
                 }
@@ -4667,9 +4859,41 @@ const docTemplate = `{
                 }
             }
         },
-        "api.CoverageReportPackageItem": {
+        "api.CoverageReportPackageCollectionResponse": {
             "type": "object",
             "properties": {
+                "data": {
+                    "description": "List of packages",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.CoverageReportPackageResponse"
+                    }
+                },
+                "links": {
+                    "description": "Navigation links",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Links"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "Pagination metadata",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.ResponseMetadata"
+                        }
+                    ]
+                }
+            }
+        },
+        "api.CoverageReportPackageResponse": {
+            "type": "object",
+            "properties": {
+                "covered": {
+                    "description": "Whether the package is covered (true = exact or partial match)",
+                    "type": "boolean"
+                },
                 "ecosystem": {
                     "description": "Ecosystem of the package",
                     "type": "string"
@@ -4678,29 +4902,9 @@ const docTemplate = `{
                     "description": "Package name from the manifest",
                     "type": "string"
                 },
-                "status": {
-                    "description": "Package match status (in_network, not_in_network)",
+                "version": {
+                    "description": "Package version from the manifest",
                     "type": "string"
-                }
-            }
-        },
-        "api.CoverageReportPackagesResponse": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer"
-                },
-                "offset": {
-                    "type": "integer"
-                },
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/api.CoverageReportPackageItem"
-                    }
-                },
-                "total": {
-                    "type": "integer"
                 }
             }
         },
@@ -4890,6 +5094,207 @@ const docTemplate = `{
                 "valid": {
                     "description": "Valid if not skipped and the provided attribute is valid",
                     "type": "boolean"
+                }
+            }
+        },
+        "api.LightwellCustomerIdsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Customer IDs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.LightwellLtwlsuptTicketIdsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Lightwell support ticket IDs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "api.LightwellVulnerabilityCollectionMeta": {
+            "type": "object",
+            "properties": {
+                "blocked_count": {
+                    "description": "Count of blocked rows matching filters",
+                    "type": "integer"
+                },
+                "count": {
+                    "description": "Total count of results",
+                    "type": "integer"
+                },
+                "critical_count": {
+                    "description": "Count of Critical severity rows matching filters",
+                    "type": "integer"
+                },
+                "embargo_count": {
+                    "description": "Count of embargoed rows matching filters",
+                    "type": "integer"
+                },
+                "limit": {
+                    "description": "Limit of results used for the request",
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Offset into results used for the request",
+                    "type": "integer"
+                },
+                "stage_counts": {
+                    "description": "Per-stage counts matching filters",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            }
+        },
+        "api.LightwellVulnerabilityCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Requested Data",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LightwellVulnerabilityResponse"
+                    }
+                },
+                "links": {
+                    "description": "Links to other pages of results",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.Links"
+                        }
+                    ]
+                },
+                "meta": {
+                    "description": "Metadata about the request",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.LightwellVulnerabilityCollectionMeta"
+                        }
+                    ]
+                }
+            }
+        },
+        "api.LightwellVulnerabilityResponse": {
+            "type": "object",
+            "properties": {
+                "age_days": {
+                    "description": "UTC calendar days since submitted_date",
+                    "type": "integer"
+                },
+                "blocked": {
+                    "description": "True when stage is not Lightwell Network and age_days \u003e 30",
+                    "type": "boolean"
+                },
+                "complexity": {
+                    "description": "Standard, Complex, or Extensive",
+                    "type": "string"
+                },
+                "component_name": {
+                    "description": "Component / package name",
+                    "type": "string"
+                },
+                "component_version": {
+                    "description": "Component version",
+                    "type": "string"
+                },
+                "customer_priority": {
+                    "description": "Customer priority",
+                    "type": "string"
+                },
+                "cvss": {
+                    "description": "CVSS score",
+                    "type": "number"
+                },
+                "cvss_vector": {
+                    "description": "CVSS vector string",
+                    "type": "string"
+                },
+                "cwe": {
+                    "description": "CWE identifier",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Vulnerability description",
+                    "type": "string"
+                },
+                "duplicate": {
+                    "description": "Duplicate flag",
+                    "type": "boolean"
+                },
+                "duplicate_of": {
+                    "description": "Canonical vulnerability_id when duplicate",
+                    "type": "string"
+                },
+                "embargo": {
+                    "description": "Embargo flag",
+                    "type": "boolean"
+                },
+                "exploit_tested": {
+                    "description": "Whether an exploit was tested",
+                    "type": "boolean"
+                },
+                "language": {
+                    "description": "Derived language (java, python, javascript, csharp)",
+                    "type": "string"
+                },
+                "last_updated": {
+                    "description": "Last update timestamp",
+                    "type": "string"
+                },
+                "ltwlsupt_ticket_ids": {
+                    "description": "Lightwell support ticket IDs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "package": {
+                    "description": "Alias of component_name",
+                    "type": "string"
+                },
+                "purl": {
+                    "description": "Package URL",
+                    "type": "string"
+                },
+                "reproducer_included": {
+                    "description": "Whether a reproducer is included",
+                    "type": "boolean"
+                },
+                "severity": {
+                    "description": "Severity (Critical, Important, Moderate, Low)",
+                    "type": "string"
+                },
+                "stage": {
+                    "description": "Workflow stage",
+                    "type": "string"
+                },
+                "submitted_date": {
+                    "description": "Date the vulnerability was submitted",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Vulnerability title",
+                    "type": "string"
+                },
+                "uuid": {
+                    "description": "UUID of the vulnerability",
+                    "type": "string"
+                },
+                "vulnerability_id": {
+                    "description": "Business identifier (e.g. LWL-2026-4401)",
+                    "type": "string"
                 }
             }
         },
@@ -5660,6 +6065,11 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
+                "packages_count": {
+                    "description": "Lightwell: total distinct packages",
+                    "type": "integer",
+                    "readOnly": true
+                },
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
@@ -5668,6 +6078,11 @@ const docTemplate = `{
                 "published_distribution_url": {
                     "description": "Published distribution URL from Pulp",
                     "type": "string",
+                    "readOnly": true
+                },
+                "remediations_count": {
+                    "description": "Lightwell: total security advisories",
+                    "type": "integer",
                     "readOnly": true
                 },
                 "security_level": {
@@ -5695,6 +6110,11 @@ const docTemplate = `{
                 "version_count": {
                     "description": "Number of versions last read in the repository, not applicable to all repositories",
                     "type": "integer"
+                },
+                "versions_count": {
+                    "description": "Lightwell: total distinct versions",
+                    "type": "integer",
+                    "readOnly": true
                 },
                 "warnings": {
                     "description": "Warnings to alert user of mismatched fields if there is an existing repo with the same URL",
@@ -5990,6 +6410,11 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
+                "packages_count": {
+                    "description": "Lightwell: total distinct packages",
+                    "type": "integer",
+                    "readOnly": true
+                },
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
@@ -5998,6 +6423,11 @@ const docTemplate = `{
                 "published_distribution_url": {
                     "description": "Published distribution URL from Pulp",
                     "type": "string",
+                    "readOnly": true
+                },
+                "remediations_count": {
+                    "description": "Lightwell: total security advisories",
+                    "type": "integer",
                     "readOnly": true
                 },
                 "security_level": {
@@ -6025,6 +6455,11 @@ const docTemplate = `{
                 "version_count": {
                     "description": "Number of versions last read in the repository, not applicable to all repositories",
                     "type": "integer"
+                },
+                "versions_count": {
+                    "description": "Lightwell: total distinct versions",
+                    "type": "integer",
+                    "readOnly": true
                 }
             }
         },
