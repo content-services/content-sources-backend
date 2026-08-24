@@ -61,6 +61,10 @@ func (h *UserPreferencesHandler) listUserPreferences(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /user_preferences/{label} [put]
 func (h *UserPreferencesHandler) setUserPreference(c echo.Context) error {
+	if err := CheckLightwellNotificationsAccessible(c.Request().Context()); err != nil {
+		return err
+	}
+
 	_, orgID := getAccountIdOrgId(c)
 	userID, err := getUserID(c)
 	if err != nil {

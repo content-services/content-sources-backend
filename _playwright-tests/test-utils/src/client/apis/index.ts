@@ -4,6 +4,7 @@ export * from './CoverageReportsApi';
 export * from './EnvironmentsApi';
 export * from './FeaturesApi';
 export * from './GpgKeyApi';
+export * from './LightwellVulnerabilitiesApi';
 export * from './ModuleStreamsApi';
 export * from './PackagegroupsApi';
 export * from './PackagesApi';

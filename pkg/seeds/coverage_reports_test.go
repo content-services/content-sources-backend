@@ -1,31 +1,36 @@
 package seeds
 
 import (
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func (s *SeedSuite) TestSeedCoverageReport() {
-	report, err := SeedCoverageReport(s.tx, CoverageReportSeedOptions{OrgID: RandomOrgId()})
+	pendingReport := models.CoverageReport{
+		OrgID:  RandomOrgId(),
+		Status: config.TaskStatusPending,
+	}
+	require.NoError(s.T(), s.tx.Create(&pendingReport).Error)
+
+	completedReport, err := SeedCoverageReport(s.tx, CoverageReportSeedOptions{UUID: pendingReport.UUID})
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), stubCompletedReportUUID, report.UUID)
 
 	var packageCount int64
 	err = s.tx.Model(&models.CoverageReportPackage{}).
-		Where("coverage_report_uuid = ?", report.UUID).
+		Where("coverage_report_uuid = ?", completedReport.UUID).
 		Count(&packageCount).Error
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(15), packageCount)
+	assert.Equal(s.T(), int64(9), packageCount)
 
 	var demandSignalCount int64
 	err = s.tx.Model(&models.CoverageDemandSignal{}).Count(&demandSignalCount).Error
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(9), demandSignalCount)
+	assert.Equal(s.T(), int64(4), demandSignalCount)
 
-	var highReport models.CoverageReport
-	err = s.tx.Where("uuid = ?", stubHighCoverageReportUUID).First(&highReport).Error
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 8, *highReport.ExactMatches)
-	assert.Equal(s.T(), 1, *highReport.PartialMatches)
-	assert.Equal(s.T(), 1, *highReport.Unmatched)
+	assert.Equal(s.T(), config.TaskStatusCompleted, completedReport.Status)
+	assert.Equal(s.T(), 5, *completedReport.ExactMatches)
+	assert.Equal(s.T(), 2, *completedReport.PartialMatches)
+	assert.Equal(s.T(), 2, *completedReport.Unmatched)
 }

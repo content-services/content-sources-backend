@@ -1,0 +1,11 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS coverage_uploads (
+    uuid UUID NOT NULL PRIMARY KEY,
+    storage_key TEXT UNIQUE NOT NULL,
+    sha256 TEXT NOT NULL,
+    size_bytes BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+COMMIT;

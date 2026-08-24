@@ -26,6 +26,7 @@ packages:
   github.com/content-services/content-sources-backend/pkg/dao:
     interfaces:
       AdminTaskDao: {}
+      CoverageReportDao: {}
       DomainDao: {}
       EnvironmentDao: {}
       MemoDao: {}
@@ -40,6 +41,7 @@ packages:
       TaskInfoDao: {}
       TemplateDao: {}
       LightwellAdvisoryDao: {}
+      LightwellVulnerabilityDao: {}
       UserPreferenceDao: {}
   github.com/content-services/content-sources-backend/pkg/tasks/client:
     interfaces:

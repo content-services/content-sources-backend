@@ -107,7 +107,8 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterCandlepinRoutes(group, &cpClient, &ch)
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
-		RegisterCoverageReportRoutes(group)
+		RegisterLightwellVulnerabilityRoutes(group, daoReg)
+		RegisterCoverageReportRoutes(group, daoReg)
 
 		if lightwellQuerier != nil {
 			RegisterLightwellAdvisoryRoutes(group, lightwellQuerier)

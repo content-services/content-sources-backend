@@ -55,6 +55,12 @@ env:
     value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
   - name: FEATURES_LIGHTWELL_ENABLED
     value: ${FEATURES_LIGHTWELL_ENABLED}
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
+    value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED}
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
+    value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS}
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS
+    value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS}
   - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
     value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED}
   - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS
@@ -67,6 +73,12 @@ env:
     value: ${FEATURES_ADMIN_NOTIFICATIONS_ACCOUNTS}
   - name: FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS
     value: ${FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS}
+  - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED
+    value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED}
+  - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS
+    value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS}
+  - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS
+    value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS}
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
   - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -221,6 +233,10 @@ env:
     value: ${OPTIONS_INTERNAL_USER}
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
+  - name: OPTIONS_SEED_LIGHTWELL
+    value: ${OPTIONS_SEED_LIGHTWELL}
+  - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+    value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
 
 # Only for transform-pulp-logs and hotfix-transform-pulp-logs-fix (reference floorist-bucket secret).
 env_transform_pulp_logs:
@@ -350,6 +366,13 @@ parameters:
     description: Whether the extended relaese repos should be snapshotted
   - name: FEATURES_LIGHTWELL_ENABLED
     value: 'false'
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
+    description: Whether the Lightwell Notifications feature should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
     description: Whether the Admin Partner Repositories feature should be turned on
     value: 'false'
@@ -364,8 +387,21 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED
+    description: Whether this Lightwell feature should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
+  - name: OPTIONS_SEED_LIGHTWELL
+    description: Load mock Lightwell vulnerability seed data after dbmigrate up
+    value: 'false'
+  - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+    description: Load mock completed Lightwell coverage report seed data
+    value: 'false'
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     description: Option to make testing nightly snapshotting & introspection easier
     value: 'false'

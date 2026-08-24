@@ -79,8 +79,10 @@ type FeatureSet struct {
 	Kessel                   Feature `mapstructure:"kessel"`
 	ExtendedReleaseRepos     Feature `mapstructure:"extended_release_repos"`
 	Lightwell                Feature `mapstructure:"lightwell"`
+	LightwellNotifications   Feature `mapstructure:"lightwell_notifications"`
 	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
 	AdminNotifications       Feature `mapstructure:"admin_notifications"`
+	LightwellBeaconAndLens   Feature `mapstructure:"lightwell_beacon_and_lens"`
 }
 
 type Feature struct {
@@ -251,12 +253,14 @@ type Options struct {
 	// url (https://servername) to access the api, used to reference gpg keys
 	// Supports partial hostnames (i.e. http://.server.example.com).
 	// If this is encountered (and clowder is used), it will prepend the envName from clowder
-	ExternalURL             string   `mapstructure:"external_url"`
-	SnapshotRetainDaysLimit int      `mapstructure:"snapshot_retain_days_limit"`
-	FeatureFilter           []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
-	EntitleAll              bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
-	InternalUser            string   `mapstructure:"internal_user"`
-	LoadLightwellDemo       bool     `mapstructure:"load_lightwell_demo"`
+	ExternalURL                  string   `mapstructure:"external_url"`
+	SnapshotRetainDaysLimit      int      `mapstructure:"snapshot_retain_days_limit"`
+	FeatureFilter                []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
+	EntitleAll                   bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
+	InternalUser                 string   `mapstructure:"internal_user"`
+	LoadLightwellDemo            bool     `mapstructure:"load_lightwell_demo"`
+	SeedLightwell                bool     `mapstructure:"seed_lightwell"`
+	SeedLightwellCoverageReports bool     `mapstructure:"seed_lightwell_coverage_reports"`
 }
 
 type Metrics struct {
@@ -332,6 +336,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.snapshot_retain_days_limit", 365)
 	v.SetDefault("options.internal_user", "")
 	v.SetDefault("options.load_lightwell_demo", true)
+	v.SetDefault("options.seed_lightwell", false)
+	v.SetDefault("options.seed_lightwell_coverage_reports", false)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")
@@ -446,6 +452,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.kessel.organizations", nil)
 	v.SetDefault("features.kessel.users", nil)
 	v.SetDefault("features.lightwell.enabled", false)
+	v.SetDefault("features.lightwell_notifications.enabled", false)
 	v.SetDefault("features.admin_partner_repositories.enabled", false)
 	v.SetDefault("features.admin_partner_repositories.accounts", nil)
 	v.SetDefault("features.admin_partner_repositories.organizations", nil)
@@ -454,6 +461,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
 	v.SetDefault("features.admin_notifications.users", nil)
+	v.SetDefault("features.lightwell_beacon_and_lens.enabled", false)
+	v.SetDefault("features.lightwell_beacon_and_lens.accounts", nil)
+	v.SetDefault("features.lightwell_beacon_and_lens.organizations", nil)
+	v.SetDefault("features.lightwell_beacon_and_lens.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})

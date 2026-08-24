@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
@@ -119,19 +120,23 @@ func main() {
 			}
 		}
 		log.Debug().Msg("Successfully seeded")
-	case "seed-coverage":
-		seedCoverageCmd := flag.NewFlagSet("seed-coverage", flag.ExitOnError)
-		orgID := seedCoverageCmd.String("org-id", "acme", "org ID for the seeded coverage report")
-		if err := seedCoverageCmd.Parse(args[2:]); err != nil {
-			log.Fatal().Err(err).Msg("Failed to parse seed-coverage flags")
-		}
-		if err := db.Connect(); err != nil {
-			log.Fatal().Err(err).Msg("Failed to connect to database")
-		}
-		report, err := seeds.SeedCoverageReport(db.DB, seeds.CoverageReportSeedOptions{OrgID: *orgID})
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to seed coverage report")
-		}
-		log.Info().Str("uuid", report.UUID).Msg("Successfully seeded coverage report")
+	}
+
+	maybeSeedLightwell(args[1])
+}
+
+func maybeSeedLightwell(command string) {
+	if command != "up" {
+		return
+	}
+	if !config.Get().Options.SeedLightwell {
+		log.Debug().Msg("options.seed_lightwell is false, skipping lightwell seed")
+		return
+	}
+	if err := db.Connect(); err != nil {
+		log.Fatal().Err(err).Msg("Failed to connect to database for lightwell seed")
+	}
+	if err := seeds.SeedLightwellVulnerabilities(db.DB); err != nil {
+		log.Fatal().Err(err).Msg("Failed to seed lightwell vulnerabilities")
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
+	csdb "github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
@@ -17,23 +18,25 @@ import (
 )
 
 type DaoRegistry struct {
-	RepositoryConfig  RepositoryConfigDao
-	Rpm               RpmDao
-	Repository        RepositoryDao
-	Metrics           MetricsDao
-	Snapshot          SnapshotDao
-	TaskInfo          TaskInfoDao
-	AdminTask         AdminTaskDao
-	Domain            DomainDao
-	PackageGroup      PackageGroupDao
-	ModuleStream      ModuleStreamDao
-	Environment       EnvironmentDao
-	Template          TemplateDao
-	Uploads           UploadDao
-	Memo              MemoDao
-	MavenPackages     MavenPackagesDao
-	LightwellAdvisory LightwellAdvisoryDao
-	UserPreference    UserPreferenceDao
+	RepositoryConfig       RepositoryConfigDao
+	Rpm                    RpmDao
+	Repository             RepositoryDao
+	Metrics                MetricsDao
+	Snapshot               SnapshotDao
+	TaskInfo               TaskInfoDao
+	AdminTask              AdminTaskDao
+	Domain                 DomainDao
+	PackageGroup           PackageGroupDao
+	ModuleStream           ModuleStreamDao
+	Environment            EnvironmentDao
+	Template               TemplateDao
+	Uploads                UploadDao
+	Memo                   MemoDao
+	MavenPackages          MavenPackagesDao
+	LightwellAdvisory      LightwellAdvisoryDao
+	LightwellVulnerability LightwellVulnerabilityDao
+	UserPreference         UserPreferenceDao
+	CoverageReport         CoverageReportDao
 }
 
 func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
@@ -74,11 +77,13 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 			db:         db,
 			pulpClient: pulp_client.GetPulpClientWithDomain(""),
 		},
-		Uploads:           uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
-		Memo:              memoDaoImpl{db: db},
-		MavenPackages:     mavenPackagesDaoImpl{db: db},
-		LightwellAdvisory: lightwellAdvisoryDaoImpl{db: db},
-		UserPreference:    userPreferenceDaoImpl{db: db},
+		Uploads:                uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
+		Memo:                   memoDaoImpl{db: db},
+		MavenPackages:          mavenPackagesDaoImpl{db: db},
+		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db},
+		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
+		UserPreference:         userPreferenceDaoImpl{db: db},
+		CoverageReport:         coverageReportDaoImpl{db: db},
 	}
 	return &reg
 }
@@ -274,8 +279,20 @@ type LightwellAdvisoryDao interface {
 	MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error
 }
 
+type LightwellVulnerabilityDao interface {
+	ListCustomerIds(ctx context.Context) ([]string, error)
+	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
+	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
+}
+
 type UserPreferenceDao interface {
 	List(ctx context.Context, orgID string, userID string) (api.UserPreferencesResponse, error)
 	Set(ctx context.Context, orgID string, userID string, label string, value string) (api.UserPreferenceResponse, error)
 	ListDistinctOrgsByPreference(ctx context.Context, label string, value string) ([]string, error)
+}
+
+type CoverageReportDao interface {
+	Create(ctx context.Context, report CreateCoverageReportParams, upload CreateCoverageUploadParams) (api.CoverageReportResponse, error)
+	Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error)
+	ListPackages(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error)
 }
