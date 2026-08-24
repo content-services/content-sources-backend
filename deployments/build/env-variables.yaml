@@ -227,6 +227,20 @@ env:
         name: lightwell-content-sources-password
         key: password
         optional: true
+  - name: JFROG_BRIDGE_ENABLED
+    value: ${JFROG_BRIDGE_ENABLED}
+  - name: JFROG_BRIDGE_CATALOG_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: jfrog-bridge-catalog-token
+        key: token
+        optional: true
+  - name: JFROG_BRIDGE_SIGNING_KEY_PEM
+    valueFrom:
+      secretKeyRef:
+        name: jfrog-bridge-signing-key
+        key: pem
+        optional: true
   - name: EPEL_ORG_ID_SKIP
     value: ${EPEL_ORG_ID_SKIP}
   - name: OPTIONS_INTERNAL_USER
@@ -482,6 +496,9 @@ parameters:
   - name: CLIENTS_LIGHTWELL_USERNAME
     description: Username for accessing lightwell content using basic auth
     value: ''
+  - name: JFROG_BRIDGE_ENABLED
+    description: Whether the JFrog bridge Kafka consumer should be enabled
+    value: 'false'
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off
   - name: OPTIONS_INTERNAL_USER
