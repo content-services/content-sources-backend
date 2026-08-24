@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"bytes"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -9,8 +8,9 @@ import (
 	"strings"
 )
 
-func parseCSV(data []byte) ([]Package, error) {
-	reader := csv.NewReader(bytes.NewReader(data))
+// parseCSV streams rows and extracts packages from a packageurl column (header may be preceded by metadata rows).
+func parseCSV(r io.Reader) ([]Package, error) {
+	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1
 	reader.LazyQuotes = true
 

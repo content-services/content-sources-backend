@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"bufio"
 	"fmt"
 	"io"
+	"path"
 	"strings"
 )
 
@@ -14,6 +16,8 @@ const (
 const (
 	FormatCSV          = "csv"
 	FormatRequirements = "requirements.txt"
+	FormatCycloneDX    = "CycloneDX"
+	FormatSPDX         = "SPDX"
 )
 
 type Package struct {
@@ -30,12 +34,10 @@ type ParseResult struct {
 
 // Parse detects the format of the manifest file and extracts package metadata.
 func Parse(filename string, r io.Reader) (*ParseResult, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("reading manifest: %w", err)
-	}
+	br := bufio.NewReader(r)
+	discardUTF8BOM(br)
 
-	format, err := detectFormat(filename)
+	format, err := detectFormat(filename, br)
 	if err != nil {
 		return nil, err
 	}
@@ -43,9 +45,15 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	var packages []Package
 	switch format {
 	case FormatCSV:
-		packages, err = parseCSV(data)
+		packages, err = parseCSV(br)
 	case FormatRequirements:
-		packages, err = parseRequirements(data)
+		packages, err = parseRequirements(br)
+	case FormatCycloneDX:
+		packages, err = parseCycloneDX(br)
+	case FormatSPDX:
+		packages, err = parseSPDX(br)
+	default:
+		return nil, fmt.Errorf("unsupported manifest format for file %q", filename)
 	}
 	if err != nil {
 		return nil, err
@@ -57,17 +65,31 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	}, nil
 }
 
-func detectFormat(filename string) (string, error) {
+// detectFormat uses the filename when it is unambiguous, otherwise peeks at the stream to sniff CycloneDX vs SPDX.
+func detectFormat(filename string, r *bufio.Reader) (string, error) {
 	lower := strings.ToLower(filename)
 	switch {
 	case strings.HasSuffix(lower, ".csv"):
 		return FormatCSV, nil
 	case strings.HasSuffix(lower, "requirements.txt"):
 		return FormatRequirements, nil
+	case hasAnySuffix(lower, ".cdx.json", ".cdx.xml") ||
+		path.Base(lower) == "bom.json" || path.Base(lower) == "bom.xml":
+		return FormatCycloneDX, nil
+	case hasAnySuffix(lower, ".spdx.json", ".spdx.tag", ".spdx"):
+		return FormatSPDX, nil
 	}
+
+	if sniffed, err := sniffSBOMFormat(r); err != nil {
+		return "", err
+	} else if sniffed != "" {
+		return sniffed, nil
+	}
+
 	return "", fmt.Errorf("unsupported manifest format for file %q", filename)
 }
 
+// deduplicate keeps the first occurrence of each ecosystem/namespace/name/version tuple.
 func deduplicate(pkgs []Package) []Package {
 	seen := make(map[string]struct{}, len(pkgs))
 	result := make([]Package, 0, len(pkgs))
