@@ -2070,6 +2070,9 @@ func combineIntrospectionAndSnapshotStatuses(repoConfig *models.RepositoryConfig
 		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID != "" {
 			// Both introspection and snapshot failed and repo has previous snapshots
 			return config.StatusUnavailable
+		} else if repoConfig.LastSnapshotTask.Status == config.TaskStatusFailed && repoConfig.LastSnapshotUUID == "" {
+			// Introspection failed (never succeeded), last snapshot failed, and repo has no previous snapshots
+			return config.StatusInvalid
 		}
 	case config.StatusValid:
 		if repoConfig.LastSnapshotTask == nil {
