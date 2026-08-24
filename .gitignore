@@ -60,3 +60,6 @@ content-sources-frontend
 
 # local dev certs for testing pulp cert auth
 compose_files/pulp/assets/certs/dev_certs
+/pkg/jfrog_bridge/testdata
+pkg/jfrog_bridge/lightwell-catalog.key
+.env.catalog
