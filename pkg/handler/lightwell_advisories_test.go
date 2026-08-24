@@ -149,16 +149,20 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesInvalidSeverity() {
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 
-func (s *LightwellAdvisorySuite) TestListAdvisoriesInvalidRepoUUID() {
+func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByRepoName() {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/lightwell/advisories?repository_uuid=not-a-uuid", api.FullRootPath())
+	s.mockQuerier.On("ListAdvisories", mock.Anything, mock.MatchedBy(func(arg store.ListAdvisoriesParams) bool {
+		return arg.RepoName != nil && *arg.RepoName == "java-remediated"
+	})).Return([]store.ListAdvisoriesRow{}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/advisories?repository=java-remediated", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	code, _, err := s.serveRouter(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func (s *LightwellAdvisorySuite) TestListAdvisoriesEmptyResult() {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 
@@ -34,8 +35,12 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, querier store.Querier, d
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
+	// Flat cross-repo endpoints
 	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.listPackages, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.listPackageVersions, rbac.RbacVerbRead)
+	// Nested repo-scoped aliases
+	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/packages", h.listRepoPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/package_versions", h.listRepoPackageVersions, rbac.RbacVerbRead)
 }
 
 // listLightwellPackages godoc
@@ -59,12 +64,15 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 	filters := parseLightwellPackageFilters(c)
 
 	if err := validateContentType(filters.ContentType); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid type filter", err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid content_type filter", err.Error())
 	}
 
 	repos, err := h.fetchLightwellRepos(c, filters.ContentType, filters.SecurityLevel)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing Lightwell repositories", err.Error())
+	}
+	if filters.Repository != "" {
+		repos = filterReposByName(repos, filters.Repository)
 	}
 
 	items, err := h.aggregatePackages(c.Request().Context(), repos, filters.Name)
@@ -72,6 +80,7 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
 	}
 
+	sortLightwellPackages(items, page.SortBy)
 	totalCount := int64(len(items))
 	paged := paginatePackages(items, page.Offset, page.Limit)
 	resp := api.LightwellPackageCollectionResponse{Data: paged}
@@ -103,7 +112,7 @@ func (h *LightwellPackagesHandler) listPackageVersions(c echo.Context) error {
 	filters := parseLightwellPackageVersionFilters(c)
 
 	if err := validateContentType(filters.ContentType); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid type filter", err.Error())
+		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid content_type filter", err.Error())
 	}
 
 	repos, err := h.fetchLightwellRepos(c, filters.ContentType, filters.SecurityLevel)
@@ -132,6 +141,7 @@ func (h *LightwellPackagesHandler) listPackageVersions(c echo.Context) error {
 		}
 	}
 
+	sortLightwellVersions(items, page.SortBy)
 	totalCount := int64(len(items))
 	paged := paginateVersions(items, page.Offset, page.Limit)
 	resp := api.LightwellPackageVersionCollectionResponse{Data: paged}
@@ -534,8 +544,9 @@ func expandNpmVersions(resp tangy.NpmPackageListResponse, repo api.RepositoryRes
 func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData {
 	var f api.LightwellPackageFilterData
 	_ = echo.QueryParamsBinder(c).
-		String("type", &f.ContentType).
+		String("content_type", &f.ContentType).
 		String("name", &f.Name).
+		String("repository", &f.Repository).
 		String("security_level", &f.SecurityLevel).
 		BindError()
 	return f
@@ -544,7 +555,7 @@ func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData
 func parseLightwellPackageVersionFilters(c echo.Context) api.LightwellPackageVersionFilterData {
 	var f api.LightwellPackageVersionFilterData
 	_ = echo.QueryParamsBinder(c).
-		String("type", &f.ContentType).
+		String("content_type", &f.ContentType).
 		String("name", &f.Name).
 		String("security_level", &f.SecurityLevel).
 		String("repository", &f.Repository).
@@ -635,4 +646,83 @@ func npmVersionMap(versions []tangy.NpmVersionInfo) map[string]versionCreatedAt 
 		m[v.Version] = versionCreatedAt{CreatedAt: v.CreatedAt}
 	}
 	return m
+}
+
+// --- nested repo-scoped alias handlers ---
+
+func (h *LightwellPackagesHandler) listRepoPackages(c echo.Context) error {
+	repoName := c.Param("repository_name")
+	c.QueryParams().Set("repository", repoName)
+	return h.listPackages(c)
+}
+
+func (h *LightwellPackagesHandler) listRepoPackageVersions(c echo.Context) error {
+	repoName := c.Param("repository_name")
+	c.QueryParams().Set("repository", repoName)
+	return h.listPackageVersions(c)
+}
+
+// --- sort helpers ---
+
+func sortLightwellPackages(items []api.LightwellPackageResponse, sortBy string) {
+	field, dir := parseSortBy(sortBy)
+	if field == "" {
+		field = "name"
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		var less bool
+		switch field {
+		case "name":
+			less = items[i].Name < items[j].Name
+		case "content_type":
+			less = items[i].ContentType < items[j].ContentType
+		case "repository":
+			less = items[i].Repository < items[j].Repository
+		default:
+			less = items[i].Name < items[j].Name
+		}
+		if dir == "desc" {
+			return !less
+		}
+		return less
+	})
+}
+
+func sortLightwellVersions(items []api.LightwellPackageVersionResponse, sortBy string) {
+	field, dir := parseSortBy(sortBy)
+	if field == "" {
+		field = "name"
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		var less bool
+		switch field {
+		case "name":
+			less = items[i].Name < items[j].Name
+		case "version":
+			less = items[i].Version < items[j].Version
+		case "content_type":
+			less = items[i].ContentType < items[j].ContentType
+		case "repository":
+			less = items[i].Repository < items[j].Repository
+		default:
+			less = items[i].Name < items[j].Name
+		}
+		if dir == "desc" {
+			return !less
+		}
+		return less
+	})
+}
+
+func parseSortBy(sortBy string) (field, direction string) {
+	if sortBy == "" {
+		return "", "asc"
+	}
+	parts := strings.Fields(sortBy)
+	field = strings.ToLower(parts[0])
+	direction = "asc"
+	if len(parts) > 1 && strings.EqualFold(parts[1], "desc") {
+		direction = "desc"
+	}
+	return field, direction
 }

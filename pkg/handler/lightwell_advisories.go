@@ -7,7 +7,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
@@ -18,7 +17,10 @@ type LightwellAdvisoryHandler struct {
 
 func RegisterLightwellAdvisoryRoutes(engine *echo.Group, querier store.Querier) {
 	h := LightwellAdvisoryHandler{Store: querier}
+	// Flat cross-repo endpoint
 	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.list, rbac.RbacVerbRead)
+	// Nested repo-scoped alias
+	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/advisories", h.listRepoAdvisories, rbac.RbacVerbRead)
 }
 
 // listLightwellAdvisories godoc
@@ -47,13 +49,9 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid severity_min", err.Error())
 	}
 
-	var repoUUID pgtype.UUID
-	if filters.RepositoryUUID != "" {
-		parsed, err := uuid.Parse(filters.RepositoryUUID)
-		if err != nil {
-			return ce.NewErrorResponse(http.StatusBadRequest, "Invalid repository_uuid", err.Error())
-		}
-		repoUUID = pgtype.UUID{Bytes: parsed, Valid: true}
+	var repoName *string
+	if filters.Repository != "" {
+		repoName = &filters.Repository
 	}
 
 	var packageName *string
@@ -67,12 +65,12 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	}
 
 	rows, err := h.Store.ListAdvisories(c.Request().Context(), store.ListAdvisoriesParams{
-		RepositoryConfigUuid: repoUUID,
-		PackageName:          packageName,
-		SeverityMin:          severityMin,
-		CveID:                cveID,
-		PageOffset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
-		PageLimit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
+		RepoName:    repoName,
+		PackageName: packageName,
+		SeverityMin: severityMin,
+		CveID:       cveID,
+		PageOffset:  int32(page.Offset), //nolint:gosec // bounded by ParsePagination
+		PageLimit:   int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
 	})
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing advisories", err.Error())
@@ -115,7 +113,7 @@ func mapAdvisoryRowsToResponse(rows []store.ListAdvisoriesRow) api.LightwellAdvi
 func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterData {
 	var filters api.LightwellAdvisoryFilterData
 	_ = echo.QueryParamsBinder(c).
-		String("repository_uuid", &filters.RepositoryUUID).
+		String("repository", &filters.Repository).
 		String("package_name", &filters.PackageName).
 		String("severity_min", &filters.SeverityMin).
 		String("cve_id", &filters.CveID).
@@ -147,4 +145,10 @@ type invalidSeverityError struct {
 
 func (e *invalidSeverityError) Error() string {
 	return "invalid severity: " + e.severity + " (must be one of: low, moderate, important, critical)"
+}
+
+func (h *LightwellAdvisoryHandler) listRepoAdvisories(c echo.Context) error {
+	repoName := c.Param("repository_name")
+	c.QueryParams().Set("repository", repoName)
+	return h.list(c)
 }

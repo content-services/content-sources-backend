@@ -228,7 +228,7 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	path := fmt.Sprintf("%s/lightwell/packages?type=maven", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/packages?content_type=maven", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -246,7 +246,7 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 func (s *LightwellPackagesSuite) TestListPackagesInvalidType() {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/lightwell/packages?type=invalid", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/packages?content_type=invalid", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -362,7 +362,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsPagination() {
 func (s *LightwellPackagesSuite) TestListPackageVersionsInvalidType() {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/lightwell/package_versions?type=bogus", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/package_versions?content_type=bogus", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 

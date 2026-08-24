@@ -22,8 +22,8 @@ func (r *LightwellAdvisoryCollectionResponse) SetMetadata(meta ResponseMetadata,
 }
 
 type LightwellAdvisoryFilterData struct {
-	RepositoryUUID string `query:"repository_uuid"`
-	PackageName    string `query:"package_name"`
-	SeverityMin    string `query:"severity_min"`
-	CveID          string `query:"cve_id"`
+	Repository  string `query:"repository"`
+	PackageName string `query:"package_name"`
+	SeverityMin string `query:"severity_min"`
+	CveID       string `query:"cve_id"`
 }

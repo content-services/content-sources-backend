@@ -49,14 +49,15 @@ func (r *LightwellPackageVersionCollectionResponse) SetMetadata(meta ResponseMet
 
 // LightwellPackageFilterData holds query-parameter filters for the cross-repo packages endpoint.
 type LightwellPackageFilterData struct {
-	ContentType   string `query:"type"`
+	ContentType   string `query:"content_type"`
 	Name          string `query:"name"`
+	Repository    string `query:"repository"`
 	SecurityLevel string `query:"security_level"`
 }
 
 // LightwellPackageVersionFilterData holds query-parameter filters for the cross-repo package_versions endpoint.
 type LightwellPackageVersionFilterData struct {
-	ContentType       string `query:"type"`
+	ContentType       string `query:"content_type"`
 	Name              string `query:"name"`
 	SecurityLevel     string `query:"security_level"`
 	Repository        string `query:"repository"`

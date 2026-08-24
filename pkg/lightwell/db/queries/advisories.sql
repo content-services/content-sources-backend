@@ -19,6 +19,10 @@ WHERE 1=1
         OR la.repository_configuration_uuid = sqlc.narg(repository_config_uuid)::uuid
     )
     AND (
+        sqlc.narg(repo_name)::text IS NULL
+        OR la.repo_name = sqlc.narg(repo_name)::text
+    )
+    AND (
         sqlc.narg(package_name)::text IS NULL
         OR la.package_name ILIKE '%' || sqlc.narg(package_name)::text || '%'
     )
