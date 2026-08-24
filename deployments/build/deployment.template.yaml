@@ -414,6 +414,18 @@ objects:
               - "delete-repository-snapshots"
             env:{{ENV_VARS}}
 
+        - name: send-template-update-events
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - send-template-update-events
+            env:{{ENV_VARS}}
+
       database:
         name: content-sources
         version: 15
