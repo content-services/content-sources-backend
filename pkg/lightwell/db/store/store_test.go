@@ -77,12 +77,13 @@ func insertTestVulnerabilities(t *testing.T, ctx context.Context, tx pgx.Tx, spe
 		ids[spec.vulnID] = id
 		_, err := tx.Exec(ctx, `
 			INSERT INTO lightwell_vulnerabilities (
-				uuid, vulnerability_id, component_name, component_version, title, severity, stage, language, complexity,
+				uuid, vulnerability_key, vulnerability_id, component_name, component_version, title, severity, stage, language, complexity,
 				submitted_date, last_updated, embargo, duplicate, duplicate_of
 			) VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE - $10::int, NOW(), $11, $12, $13
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE - $11::int, NOW(), $12, $13, $14
 			)`,
 			id,
+			spec.vulnID,
 			spec.vulnID,
 			spec.component,
 			"1.0.0",
