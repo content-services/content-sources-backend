@@ -12,6 +12,7 @@ import (
 
 type LightwellVulnerability struct {
 	Uuid               uuid.UUID `json:"uuid"`
+	VulnerabilityKey   string    `json:"vulnerability_key"`
 	VulnerabilityID    string    `json:"vulnerability_id"`
 	Purl               *string   `json:"purl"`
 	ComponentName      string    `json:"component_name"`
