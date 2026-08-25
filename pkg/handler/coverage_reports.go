@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -26,7 +24,6 @@ const maxCoverageUploadSizeBytes = 500 * 1024 * 1024 // 500 MiB
 
 type CoverageReportHandler struct {
 	DaoRegistry dao.DaoRegistry
-	S3          s3_client.S3Client
 }
 
 func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
@@ -38,10 +35,9 @@ func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFu
 	}
 }
 
-func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, s3Client s3_client.S3Client) {
+func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	ch := CoverageReportHandler{
 		DaoRegistry: *daoReg,
-		S3:          s3Client,
 	}
 	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellBeaconAndLensAccessible)
 	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
@@ -90,15 +86,6 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", err.Error())
 	}
 
-	if config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
-		if ch.S3 == nil {
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading coverage report", "s3 not configured")
-		}
-		if err := ch.S3.Put(c.Request().Context(), storageKey, bytes.NewReader(fileBytes)); err != nil {
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading coverage report", err.Error())
-		}
-	}
-
 	sha256Hex := hex.EncodeToString(hash.Sum(nil))
 	sizeBytes := int64(len(fileBytes))
 
@@ -128,6 +115,7 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 				log.Error().Err(err).Str("uuid", reportUUID).Msg("failed to seed coverage report")
 			}
 		}(report.UUID)
+		return c.JSON(http.StatusCreated, report)
 	}
 
 	return c.JSON(http.StatusCreated, report)

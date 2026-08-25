@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -33,10 +34,12 @@ type RepositoryHandler struct {
 	DaoRegistry          dao.DaoRegistry
 	TaskClient           client.TaskClient
 	FeatureServiceClient feature_service_client.FeatureServiceClient
+	LightwellStore       store.Querier // nil when lightwell store is unavailable
 }
 
 func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	taskClient *client.TaskClient, fsClient *feature_service_client.FeatureServiceClient,
+	lightwellStore ...store.Querier,
 ) {
 	if engine == nil {
 		panic("engine is nil")
@@ -54,6 +57,9 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 		DaoRegistry:          *daoReg,
 		TaskClient:           *taskClient,
 		FeatureServiceClient: *fsClient,
+	}
+	if len(lightwellStore) > 0 && lightwellStore[0] != nil {
+		rh.LightwellStore = lightwellStore[0]
 	}
 
 	addRepoRoute(engine, http.MethodGet, "/repositories/", rh.listRepositories, rbac.RbacVerbRead)
@@ -122,7 +128,41 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}
 
+	rh.enrichLightwellRepoCounts(c, &repos)
+
 	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
+}
+
+// enrichLightwellRepoCounts populates packages_count, versions_count, and
+// remediations_count on Lightwell-origin repositories. These spec-required
+// fields are omitted for non-Lightwell repos to avoid breaking existing consumers.
+func (rh *RepositoryHandler) enrichLightwellRepoCounts(c echo.Context, repos *api.RepositoryCollectionResponse) {
+	for i := range repos.Data {
+		repo := &repos.Data[i]
+		if repo.Origin != config.OriginLightwell {
+			continue
+		}
+		pkgCount := repo.PackageCount
+		verCount := repo.VersionCount
+		repo.PackagesCount = &pkgCount
+		repo.VersionsCount = &verCount
+
+		if rh.LightwellStore == nil {
+			continue
+		}
+		repoUUID, err := uuid.Parse(repo.UUID)
+		if err != nil {
+			log.Ctx(c.Request().Context()).Warn().Err(err).Str("uuid", repo.UUID).Msg("invalid UUID for advisory count")
+			continue
+		}
+		count, err := rh.LightwellStore.CountAdvisoriesByRepo(c.Request().Context(), repoUUID)
+		if err != nil {
+			log.Ctx(c.Request().Context()).Warn().Err(err).Str("uuid", repo.UUID).Msg("failed to count advisories")
+			continue
+		}
+		remCount := int(count)
+		repo.RemediationsCount = &remCount
+	}
 }
 
 // CreateRepository godoc
