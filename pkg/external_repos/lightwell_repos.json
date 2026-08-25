@@ -13,6 +13,12 @@
     "feature_name": "lightwell-network,lightwell-clearinghouse,lightwell-research-institutions"
   },
   {
+    "name": "lightwell/java/predisclosure",
+    "type": "maven",
+    "base_path": "java/predisclosure",
+    "feature_name": "lightwell-network,lightwell-clearinghouse"
+  },
+  {
     "name": "lightwell/python/validated",
     "type": "python",
     "base_path": "python/validated",
