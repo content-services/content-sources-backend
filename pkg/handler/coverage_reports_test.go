@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
@@ -31,8 +30,7 @@ import (
 
 type CoverageReportSuite struct {
 	suite.Suite
-	reg    *dao.MockDaoRegistry
-	s3Mock *s3_client.MockS3Client
+	reg *dao.MockDaoRegistry
 }
 
 func TestCoverageReportSuite(t *testing.T) {
@@ -41,8 +39,6 @@ func TestCoverageReportSuite(t *testing.T) {
 
 func (suite *CoverageReportSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
-	suite.s3Mock = s3_client.NewMockS3Client(suite.T())
-	config.Get().Options.SeedLightwellCoverageReports = false
 }
 
 func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, enabled bool, authorized bool) (int, []byte, error) {
@@ -63,12 +59,7 @@ func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, e
 		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
-	h := CoverageReportHandler{
-		DaoRegistry: *suite.reg.ToDaoRegistry(),
-		S3:          suite.s3Mock,
-	}
-
-	RegisterCoverageReportRoutes(pathPrefix, &h.DaoRegistry, h.S3)
+	RegisterCoverageReportRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -230,7 +221,6 @@ func (suite *CoverageReportSuite) TestListCoverageReportPackagesWithFilters() {
 
 func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	t := suite.T()
-	config.Get().Features.LightwellStoreUploads = config.Feature{Enabled: true}
 	reqBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(reqBody)
 	part, err := writer.CreateFormFile("file", "sbom.json")
@@ -246,7 +236,6 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	}
 	suite.reg.CoverageReport.On("Create", mock.Anything, mock.Anything, mock.Anything).
 		Return(expectedReport, nil)
-	suite.s3Mock.On("Put", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
