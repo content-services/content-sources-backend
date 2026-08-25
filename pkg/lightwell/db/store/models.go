@@ -60,6 +60,13 @@ type LightwellVulnerabilityCustomer struct {
 	CreatedAt         time.Time `json:"created_at"`
 }
 
+type LightwellVulnerabilitySupportTicket struct {
+	VulnerabilityUuid uuid.UUID `json:"vulnerability_uuid"`
+	CustomerID        string    `json:"customer_id"`
+	TicketID          string    `json:"ticket_id"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
 type RepositoryConfiguration struct {
 	Uuid uuid.UUID `json:"uuid"`
 }
