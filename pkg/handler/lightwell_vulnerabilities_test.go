@@ -48,15 +48,15 @@ func (suite *LightwellVulnerabilitiesSuite) serveRouterWithAccess(req *http.Requ
 	pathPrefix := router.Group(api.FullRootPath())
 
 	if enabled {
-		config.Get().Features.LightwellBeaconAndLens.Enabled = true
+		config.Get().Features.LightwellBeacon.Enabled = true
 	} else {
-		config.Get().Features.LightwellBeaconAndLens.Enabled = false
+		config.Get().Features.LightwellBeacon.Enabled = false
 	}
 
 	if authorized {
-		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{test_handler.MockAccountNumber}
+		config.Get().Features.LightwellBeacon.Accounts = &[]string{test_handler.MockAccountNumber}
 	} else {
-		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
+		config.Get().Features.LightwellBeacon.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
 	RegisterLightwellVulnerabilityRoutes(pathPrefix, suite.reg.ToDaoRegistry())
