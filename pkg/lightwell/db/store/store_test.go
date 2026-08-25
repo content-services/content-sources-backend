@@ -762,8 +762,19 @@ func TestStore_ListCustomerIds(t *testing.T) {
 // --- Advisory query integration tests ---
 
 func insertTestAdvisories(t *testing.T, ctx context.Context, tx pgx.Tx) uuid.UUID {
+	repoConfigUUID := uuid.New()
 	repoUUID := uuid.New()
-	_, err := tx.Exec(ctx, `INSERT INTO repository_configurations (uuid) VALUES ($1)`, repoUUID)
+	now := time.Now()
+
+	_, err := tx.Exec(ctx,
+		`INSERT INTO repositories (uuid, url) VALUES ($1, $2)`,
+		repoUUID, "https://test.example.com/repo/"+repoConfigUUID.String())
+	require.NoError(t, err)
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, arch, org_id, repository_uuid)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		repoConfigUUID, now, now, "test-advisory-repo", "x86_64", "test-org-"+repoConfigUUID.String(), repoUUID)
 	require.NoError(t, err)
 
 	advisories := []struct {
@@ -791,11 +802,11 @@ func insertTestAdvisories(t *testing.T, ctx context.Context, tx pgx.Tx) uuid.UUI
 			"test advisory details for "+adv.packageName,
 			[]string{"https://access.redhat.com/security/cve/" + adv.id},
 			adv.packageName, adv.fixedVersions,
-			adv.repoName, repoUUID, fmt.Sprintf("checksum-%s-%s", adv.id, adv.packageName),
+			adv.repoName, repoConfigUUID, fmt.Sprintf("checksum-%s-%s", adv.id, adv.packageName),
 		)
 		require.NoError(t, err)
 	}
-	return repoUUID
+	return repoConfigUUID
 }
 
 func TestStore_ListAdvisories(t *testing.T) {
