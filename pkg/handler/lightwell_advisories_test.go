@@ -279,8 +279,8 @@ func (m *MockQuerier) ListLtwlsuptTicketIds(ctx context.Context, customerID stri
 	return val, args.Error(1)
 }
 
-func (m *MockQuerier) ListVulnerabilities(ctx context.Context, arg store.ListVulnerabilitiesParams) ([]store.LightwellVulnerability, error) {
+func (m *MockQuerier) ListVulnerabilities(ctx context.Context, arg store.ListVulnerabilitiesParams) ([]store.ListVulnerabilitiesRow, error) {
 	args := m.Called(ctx, arg)
-	val, _ := args.Get(0).([]store.LightwellVulnerability)
+	val, _ := args.Get(0).([]store.ListVulnerabilitiesRow)
 	return val, args.Error(1)
 }
