@@ -185,17 +185,20 @@ func TestGAVDedup(t *testing.T) {
 	assert.True(t, loaded)
 }
 
-func TestFilterAndParse_NonLightwell(t *testing.T) {
+func TestFilterAndParse_IgnoresApplicationField(t *testing.T) {
+	// On the dedicated topic, application field is not checked.
+	// A message with any application value is accepted if event_type matches.
 	reg := prometheus.NewRegistry()
 	metrics := newBridgeMetrics(reg)
 	handler := NewBridgeHandler(nil, nil, nil, metrics)
 
 	payload := []byte(`{"version":"2.0.0","bundle":"other","application":"other","event_type":"java-remediated","events":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
 
-	_, shouldCommit, err := handler.filterAndParse(payload)
-	assert.Error(t, err)
-	assert.True(t, shouldCommit)
-	assert.Contains(t, err.Error(), "lightwell")
+	remediations, shouldCommit, err := handler.filterAndParse(payload)
+	require.NoError(t, err)
+	assert.False(t, shouldCommit)
+	require.Len(t, remediations, 1)
+	assert.Equal(t, "org.test", remediations[0].GroupID)
 }
 
 func TestFilterAndParse_NonJavaRemediated(t *testing.T) {

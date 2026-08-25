@@ -32,7 +32,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
 	handler.registryURL = cfg.RegistryURL
 
-	topic := config.Get().Options.NotificationsTopic
+	topic := config.Get().Options.LightwellBridgeTopic
 	if kafka.TopicTranslationConfig != nil {
 		topic = kafka.TopicTranslationConfig.GetReal(topic)
 	}

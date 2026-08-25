@@ -264,6 +264,7 @@ type Options struct {
 	AlwaysRunCronTasks     bool   `mapstructure:"always_run_cron_tasks"`
 	EnableNotifications    bool   `mapstructure:"enable_notifications"`
 	NotificationsTopic     string `mapstructure:"notifications_topic"`
+	LightwellBridgeTopic   string `mapstructure:"lightwell_bridge_topic"`
 	TemplateEventTopic     string `mapstructure:"template_event_topic"`
 	RepositoryImportFilter string `mapstructure:"repository_import_filter"` // Used by qe to control which repos are imported
 	// url (https://servername) to access the api, used to reference gpg keys
@@ -345,6 +346,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("options.notifications_topic", "platform.notifications.ingress")
+	v.SetDefault("options.lightwell_bridge_topic", "platform.lightwell.advisory_created")
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("options.feature_filter", featureFilter)

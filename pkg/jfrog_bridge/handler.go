@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,8 +12,7 @@ import (
 )
 
 const (
-	allowedApplication = "lightwell"
-	allowedEventType   = "java-remediated"
+	allowedEventType = "java-remediated"
 )
 
 // BridgeHandler implements sarama.ConsumerGroupHandler and orchestrates
@@ -87,20 +85,16 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 }
 
 func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error) {
+	// The bridge consumes a dedicated topic (platform.lightwell.advisory_created)
+	// so every message is a lightwell advisory. Only filter by event_type to
+	// gate ecosystems (java-remediated only until embargoes clear).
 	var env struct {
-		Application string `json:"application"`
-		EventType   string `json:"event_type"`
+		EventType string `json:"event_type"`
 	}
 	if err := safeUnmarshal(data, &env); err != nil {
 		return nil, true, fmt.Errorf("invalid message: %w", err)
 	}
-	if env.Application == "" {
-		return nil, true, fmt.Errorf("missing application field")
-	}
-	if !strings.EqualFold(env.Application, allowedApplication) {
-		return nil, true, fmt.Errorf("application %q is not %q", env.Application, allowedApplication)
-	}
-	if env.EventType != allowedEventType {
+	if env.EventType != "" && env.EventType != allowedEventType {
 		return nil, true, fmt.Errorf("event_type %q is not %q", env.EventType, allowedEventType)
 	}
 
