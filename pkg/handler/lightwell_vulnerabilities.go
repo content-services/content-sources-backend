@@ -16,6 +16,15 @@ type LightwellVulnerabilityHandler struct {
 	DaoRegistry dao.DaoRegistry
 }
 
+func checkLightwellBeaconAccessible(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if err := CheckLightwellBeaconAccessible(c.Request().Context()); err != nil {
+			return err
+		}
+		return next(c)
+	}
+}
+
 func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
 	if group == nil {
 		panic("engine is nil")
@@ -25,9 +34,9 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 	}
 
 	h := LightwellVulnerabilityHandler{DaoRegistry: *daoReg}
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
 }
 
 // ListLightwellCustomerIds godoc

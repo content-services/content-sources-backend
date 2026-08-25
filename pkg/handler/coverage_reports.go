@@ -29,9 +29,9 @@ type CoverageReportHandler struct {
 	S3          s3_client.S3Client
 }
 
-func checkLightwellBeaconAndLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
+func checkLightwellLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		if err := CheckLightwellBeaconAndLensAccessible(c.Request().Context()); err != nil {
+		if err := CheckLightwellLensAccessible(c.Request().Context()); err != nil {
 			return err
 		}
 		return next(c)
@@ -43,9 +43,9 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, s
 		DaoRegistry: *daoReg,
 		S3:          s3Client,
 	}
-	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellBeaconAndLensAccessible)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, checkLightwellBeaconAndLensAccessible)
+	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbWrite, checkLightwellLensAccessible)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellLensAccessible)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, checkLightwellLensAccessible)
 }
 
 // CreateCoverageReport godoc

@@ -52,15 +52,15 @@ func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, e
 	pathPrefix := router.Group(api.FullRootPath())
 
 	if enabled {
-		config.Get().Features.LightwellBeaconAndLens.Enabled = true
+		config.Get().Features.LightwellLens.Enabled = true
 	} else {
-		config.Get().Features.LightwellBeaconAndLens.Enabled = false
+		config.Get().Features.LightwellLens.Enabled = false
 	}
 
 	if authorized {
-		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{test_handler.MockAccountNumber}
+		config.Get().Features.LightwellLens.Accounts = &[]string{test_handler.MockAccountNumber}
 	} else {
-		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
+		config.Get().Features.LightwellLens.Accounts = &[]string{seeds.RandomAccountId()}
 	}
 
 	h := CoverageReportHandler{
