@@ -130,11 +130,6 @@ func sendAdvisoryNotifications(
 		return nil
 	}
 
-	eventType := event.LightwellEventType(repoName)
-	if eventType == "" {
-		return nil
-	}
-
 	unnotified, err := daoReg.LightwellAdvisory.ListUnnotifiedAdvisories(ctx, repoConfigUUID)
 	if err != nil {
 		return fmt.Errorf("error listing unnotified advisories: %w", err)
@@ -147,11 +142,6 @@ func sendAdvisoryNotifications(
 		models.UserPreferenceLightwellNotificationEnabled, "true")
 	if err != nil {
 		return fmt.Errorf("error listing opted-in orgs: %w", err)
-	}
-
-	if len(orgs) == 0 {
-		log.Debug().Msg("No orgs opted-in for lightwell notifications")
-		return nil
 	}
 
 	inputs := make([]event.LightwellNotificationInput, len(unnotified))
@@ -167,6 +157,19 @@ func sendAdvisoryNotifications(
 
 	events := event.BuildLightwellNotificationEvents(inputs)
 	severity := event.MaximumSeverity(inputs)
+
+	// Send an initial notification to the internal topic for jfrog integration
+	event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, events)
+
+	if len(orgs) == 0 {
+		log.Debug().Msg("No orgs opted-in for lightwell notifications")
+		return nil
+	}
+
+	eventType := event.LightwellEventType(repoName)
+	if eventType == "" {
+		return nil
+	}
 
 	for _, orgID := range orgs {
 		event.SendLightwellNotification(orgID, eventType, severity, events)

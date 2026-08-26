@@ -121,6 +121,25 @@ func SetupTemplateEvents() {
 	LoadedConfig.TemplateEventClient = client
 }
 
+// SetupLightwellAdvisoryCreatedEvent creates the cloud event kafka client for sending events to the jfrog integration
+func SetupLightwellAdvisoryCreatedEvent() {
+	if LoadedConfig.Options.LightwellBridgeTopic == "" {
+		return
+	}
+
+	if len(LoadedConfig.Kafka.Bootstrap.Servers) == 0 {
+		log.Warn().Msg("SetupTemplateEvents: clowder.KafkaServers and configured broker was empty")
+		return
+	}
+
+	client, err := SetupCloudEventsKafkaClient(LoadedConfig.Options.LightwellBridgeTopic)
+	if err != nil {
+		log.Error().Err(err).Msg("SetupCloudEventsKafkaClient failed")
+		return
+	}
+	LoadedConfig.LightwellAdvisoryCreatedClient = client
+}
+
 type NotificationsKafkaProducer struct {
 	Producer sarama.SyncProducer
 	Topic    string

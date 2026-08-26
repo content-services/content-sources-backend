@@ -150,3 +150,31 @@ func SendTemplateEvent(orgID string, eventName EventName, templates []TemplateEv
 		}
 	}
 }
+
+func SendLightwellAdvisoryCreatedEvent(eventName EventName, events []NotificationEvent) {
+	if config.Get().LightwellAdvisoryCreatedClient != nil && len(events) > 0 {
+		eventNameStr := eventName.String()
+		newUUID, _ := uuid.NewRandom()
+		e := cloudevents.NewEvent()
+		e.SetSource("urn:redhat:source:console:app:lightwell")
+		e.SetID(newUUID.String())
+		e.SetType("com.redhat.console.lightwelll." + eventNameStr)
+		e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
+		e.SetTime(time.Now())
+
+		data := events
+		err := e.SetData(cloudevents.ApplicationJSON, data)
+
+		if err != nil {
+			log.Error().Err(err).Msg("failed to create cloudevents client")
+			return
+		}
+
+		ctx := cloudevents.WithEncodingStructured(context.Background())
+		// Send the event
+		if result := config.Get().LightwellAdvisoryCreatedClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
+			log.Error().Msgf("LightwellAdvisoryCreatedClient message failed to send: %v", result)
+			return
+		}
+	}
+}

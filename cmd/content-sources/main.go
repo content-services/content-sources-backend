@@ -103,6 +103,7 @@ func main() {
 
 	config.SetupNotifications()
 	config.SetupTemplateEvents()
+	config.SetupLightwellAdvisoryCreatedEvent()
 
 	wg.Wait()
 }

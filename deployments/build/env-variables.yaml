@@ -426,7 +426,7 @@ parameters:
     value: 'false'
   - name: OPTIONS_LIGHTWELL_BRIDGE_TOPIC
     description: Kafka topic for lightwell bridge advisory notifications
-    value: 'platform.lightwell.advisory_created'
+    value: 'platform.lightwell.advisory-created'
   - name: OPTIONS_REPOSITORY_IMPORT_FILTER
     description: Optionally filter preset repos that are imported
     value: ''

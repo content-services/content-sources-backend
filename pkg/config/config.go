@@ -25,22 +25,23 @@ import (
 const DefaultAppName = "content-sources"
 
 type Configuration struct {
-	Database              Database
-	Logging               Logging
-	Loaded                bool
-	Certs                 Certs
-	Options               Options
-	Kafka                 kafka.KafkaConfig
-	Cloudwatch            Cloudwatch
-	Metrics               Metrics
-	Clients               Clients `mapstructure:"clients"`
-	Mocks                 Mocks   `mapstructure:"mocks"`
-	Sentry                Sentry  `mapstructure:"sentry"`
-	NotificationsProducer *NotificationsKafkaProducer
-	TemplateEventClient   cloudevents.Client `mapstructure:"template_event_client"`
-	Tasking               Tasking            `mapstructure:"tasking"`
-	Features              FeatureSet         `mapstructure:"features"`
-	JFrogBridge           JFrogBridge        `mapstructure:"jfrog_bridge"`
+	Database                       Database
+	Logging                        Logging
+	Loaded                         bool
+	Certs                          Certs
+	Options                        Options
+	Kafka                          kafka.KafkaConfig
+	Cloudwatch                     Cloudwatch
+	Metrics                        Metrics
+	Clients                        Clients `mapstructure:"clients"`
+	Mocks                          Mocks   `mapstructure:"mocks"`
+	Sentry                         Sentry  `mapstructure:"sentry"`
+	NotificationsProducer          *NotificationsKafkaProducer
+	TemplateEventClient            cloudevents.Client `mapstructure:"template_event_client"`
+	LightwellAdvisoryCreatedClient cloudevents.Client `mapstructure:"lightwell_advisory_created_client"`
+	Tasking                        Tasking            `mapstructure:"tasking"`
+	Features                       FeatureSet         `mapstructure:"features"`
+	JFrogBridge                    JFrogBridge        `mapstructure:"jfrog_bridge"`
 }
 
 type JFrogBridge struct {
@@ -346,7 +347,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.always_run_cron_tasks", false)
 	v.SetDefault("options.enable_notifications", false)
 	v.SetDefault("options.notifications_topic", "platform.notifications.ingress")
-	v.SetDefault("options.lightwell_bridge_topic", "platform.lightwell.advisory_created")
+	v.SetDefault("options.lightwell_bridge_topic", "platform.lightwell.advisory-created")
 	v.SetDefault("options.template_event_topic", "platform.content-sources.template")
 	v.SetDefault("options.repository_import_filter", "")
 	v.SetDefault("options.feature_filter", featureFilter)

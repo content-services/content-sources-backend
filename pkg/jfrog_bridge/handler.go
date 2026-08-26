@@ -85,7 +85,7 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 }
 
 func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error) {
-	// The bridge consumes a dedicated topic (platform.lightwell.advisory_created)
+	// The bridge consumes a dedicated topic (platform.lightwell.advisory-created)
 	// so every message is a lightwell advisory. Only filter by event_type to
 	// gate ecosystems (java-remediated only until embargoes clear).
 	var env struct {

@@ -5,10 +5,12 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 type AdminNotificationsHandler struct{}
@@ -43,22 +45,33 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 	}
 
 	_, orgID := getAccountIdOrgId(c)
+	log.Error().Msg(req.Topic)
+	if req.Topic == config.Get().Options.LightwellBridgeTopic {
+		events := []event.NotificationEvent{}
+		err := json.Unmarshal([]byte(req.Notification), &events)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
+		}
+		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, events)
+		log.Error().Msg("Sent lightwell advisory created event")
+		return c.NoContent(http.StatusOK)
+	} else { // assume notification
+		var body struct {
+			OrgID string `json:"org_id"`
+		}
+		if err := json.Unmarshal(req.Notification, &body); err != nil {
+			return ce.NewErrorResponse(http.StatusBadRequest, "Error parsing notification", err.Error())
+		}
+		if body.OrgID != "" && body.OrgID != orgID {
+			return ce.NewErrorResponse(http.StatusForbidden, "org_id in notification does not match your identity", "")
+		}
 
-	var body struct {
-		OrgID string `json:"org_id"`
+		sent, err := event.SendTestNotification(orgID, req.Notification)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError,
+				"Error sending test notification", err.Error())
+		}
+		log.Error().Msg("Sent notification event")
+		return c.JSONBlob(http.StatusOK, sent)
 	}
-	if err := json.Unmarshal(req.Notification, &body); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Error parsing notification", err.Error())
-	}
-	if body.OrgID != "" && body.OrgID != orgID {
-		return ce.NewErrorResponse(http.StatusForbidden, "org_id in notification does not match your identity", "")
-	}
-
-	sent, err := event.SendTestNotification(orgID, req.Notification)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError,
-			"Error sending test notification", err.Error())
-	}
-
-	return c.JSONBlob(http.StatusOK, sent)
 }
