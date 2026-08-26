@@ -40,6 +40,25 @@ func (s *CoverageDemandSignalSuite) TestCoverageDemandSignalCreate() {
 	assert.Equal(s.T(), signal.Source, readSignal.Source)
 }
 
+func (s *CoverageDemandSignalSuite) TestCoverageDemandSignalCreateEmptyVersion() {
+	tx := s.tx
+
+	signal := CoverageDemandSignal{
+		Ecosystem:   "Python",
+		Name:        "flask",
+		Version:     "",
+		MatchStatus: CoverageDemandMatchStatusPartial,
+		Source:      CoverageDemandSourceProspectDriven,
+	}
+	err := tx.Create(&signal).Error
+	assert.NoError(s.T(), err)
+
+	readSignal := CoverageDemandSignal{}
+	err = tx.Where("uuid = ?", signal.UUID).First(&readSignal).Error
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "", readSignal.Version)
+}
+
 func (s *CoverageDemandSignalSuite) TestCoverageDemandSignalValidations() {
 	t := s.T()
 	tx := s.tx
@@ -74,16 +93,6 @@ func (s *CoverageDemandSignalSuite) TestCoverageDemandSignalValidations() {
 				Source:      testSource,
 			},
 			expected: "Package name cannot be blank.",
-		},
-		{
-			given: CoverageDemandSignal{
-				Ecosystem:   testEcosystem,
-				Name:        testName,
-				Version:     "",
-				MatchStatus: testMatchStatus,
-				Source:      testSource,
-			},
-			expected: "Version cannot be blank.",
 		},
 		{
 			given: CoverageDemandSignal{

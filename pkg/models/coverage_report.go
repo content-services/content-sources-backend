@@ -79,6 +79,20 @@ func (cr *CoverageReport) BeforeCreate(*gorm.DB) error {
 	return cr.validate()
 }
 
+func (cr *CoverageReport) MapForUpdate() map[string]interface{} {
+	forUpdate := make(map[string]interface{})
+	forUpdate["status"] = cr.Status
+	forUpdate["input_format"] = cr.InputFormat
+	forUpdate["total"] = cr.Total
+	forUpdate["exact_matches"] = cr.ExactMatches
+	forUpdate["partial_matches"] = cr.PartialMatches
+	forUpdate["unmatched"] = cr.Unmatched
+	forUpdate["ecosystem_coverage_summary"] = cr.EcosystemCoverageSummary
+	forUpdate["catalog_snapshot_at"] = cr.CatalogSnapshotAt
+	forUpdate["completed_at"] = cr.CompletedAt
+	return forUpdate
+}
+
 func (cr *CoverageReport) validate() error {
 	if cr.OrgID == "" {
 		return Error{Message: "Org ID cannot be blank.", Validation: true}

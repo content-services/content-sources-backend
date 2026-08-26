@@ -51,6 +51,32 @@ func (s *CoverageReportPackageSuite) TestCoverageReportPackageCreate() {
 	assert.Equal(s.T(), pkg.MatchStatus, readPkg.MatchStatus)
 }
 
+func (s *CoverageReportPackageSuite) TestCoverageReportPackageCreateEmptyVersion() {
+	tx := s.tx
+
+	report := CoverageReport{
+		OrgID:  "org-1",
+		Status: config.TaskStatusCompleted,
+	}
+	err := tx.Create(&report).Error
+	assert.NoError(s.T(), err)
+
+	pkg := CoverageReportPackage{
+		CoverageReportUUID: report.UUID,
+		Ecosystem:          "Python",
+		Name:               "flask",
+		Version:            "",
+		MatchStatus:        CoverageMatchStatusPartial,
+	}
+	err = tx.Create(&pkg).Error
+	assert.NoError(s.T(), err)
+
+	readPkg := CoverageReportPackage{}
+	err = tx.Where("uuid = ?", pkg.UUID).First(&readPkg).Error
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "", readPkg.Version)
+}
+
 func (s *CoverageReportPackageSuite) TestCoverageReportPackageValidations() {
 	t := s.T()
 	tx := s.tx
@@ -101,16 +127,6 @@ func (s *CoverageReportPackageSuite) TestCoverageReportPackageValidations() {
 				MatchStatus:        testMatchStatus,
 			},
 			expected: "Package name cannot be blank.",
-		},
-		{
-			given: CoverageReportPackage{
-				CoverageReportUUID: report.UUID,
-				Ecosystem:          testEcosystem,
-				Name:               testName,
-				Version:            "",
-				MatchStatus:        testMatchStatus,
-			},
-			expected: "Version cannot be blank.",
 		},
 		{
 			given: CoverageReportPackage{
