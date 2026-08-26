@@ -1,8 +1,3 @@
--- name: ListCustomerIds :many
-SELECT DISTINCT customer_id
-FROM lightwell_vulnerability_customers
-ORDER BY customer_id;
-
 -- name: ListLtwlsuptTicketIds :many
 SELECT DISTINCT ticket_id
 FROM lightwell_vulnerability_support_tickets

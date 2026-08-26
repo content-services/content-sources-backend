@@ -282,7 +282,6 @@ type LightwellAdvisoryDao interface {
 }
 
 type LightwellVulnerabilityDao interface {
-	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
 }
@@ -290,6 +289,8 @@ type LightwellVulnerabilityDao interface {
 type LightwellCustomerStamlDao interface {
 	Create(ctx context.Context, customerID, staml string) (api.LightwellCustomerStamlResponse, error)
 	Delete(ctx context.Context, customerID, staml string) error
+	ListCustomerIds(ctx context.Context, staml string) ([]string, error)
+	HasAccess(ctx context.Context, customerID, staml string) (bool, error)
 }
 
 type UserPreferenceDao interface {

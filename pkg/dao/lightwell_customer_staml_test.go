@@ -94,3 +94,59 @@ func (s *LightwellCustomerStamlDaoSuite) TestCreateManyToMany() {
 		}
 	})
 }
+
+func (s *LightwellCustomerStamlDaoSuite) TestListCustomerIds() {
+	ctx, daoImpl := s.dao()
+	n := time.Now().UnixNano()
+	cid1 := fmt.Sprintf("cid-list-a-%d", n)
+	cid2 := fmt.Sprintf("cid-list-b-%d", n)
+	cidOther := fmt.Sprintf("cid-list-c-%d", n)
+	staml := fmt.Sprintf("staml-list-%d", n)
+	other := fmt.Sprintf("staml-list-other-%d", n)
+
+	pairs := [][2]string{
+		{cid1, staml},
+		{cid2, staml},
+		{cidOther, other},
+	}
+	for _, pair := range pairs {
+		_, err := daoImpl.Create(ctx, pair[0], pair[1])
+		s.Require().NoError(err)
+	}
+	s.T().Cleanup(func() {
+		for _, pair := range pairs {
+			_ = daoImpl.Delete(ctx, pair[0], pair[1])
+		}
+	})
+
+	ids, err := daoImpl.ListCustomerIds(ctx, staml)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{cid1, cid2}, ids)
+
+	ids, err = daoImpl.ListCustomerIds(ctx, "nobody")
+	s.Require().NoError(err)
+	assert.Empty(s.T(), ids)
+}
+
+func (s *LightwellCustomerStamlDaoSuite) TestHasAccess() {
+	ctx, daoImpl := s.dao()
+	customerID, staml := s.uniquePair()
+
+	ok, err := daoImpl.HasAccess(ctx, customerID, staml)
+	s.Require().NoError(err)
+	assert.False(s.T(), ok)
+
+	_, err = daoImpl.Create(ctx, customerID, staml)
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = daoImpl.Delete(ctx, customerID, staml)
+	})
+
+	ok, err = daoImpl.HasAccess(ctx, customerID, staml)
+	s.Require().NoError(err)
+	assert.True(s.T(), ok)
+
+	ok, err = daoImpl.HasAccess(ctx, customerID, "other-staml")
+	s.Require().NoError(err)
+	assert.False(s.T(), ok)
+}

@@ -38,9 +38,11 @@ Adjust connection parameters to match your `configs/config.yaml` if they differ 
 
 With the API running, authenticated clients can call:
 
-- `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/customers/` — distinct customer IDs
+- `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/customers/` — customer IDs mapped to the logged-in user's username (STAML)
 - `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=demo-customer-1` — distinct Lightwell support ticket IDs for a customer
 - `GET /api/content-sources/v1/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1` — filtered, paginated list with aggregates
+
+The logged-in username is treated as the STAML. Customer listing only returns CIDs mapped to that STAML. If `customer_id` is not mapped to the current user, the vulnerabilities and `ltwlsupt-ticket-ids` endpoints return an empty list (HTTP 200) rather than an error.
 
 `customer_id` is required on the list and `ltwlsupt-ticket-ids` endpoints. Filters (`severity`, `stage`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo`, `duplicate`, and `blocked` (OR). `search` requires at least 2 characters when provided.
 

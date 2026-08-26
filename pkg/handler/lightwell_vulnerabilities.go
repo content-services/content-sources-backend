@@ -33,7 +33,7 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 // ListLightwellCustomerIds godoc
 // @Summary      List Lightwell customer IDs
 // @ID           listLightwellCustomerIds
-// @Description  List distinct customer IDs that have Lightwell vulnerabilities.
+// @Description  List customer IDs visible to the currently logged-in user.
 // @Tags         lightwell_vulnerabilities
 // @Accept       json
 // @Produce      json
@@ -43,7 +43,12 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/beacon/vulnerabilities/customers/ [get]
 func (h *LightwellVulnerabilityHandler) listCustomerIds(c echo.Context) error {
-	ids, err := h.DaoRegistry.LightwellVulnerability.ListCustomerIds(c.Request().Context())
+	username := getUser(c)
+	if username == "" {
+		return c.JSON(http.StatusOK, api.LightwellCustomerIdsResponse{Data: []string{}})
+	}
+
+	ids, err := h.DaoRegistry.LightwellCustomerStaml.ListCustomerIds(c.Request().Context(), username)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing lightwell customer ids", err.Error())
 	}
@@ -72,6 +77,14 @@ func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) er
 		return ce.NewErrorResponse(http.StatusBadRequest, "Missing customer_id", "customer_id is required")
 	}
 
+	ok, err := h.canSeeCustomer(c, customerID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing lightwell support ticket ids", err.Error())
+	}
+	if !ok {
+		return c.JSON(http.StatusOK, api.LightwellLtwlsuptTicketIdsResponse{Data: []string{}})
+	}
+
 	ids, err := h.DaoRegistry.LightwellVulnerability.ListLtwlsuptTicketIds(c.Request().Context(), customerID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing lightwell support ticket ids", err.Error())
@@ -85,7 +98,7 @@ func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) er
 // ListLightwellVulnerabilities godoc
 // @Summary      List Lightwell vulnerabilities
 // @ID           listLightwellVulnerabilities
-// @Description  List Lightwell vulnerabilities for a customer, with filters, pagination, and aggregate counts.
+// @Description  List Lightwell vulnerabilities for a customer the currently logged-in user can access, with filters, pagination, and aggregate counts. Returns an empty list if the user cannot access the customer.
 // @Tags         lightwell_vulnerabilities
 // @Accept       json
 // @Produce      json
@@ -107,6 +120,14 @@ func (h *LightwellVulnerabilityHandler) listVulnerabilities(c echo.Context) erro
 	opts, err := parseLightwellVulnerabilityListOptions(c)
 	if err != nil {
 		return err
+	}
+
+	ok, err := h.canSeeCustomer(c, opts.CustomerID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing lightwell vulnerabilities", err.Error())
+	}
+	if !ok {
+		return c.JSON(http.StatusOK, emptyLightwellVulnerabilityCollection(c))
 	}
 
 	rows, aggregates, stageCounts, total, err := h.DaoRegistry.LightwellVulnerability.List(c.Request().Context(), opts)
@@ -191,6 +212,24 @@ func splitCSVQueryParam(c echo.Context, name string) []string {
 		return nil
 	}
 	return values
+}
+
+func (h *LightwellVulnerabilityHandler) canSeeCustomer(c echo.Context, customerID string) (bool, error) {
+	username := getUser(c)
+	if username == "" {
+		return false, nil
+	}
+	return h.DaoRegistry.LightwellCustomerStaml.HasAccess(c.Request().Context(), customerID, username)
+}
+
+func emptyLightwellVulnerabilityCollection(c echo.Context) api.CollectionMetadataSettable {
+	resp := api.LightwellVulnerabilityCollectionResponse{
+		Data: []api.LightwellVulnerabilityResponse{},
+		Meta: api.LightwellVulnerabilityCollectionMeta{
+			StageCounts: map[string]int64{},
+		},
+	}
+	return setCollectionResponseMetadata(&resp, c, 0)
 }
 
 func stageCountsToMap(rows []dao.LightwellVulnerabilityStageCount) map[string]int64 {

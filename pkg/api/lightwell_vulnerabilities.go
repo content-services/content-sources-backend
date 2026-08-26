@@ -55,7 +55,7 @@ func (r *LightwellVulnerabilityCollectionResponse) SetMetadata(meta ResponseMeta
 	r.Links = links
 }
 
-// LightwellCustomerIdsResponse is the list of customer IDs that have vulnerabilities.
+// LightwellCustomerIdsResponse is the list of customer IDs visible to the current user.
 type LightwellCustomerIdsResponse struct {
 	Data []string `json:"data"` // Customer IDs
 }

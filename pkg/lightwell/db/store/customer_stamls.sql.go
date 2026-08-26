@@ -27,6 +27,26 @@ func (q *Queries) CreateCustomerStaml(ctx context.Context, arg CreateCustomerSta
 	return i, err
 }
 
+const customerStamlExists = `-- name: CustomerStamlExists :one
+SELECT EXISTS(
+    SELECT 1
+    FROM lightwell_customer_stamls
+    WHERE customer_id = $1 AND staml = $2
+)
+`
+
+type CustomerStamlExistsParams struct {
+	CustomerID string `json:"customer_id"`
+	Staml      string `json:"staml"`
+}
+
+func (q *Queries) CustomerStamlExists(ctx context.Context, arg CustomerStamlExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, customerStamlExists, arg.CustomerID, arg.Staml)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const deleteCustomerStaml = `-- name: DeleteCustomerStaml :execrows
 DELETE FROM lightwell_customer_stamls
 WHERE customer_id = $1 AND staml = $2
@@ -43,4 +63,31 @@ func (q *Queries) DeleteCustomerStaml(ctx context.Context, arg DeleteCustomerSta
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const listCustomerIdsByStaml = `-- name: ListCustomerIdsByStaml :many
+SELECT DISTINCT customer_id
+FROM lightwell_customer_stamls
+WHERE staml = $1
+ORDER BY customer_id
+`
+
+func (q *Queries) ListCustomerIdsByStaml(ctx context.Context, staml string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCustomerIdsByStaml, staml)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var customer_id string
+		if err := rows.Scan(&customer_id); err != nil {
+			return nil, err
+		}
+		items = append(items, customer_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -75,7 +75,7 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List distinct customer IDs that have Lightwell vulnerabilities.
+     * List customer IDs visible to the currently logged-in user.
      * List Lightwell customer IDs
      */
     async listLightwellCustomerIdsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiLightwellCustomerIdsResponse>> {
@@ -86,7 +86,7 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List distinct customer IDs that have Lightwell vulnerabilities.
+     * List customer IDs visible to the currently logged-in user.
      * List Lightwell customer IDs
      */
     async listLightwellCustomerIds(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiLightwellCustomerIdsResponse> {
@@ -207,7 +207,7 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Lightwell vulnerabilities for a customer, with filters, pagination, and aggregate counts.
+     * List Lightwell vulnerabilities for a customer the currently logged-in user can access, with filters, pagination, and aggregate counts. Returns an empty list if the user cannot access the customer.
      * List Lightwell vulnerabilities
      */
     async listLightwellVulnerabilitiesRaw(requestParameters: ListLightwellVulnerabilitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiLightwellVulnerabilityCollectionResponse>> {
@@ -218,7 +218,7 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Lightwell vulnerabilities for a customer, with filters, pagination, and aggregate counts.
+     * List Lightwell vulnerabilities for a customer the currently logged-in user can access, with filters, pagination, and aggregate counts. Returns an empty list if the user cannot access the customer.
      * List Lightwell vulnerabilities
      */
     async listLightwellVulnerabilities(requestParameters: ListLightwellVulnerabilitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiLightwellVulnerabilityCollectionResponse> {

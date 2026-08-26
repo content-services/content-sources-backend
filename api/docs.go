@@ -284,7 +284,7 @@ const docTemplate = `{
         },
         "/lightwell/beacon/vulnerabilities/": {
             "get": {
-                "description": "List Lightwell vulnerabilities for a customer, with filters, pagination, and aggregate counts.",
+                "description": "List Lightwell vulnerabilities for a customer the currently logged-in user can access, with filters, pagination, and aggregate counts. Returns an empty list if the user cannot access the customer.",
                 "consumes": [
                     "application/json"
                 ],
@@ -383,7 +383,7 @@ const docTemplate = `{
         },
         "/lightwell/beacon/vulnerabilities/customers/": {
             "get": {
-                "description": "List distinct customer IDs that have Lightwell vulnerabilities.",
+                "description": "List customer IDs visible to the currently logged-in user.",
                 "consumes": [
                     "application/json"
                 ],

@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -55,6 +56,7 @@ func (suite *LightwellVulnerabilitiesSuite) serveRouterWithAccess(req *http.Requ
 
 	if authorized {
 		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{test_handler.MockAccountNumber}
+		suite.reg.LightwellCustomerStaml.On("HasAccess", test.MockCtx(), mock.AnythingOfType("string"), "user").Return(true, nil).Maybe()
 	} else {
 		config.Get().Features.LightwellBeaconAndLens.Accounts = &[]string{seeds.RandomAccountId()}
 	}
@@ -78,7 +80,7 @@ func (suite *LightwellVulnerabilitiesSuite) newGet(path string) *http.Request {
 
 func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIds() {
 	expected := []string{"demo-customer-1", "demo-customer-2"}
-	suite.reg.LightwellVulnerability.On("ListCustomerIds", test.MockCtx()).Return(expected, nil)
+	suite.reg.LightwellCustomerStaml.On("ListCustomerIds", test.MockCtx(), "user").Return(expected, nil)
 
 	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/customers/", api.FullRootPath())
 	code, body, err := suite.serveRouter(suite.newGet(path))
@@ -429,6 +431,42 @@ func (suite *LightwellVulnerabilitiesSuite) TestListPaginationForwarded() {
 	assert.Equal(suite.T(), http.StatusOK, code)
 }
 
+func (suite *LightwellVulnerabilitiesSuite) TestListUnauthorizedCustomer() {
+	suite.reg.LightwellCustomerStaml.On("HasAccess", test.MockCtx(), "secret-customer", "user").Return(false, nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=secret-customer", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellVulnerabilityCollectionResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	assert.Empty(suite.T(), resp.Data)
+	assert.Equal(suite.T(), int64(0), resp.Meta.Count)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListHasAccessDaoError() {
+	suite.reg.LightwellCustomerStaml.On("HasAccess", test.MockCtx(), "demo-customer-1", "user").Return(false, &ce.DaoError{Message: "db down"})
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1", api.FullRootPath())
+	code, _, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusInternalServerError, code)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsUnauthorizedCustomer() {
+	suite.reg.LightwellCustomerStaml.On("HasAccess", test.MockCtx(), "secret-customer", "user").Return(false, nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/?customer_id=secret-customer", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellLtwlsuptTicketIdsResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	assert.Empty(suite.T(), resp.Data)
+}
+
 func (suite *LightwellVulnerabilitiesSuite) TestListDaoError() {
 	opts := dao.ListLightwellVulnerabilitiesOptions{
 		CustomerID: "demo-customer-1",
@@ -450,7 +488,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListDaoError() {
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsDaoError() {
-	suite.reg.LightwellVulnerability.On("ListCustomerIds", test.MockCtx()).Return(nil, &ce.DaoError{Message: "db down"})
+	suite.reg.LightwellCustomerStaml.On("ListCustomerIds", test.MockCtx(), "user").Return(nil, &ce.DaoError{Message: "db down"})
 
 	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/customers/", api.FullRootPath())
 	code, _, err := suite.serveRouter(suite.newGet(path))

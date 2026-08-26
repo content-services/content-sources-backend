@@ -723,39 +723,40 @@ func TestStore_Pagination(t *testing.T) {
 	assert.Equal(t, []string{"LWL-PAGE-A"}, vulnIDs(secondPage))
 }
 
-func TestStore_ListCustomerIds(t *testing.T) {
+func TestStore_ListCustomerIdsByStaml(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)
 
-	customerA := fmt.Sprintf("lw-list-a-%d", time.Now().UnixNano())
-	customerB := fmt.Sprintf("lw-list-b-%d", time.Now().UnixNano())
-	insertTestVulnerabilities(t, ctx, tx, []testVulnSpec{
-		{
-			vulnID:      "LWL-LIST-1",
-			severity:    "Moderate",
-			stage:       "Submitted",
-			language:    "java",
-			complexity:  "Standard",
-			ticketID:    "ticket-1",
-			daysAgo:     1,
-			customerIDs: []string{customerA},
-		},
-		{
-			vulnID:      "LWL-LIST-2",
-			severity:    "Moderate",
-			stage:       "Submitted",
-			language:    "python",
-			complexity:  "Standard",
-			ticketID:    "ticket-1",
-			daysAgo:     1,
-			customerIDs: []string{customerB},
-		},
-	})
+	n := time.Now().UnixNano()
+	cidA := fmt.Sprintf("cid-a-%d", n)
+	cidB := fmt.Sprintf("cid-b-%d", n)
+	cidC := fmt.Sprintf("cid-c-%d", n)
+	stamlUser := fmt.Sprintf("staml-user-%d", n)
+	stamlOther := fmt.Sprintf("staml-other-%d", n)
 
-	ids, err := q.ListCustomerIds(ctx)
+	_, err := tx.Exec(ctx, `
+		INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES
+			($1, $2),
+			($3, $2),
+			($4, $5)
+	`, cidA, stamlUser, cidB, cidC, stamlOther)
 	require.NoError(t, err)
-	assert.Contains(t, ids, customerA)
-	assert.Contains(t, ids, customerB)
+
+	ids, err := q.ListCustomerIdsByStaml(ctx, stamlUser)
+	require.NoError(t, err)
+	assert.Equal(t, []string{cidA, cidB}, ids)
+
+	ids, err = q.ListCustomerIdsByStaml(ctx, "nobody")
+	require.NoError(t, err)
+	assert.Empty(t, ids)
+
+	ok, err := q.CustomerStamlExists(ctx, store.CustomerStamlExistsParams{CustomerID: cidA, Staml: stamlUser})
+	require.NoError(t, err)
+	assert.True(t, ok)
+
+	ok, err = q.CustomerStamlExists(ctx, store.CustomerStamlExistsParams{CustomerID: cidC, Staml: stamlUser})
+	require.NoError(t, err)
+	assert.False(t, ok)
 }
 
 func TestStore_ListLtwlsuptTicketIds(t *testing.T) {

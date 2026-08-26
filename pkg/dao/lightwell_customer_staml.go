@@ -20,6 +20,28 @@ func newLightwellCustomerStamlDao(q store.Querier) LightwellCustomerStamlDao {
 	return lightwellCustomerStamlDaoImpl{querier: q}
 }
 
+func (d lightwellCustomerStamlDaoImpl) ListCustomerIds(ctx context.Context, staml string) ([]string, error) {
+	ids, err := d.querier.ListCustomerIdsByStaml(ctx, staml)
+	if err != nil {
+		return nil, customerStamlDBError(err)
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
+}
+
+func (d lightwellCustomerStamlDaoImpl) HasAccess(ctx context.Context, customerID, staml string) (bool, error) {
+	ok, err := d.querier.CustomerStamlExists(ctx, store.CustomerStamlExistsParams{
+		CustomerID: customerID,
+		Staml:      staml,
+	})
+	if err != nil {
+		return false, customerStamlDBError(err)
+	}
+	return ok, nil
+}
+
 func (d lightwellCustomerStamlDaoImpl) Create(ctx context.Context, customerID, staml string) (api.LightwellCustomerStamlResponse, error) {
 	row, err := d.querier.CreateCustomerStaml(ctx, store.CreateCustomerStamlParams{
 		CustomerID: customerID,

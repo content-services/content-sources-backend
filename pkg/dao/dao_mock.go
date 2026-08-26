@@ -10711,3 +10711,143 @@ func (_c *MockLightwellCustomerStamlDao_Delete_Call) RunAndReturn(run func(ctx c
 	_c.Call.Return(run)
 	return _c
 }
+
+// HasAccess provides a mock function for the type MockLightwellCustomerStamlDao
+func (_mock *MockLightwellCustomerStamlDao) HasAccess(ctx context.Context, customerID string, staml string) (bool, error) {
+	ret := _mock.Called(ctx, customerID, staml)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasAccess")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (bool, error)); ok {
+		return returnFunc(ctx, customerID, staml)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
+		r0 = returnFunc(ctx, customerID, staml)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, customerID, staml)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellCustomerStamlDao_HasAccess_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasAccess'
+type MockLightwellCustomerStamlDao_HasAccess_Call struct {
+	*mock.Call
+}
+
+// HasAccess is a helper method to define mock.On call
+//   - ctx context.Context
+//   - customerID string
+//   - staml string
+func (_e *MockLightwellCustomerStamlDao_Expecter) HasAccess(ctx interface{}, customerID interface{}, staml interface{}) *MockLightwellCustomerStamlDao_HasAccess_Call {
+	return &MockLightwellCustomerStamlDao_HasAccess_Call{Call: _e.mock.On("HasAccess", ctx, customerID, staml)}
+}
+
+func (_c *MockLightwellCustomerStamlDao_HasAccess_Call) Run(run func(ctx context.Context, customerID string, staml string)) *MockLightwellCustomerStamlDao_HasAccess_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellCustomerStamlDao_HasAccess_Call) Return(b bool, err error) *MockLightwellCustomerStamlDao_HasAccess_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockLightwellCustomerStamlDao_HasAccess_Call) RunAndReturn(run func(ctx context.Context, customerID string, staml string) (bool, error)) *MockLightwellCustomerStamlDao_HasAccess_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListCustomerIds provides a mock function for the type MockLightwellCustomerStamlDao
+func (_mock *MockLightwellCustomerStamlDao) ListCustomerIds(ctx context.Context, staml string) ([]string, error) {
+	ret := _mock.Called(ctx, staml)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListCustomerIds")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+		return returnFunc(ctx, staml)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []string); ok {
+		r0 = returnFunc(ctx, staml)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, staml)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellCustomerStamlDao_ListCustomerIds_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListCustomerIds'
+type MockLightwellCustomerStamlDao_ListCustomerIds_Call struct {
+	*mock.Call
+}
+
+// ListCustomerIds is a helper method to define mock.On call
+//   - ctx context.Context
+//   - staml string
+func (_e *MockLightwellCustomerStamlDao_Expecter) ListCustomerIds(ctx interface{}, staml interface{}) *MockLightwellCustomerStamlDao_ListCustomerIds_Call {
+	return &MockLightwellCustomerStamlDao_ListCustomerIds_Call{Call: _e.mock.On("ListCustomerIds", ctx, staml)}
+}
+
+func (_c *MockLightwellCustomerStamlDao_ListCustomerIds_Call) Run(run func(ctx context.Context, staml string)) *MockLightwellCustomerStamlDao_ListCustomerIds_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellCustomerStamlDao_ListCustomerIds_Call) Return(strings []string, err error) *MockLightwellCustomerStamlDao_ListCustomerIds_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *MockLightwellCustomerStamlDao_ListCustomerIds_Call) RunAndReturn(run func(ctx context.Context, staml string) ([]string, error)) *MockLightwellCustomerStamlDao_ListCustomerIds_Call {
+	_c.Call.Return(run)
+	return _c
+}

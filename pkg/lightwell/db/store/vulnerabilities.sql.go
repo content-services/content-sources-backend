@@ -129,32 +129,6 @@ func (q *Queries) CountByStage(ctx context.Context, arg CountByStageParams) ([]C
 	return items, nil
 }
 
-const listCustomerIds = `-- name: ListCustomerIds :many
-SELECT DISTINCT customer_id
-FROM lightwell_vulnerability_customers
-ORDER BY customer_id
-`
-
-func (q *Queries) ListCustomerIds(ctx context.Context) ([]string, error) {
-	rows, err := q.db.Query(ctx, listCustomerIds)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []string{}
-	for rows.Next() {
-		var customer_id string
-		if err := rows.Scan(&customer_id); err != nil {
-			return nil, err
-		}
-		items = append(items, customer_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listLtwlsuptTicketIds = `-- name: ListLtwlsuptTicketIds :many
 SELECT DISTINCT ticket_id
 FROM lightwell_vulnerability_support_tickets
