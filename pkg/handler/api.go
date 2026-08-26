@@ -78,10 +78,9 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	} else {
 		s3Client, err = s3_client.NewS3Client(config.Get().Clients.Lightwell.S3.CoverageUploads)
 		if err != nil {
-			panic(err)
+			log.Warn().Err(err).Msg("failed to create s3 client")
 		}
 	}
-
 	ch := cache.Initialize()
 
 	for i := 0; i < len(paths); i++ {
@@ -109,8 +108,8 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
 		RegisterCoverageReportRoutes(group, daoReg, s3Client)
+		RegisterLightwellAdvisoryRoutes(group, daoReg)
 
-		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
 		if config.Tang == nil {
 			err = config.ConfigureTang()
@@ -120,6 +119,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		}
 		if config.Tang != nil {
 			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
+			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient)
 		}
 	}
 
