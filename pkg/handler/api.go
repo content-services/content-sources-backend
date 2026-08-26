@@ -78,7 +78,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	} else {
 		s3Client, err = s3_client.NewS3Client(config.Get().Clients.Lightwell.S3.CoverageUploads)
 		if err != nil {
-			log.Warn().Err(err).Msg("failed to create s3 client")
+			panic(err)
 		}
 	}
 	ch := cache.Initialize()
