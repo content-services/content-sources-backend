@@ -22,7 +22,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const maxCoverageUploadSizeBytes = 500 * 1024 * 1024 // 500 MiB
+const maxCoverageUploadSizeBytes = 15 * 1024 * 1024 // 15 MiB
 
 type CoverageReportHandler struct {
 	DaoRegistry dao.DaoRegistry
