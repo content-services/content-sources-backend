@@ -17,20 +17,75 @@ type Remediation struct {
 	CVEsFixed   []string
 }
 
-var rhlwSuffix = regexp.MustCompile(`\.rhlw-\d+$`)
+var rhlwSuffix = regexp.MustCompile(`\.rhlw[-.]\d+$`)
 
 func stripRHLWSuffix(version string) string {
 	return rhlwSuffix.ReplaceAllString(version, "")
 }
 
-// ParseRemediations accepts both the full NotificationAction envelope and
-// the simplified format. Returns one Remediation per (group, artifact, version).
+// ParseRemediations accepts three formats: CloudEvents envelope (from the
+// dedicated bridge topic), NotificationAction envelope (legacy), and the
+// simplified format (simulate endpoint). Returns one Remediation per
+// (group, artifact, version).
 func ParseRemediations(data []byte) ([]Remediation, error) {
-	remediations, err := parseFullEnvelope(data)
-	if err == nil && len(remediations) > 0 {
+	if remediations, err := parseCloudEvent(data); err == nil && len(remediations) > 0 {
+		return remediations, nil
+	}
+	if remediations, err := parseFullEnvelope(data); err == nil && len(remediations) > 0 {
 		return remediations, nil
 	}
 	return parseSimplified(data)
+}
+
+// cloudEvent mirrors the CloudEvents v1.0 structure used on the dedicated
+// bridge topic (platform.lightwell.advisory_created).
+type cloudEvent struct {
+	SpecVersion string `json:"specversion"`
+	Type        string `json:"type"`
+	Data        []struct {
+		Payload json.RawMessage `json:"payload"`
+	} `json:"data"`
+}
+
+func parseCloudEvent(data []byte) ([]Remediation, error) {
+	var ce cloudEvent
+	if err := json.Unmarshal(data, &ce); err != nil {
+		return nil, err
+	}
+	if ce.SpecVersion == "" || len(ce.Data) == 0 {
+		return nil, fmt.Errorf("not a CloudEvents message")
+	}
+
+	var result []Remediation
+	for _, entry := range ce.Data {
+		var p payloadFull
+		if err := json.Unmarshal(entry.Payload, &p); err != nil {
+			continue
+		}
+		group, artifact, err := splitPackageName(p.PackageName)
+		if err != nil {
+			continue
+		}
+		for _, rel := range p.Releases {
+			cves := make([]string, 0, len(rel.RelatedCVE))
+			for _, c := range rel.RelatedCVE {
+				cves = append(cves, c.CVE)
+			}
+			for _, rn := range rel.ReleaseNames {
+				result = append(result, Remediation{
+					GroupID:     group,
+					ArtifactID: artifact,
+					Version:    rn.Name,
+					BaseVersion: stripRHLWSuffix(rn.Name),
+					CVEsFixed:  cves,
+				})
+			}
+		}
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("no remediations in CloudEvents message")
+	}
+	return result, nil
 }
 
 // fullEnvelope mirrors the NotificationAction structure from pkg/event.

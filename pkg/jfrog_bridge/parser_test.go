@@ -83,6 +83,27 @@ func TestParseRemediations_MissingPackageName(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestParseRemediations_CloudEvent(t *testing.T) {
+	msg := `{"specversion":"1.0","id":"82cb1ea3","source":"urn:redhat:source:console:app:lightwell","type":"com.redhat.console.lightwelll.lightwell-advisory-created","datacontenttype":"application/json","time":"2026-08-26T18:47:26Z","data":[{"metadata":{},"payload":{"package_name":"org.glassfish.jaxb:jaxb-core","releases":[{"related_cve":[{"cve":"CVE-2026-1111","severity":"important"},{"cve":"CVE-2026-2222","severity":"important"}],"release_names":[{"name":"4.0.4.rhlw.003"},{"name":"4.0.4.rhlw.004"}]}]}},{"metadata":{},"payload":{"package_name":"org.glassfish.jaxb:jaxb-jxc","releases":[{"related_cve":[{"cve":"CVE-2026-2222","severity":"important"}],"release_names":[{"name":"4.0.4.rhlw.003"}]}]}}]}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 3)
+
+	assert.Equal(t, "org.glassfish.jaxb", rems[0].GroupID)
+	assert.Equal(t, "jaxb-core", rems[0].ArtifactID)
+	assert.Equal(t, "4.0.4.rhlw.003", rems[0].Version)
+	assert.Equal(t, "4.0.4", rems[0].BaseVersion)
+	assert.Equal(t, []string{"CVE-2026-1111", "CVE-2026-2222"}, rems[0].CVEsFixed)
+
+	assert.Equal(t, "4.0.4.rhlw.004", rems[1].Version)
+	assert.Equal(t, "4.0.4", rems[1].BaseVersion)
+
+	assert.Equal(t, "jaxb-jxc", rems[2].ArtifactID)
+	assert.Equal(t, "4.0.4.rhlw.003", rems[2].Version)
+	assert.Equal(t, []string{"CVE-2026-2222"}, rems[2].CVEsFixed)
+}
+
 func TestStripRHLWSuffix(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -91,6 +112,8 @@ func TestStripRHLWSuffix(t *testing.T) {
 		{"5.3.18.rhlw-00003", "5.3.18"},
 		{"5.3.18.rhlw-00004", "5.3.18"},
 		{"2.8.0.rhlw-00001", "2.8.0"},
+		{"4.0.4.rhlw.003", "4.0.4"},
+		{"4.0.4.rhlw.004", "4.0.4"},
 		{"5.3.18", "5.3.18"},
 		{"1.0.0", "1.0.0"},
 	}
