@@ -1311,6 +1311,11 @@
                         "readOnly": true,
                         "type": "string"
                     },
+                    "advisories_count": {
+                        "description": "Lightwell: total security advisories",
+                        "readOnly": true,
+                        "type": "integer"
+                    },
                     "build_count": {
                         "description": "Number of builds last read in the repository, not applicable to all repositories",
                         "type": "integer"
@@ -1450,11 +1455,6 @@
                         "description": "Published distribution URL from Pulp",
                         "readOnly": true,
                         "type": "string"
-                    },
-                    "remediations_count": {
-                        "description": "Lightwell: total security advisories",
-                        "readOnly": true,
-                        "type": "integer"
                     },
                     "security_level": {
                         "description": "Security level of the repository (e.g. validated, remediated)",
@@ -1656,6 +1656,11 @@
                         "readOnly": true,
                         "type": "string"
                     },
+                    "advisories_count": {
+                        "description": "Lightwell: total security advisories",
+                        "readOnly": true,
+                        "type": "integer"
+                    },
                     "build_count": {
                         "description": "Number of builds last read in the repository, not applicable to all repositories",
                         "type": "integer"
@@ -1795,11 +1800,6 @@
                         "description": "Published distribution URL from Pulp",
                         "readOnly": true,
                         "type": "string"
-                    },
-                    "remediations_count": {
-                        "description": "Lightwell: total security advisories",
-                        "readOnly": true,
-                        "type": "integer"
                     },
                     "security_level": {
                         "description": "Security level of the repository (e.g. validated, remediated)",
@@ -3354,9 +3354,9 @@
                 "operationId": "listLightwellAdvisories",
                 "parameters": [
                     {
-                        "description": "Filter by repository UUID",
+                        "description": "Filter by repository name",
                         "in": "query",
-                        "name": "repository_uuid",
+                        "name": "repository",
                         "schema": {
                             "type": "string"
                         }

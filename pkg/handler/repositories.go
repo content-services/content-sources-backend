@@ -153,7 +153,7 @@ func (rh *RepositoryHandler) enrichLightwellRepoCounts(c echo.Context, repos *ap
 			continue
 		}
 		remCount := int(count)
-		repo.RemediationsCount = &remCount
+		repo.AdvisoriesCount = &remCount
 	}
 }
 

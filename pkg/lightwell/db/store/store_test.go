@@ -759,6 +759,58 @@ func TestStore_ListCustomerIds(t *testing.T) {
 	assert.Contains(t, ids, customerB)
 }
 
+func TestStore_ListLtwlsuptTicketIds(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	customerA := fmt.Sprintf("lw-tickets-a-%d", time.Now().UnixNano())
+	customerB := fmt.Sprintf("lw-tickets-b-%d", time.Now().UnixNano())
+	insertTestVulnerabilities(t, ctx, tx, []testVulnSpec{
+		{
+			vulnID:      "LWL-TICKETS-1",
+			severity:    "Moderate",
+			stage:       "Submitted",
+			language:    "java",
+			complexity:  "Standard",
+			ticketIDs:   []string{"ticket-c", "ticket-a"},
+			daysAgo:     1,
+			customerIDs: []string{customerA},
+		},
+		{
+			vulnID:      "LWL-TICKETS-2",
+			severity:    "Low",
+			stage:       "Submitted",
+			language:    "java",
+			complexity:  "Standard",
+			ticketID:    "ticket-a",
+			daysAgo:     1,
+			customerIDs: []string{customerA},
+		},
+		{
+			vulnID:      "LWL-TICKETS-3",
+			severity:    "Low",
+			stage:       "Submitted",
+			language:    "python",
+			complexity:  "Standard",
+			ticketID:    "ticket-b",
+			daysAgo:     1,
+			customerIDs: []string{customerB},
+		},
+	})
+
+	ids, err := q.ListLtwlsuptTicketIds(ctx, customerA)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ticket-a", "ticket-c"}, ids)
+
+	ids, err = q.ListLtwlsuptTicketIds(ctx, customerB)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"ticket-b"}, ids)
+
+	ids, err = q.ListLtwlsuptTicketIds(ctx, "no-such-customer")
+	require.NoError(t, err)
+	assert.Empty(t, ids)
+}
+
 // --- Advisory query integration tests ---
 
 func insertTestAdvisories(t *testing.T, ctx context.Context, tx pgx.Tx) uuid.UUID {
@@ -813,16 +865,16 @@ func TestStore_ListAdvisories(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)
 
-	insertTestAdvisories(t, ctx, tx)
+	repoConfigUUID := insertTestAdvisories(t, ctx, tx)
 
 	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
-		PageLimit:  100,
-		PageOffset: 0,
+		RepositoryConfigUuid: pgtype.UUID{Bytes: repoConfigUUID, Valid: true},
+		PageLimit:            100,
+		PageOffset:           0,
 	})
 	require.NoError(t, err)
 	assert.Len(t, rows, 4)
 	assert.Equal(t, int64(4), rows[0].TotalCount)
-	// Ordered by severity_order DESC
 	assert.Equal(t, int16(4), rows[0].SeverityOrder)
 }
 
@@ -849,12 +901,13 @@ func TestStore_ListAdvisoriesFilterBySeverityMin(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)
 
-	insertTestAdvisories(t, ctx, tx)
+	repoConfigUUID := insertTestAdvisories(t, ctx, tx)
 
 	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
-		SeverityMin: pgtype.Int2{Int16: 3, Valid: true},
-		PageLimit:   100,
-		PageOffset:  0,
+		RepositoryConfigUuid: pgtype.UUID{Bytes: repoConfigUUID, Valid: true},
+		SeverityMin:          pgtype.Int2{Int16: 3, Valid: true},
+		PageLimit:            100,
+		PageOffset:           0,
 	})
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)

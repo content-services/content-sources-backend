@@ -299,8 +299,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by repository UUID",
-                        "name": "repository_uuid",
+                        "description": "Filter by repository name",
+                        "name": "repository",
                         "in": "query"
                     },
                     {
@@ -6312,6 +6312,11 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
+                "advisories_count": {
+                    "description": "Lightwell: total security advisories",
+                    "type": "integer",
+                    "readOnly": true
+                },
                 "build_count": {
                     "description": "Number of builds last read in the repository, not applicable to all repositories",
                     "type": "integer"
@@ -6450,11 +6455,6 @@ const docTemplate = `{
                 "published_distribution_url": {
                     "description": "Published distribution URL from Pulp",
                     "type": "string",
-                    "readOnly": true
-                },
-                "remediations_count": {
-                    "description": "Lightwell: total security advisories",
-                    "type": "integer",
                     "readOnly": true
                 },
                 "security_level": {
@@ -6657,6 +6657,11 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
+                "advisories_count": {
+                    "description": "Lightwell: total security advisories",
+                    "type": "integer",
+                    "readOnly": true
+                },
                 "build_count": {
                     "description": "Number of builds last read in the repository, not applicable to all repositories",
                     "type": "integer"
@@ -6795,11 +6800,6 @@ const docTemplate = `{
                 "published_distribution_url": {
                     "description": "Published distribution URL from Pulp",
                     "type": "string",
-                    "readOnly": true
-                },
-                "remediations_count": {
-                    "description": "Lightwell: total security advisories",
-                    "type": "integer",
                     "readOnly": true
                 },
                 "security_level": {

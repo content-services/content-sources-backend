@@ -27,7 +27,7 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
-// @Param        repository_uuid  query  string  false  "Filter by repository UUID"
+// @Param        repository       query  string  false  "Filter by repository name"
 // @Param        package_name     query  string  false  "Filter by package name (substring match)"
 // @Param        severity_min     query  string  false  "Minimum severity level (low, moderate, important, critical)"
 // @Param        cve_id           query  string  false  "Filter by CVE ID (exact match)"

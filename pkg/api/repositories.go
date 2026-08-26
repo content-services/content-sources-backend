@@ -47,7 +47,7 @@ type RepositoryResponse struct {
 	PublishedDistBasePath        string            `json:"-"`                                                    // Published dist base path from Pulp
 	PackagesCount                *int              `json:"packages_count,omitempty" readonly:"true"`             // Lightwell: total distinct packages
 	VersionsCount                *int              `json:"versions_count,omitempty" readonly:"true"`             // Lightwell: total distinct versions
-	RemediationsCount            *int              `json:"remediations_count,omitempty" readonly:"true"`         // Lightwell: total security advisories
+	AdvisoriesCount              *int              `json:"advisories_count,omitempty" readonly:"true"`           // Lightwell: total security advisories
 }
 
 // RepositoryRequest holds data received from request to create repository
