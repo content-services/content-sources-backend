@@ -18,10 +18,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -75,21 +73,12 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	}
 	ch := cache.Initialize()
 
-	pgxPool, err := pgxpool.New(ctx, db.GetUrl())
-	if err != nil {
-		log.Warn().Err(err).Msg("failed to create pgx pool for lightwell store; advisory endpoints disabled")
-	}
-	var lightwellQuerier store.Querier
-	if pgxPool != nil {
-		lightwellQuerier = store.New(pgxPool)
-	}
-
 	for i := 0; i < len(paths); i++ {
 		group := engine.Group(paths[i])
 		group.GET("/openapi.json", openapi)
 
 		daoReg := dao.GetDaoRegistry(db.DB)
-		RegisterRepositoryRoutes(group, daoReg, &taskClient, &fsClient, lightwellQuerier)
+		RegisterRepositoryRoutes(group, daoReg, &taskClient, &fsClient)
 		RegisterRepositoryParameterRoutes(group, daoReg, &fsClient)
 		RegisterRpmRoutes(group, daoReg)
 		RegisterPopularRepositoriesRoutes(group, daoReg)
@@ -109,12 +98,8 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
 		RegisterCoverageReportRoutes(group, daoReg)
+		RegisterLightwellAdvisoryRoutes(group, daoReg)
 
-		if lightwellQuerier != nil {
-			RegisterLightwellAdvisoryRoutes(group, lightwellQuerier)
-		}
-
-		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
 		if config.Tang == nil {
 			err = config.ConfigureTang()
@@ -124,9 +109,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		}
 		if config.Tang != nil {
 			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
-			if lightwellQuerier != nil {
-				RegisterLightwellPackageRoutes(group, lightwellQuerier, daoReg, *config.Tang, pulpClient)
-			}
+			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient)
 		}
 	}
 

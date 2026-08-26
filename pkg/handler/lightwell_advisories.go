@@ -4,22 +4,19 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 )
 
 type LightwellAdvisoryHandler struct {
-	Store store.Querier
+	DaoRegistry dao.DaoRegistry
 }
 
-func RegisterLightwellAdvisoryRoutes(engine *echo.Group, querier store.Querier) {
-	h := LightwellAdvisoryHandler{Store: querier}
-	// Flat cross-repo endpoint
+func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
+	h := LightwellAdvisoryHandler{DaoRegistry: *daoReg}
 	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.list, rbac.RbacVerbRead)
-	// Nested repo-scoped alias
 	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/advisories", h.listRepoAdvisories, rbac.RbacVerbRead)
 }
 
@@ -44,70 +41,29 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	page := ParsePagination(c)
 	filters := parseLightwellAdvisoryFilters(c)
 
-	severityMin, err := parseSeverityMin(filters.SeverityMin)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid severity_min", err.Error())
+	opts := dao.ListLightwellAdvisoriesOptions{
+		SeverityMin: filters.SeverityMin,
+		Limit:       int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
+		Offset:      int32(page.Offset), //nolint:gosec // bounded by ParsePagination
 	}
-
-	var repoName *string
 	if filters.Repository != "" {
-		repoName = &filters.Repository
+		opts.RepoName = &filters.Repository
 	}
-
-	var packageName *string
 	if filters.PackageName != "" {
-		packageName = &filters.PackageName
+		opts.PackageName = &filters.PackageName
 	}
-
-	var cveID *string
 	if filters.CveID != "" {
-		cveID = &filters.CveID
+		opts.CveID = &filters.CveID
 	}
 
-	rows, err := h.Store.ListAdvisories(c.Request().Context(), store.ListAdvisoriesParams{
-		RepoName:    repoName,
-		PackageName: packageName,
-		SeverityMin: severityMin,
-		CveID:       cveID,
-		PageOffset:  int32(page.Offset), //nolint:gosec // bounded by ParsePagination
-		PageLimit:   int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
-	})
+	data, totalCount, err := h.DaoRegistry.LightwellAdvisory.ListAdvisories(c.Request().Context(), opts)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing advisories", err.Error())
 	}
 
-	var totalCount int64
-	if len(rows) > 0 {
-		totalCount = rows[0].TotalCount
-	}
-
-	resp := mapAdvisoryRowsToResponse(rows)
+	resp := api.LightwellAdvisoryCollectionResponse{Data: data}
 	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
-}
-
-func mapAdvisoryRowsToResponse(rows []store.ListAdvisoriesRow) api.LightwellAdvisoryCollectionResponse {
-	data := make([]api.LightwellAdvisoryResponse, 0, len(rows))
-	for _, row := range rows {
-		refURLs := row.ReferenceUrls
-		if refURLs == nil {
-			refURLs = []string{}
-		}
-		fixedVersions := row.FixedVersions
-		if fixedVersions == nil {
-			fixedVersions = []string{}
-		}
-		data = append(data, api.LightwellAdvisoryResponse{
-			AdvisoryID:    row.AdvisoryID,
-			Severity:      row.Severity,
-			Details:       row.Details,
-			ReferenceURLs: refURLs,
-			PackageName:   row.PackageName,
-			FixedVersions: fixedVersions,
-			Repository:    row.RepoName,
-		})
-	}
-	return api.LightwellAdvisoryCollectionResponse{Data: data}
 }
 
 func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterData {
@@ -119,32 +75,6 @@ func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterDa
 		String("cve_id", &filters.CveID).
 		BindError()
 	return filters
-}
-
-var severityMap = map[string]int16{
-	"low":       1,
-	"moderate":  2,
-	"important": 3,
-	"critical":  4,
-}
-
-func parseSeverityMin(s string) (pgtype.Int2, error) {
-	if s == "" {
-		return pgtype.Int2{}, nil
-	}
-	val, ok := severityMap[s]
-	if !ok {
-		return pgtype.Int2{}, &invalidSeverityError{severity: s}
-	}
-	return pgtype.Int2{Int16: val, Valid: true}, nil
-}
-
-type invalidSeverityError struct {
-	severity string
-}
-
-func (e *invalidSeverityError) Error() string {
-	return "invalid severity: " + e.severity + " (must be one of: low, moderate, important, critical)"
 }
 
 func (h *LightwellAdvisoryHandler) listRepoAdvisories(c echo.Context) error {

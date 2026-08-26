@@ -14,7 +14,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
@@ -22,15 +21,13 @@ import (
 )
 
 type LightwellPackagesHandler struct {
-	Store       store.Querier
 	DaoRegistry dao.DaoRegistry
 	TangClient  tangy.Tangy
 	PulpClient  pulp_client.PulpClient
 }
 
-func RegisterLightwellPackageRoutes(engine *echo.Group, querier store.Querier, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient) {
+func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient) {
 	h := LightwellPackagesHandler{
-		Store:       querier,
 		DaoRegistry: *daoReg,
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
@@ -357,18 +354,18 @@ func (h *LightwellPackagesHandler) resolveRepositoryHref(ctx context.Context, re
 
 // filterVersionsByResolvingCve keeps only versions that fix the given CVE.
 func (h *LightwellPackagesHandler) filterVersionsByResolvingCve(ctx context.Context, items []api.LightwellPackageVersionResponse, cveID string) ([]api.LightwellPackageVersionResponse, error) {
-	advisories, err := h.Store.ListAdvisoriesByCveID(ctx, cveID)
+	matches, err := h.DaoRegistry.LightwellAdvisory.ListAdvisoriesByCveID(ctx, cveID)
 	if err != nil {
 		return nil, err
 	}
 
-	fixedSet := make(map[string]map[string]bool) // package_name -> set of fixed versions
-	for _, adv := range advisories {
-		if fixedSet[adv.PackageName] == nil {
-			fixedSet[adv.PackageName] = make(map[string]bool)
+	fixedSet := make(map[string]map[string]bool)
+	for _, m := range matches {
+		if fixedSet[m.PackageName] == nil {
+			fixedSet[m.PackageName] = make(map[string]bool)
 		}
-		for _, v := range adv.FixedVersions {
-			fixedSet[adv.PackageName][v] = true
+		for _, v := range m.FixedVersions {
+			fixedSet[m.PackageName][v] = true
 		}
 	}
 
@@ -384,20 +381,20 @@ func (h *LightwellPackagesHandler) filterVersionsByResolvingCve(ctx context.Cont
 // filterVersionsByVulnerableCve keeps only versions of packages affected by
 // the given CVE that are NOT in the fixed-versions list.
 func (h *LightwellPackagesHandler) filterVersionsByVulnerableCve(ctx context.Context, items []api.LightwellPackageVersionResponse, cveID string) ([]api.LightwellPackageVersionResponse, error) {
-	advisories, err := h.Store.ListAdvisoriesByCveID(ctx, cveID)
+	matches, err := h.DaoRegistry.LightwellAdvisory.ListAdvisoriesByCveID(ctx, cveID)
 	if err != nil {
 		return nil, err
 	}
 
 	affectedPackages := make(map[string]bool)
 	fixedSet := make(map[string]map[string]bool)
-	for _, adv := range advisories {
-		affectedPackages[adv.PackageName] = true
-		if fixedSet[adv.PackageName] == nil {
-			fixedSet[adv.PackageName] = make(map[string]bool)
+	for _, m := range matches {
+		affectedPackages[m.PackageName] = true
+		if fixedSet[m.PackageName] == nil {
+			fixedSet[m.PackageName] = make(map[string]bool)
 		}
-		for _, v := range adv.FixedVersions {
-			fixedSet[adv.PackageName][v] = true
+		for _, v := range m.FixedVersions {
+			fixedSet[m.PackageName][v] = true
 		}
 	}
 

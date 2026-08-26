@@ -12,7 +12,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
@@ -31,7 +30,6 @@ type LightwellPackagesSuite struct {
 	reg        *dao.MockDaoRegistry
 	tangClient *tangy.MockTangy
 	pulpClient *pulp_client.MockPulpClient
-	querier    *MockQuerier
 }
 
 func TestLightwellPackagesSuite(t *testing.T) {
@@ -42,7 +40,6 @@ func (s *LightwellPackagesSuite) SetupTest() {
 	s.reg = dao.GetMockDaoRegistry(s.T())
 	s.tangClient = tangy.NewMockTangy(s.T())
 	s.pulpClient = pulp_client.NewMockPulpClient(s.T())
-	s.querier = &MockQuerier{}
 }
 
 func (s *LightwellPackagesSuite) serveRouter(req *http.Request) (int, []byte, error) {
@@ -53,7 +50,7 @@ func (s *LightwellPackagesSuite) serveRouter(req *http.Request) (int, []byte, er
 	}))
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
-	RegisterLightwellPackageRoutes(pathPrefix, s.querier, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient)
+	RegisterLightwellPackageRoutes(pathPrefix, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -405,7 +402,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsResolvesCveFilter() {
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	s.querier.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-9999").Return([]store.ListAdvisoriesByCveIDRow{
+	s.reg.LightwellAdvisory.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-9999").Return([]dao.LightwellAdvisoryCveMatch{
 		{
 			PackageName:   "jackson-databind",
 			FixedVersions: []string{"2.15.3.rhlw-00001"},
@@ -444,7 +441,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() 
 
 	// Advisory says jackson-databind is fixed at 2.15.3.rhlw-00001, so
 	// the older version 2.14.2.rhlw-00001 should be returned as vulnerable.
-	s.querier.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-8888").Return([]store.ListAdvisoriesByCveIDRow{
+	s.reg.LightwellAdvisory.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-8888").Return([]dao.LightwellAdvisoryCveMatch{
 		{
 			PackageName:   "jackson-databind",
 			FixedVersions: []string{"2.15.3.rhlw-00001"},

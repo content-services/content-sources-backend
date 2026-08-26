@@ -74,7 +74,7 @@ type MockCache_GetAccessList_Call struct {
 
 // GetAccessList is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCache_Expecter) GetAccessList(ctx interface{}) *MockCache_GetAccessList_Call {
+func (_e *MockCache_Expecter) GetAccessList(ctx any) *MockCache_GetAccessList_Call {
 	return &MockCache_GetAccessList_Call{Call: _e.mock.On("GetAccessList", ctx)}
 }
 
@@ -138,7 +138,7 @@ type MockCache_GetContentCounts_Call struct {
 //   - ctx context.Context
 //   - domainName string
 //   - repoUUID string
-func (_e *MockCache_Expecter) GetContentCounts(ctx interface{}, domainName interface{}, repoUUID interface{}) *MockCache_GetContentCounts_Call {
+func (_e *MockCache_Expecter) GetContentCounts(ctx any, domainName any, repoUUID any) *MockCache_GetContentCounts_Call {
 	return &MockCache_GetContentCounts_Call{Call: _e.mock.On("GetContentCounts", ctx, domainName, repoUUID)}
 }
 
@@ -210,7 +210,7 @@ type MockCache_GetFeatureStatus_Call struct {
 
 // GetFeatureStatus is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCache_Expecter) GetFeatureStatus(ctx interface{}) *MockCache_GetFeatureStatus_Call {
+func (_e *MockCache_Expecter) GetFeatureStatus(ctx any) *MockCache_GetFeatureStatus_Call {
 	return &MockCache_GetFeatureStatus_Call{Call: _e.mock.On("GetFeatureStatus", ctx)}
 }
 
@@ -272,7 +272,7 @@ type MockCache_GetRoadmapAppstreams_Call struct {
 
 // GetRoadmapAppstreams is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCache_Expecter) GetRoadmapAppstreams(ctx interface{}) *MockCache_GetRoadmapAppstreams_Call {
+func (_e *MockCache_Expecter) GetRoadmapAppstreams(ctx any) *MockCache_GetRoadmapAppstreams_Call {
 	return &MockCache_GetRoadmapAppstreams_Call{Call: _e.mock.On("GetRoadmapAppstreams", ctx)}
 }
 
@@ -334,7 +334,7 @@ type MockCache_GetRoadmapRhelLifecycle_Call struct {
 
 // GetRoadmapRhelLifecycle is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCache_Expecter) GetRoadmapRhelLifecycle(ctx interface{}) *MockCache_GetRoadmapRhelLifecycle_Call {
+func (_e *MockCache_Expecter) GetRoadmapRhelLifecycle(ctx any) *MockCache_GetRoadmapRhelLifecycle_Call {
 	return &MockCache_GetRoadmapRhelLifecycle_Call{Call: _e.mock.On("GetRoadmapRhelLifecycle", ctx)}
 }
 
@@ -396,7 +396,7 @@ type MockCache_GetSubscriptionCheck_Call struct {
 
 // GetSubscriptionCheck is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCache_Expecter) GetSubscriptionCheck(ctx interface{}) *MockCache_GetSubscriptionCheck_Call {
+func (_e *MockCache_Expecter) GetSubscriptionCheck(ctx any) *MockCache_GetSubscriptionCheck_Call {
 	return &MockCache_GetSubscriptionCheck_Call{Call: _e.mock.On("GetSubscriptionCheck", ctx)}
 }
 
@@ -448,7 +448,7 @@ type MockCache_SetAccessList_Call struct {
 // SetAccessList is a helper method to define mock.On call
 //   - ctx context.Context
 //   - accessList rbac.AccessList
-func (_e *MockCache_Expecter) SetAccessList(ctx interface{}, accessList interface{}) *MockCache_SetAccessList_Call {
+func (_e *MockCache_Expecter) SetAccessList(ctx any, accessList any) *MockCache_SetAccessList_Call {
 	return &MockCache_SetAccessList_Call{Call: _e.mock.On("SetAccessList", ctx, accessList)}
 }
 
@@ -507,7 +507,7 @@ type MockCache_SetContentCounts_Call struct {
 //   - domainName string
 //   - repoUUID string
 //   - contentCounts RepoContentCount
-func (_e *MockCache_Expecter) SetContentCounts(ctx interface{}, domainName interface{}, repoUUID interface{}, contentCounts interface{}) *MockCache_SetContentCounts_Call {
+func (_e *MockCache_Expecter) SetContentCounts(ctx any, domainName any, repoUUID any, contentCounts any) *MockCache_SetContentCounts_Call {
 	return &MockCache_SetContentCounts_Call{Call: _e.mock.On("SetContentCounts", ctx, domainName, repoUUID, contentCounts)}
 }
 
@@ -574,7 +574,7 @@ type MockCache_SetFeatureStatus_Call struct {
 // SetFeatureStatus is a helper method to define mock.On call
 //   - ctx context.Context
 //   - response api.FeatureStatus
-func (_e *MockCache_Expecter) SetFeatureStatus(ctx interface{}, response interface{}) *MockCache_SetFeatureStatus_Call {
+func (_e *MockCache_Expecter) SetFeatureStatus(ctx any, response any) *MockCache_SetFeatureStatus_Call {
 	return &MockCache_SetFeatureStatus_Call{Call: _e.mock.On("SetFeatureStatus", ctx, response)}
 }
 
@@ -620,7 +620,7 @@ type MockCache_SetRoadmapAppstreams_Call struct {
 // SetRoadmapAppstreams is a helper method to define mock.On call
 //   - ctx context.Context
 //   - roadmapAppstreamsResponse []byte
-func (_e *MockCache_Expecter) SetRoadmapAppstreams(ctx interface{}, roadmapAppstreamsResponse interface{}) *MockCache_SetRoadmapAppstreams_Call {
+func (_e *MockCache_Expecter) SetRoadmapAppstreams(ctx any, roadmapAppstreamsResponse any) *MockCache_SetRoadmapAppstreams_Call {
 	return &MockCache_SetRoadmapAppstreams_Call{Call: _e.mock.On("SetRoadmapAppstreams", ctx, roadmapAppstreamsResponse)}
 }
 
@@ -666,7 +666,7 @@ type MockCache_SetRoadmapRhelLifecycle_Call struct {
 // SetRoadmapRhelLifecycle is a helper method to define mock.On call
 //   - ctx context.Context
 //   - rhelLifecyleResponse []byte
-func (_e *MockCache_Expecter) SetRoadmapRhelLifecycle(ctx interface{}, rhelLifecyleResponse interface{}) *MockCache_SetRoadmapRhelLifecycle_Call {
+func (_e *MockCache_Expecter) SetRoadmapRhelLifecycle(ctx any, rhelLifecyleResponse any) *MockCache_SetRoadmapRhelLifecycle_Call {
 	return &MockCache_SetRoadmapRhelLifecycle_Call{Call: _e.mock.On("SetRoadmapRhelLifecycle", ctx, rhelLifecyleResponse)}
 }
 
@@ -723,7 +723,7 @@ type MockCache_SetSubscriptionCheck_Call struct {
 // SetSubscriptionCheck is a helper method to define mock.On call
 //   - ctx context.Context
 //   - response api.SubscriptionCheckResponse
-func (_e *MockCache_Expecter) SetSubscriptionCheck(ctx interface{}, response interface{}) *MockCache_SetSubscriptionCheck_Call {
+func (_e *MockCache_Expecter) SetSubscriptionCheck(ctx any, response any) *MockCache_SetSubscriptionCheck_Call {
 	return &MockCache_SetSubscriptionCheck_Call{Call: _e.mock.On("SetSubscriptionCheck", ctx, response)}
 }
 
