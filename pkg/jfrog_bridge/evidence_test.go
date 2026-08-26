@@ -38,24 +38,24 @@ func TestEvidenceCreator_CreateAndDeploy(t *testing.T) {
 	paeContent := "test-pae-content"
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/evidence/api/v1/evidence/prepare":
+		switch r.URL.Path {
+		case "/evidence/api/v1/evidence/prepare":
 			resp := prepareResponse{
 				DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
 				PAE:         paeContent,
 				PostURL:     "/evidence/api/v1/evidence/deploy",
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			require.NoError(t, json.NewEncoder(w).Encode(resp))
 
-		case r.URL.Path == "/evidence/api/v1/evidence/deploy":
-			json.NewDecoder(r.Body).Decode(&capturedEnvelope)
+		case "/evidence/api/v1/evidence/deploy":
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&capturedEnvelope))
 			resp := struct {
 				Verified bool   `json:"verified"`
 				ID       string `json:"id"`
 			}{Verified: true, ID: "evd-123"}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			require.NoError(t, json.NewEncoder(w).Encode(resp))
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -96,23 +96,23 @@ func TestEvidenceCreator_DeployNotVerified(t *testing.T) {
 	testKey, _ := generateTestECDSAKey(t)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/evidence/api/v1/evidence/prepare":
+		switch r.URL.Path {
+		case "/evidence/api/v1/evidence/prepare":
 			resp := prepareResponse{
 				DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
 				PAE:         "test-pae-content",
 				PostURL:     "/evidence/api/v1/evidence/deploy",
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			require.NoError(t, json.NewEncoder(w).Encode(resp))
 
-		case r.URL.Path == "/evidence/api/v1/evidence/deploy":
+		case "/evidence/api/v1/evidence/deploy":
 			resp := struct {
 				Verified bool   `json:"verified"`
 				ID       string `json:"id"`
 			}{Verified: false, ID: "evd-fail"}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			require.NoError(t, json.NewEncoder(w).Encode(resp))
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -142,17 +142,17 @@ func TestEvidenceCreator_DeployHTTPError(t *testing.T) {
 	testKey, _ := generateTestECDSAKey(t)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/evidence/api/v1/evidence/prepare":
+		switch r.URL.Path {
+		case "/evidence/api/v1/evidence/prepare":
 			resp := prepareResponse{
 				DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
 				PAE:         "test-pae-content",
 				PostURL:     "/evidence/api/v1/evidence/deploy",
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(resp)
+			require.NoError(t, json.NewEncoder(w).Encode(resp))
 
-		case r.URL.Path == "/evidence/api/v1/evidence/deploy":
+		case "/evidence/api/v1/evidence/deploy":
 			w.WriteHeader(http.StatusInternalServerError)
 
 		default:

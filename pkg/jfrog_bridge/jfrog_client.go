@@ -20,11 +20,11 @@ type JFrogClient interface {
 }
 
 type httpJFrogClient struct {
-	httpClient *http.Client
-	catalogURL string
+	httpClient  *http.Client
+	catalogURL  string
 	catalogRepo string
-	token      string
-	maxRetries int
+	token       string
+	maxRetries  int
 }
 
 func newJFrogClient(cfg bridgeConfig) JFrogClient {

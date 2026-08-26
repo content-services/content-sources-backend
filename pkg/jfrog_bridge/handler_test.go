@@ -36,9 +36,9 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	// Registry server: serves JAR, POM from testdata
 	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, ".jar") {
-			w.Write(jarData)
+			_, _ = w.Write(jarData)
 		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			w.Write(pomData)
+			_, _ = w.Write(pomData)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -78,19 +78,19 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 					PostURL:     "/evidence/api/v1/evidence/deploy",
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			} else {
 				resp := struct {
 					Verified bool   `json:"verified"`
 					ID       string `json:"id"`
 				}{Verified: true, ID: "evd-123"}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}
 
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	defer jfrogServer.Close()
@@ -126,10 +126,10 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
-		ArtifactID: "spring-core",
-		Version:    "5.3.18.rhlw-00003",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
 		BaseVersion: "5.3.18",
-		CVEsFixed:  []string{"CVE-2025-41249"},
+		CVEsFixed:   []string{"CVE-2025-41249"},
 	}
 
 	err = handler.processRemediation(context.Background(), rem)
@@ -169,7 +169,7 @@ func TestGAVDedup(t *testing.T) {
 	handler := NewBridgeHandler(nil, nil, nil, metrics)
 
 	rem := Remediation{
-		GroupID:     "org.test",
+		GroupID:    "org.test",
 		ArtifactID: "test",
 		Version:    "1.0.rhlw-00001",
 	}
@@ -242,9 +242,9 @@ func TestProcessRemediation_EvidenceFailure(t *testing.T) {
 
 	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, ".jar") {
-			w.Write(jarData)
+			_, _ = w.Write(jarData)
 		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			w.Write(pomData)
+			_, _ = w.Write(pomData)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -268,18 +268,18 @@ func TestProcessRemediation_EvidenceFailure(t *testing.T) {
 					PostURL:     "/evidence/api/v1/evidence/deploy",
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			} else {
 				resp := struct {
 					Verified bool   `json:"verified"`
 					ID       string `json:"id"`
 				}{Verified: false, ID: "evd-fail"}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	defer jfrogServer.Close()
@@ -312,10 +312,10 @@ func TestProcessRemediation_EvidenceFailure(t *testing.T) {
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
-		ArtifactID: "spring-core",
-		Version:    "5.3.18.rhlw-00003",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
 		BaseVersion: "5.3.18",
-		CVEsFixed:  []string{"CVE-2025-41249"},
+		CVEsFixed:   []string{"CVE-2025-41249"},
 	}
 
 	err = handler.processRemediation(context.Background(), rem)
@@ -330,7 +330,7 @@ func TestProcessRemediation_UploadFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(pomData)
+		_, _ = w.Write(pomData)
 	}))
 	defer registryServer.Close()
 
@@ -372,10 +372,10 @@ func TestProcessRemediation_UploadFailure(t *testing.T) {
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
-		ArtifactID: "spring-core",
-		Version:    "5.3.18.rhlw-00003",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
 		BaseVersion: "5.3.18",
-		CVEsFixed:  []string{"CVE-2025-41249"},
+		CVEsFixed:   []string{"CVE-2025-41249"},
 	}
 
 	err = handler.processRemediation(context.Background(), rem)
@@ -393,9 +393,9 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 
 	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, ".jar") {
-			w.Write(jarData)
+			_, _ = w.Write(jarData)
 		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			w.Write(pomData)
+			_, _ = w.Write(pomData)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -419,18 +419,18 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 					PostURL:     "/evidence/api/v1/evidence/deploy",
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			} else {
 				resp := struct {
 					Verified bool   `json:"verified"`
 					ID       string `json:"id"`
 				}{Verified: true, ID: "evd-123"}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	defer jfrogServer.Close()
@@ -463,10 +463,10 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
-		ArtifactID: "spring-core",
-		Version:    "5.3.18.rhlw-00003",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
 		BaseVersion: "5.3.18",
-		CVEsFixed:  []string{"CVE-2025-41249"},
+		CVEsFixed:   []string{"CVE-2025-41249"},
 	}
 
 	err = handler.processRemediation(context.Background(), rem)

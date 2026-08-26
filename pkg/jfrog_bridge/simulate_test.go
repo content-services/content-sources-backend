@@ -56,10 +56,10 @@ func TestCheckBridgeEnabled_Enabled(t *testing.T) {
 
 func TestSimulateHandler_Status(t *testing.T) {
 	config.LoadedConfig.JFrogBridge = config.JFrogBridge{
-		Enabled:    true,
-		CatalogURL: "https://test.jfrog.io",
-		CatalogRepo: "test-repo",
-		RegistryURL: "https://test.registry",
+		Enabled:        true,
+		CatalogURL:     "https://test.jfrog.io",
+		CatalogRepo:    "test-repo",
+		RegistryURL:    "https://test.registry",
 		RegistryOSVURL: "https://test.osv",
 	}
 	config.LoadedConfig.Loaded = true
@@ -101,9 +101,9 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 
 	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, ".jar") {
-			w.Write(jarData)
+			_, _ = w.Write(jarData)
 		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			w.Write(pomData)
+			_, _ = w.Write(pomData)
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -127,18 +127,18 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 					PostURL:     "/evidence/api/v1/evidence/deploy",
 				}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			} else {
 				resp := struct {
 					Verified bool   `json:"verified"`
 					ID       string `json:"id"`
 				}{Verified: true, ID: "evd-123"}
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			}
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{}`))
+			_, _ = w.Write([]byte(`{}`))
 		}
 	}))
 	defer jfrogServer.Close()

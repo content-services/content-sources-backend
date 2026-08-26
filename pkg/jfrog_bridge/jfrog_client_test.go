@@ -69,7 +69,7 @@ func TestJFrogClient_SetProperties(t *testing.T) {
 func TestJFrogClient_VerifyDelivery(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"path": "test"}`))
+		_, _ = w.Write([]byte(`{"path": "test"}`))
 	}))
 	defer server.Close()
 
@@ -87,7 +87,7 @@ func TestJFrogClient_VerifyDelivery(t *testing.T) {
 func TestJFrogClient_Ping(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 

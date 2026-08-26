@@ -23,7 +23,7 @@ func TestRegistryClient_FetchPOM(t *testing.T) {
 	require.NoError(t, err)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(pomData)
+		_, _ = w.Write(pomData)
 	}))
 	defer server.Close()
 
@@ -50,7 +50,7 @@ func TestRegistryClient_FetchJAR(t *testing.T) {
 	require.NoError(t, err)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(jarData)
+		_, _ = w.Write(jarData)
 	}))
 	defer server.Close()
 
@@ -127,7 +127,7 @@ func TestRegistryClient_BasicAuthHeader(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedAuth = r.Header.Get("Authorization")
-		w.Write([]byte("<project><artifactId>test</artifactId></project>"))
+		_, _ = w.Write([]byte("<project><artifactId>test</artifactId></project>"))
 	}))
 	defer server.Close()
 
@@ -150,13 +150,13 @@ func TestFetchOSVRecords_VersionFilterPrecision(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	manifest := "x_RHLW-CVE-2023-20860-5.3.18.json,abc123,1234\nx_RHLW-CVE-2099-99999-5.3.1.json,def456,1234\n"
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "PULP_MANIFEST"), []byte(manifest), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "PULP_MANIFEST"), []byte(manifest), 0600))
 
 	osvContent18 := `{"id": "x_RHLW-CVE-2023-20860-5.3.18", "aliases": ["CVE-2023-20860"], "details": "test18", "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]}`
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2023-20860-5.3.18.json"), []byte(osvContent18), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2023-20860-5.3.18.json"), []byte(osvContent18), 0600))
 
 	osvContent1 := `{"id": "x_RHLW-CVE-2099-99999-5.3.1", "aliases": ["CVE-2099-99999"], "details": "test", "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]}`
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2099-99999-5.3.1.json"), []byte(osvContent1), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2099-99999-5.3.1.json"), []byte(osvContent1), 0600))
 
 	server := httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
 	defer server.Close()

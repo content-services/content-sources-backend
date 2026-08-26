@@ -54,9 +54,9 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, ".jar"):
-			w.Write(jarData)
+			_, _ = w.Write(jarData)
 		case strings.HasSuffix(r.URL.Path, ".pom"):
-			w.Write(pomData)
+			_, _ = w.Write(pomData)
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -67,14 +67,14 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 	defer osvServer.Close()
 
 	cfg := bridgeConfig{
-		CatalogURL:     "https://jfscatalogpartners.jfrog.io",
-		CatalogRepo:    "redhat-partner-maven-lightwell",
-		CatalogToken:   token,
-		RegistryURL:    config.Get().JFrogBridge.RegistryURL,
-		SigningKeyPEM:  string(keyData),
+		CatalogURL:      "https://jfscatalogpartners.jfrog.io",
+		CatalogRepo:     "redhat-partner-maven-lightwell",
+		CatalogToken:    token,
+		RegistryURL:     config.Get().JFrogBridge.RegistryURL,
+		SigningKeyPEM:   string(keyData),
 		SigningKeyAlias: "redhat-partner-lightwell",
-		MaxRetries:     2,
-		RequestTimeout: 60,
+		MaxRetries:      2,
+		RequestTimeout:  60,
 	}
 
 	registry := &httpRegistryClient{
@@ -93,10 +93,10 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
-		ArtifactID: "spring-core",
-		Version:    "5.3.18.rhlw-00003",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
 		BaseVersion: "5.3.18",
-		CVEsFixed:  []string{"CVE-2025-41249"},
+		CVEsFixed:   []string{"CVE-2025-41249"},
 	}
 
 	t.Log("pipeline: fetch(local testdata) -> VEX -> upload(JFrog) -> sign -> verify")
@@ -139,15 +139,15 @@ func TestLivePublish_SpringCore(t *testing.T) {
 	}
 
 	cfg := bridgeConfig{
-		CatalogURL:      "https://jfscatalogpartners.jfrog.io",
-		CatalogRepo:     "redhat-partner-maven-lightwell",
-		CatalogToken:    token,
-		RegistryURL:     config.Get().JFrogBridge.RegistryURL,
-		RegistryOSVURL:  config.Get().JFrogBridge.RegistryOSVURL,
-		SigningKeyPEM:   string(keyData),
-		SigningKeyAlias: "redhat-partner-lightwell",
-		MaxRetries:      2,
-		RequestTimeout:  60,
+		CatalogURL:       "https://jfscatalogpartners.jfrog.io",
+		CatalogRepo:      "redhat-partner-maven-lightwell",
+		CatalogToken:     token,
+		RegistryURL:      config.Get().JFrogBridge.RegistryURL,
+		RegistryOSVURL:   config.Get().JFrogBridge.RegistryOSVURL,
+		SigningKeyPEM:    string(keyData),
+		SigningKeyAlias:  "redhat-partner-lightwell",
+		MaxRetries:       2,
+		RequestTimeout:   60,
 		RegistryUsername: lwCfg.Username,
 		RegistryPassword: lwCfg.Password,
 	}
@@ -162,10 +162,10 @@ func TestLivePublish_SpringCore(t *testing.T) {
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
-		ArtifactID: "spring-core",
-		Version:    "5.3.18.rhlw-00003",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
 		BaseVersion: "5.3.18",
-		CVEsFixed:  []string{"CVE-2025-41249"},
+		CVEsFixed:   []string{"CVE-2025-41249"},
 	}
 
 	t.Log("pipeline: fetch(packages.redhat.com) -> VEX -> upload(JFrog) -> sign -> verify")

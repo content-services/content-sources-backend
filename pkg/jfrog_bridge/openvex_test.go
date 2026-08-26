@@ -42,16 +42,21 @@ func TestGenerateOpenVEXPredicate(t *testing.T) {
 	expectedCVEs := []string{"CVE-2023-20860", "CVE-2025-41249"}
 
 	for i, s := range stmts {
-		stmt := s.(map[string]interface{})
+		stmt, ok := s.(map[string]interface{})
+		require.True(t, ok)
 		assert.Equal(t, "fixed", stmt["status"])
 
-		vuln := stmt["vulnerability"].(map[string]interface{})
+		vuln, ok := stmt["vulnerability"].(map[string]interface{})
+		require.True(t, ok)
 		assert.Equal(t, expectedCVEs[i], vuln["name"])
 
-		products := stmt["products"].([]interface{})
+		products, ok := stmt["products"].([]interface{})
+		require.True(t, ok)
 		require.Len(t, products, 1)
-		prod := products[0].(map[string]interface{})
-		identifiers := prod["identifiers"].(map[string]interface{})
+		prod, ok := products[0].(map[string]interface{})
+		require.True(t, ok)
+		identifiers, ok := prod["identifiers"].(map[string]interface{})
+		require.True(t, ok)
 		assert.Equal(t, expectedPURL, identifiers["purl"])
 	}
 }

@@ -24,13 +24,13 @@ type EvidenceCreator interface {
 }
 
 type evidenceCreator struct {
-	httpClient *http.Client
-	catalogURL string
+	httpClient  *http.Client
+	catalogURL  string
 	catalogRepo string
-	token      string
-	privateKey *ecdsa.PrivateKey
-	keyAlias   string
-	maxRetries int
+	token       string
+	privateKey  *ecdsa.PrivateKey
+	keyAlias    string
+	maxRetries  int
 }
 
 type prepareSubject struct {

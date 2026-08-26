@@ -19,9 +19,9 @@ type openVEXDocument struct {
 }
 
 type openVEXStatement struct {
-	Vulnerability openVEXVuln    `json:"vulnerability"`
-	Products      []openVEXProd  `json:"products"`
-	Status        string         `json:"status"`
+	Vulnerability openVEXVuln   `json:"vulnerability"`
+	Products      []openVEXProd `json:"products"`
+	Status        string        `json:"status"`
 }
 
 type openVEXVuln struct {

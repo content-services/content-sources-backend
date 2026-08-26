@@ -11,10 +11,10 @@ import (
 // extracted from either the full Kafka envelope or the simplified format.
 type Remediation struct {
 	GroupID     string
-	ArtifactID string
-	Version    string
+	ArtifactID  string
+	Version     string
 	BaseVersion string
-	CVEsFixed  []string
+	CVEsFixed   []string
 }
 
 var rhlwSuffix = regexp.MustCompile(`\.rhlw-\d+$`)
@@ -82,10 +82,10 @@ func parseFullEnvelope(data []byte) ([]Remediation, error) {
 			for _, rn := range rel.ReleaseNames {
 				result = append(result, Remediation{
 					GroupID:     group,
-					ArtifactID: artifact,
-					Version:    rn.Name,
+					ArtifactID:  artifact,
+					Version:     rn.Name,
 					BaseVersion: stripRHLWSuffix(rn.Name),
-					CVEsFixed:  cves,
+					CVEsFixed:   cves,
 				})
 			}
 		}
@@ -120,10 +120,10 @@ func parseSimplified(data []byte) ([]Remediation, error) {
 	for _, rel := range msg.Releases {
 		result = append(result, Remediation{
 			GroupID:     group,
-			ArtifactID: artifact,
-			Version:    rel.Name,
+			ArtifactID:  artifact,
+			Version:     rel.Name,
 			BaseVersion: stripRHLWSuffix(rel.Name),
-			CVEsFixed:  rel.CVEsFixed,
+			CVEsFixed:   rel.CVEsFixed,
 		})
 	}
 	if len(result) == 0 {

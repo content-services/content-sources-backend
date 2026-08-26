@@ -58,13 +58,13 @@ type cdxProperty struct {
 }
 
 type cdxVulnerability struct {
-	BOMRef      string        `json:"bom-ref"`
-	ID          string        `json:"id"`
-	Source       cdxSource     `json:"source"`
-	Ratings     []cdxRating   `json:"ratings"`
-	Description string        `json:"description"`
-	Analysis    cdxAnalysis   `json:"analysis"`
-	Affects     []cdxAffects  `json:"affects"`
+	BOMRef      string       `json:"bom-ref"`
+	ID          string       `json:"id"`
+	Source      cdxSource    `json:"source"`
+	Ratings     []cdxRating  `json:"ratings"`
+	Description string       `json:"description"`
+	Analysis    cdxAnalysis  `json:"analysis"`
+	Affects     []cdxAffects `json:"affects"`
 }
 
 type cdxSource struct {
@@ -75,9 +75,9 @@ type cdxSource struct {
 type cdxRating struct {
 	Source   cdxSource `json:"source"`
 	Score    float64   `json:"score"`
-	Severity string   `json:"severity"`
-	Method   string   `json:"method"`
-	Vector   string   `json:"vector"`
+	Severity string    `json:"severity"`
+	Method   string    `json:"method"`
+	Vector   string    `json:"vector"`
 }
 
 type cdxAnalysis struct {
@@ -95,9 +95,9 @@ func GenerateCycloneDXVEX(group, artifact, version, baseVersion string, records 
 	bomRef := fmt.Sprintf("%s-rhlw-%s", artifact, strings.ReplaceAll(version, ".", "-"))
 
 	doc := cdxVEX{
-		BOMFormat:   "CycloneDX",
-		SpecVersion: "1.6",
-		Version:     1,
+		BOMFormat:    "CycloneDX",
+		SpecVersion:  "1.6",
+		Version:      1,
 		SerialNumber: "urn:uuid:" + serialUUID.String(),
 		Metadata: cdxMetadata{
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
@@ -145,7 +145,7 @@ func GenerateCycloneDXVEX(group, artifact, version, baseVersion string, records 
 		vuln := cdxVulnerability{
 			BOMRef: "vuln-" + rec.CVEID,
 			ID:     rec.CVEID,
-			Source:  source,
+			Source: source,
 			Ratings: []cdxRating{
 				{
 					Source:   source,

@@ -96,10 +96,10 @@ func (h *simulateHandler) simulate(c echo.Context) error {
 func (h *simulateHandler) status(c echo.Context) error {
 	cfg := config.Get().JFrogBridge
 	status := map[string]interface{}{
-		"enabled":         cfg.Enabled,
-		"catalog_url":     cfg.CatalogURL,
-		"catalog_repo":    cfg.CatalogRepo,
-		"registry_url":    cfg.RegistryURL,
+		"enabled":          cfg.Enabled,
+		"catalog_url":      cfg.CatalogURL,
+		"catalog_repo":     cfg.CatalogRepo,
+		"registry_url":     cfg.RegistryURL,
 		"registry_osv_url": cfg.RegistryOSVURL,
 	}
 	return c.JSON(http.StatusOK, status)
