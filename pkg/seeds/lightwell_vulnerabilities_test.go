@@ -47,11 +47,30 @@ func (s *SeedSuite) TestSeedLightwellVulnerabilities() {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"demo-tk-1", "demo-tk-2", "demo-tk-3"}, tickets)
 
+	var stamls []string
+	err = s.tx.Raw(`
+		SELECT customer_id || ':' || staml
+		FROM lightwell_customer_stamls
+		WHERE customer_id IN ('demo-customer-1', 'demo-customer-2')
+		ORDER BY customer_id, staml
+	`).Scan(&stamls).Error
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		"demo-customer-1:demo-staml-1",
+		"demo-customer-1:demo-staml-2",
+		"demo-customer-2:demo-staml-2",
+		"demo-customer-2:demo-staml-3",
+	}, stamls)
+
 	err = SeedLightwellVulnerabilities(s.tx)
 	require.NoError(t, err)
 }
 
 func (s *SeedSuite) deleteLightwellSeedRows() {
+	s.Require().NoError(s.tx.Exec(`
+		DELETE FROM lightwell_customer_stamls
+		WHERE customer_id IN ('demo-customer-1', 'demo-customer-2')
+	`).Error)
 	s.Require().NoError(s.tx.Exec(`
 		DELETE FROM lightwell_vulnerability_support_tickets
 		WHERE vulnerability_uuid::text LIKE '00000000-0000-4000-8000-%'

@@ -10,6 +10,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type LightwellCustomerStaml struct {
+	CustomerID string    `json:"customer_id"`
+	Staml      string    `json:"staml"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type LightwellVulnerability struct {
 	Uuid               uuid.UUID `json:"uuid"`
 	VulnerabilityID    string    `json:"vulnerability_id"`

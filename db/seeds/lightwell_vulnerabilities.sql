@@ -107,6 +107,11 @@ INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) 
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-1', '00000000-0000-4000-8000-000000000033');
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-2', '00000000-0000-4000-8000-000000000034');
 
+INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES ('demo-customer-1', 'demo-staml-1');
+INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES ('demo-customer-1', 'demo-staml-2');
+INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES ('demo-customer-2', 'demo-staml-2');
+INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES ('demo-customer-2', 'demo-staml-3');
+
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000001', 'demo-customer-1', 'demo-tk-2');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000002', 'demo-customer-2', 'demo-tk-2');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000003', 'demo-customer-1', 'demo-tk-2');

@@ -45,6 +45,13 @@ CREATE TABLE lightwell_vulnerability_support_tickets (
         ON DELETE CASCADE
 );
 
+CREATE TABLE lightwell_customer_stamls (
+    customer_id TEXT NOT NULL,
+    staml TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (customer_id, staml)
+);
+
 CREATE FUNCTION lightwell_filtered_vulnerabilities(
     p_customer_id TEXT,
     p_severities TEXT[],

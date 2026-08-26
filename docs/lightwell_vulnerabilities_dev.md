@@ -10,7 +10,7 @@ Use the standard dev environment (see [README.md](../README.md)): copy `configs/
 make compose-up
 ```
 
-That starts dependencies and runs all migrations, including `20260814120000_create_lightwell_vulnerabilities`, `20260818120000_add_lightwell_vulnerability_duplicate_of`, `20260818180000_add_lightwell_vulnerability_tickets`, `20260818190000_add_lightwell_filtered_vulnerabilities`, and `20260819131200_rename_lightwell_vulnerability_support_tickets` (per-customer Lightwell support ticket mapping used by API field `ltwlsupt_ticket_ids`).
+That starts dependencies and runs all migrations, including `20260814120000_create_lightwell_vulnerabilities`, `20260818120000_add_lightwell_vulnerability_duplicate_of`, `20260818180000_add_lightwell_vulnerability_tickets`, `20260818190000_add_lightwell_filtered_vulnerabilities`, `20260819131200_rename_lightwell_vulnerability_support_tickets` (per-customer Lightwell support ticket mapping used by API field `ltwlsupt_ticket_ids`), and `20260825173700_create_lightwell_customer_stamls` (many-to-many STAML to CID mapping).
 
 If you hit migration issues on an old local DB (e.g. from superseded lightwell migrations during development), reset and re-migrate:
 

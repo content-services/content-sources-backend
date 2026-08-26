@@ -809,3 +809,38 @@ func TestStore_ListLtwlsuptTicketIds(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, ids)
 }
+
+func TestCustomerStamlManyToMany(t *testing.T) {
+	ctx, tx, _ := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	_, err := tx.Exec(ctx, `
+		INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES
+			('cid-1', 'staml-1'),
+			('cid-1', 'staml-2'),
+			('cid-2', 'staml-2'),
+			('cid-2', 'staml-3')
+	`)
+	require.NoError(t, err)
+
+	var stamls string
+	err = tx.QueryRow(ctx, `
+		SELECT STRING_AGG(staml, ',' ORDER BY staml)
+		FROM lightwell_customer_stamls
+		WHERE customer_id = $1
+	`, "cid-1").Scan(&stamls)
+	require.NoError(t, err)
+	assert.Equal(t, "staml-1,staml-2", stamls)
+
+	var cids string
+	err = tx.QueryRow(ctx, `
+		SELECT STRING_AGG(customer_id, ',' ORDER BY customer_id)
+		FROM lightwell_customer_stamls
+		WHERE staml = $1
+	`, "staml-2").Scan(&cids)
+	require.NoError(t, err)
+	assert.Equal(t, "cid-1,cid-2", cids)
+
+	_, err = tx.Exec(ctx, `INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES ('cid-1', 'staml-1')`)
+	require.Error(t, err)
+}
