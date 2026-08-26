@@ -1,3 +1,7 @@
+// Some tests require local testdata fixtures (POM, OSV JSONs) under
+// testdata/ that are not committed to git. They skip automatically
+// when the files are absent.
+
 package jfrog_bridge
 
 import (
@@ -20,6 +24,7 @@ import (
 )
 
 func TestProcessRemediation_SpringCore(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
 	pomPath := testdataPath("registry", "org", "springframework",
 		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
 	pomData, err := os.ReadFile(pomPath)
@@ -233,6 +238,7 @@ func TestFilterAndParse_ValidFullEnvelope(t *testing.T) {
 }
 
 func TestProcessRemediation_EvidenceFailure(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
 	pomPath := testdataPath("registry", "org", "springframework",
 		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
 	pomData, err := os.ReadFile(pomPath)
@@ -324,6 +330,7 @@ func TestProcessRemediation_EvidenceFailure(t *testing.T) {
 }
 
 func TestProcessRemediation_UploadFailure(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
 	pomPath := testdataPath("registry", "org", "springframework",
 		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
 	pomData, err := os.ReadFile(pomPath)
@@ -384,6 +391,7 @@ func TestProcessRemediation_UploadFailure(t *testing.T) {
 }
 
 func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
 	pomPath := testdataPath("registry", "org", "springframework",
 		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
 	pomData, err := os.ReadFile(pomPath)

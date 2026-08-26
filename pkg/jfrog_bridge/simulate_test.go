@@ -1,3 +1,7 @@
+// Some tests require local testdata fixtures (POM, OSV JSONs) under
+// testdata/ that are not committed to git. They skip automatically
+// when the files are absent.
+
 package jfrog_bridge
 
 import (
@@ -90,6 +94,7 @@ func TestSimulateHandler_BadPayload(t *testing.T) {
 }
 
 func TestSimulate_SuccessPayload(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
 	config.LoadedConfig.JFrogBridge = config.JFrogBridge{Enabled: true}
 	config.LoadedConfig.Loaded = true
 

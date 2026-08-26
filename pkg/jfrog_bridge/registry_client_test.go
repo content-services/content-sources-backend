@@ -1,3 +1,7 @@
+// Some tests require local testdata fixtures (POM, OSV JSONs) under
+// testdata/ that are not committed to git. They skip automatically
+// when the files are absent.
+
 package jfrog_bridge
 
 import (
@@ -17,7 +21,22 @@ func testdataPath(parts ...string) string {
 	return filepath.Join(append([]string{"testdata"}, parts...)...)
 }
 
+func skipIfFixturesAbsent(t *testing.T, paths ...string) {
+	t.Helper()
+	for _, p := range paths {
+		if _, err := os.Stat(p); os.IsNotExist(err) {
+			t.Skipf("fixture not found: %s", p)
+		}
+	}
+}
+
+var (
+	fixturePOM    = testdataPath("registry", "org", "springframework", "spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
+	fixtureOSVDir = testdataPath("osv", "PULP_MANIFEST")
+)
+
 func TestRegistryClient_FetchPOM(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM)
 	pomData, err := os.ReadFile(testdataPath("registry", "org", "springframework",
 		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom"))
 	require.NoError(t, err)
@@ -68,6 +87,7 @@ func TestRegistryClient_FetchJAR(t *testing.T) {
 }
 
 func TestRegistryClient_FetchOSVRecords(t *testing.T) {
+	skipIfFixturesAbsent(t, fixtureOSVDir)
 	server := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
 	defer server.Close()
 
@@ -90,6 +110,7 @@ func TestRegistryClient_FetchOSVRecords(t *testing.T) {
 }
 
 func TestParseOSVFile(t *testing.T) {
+	skipIfFixturesAbsent(t, fixtureOSVDir)
 	data, err := os.ReadFile(testdataPath("osv", "x_RHLW-CVE-2023-20860-5.3.18.json"))
 	require.NoError(t, err)
 
