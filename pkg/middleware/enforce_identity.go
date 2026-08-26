@@ -48,10 +48,17 @@ func SkipAuth(p string) bool {
 
 func SkipRbac(c echo.Context, p string) bool {
 	xrhid := identity.GetIdentity(c.Request().Context())
-	skipped := []string{
+	skippedWithSystem := []string{
 		"/templates/:template_uuid/config.repo",
 	}
-	if utils.Contains(skipped, p) && xrhid.Identity.Type == "System" {
+	skippedWithUser := []string{
+		"/user_preferences/",
+		"/user_preferences/:label",
+	}
+	if utils.Contains(skippedWithSystem, p) && xrhid.Identity.Type == "System" {
+		return true
+	}
+	if utils.Contains(skippedWithUser, p) && xrhid.Identity.Type == "User" {
 		return true
 	}
 	if p == "/templates/:uuid/advisories/ids" &&
