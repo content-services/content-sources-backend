@@ -65,7 +65,7 @@ type MockQueue_Cancel_Call struct {
 // Cancel is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskId uuid.UUID
-func (_e *MockQueue_Expecter) Cancel(ctx interface{}, taskId interface{}) *MockQueue_Cancel_Call {
+func (_e *MockQueue_Expecter) Cancel(ctx any, taskId any) *MockQueue_Cancel_Call {
 	return &MockQueue_Cancel_Call{Call: _e.mock.On("Cancel", ctx, taskId)}
 }
 
@@ -133,7 +133,7 @@ type MockQueue_Dequeue_Call struct {
 // Dequeue is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskTypes []string
-func (_e *MockQueue_Expecter) Dequeue(ctx interface{}, taskTypes interface{}) *MockQueue_Dequeue_Call {
+func (_e *MockQueue_Expecter) Dequeue(ctx any, taskTypes any) *MockQueue_Dequeue_Call {
 	return &MockQueue_Dequeue_Call{Call: _e.mock.On("Dequeue", ctx, taskTypes)}
 }
 
@@ -200,7 +200,7 @@ type MockQueue_Enqueue_Call struct {
 
 // Enqueue is a helper method to define mock.On call
 //   - task *Task
-func (_e *MockQueue_Expecter) Enqueue(task interface{}) *MockQueue_Enqueue_Call {
+func (_e *MockQueue_Expecter) Enqueue(task any) *MockQueue_Enqueue_Call {
 	return &MockQueue_Enqueue_Call{Call: _e.mock.On("Enqueue", task)}
 }
 
@@ -252,7 +252,7 @@ type MockQueue_Finish_Call struct {
 // Finish is a helper method to define mock.On call
 //   - taskId uuid.UUID
 //   - taskError error
-func (_e *MockQueue_Expecter) Finish(taskId interface{}, taskError interface{}) *MockQueue_Finish_Call {
+func (_e *MockQueue_Expecter) Finish(taskId any, taskError any) *MockQueue_Finish_Call {
 	return &MockQueue_Finish_Call{Call: _e.mock.On("Finish", taskId, taskError)}
 }
 
@@ -310,7 +310,7 @@ type MockQueue_Heartbeats_Call struct {
 
 // Heartbeats is a helper method to define mock.On call
 //   - olderThan time.Duration
-func (_e *MockQueue_Expecter) Heartbeats(olderThan interface{}) *MockQueue_Heartbeats_Call {
+func (_e *MockQueue_Expecter) Heartbeats(olderThan any) *MockQueue_Heartbeats_Call {
 	return &MockQueue_Heartbeats_Call{Call: _e.mock.On("Heartbeats", olderThan)}
 }
 
@@ -378,7 +378,7 @@ type MockQueue_IdFromToken_Call struct {
 
 // IdFromToken is a helper method to define mock.On call
 //   - token uuid.UUID
-func (_e *MockQueue_Expecter) IdFromToken(token interface{}) *MockQueue_IdFromToken_Call {
+func (_e *MockQueue_Expecter) IdFromToken(token any) *MockQueue_IdFromToken_Call {
 	return &MockQueue_IdFromToken_Call{Call: _e.mock.On("IdFromToken", token)}
 }
 
@@ -440,7 +440,7 @@ type MockQueue_ListenForCanceledTask_Call struct {
 
 // ListenForCanceledTask is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockQueue_Expecter) ListenForCanceledTask(ctx interface{}) *MockQueue_ListenForCanceledTask_Call {
+func (_e *MockQueue_Expecter) ListenForCanceledTask(ctx any) *MockQueue_ListenForCanceledTask_Call {
 	return &MockQueue_ListenForCanceledTask_Call{Call: _e.mock.On("ListenForCanceledTask", ctx)}
 }
 
@@ -491,7 +491,7 @@ type MockQueue_RefreshHeartbeat_Call struct {
 
 // RefreshHeartbeat is a helper method to define mock.On call
 //   - token uuid.UUID
-func (_e *MockQueue_Expecter) RefreshHeartbeat(token interface{}) *MockQueue_RefreshHeartbeat_Call {
+func (_e *MockQueue_Expecter) RefreshHeartbeat(token any) *MockQueue_RefreshHeartbeat_Call {
 	return &MockQueue_RefreshHeartbeat_Call{Call: _e.mock.On("RefreshHeartbeat", token)}
 }
 
@@ -542,7 +542,7 @@ type MockQueue_Requeue_Call struct {
 
 // Requeue is a helper method to define mock.On call
 //   - taskId uuid.UUID
-func (_e *MockQueue_Expecter) Requeue(taskId interface{}) *MockQueue_Requeue_Call {
+func (_e *MockQueue_Expecter) Requeue(taskId any) *MockQueue_Requeue_Call {
 	return &MockQueue_Requeue_Call{Call: _e.mock.On("Requeue", taskId)}
 }
 
@@ -593,7 +593,7 @@ type MockQueue_RequeueFailedTasks_Call struct {
 
 // RequeueFailedTasks is a helper method to define mock.On call
 //   - taskTypes []string
-func (_e *MockQueue_Expecter) RequeueFailedTasks(taskTypes interface{}) *MockQueue_RequeueFailedTasks_Call {
+func (_e *MockQueue_Expecter) RequeueFailedTasks(taskTypes any) *MockQueue_RequeueFailedTasks_Call {
 	return &MockQueue_RequeueFailedTasks_Call{Call: _e.mock.On("RequeueFailedTasks", taskTypes)}
 }
 
@@ -655,7 +655,7 @@ type MockQueue_Status_Call struct {
 
 // Status is a helper method to define mock.On call
 //   - taskId uuid.UUID
-func (_e *MockQueue_Expecter) Status(taskId interface{}) *MockQueue_Status_Call {
+func (_e *MockQueue_Expecter) Status(taskId any) *MockQueue_Status_Call {
 	return &MockQueue_Status_Call{Call: _e.mock.On("Status", taskId)}
 }
 
@@ -718,7 +718,7 @@ type MockQueue_UpdatePayload_Call struct {
 // UpdatePayload is a helper method to define mock.On call
 //   - task *models.TaskInfo
 //   - payload interface{}
-func (_e *MockQueue_Expecter) UpdatePayload(task interface{}, payload interface{}) *MockQueue_UpdatePayload_Call {
+func (_e *MockQueue_Expecter) UpdatePayload(task any, payload any) *MockQueue_UpdatePayload_Call {
 	return &MockQueue_UpdatePayload_Call{Call: _e.mock.On("UpdatePayload", task, payload)}
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -81,7 +82,7 @@ type MockRepositoryConfigDao_BulkCreate_Call struct {
 // BulkCreate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - newRepositories []api.RepositoryRequest
-func (_e *MockRepositoryConfigDao_Expecter) BulkCreate(ctx interface{}, newRepositories interface{}) *MockRepositoryConfigDao_BulkCreate_Call {
+func (_e *MockRepositoryConfigDao_Expecter) BulkCreate(ctx any, newRepositories any) *MockRepositoryConfigDao_BulkCreate_Call {
 	return &MockRepositoryConfigDao_BulkCreate_Call{Call: _e.mock.On("BulkCreate", ctx, newRepositories)}
 }
 
@@ -141,7 +142,7 @@ type MockRepositoryConfigDao_BulkDelete_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuids []string
-func (_e *MockRepositoryConfigDao_Expecter) BulkDelete(ctx interface{}, orgID interface{}, uuids interface{}) *MockRepositoryConfigDao_BulkDelete_Call {
+func (_e *MockRepositoryConfigDao_Expecter) BulkDelete(ctx any, orgID any, uuids any) *MockRepositoryConfigDao_BulkDelete_Call {
 	return &MockRepositoryConfigDao_BulkDelete_Call{Call: _e.mock.On("BulkDelete", ctx, orgID, uuids)}
 }
 
@@ -215,7 +216,7 @@ type MockRepositoryConfigDao_BulkExport_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - reposToExport api.RepositoryExportRequest
-func (_e *MockRepositoryConfigDao_Expecter) BulkExport(ctx interface{}, orgID interface{}, reposToExport interface{}) *MockRepositoryConfigDao_BulkExport_Call {
+func (_e *MockRepositoryConfigDao_Expecter) BulkExport(ctx any, orgID any, reposToExport any) *MockRepositoryConfigDao_BulkExport_Call {
 	return &MockRepositoryConfigDao_BulkExport_Call{Call: _e.mock.On("BulkExport", ctx, orgID, reposToExport)}
 }
 
@@ -290,7 +291,7 @@ type MockRepositoryConfigDao_BulkImport_Call struct {
 // BulkImport is a helper method to define mock.On call
 //   - ctx context.Context
 //   - reposToImport []api.RepositoryRequest
-func (_e *MockRepositoryConfigDao_Expecter) BulkImport(ctx interface{}, reposToImport interface{}) *MockRepositoryConfigDao_BulkImport_Call {
+func (_e *MockRepositoryConfigDao_Expecter) BulkImport(ctx any, reposToImport any) *MockRepositoryConfigDao_BulkImport_Call {
 	return &MockRepositoryConfigDao_BulkImport_Call{Call: _e.mock.On("BulkImport", ctx, reposToImport)}
 }
 
@@ -356,7 +357,7 @@ type MockRepositoryConfigDao_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - newRepo api.RepositoryRequest
-func (_e *MockRepositoryConfigDao_Expecter) Create(ctx interface{}, newRepo interface{}) *MockRepositoryConfigDao_Create_Call {
+func (_e *MockRepositoryConfigDao_Expecter) Create(ctx any, newRepo any) *MockRepositoryConfigDao_Create_Call {
 	return &MockRepositoryConfigDao_Create_Call{Call: _e.mock.On("Create", ctx, newRepo)}
 }
 
@@ -414,7 +415,7 @@ type MockRepositoryConfigDao_Delete_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockRepositoryConfigDao_Expecter) Delete(ctx interface{}, orgID interface{}, uuid interface{}) *MockRepositoryConfigDao_Delete_Call {
+func (_e *MockRepositoryConfigDao_Expecter) Delete(ctx any, orgID any, uuid any) *MockRepositoryConfigDao_Delete_Call {
 	return &MockRepositoryConfigDao_Delete_Call{Call: _e.mock.On("Delete", ctx, orgID, uuid)}
 }
 
@@ -486,7 +487,7 @@ type MockRepositoryConfigDao_Fetch_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockRepositoryConfigDao_Expecter) Fetch(ctx interface{}, orgID interface{}, uuid interface{}) *MockRepositoryConfigDao_Fetch_Call {
+func (_e *MockRepositoryConfigDao_Expecter) Fetch(ctx any, orgID any, uuid any) *MockRepositoryConfigDao_Fetch_Call {
 	return &MockRepositoryConfigDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgID, uuid)}
 }
 
@@ -558,7 +559,7 @@ type MockRepositoryConfigDao_FetchByRepoUuid_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - repoUuid string
-func (_e *MockRepositoryConfigDao_Expecter) FetchByRepoUuid(ctx interface{}, orgID interface{}, repoUuid interface{}) *MockRepositoryConfigDao_FetchByRepoUuid_Call {
+func (_e *MockRepositoryConfigDao_Expecter) FetchByRepoUuid(ctx any, orgID any, repoUuid any) *MockRepositoryConfigDao_FetchByRepoUuid_Call {
 	return &MockRepositoryConfigDao_FetchByRepoUuid_Call{Call: _e.mock.On("FetchByRepoUuid", ctx, orgID, repoUuid)}
 }
 
@@ -632,7 +633,7 @@ type MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - repoURLs []string
-func (_e *MockRepositoryConfigDao_Expecter) FetchRepoUUIDsByURLs(ctx interface{}, orgID interface{}, repoURLs interface{}) *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call {
+func (_e *MockRepositoryConfigDao_Expecter) FetchRepoUUIDsByURLs(ctx any, orgID any, repoURLs any) *MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call {
 	return &MockRepositoryConfigDao_FetchRepoUUIDsByURLs_Call{Call: _e.mock.On("FetchRepoUUIDsByURLs", ctx, orgID, repoURLs)}
 }
 
@@ -704,7 +705,7 @@ type MockRepositoryConfigDao_FetchWithoutOrgID_Call struct {
 //   - ctx context.Context
 //   - uuid string
 //   - includeSoftDel bool
-func (_e *MockRepositoryConfigDao_Expecter) FetchWithoutOrgID(ctx interface{}, uuid interface{}, includeSoftDel interface{}) *MockRepositoryConfigDao_FetchWithoutOrgID_Call {
+func (_e *MockRepositoryConfigDao_Expecter) FetchWithoutOrgID(ctx any, uuid any, includeSoftDel any) *MockRepositoryConfigDao_FetchWithoutOrgID_Call {
 	return &MockRepositoryConfigDao_FetchWithoutOrgID_Call{Call: _e.mock.On("FetchWithoutOrgID", ctx, uuid, includeSoftDel)}
 }
 
@@ -776,7 +777,7 @@ type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - name string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigByName(ctx interface{}, orgID interface{}, name interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigByName(ctx any, orgID any, name any) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call {
 	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigByName_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigByName", ctx, orgID, name)}
 }
 
@@ -849,7 +850,7 @@ type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call struct {
 // InternalOnly_FetchRepoConfigForOrg is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigForOrg(ctx interface{}, orgID interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigForOrg(ctx any, orgID any) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call {
 	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigForOrg_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigForOrg", ctx, orgID)}
 }
 
@@ -908,7 +909,7 @@ type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForRepoUUID_Call struc
 // InternalOnly_FetchRepoConfigsForRepoUUID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - uuid string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigsForRepoUUID(ctx interface{}, uuid interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForRepoUUID_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigsForRepoUUID(ctx any, uuid any) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForRepoUUID_Call {
 	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForRepoUUID_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigsForRepoUUID", ctx, uuid)}
 }
 
@@ -976,7 +977,7 @@ type MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call struc
 // InternalOnly_FetchRepoConfigsForTemplate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - template models.Template
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigsForTemplate(ctx interface{}, template interface{}) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_FetchRepoConfigsForTemplate(ctx any, template any) *MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call {
 	return &MockRepositoryConfigDao_InternalOnly_FetchRepoConfigsForTemplate_Call{Call: _e.mock.On("InternalOnly_FetchRepoConfigsForTemplate", ctx, template)}
 }
 
@@ -1033,7 +1034,7 @@ type MockRepositoryConfigDao_InternalOnly_IncrementFailedSnapshotCount_Call stru
 // InternalOnly_IncrementFailedSnapshotCount is a helper method to define mock.On call
 //   - ctx context.Context
 //   - rcUuid string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_IncrementFailedSnapshotCount(ctx interface{}, rcUuid interface{}) *MockRepositoryConfigDao_InternalOnly_IncrementFailedSnapshotCount_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_IncrementFailedSnapshotCount(ctx any, rcUuid any) *MockRepositoryConfigDao_InternalOnly_IncrementFailedSnapshotCount_Call {
 	return &MockRepositoryConfigDao_InternalOnly_IncrementFailedSnapshotCount_Call{Call: _e.mock.On("InternalOnly_IncrementFailedSnapshotCount", ctx, rcUuid)}
 }
 
@@ -1101,7 +1102,7 @@ type MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call struct {
 // InternalOnly_ListReposToSnapshot is a helper method to define mock.On call
 //   - ctx context.Context
 //   - filter *ListRepoFilter
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_ListReposToSnapshot(ctx interface{}, filter interface{}) *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_ListReposToSnapshot(ctx any, filter any) *MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call {
 	return &MockRepositoryConfigDao_InternalOnly_ListReposToSnapshot_Call{Call: _e.mock.On("InternalOnly_ListReposToSnapshot", ctx, filter)}
 }
 
@@ -1175,7 +1176,7 @@ type MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call struct {
 //   - publishedDistURL string
 //   - basePath string
 //   - featureName string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshLightwellRepo(ctx interface{}, orgID interface{}, name interface{}, securityLevel interface{}, contentType interface{}, publishedDistURL interface{}, basePath interface{}, featureName interface{}) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshLightwellRepo(ctx any, orgID any, name any, securityLevel any, contentType any, publishedDistURL any, basePath any, featureName any) *MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call {
 	return &MockRepositoryConfigDao_InternalOnly_RefreshLightwellRepo_Call{Call: _e.mock.On("InternalOnly_RefreshLightwellRepo", ctx, orgID, name, securityLevel, contentType, publishedDistURL, basePath, featureName)}
 }
 
@@ -1275,7 +1276,7 @@ type MockRepositoryConfigDao_InternalOnly_RefreshPredefinedSnapshotRepo_Call str
 //   - request api.RepositoryRequest
 //   - label string
 //   - featureName string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshPredefinedSnapshotRepo(ctx interface{}, request interface{}, label interface{}, featureName interface{}) *MockRepositoryConfigDao_InternalOnly_RefreshPredefinedSnapshotRepo_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_RefreshPredefinedSnapshotRepo(ctx any, request any, label any, featureName any) *MockRepositoryConfigDao_InternalOnly_RefreshPredefinedSnapshotRepo_Call {
 	return &MockRepositoryConfigDao_InternalOnly_RefreshPredefinedSnapshotRepo_Call{Call: _e.mock.On("InternalOnly_RefreshPredefinedSnapshotRepo", ctx, request, label, featureName)}
 }
 
@@ -1342,7 +1343,7 @@ type MockRepositoryConfigDao_InternalOnly_ResetFailedSnapshotCount_Call struct {
 // InternalOnly_ResetFailedSnapshotCount is a helper method to define mock.On call
 //   - ctx context.Context
 //   - rcUuid string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_ResetFailedSnapshotCount(ctx interface{}, rcUuid interface{}) *MockRepositoryConfigDao_InternalOnly_ResetFailedSnapshotCount_Call {
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_ResetFailedSnapshotCount(ctx any, rcUuid any) *MockRepositoryConfigDao_InternalOnly_ResetFailedSnapshotCount_Call {
 	return &MockRepositoryConfigDao_InternalOnly_ResetFailedSnapshotCount_Call{Call: _e.mock.On("InternalOnly_ResetFailedSnapshotCount", ctx, rcUuid)}
 }
 
@@ -1416,7 +1417,7 @@ type MockRepositoryConfigDao_List_Call struct {
 //   - orgID string
 //   - paginationData api.PaginationData
 //   - filterData api.FilterData
-func (_e *MockRepositoryConfigDao_Expecter) List(ctx interface{}, orgID interface{}, paginationData interface{}, filterData interface{}) *MockRepositoryConfigDao_List_Call {
+func (_e *MockRepositoryConfigDao_Expecter) List(ctx any, orgID any, paginationData any, filterData any) *MockRepositoryConfigDao_List_Call {
 	return &MockRepositoryConfigDao_List_Call{Call: _e.mock.On("List", ctx, orgID, paginationData, filterData)}
 }
 
@@ -1494,7 +1495,7 @@ type MockRepositoryConfigDao_ListReposWithOutdatedSnapshots_Call struct {
 // ListReposWithOutdatedSnapshots is a helper method to define mock.On call
 //   - ctx context.Context
 //   - olderThanDays int
-func (_e *MockRepositoryConfigDao_Expecter) ListReposWithOutdatedSnapshots(ctx interface{}, olderThanDays interface{}) *MockRepositoryConfigDao_ListReposWithOutdatedSnapshots_Call {
+func (_e *MockRepositoryConfigDao_Expecter) ListReposWithOutdatedSnapshots(ctx any, olderThanDays any) *MockRepositoryConfigDao_ListReposWithOutdatedSnapshots_Call {
 	return &MockRepositoryConfigDao_ListReposWithOutdatedSnapshots_Call{Call: _e.mock.On("ListReposWithOutdatedSnapshots", ctx, olderThanDays)}
 }
 
@@ -1551,7 +1552,7 @@ type MockRepositoryConfigDao_SavePublicRepos_Call struct {
 // SavePublicRepos is a helper method to define mock.On call
 //   - ctx context.Context
 //   - urls []string
-func (_e *MockRepositoryConfigDao_Expecter) SavePublicRepos(ctx interface{}, urls interface{}) *MockRepositoryConfigDao_SavePublicRepos_Call {
+func (_e *MockRepositoryConfigDao_Expecter) SavePublicRepos(ctx any, urls any) *MockRepositoryConfigDao_SavePublicRepos_Call {
 	return &MockRepositoryConfigDao_SavePublicRepos_Call{Call: _e.mock.On("SavePublicRepos", ctx, urls)}
 }
 
@@ -1609,7 +1610,7 @@ type MockRepositoryConfigDao_SetPartnerRepo_Call struct {
 //   - ctx context.Context
 //   - repoConfigUUID string
 //   - partner bool
-func (_e *MockRepositoryConfigDao_Expecter) SetPartnerRepo(ctx interface{}, repoConfigUUID interface{}, partner interface{}) *MockRepositoryConfigDao_SetPartnerRepo_Call {
+func (_e *MockRepositoryConfigDao_Expecter) SetPartnerRepo(ctx any, repoConfigUUID any, partner any) *MockRepositoryConfigDao_SetPartnerRepo_Call {
 	return &MockRepositoryConfigDao_SetPartnerRepo_Call{Call: _e.mock.On("SetPartnerRepo", ctx, repoConfigUUID, partner)}
 }
 
@@ -1672,7 +1673,7 @@ type MockRepositoryConfigDao_SoftDelete_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockRepositoryConfigDao_Expecter) SoftDelete(ctx interface{}, orgID interface{}, uuid interface{}) *MockRepositoryConfigDao_SoftDelete_Call {
+func (_e *MockRepositoryConfigDao_Expecter) SoftDelete(ctx any, orgID any, uuid any) *MockRepositoryConfigDao_SoftDelete_Call {
 	return &MockRepositoryConfigDao_SoftDelete_Call{Call: _e.mock.On("SoftDelete", ctx, orgID, uuid)}
 }
 
@@ -1745,7 +1746,7 @@ type MockRepositoryConfigDao_Update_Call struct {
 //   - orgID string
 //   - uuid string
 //   - repoParams api.RepositoryUpdateRequest
-func (_e *MockRepositoryConfigDao_Expecter) Update(ctx interface{}, orgID interface{}, uuid interface{}, repoParams interface{}) *MockRepositoryConfigDao_Update_Call {
+func (_e *MockRepositoryConfigDao_Expecter) Update(ctx any, orgID any, uuid any, repoParams any) *MockRepositoryConfigDao_Update_Call {
 	return &MockRepositoryConfigDao_Update_Call{Call: _e.mock.On("Update", ctx, orgID, uuid, repoParams)}
 }
 
@@ -1814,7 +1815,7 @@ type MockRepositoryConfigDao_UpdateLastSnapshot_Call struct {
 //   - orgID string
 //   - repoConfigUUID string
 //   - snapUUID string
-func (_e *MockRepositoryConfigDao_Expecter) UpdateLastSnapshot(ctx interface{}, orgID interface{}, repoConfigUUID interface{}, snapUUID interface{}) *MockRepositoryConfigDao_UpdateLastSnapshot_Call {
+func (_e *MockRepositoryConfigDao_Expecter) UpdateLastSnapshot(ctx any, orgID any, repoConfigUUID any, snapUUID any) *MockRepositoryConfigDao_UpdateLastSnapshot_Call {
 	return &MockRepositoryConfigDao_UpdateLastSnapshot_Call{Call: _e.mock.On("UpdateLastSnapshot", ctx, orgID, repoConfigUUID, snapUUID)}
 }
 
@@ -1883,7 +1884,7 @@ type MockRepositoryConfigDao_UpdateLastSnapshotTask_Call struct {
 //   - taskUUID string
 //   - orgID string
 //   - repoUUID string
-func (_e *MockRepositoryConfigDao_Expecter) UpdateLastSnapshotTask(ctx interface{}, taskUUID interface{}, orgID interface{}, repoUUID interface{}) *MockRepositoryConfigDao_UpdateLastSnapshotTask_Call {
+func (_e *MockRepositoryConfigDao_Expecter) UpdateLastSnapshotTask(ctx any, taskUUID any, orgID any, repoUUID any) *MockRepositoryConfigDao_UpdateLastSnapshotTask_Call {
 	return &MockRepositoryConfigDao_UpdateLastSnapshotTask_Call{Call: _e.mock.On("UpdateLastSnapshotTask", ctx, taskUUID, orgID, repoUUID)}
 }
 
@@ -1961,7 +1962,7 @@ type MockRepositoryConfigDao_ValidateParameters_Call struct {
 //   - orgId string
 //   - params api.RepositoryValidationRequest
 //   - excludedUUIDS []string
-func (_e *MockRepositoryConfigDao_Expecter) ValidateParameters(ctx interface{}, orgId interface{}, params interface{}, excludedUUIDS interface{}) *MockRepositoryConfigDao_ValidateParameters_Call {
+func (_e *MockRepositoryConfigDao_Expecter) ValidateParameters(ctx any, orgId any, params any, excludedUUIDS any) *MockRepositoryConfigDao_ValidateParameters_Call {
 	return &MockRepositoryConfigDao_ValidateParameters_Call{Call: _e.mock.On("ValidateParameters", ctx, orgId, params, excludedUUIDS)}
 }
 
@@ -2065,7 +2066,7 @@ type MockModuleStreamDao_InsertForRepository_Call struct {
 //   - ctx context.Context
 //   - repoUuid string
 //   - pkgGroups []yum.ModuleMD
-func (_e *MockModuleStreamDao_Expecter) InsertForRepository(ctx interface{}, repoUuid interface{}, pkgGroups interface{}) *MockModuleStreamDao_InsertForRepository_Call {
+func (_e *MockModuleStreamDao_Expecter) InsertForRepository(ctx any, repoUuid any, pkgGroups any) *MockModuleStreamDao_InsertForRepository_Call {
 	return &MockModuleStreamDao_InsertForRepository_Call{Call: _e.mock.On("InsertForRepository", ctx, repoUuid, pkgGroups)}
 }
 
@@ -2126,7 +2127,7 @@ type MockModuleStreamDao_OrphanCleanup_Call struct {
 
 // OrphanCleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockModuleStreamDao_Expecter) OrphanCleanup(ctx interface{}) *MockModuleStreamDao_OrphanCleanup_Call {
+func (_e *MockModuleStreamDao_Expecter) OrphanCleanup(ctx any) *MockModuleStreamDao_OrphanCleanup_Call {
 	return &MockModuleStreamDao_OrphanCleanup_Call{Call: _e.mock.On("OrphanCleanup", ctx)}
 }
 
@@ -2190,7 +2191,7 @@ type MockModuleStreamDao_SearchRepositoryModuleStreams_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.SearchModuleStreamsRequest
-func (_e *MockModuleStreamDao_Expecter) SearchRepositoryModuleStreams(ctx interface{}, orgID interface{}, request interface{}) *MockModuleStreamDao_SearchRepositoryModuleStreams_Call {
+func (_e *MockModuleStreamDao_Expecter) SearchRepositoryModuleStreams(ctx any, orgID any, request any) *MockModuleStreamDao_SearchRepositoryModuleStreams_Call {
 	return &MockModuleStreamDao_SearchRepositoryModuleStreams_Call{Call: _e.mock.On("SearchRepositoryModuleStreams", ctx, orgID, request)}
 }
 
@@ -2264,7 +2265,7 @@ type MockModuleStreamDao_SearchSnapshotModuleStreams_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.SearchSnapshotModuleStreamsRequest
-func (_e *MockModuleStreamDao_Expecter) SearchSnapshotModuleStreams(ctx interface{}, orgID interface{}, request interface{}) *MockModuleStreamDao_SearchSnapshotModuleStreams_Call {
+func (_e *MockModuleStreamDao_Expecter) SearchSnapshotModuleStreams(ctx any, orgID any, request any) *MockModuleStreamDao_SearchSnapshotModuleStreams_Call {
 	return &MockModuleStreamDao_SearchSnapshotModuleStreams_Call{Call: _e.mock.On("SearchSnapshotModuleStreams", ctx, orgID, request)}
 }
 
@@ -2366,7 +2367,7 @@ type MockRpmDao_FetchForRepository_Call struct {
 //   - orgID string
 //   - repositoryConfigUUID string
 //   - rpmUUIDs []string
-func (_e *MockRpmDao_Expecter) FetchForRepository(ctx interface{}, orgID interface{}, repositoryConfigUUID interface{}, rpmUUIDs interface{}) *MockRpmDao_FetchForRepository_Call {
+func (_e *MockRpmDao_Expecter) FetchForRepository(ctx any, orgID any, repositoryConfigUUID any, rpmUUIDs any) *MockRpmDao_FetchForRepository_Call {
 	return &MockRpmDao_FetchForRepository_Call{Call: _e.mock.On("FetchForRepository", ctx, orgID, repositoryConfigUUID, rpmUUIDs)}
 }
 
@@ -2445,7 +2446,7 @@ type MockRpmDao_FetchTemplateErrataIDs_Call struct {
 //   - ctx context.Context
 //   - orgId string
 //   - templateUUID string
-func (_e *MockRpmDao_Expecter) FetchTemplateErrataIDs(ctx interface{}, orgId interface{}, templateUUID interface{}) *MockRpmDao_FetchTemplateErrataIDs_Call {
+func (_e *MockRpmDao_Expecter) FetchTemplateErrataIDs(ctx any, orgId any, templateUUID any) *MockRpmDao_FetchTemplateErrataIDs_Call {
 	return &MockRpmDao_FetchTemplateErrataIDs_Call{Call: _e.mock.On("FetchTemplateErrataIDs", ctx, orgId, templateUUID)}
 }
 
@@ -2517,7 +2518,7 @@ type MockRpmDao_InsertForRepository_Call struct {
 //   - ctx context.Context
 //   - repoUuid string
 //   - pkgs []yum.Package
-func (_e *MockRpmDao_Expecter) InsertForRepository(ctx interface{}, repoUuid interface{}, pkgs interface{}) *MockRpmDao_InsertForRepository_Call {
+func (_e *MockRpmDao_Expecter) InsertForRepository(ctx any, repoUuid any, pkgs any) *MockRpmDao_InsertForRepository_Call {
 	return &MockRpmDao_InsertForRepository_Call{Call: _e.mock.On("InsertForRepository", ctx, repoUuid, pkgs)}
 }
 
@@ -2599,7 +2600,7 @@ type MockRpmDao_List_Call struct {
 //   - offset int
 //   - search string
 //   - sortBy string
-func (_e *MockRpmDao_Expecter) List(ctx interface{}, orgID interface{}, uuidRepo interface{}, limit interface{}, offset interface{}, search interface{}, sortBy interface{}) *MockRpmDao_List_Call {
+func (_e *MockRpmDao_Expecter) List(ctx any, orgID any, uuidRepo any, limit any, offset any, search any, sortBy any) *MockRpmDao_List_Call {
 	return &MockRpmDao_List_Call{Call: _e.mock.On("List", ctx, orgID, uuidRepo, limit, offset, search, sortBy)}
 }
 
@@ -2701,7 +2702,7 @@ type MockRpmDao_ListSnapshotErrata_Call struct {
 //   - snapshotUUIDs []string
 //   - filters tangy.ErrataListFilters
 //   - pageOpts api.PaginationData
-func (_e *MockRpmDao_Expecter) ListSnapshotErrata(ctx interface{}, orgId interface{}, snapshotUUIDs interface{}, filters interface{}, pageOpts interface{}) *MockRpmDao_ListSnapshotErrata_Call {
+func (_e *MockRpmDao_Expecter) ListSnapshotErrata(ctx any, orgId any, snapshotUUIDs any, filters any, pageOpts any) *MockRpmDao_ListSnapshotErrata_Call {
 	return &MockRpmDao_ListSnapshotErrata_Call{Call: _e.mock.On("ListSnapshotErrata", ctx, orgId, snapshotUUIDs, filters, pageOpts)}
 }
 
@@ -2793,7 +2794,7 @@ type MockRpmDao_ListSnapshotRpms_Call struct {
 //   - snapshotUUIDs []string
 //   - search string
 //   - pageOpts api.PaginationData
-func (_e *MockRpmDao_Expecter) ListSnapshotRpms(ctx interface{}, orgId interface{}, snapshotUUIDs interface{}, search interface{}, pageOpts interface{}) *MockRpmDao_ListSnapshotRpms_Call {
+func (_e *MockRpmDao_Expecter) ListSnapshotRpms(ctx any, orgId any, snapshotUUIDs any, search any, pageOpts any) *MockRpmDao_ListSnapshotRpms_Call {
 	return &MockRpmDao_ListSnapshotRpms_Call{Call: _e.mock.On("ListSnapshotRpms", ctx, orgId, snapshotUUIDs, search, pageOpts)}
 }
 
@@ -2885,7 +2886,7 @@ type MockRpmDao_ListTemplateErrata_Call struct {
 //   - templateUUID string
 //   - filters tangy.ErrataListFilters
 //   - pageOpts api.PaginationData
-func (_e *MockRpmDao_Expecter) ListTemplateErrata(ctx interface{}, orgId interface{}, templateUUID interface{}, filters interface{}, pageOpts interface{}) *MockRpmDao_ListTemplateErrata_Call {
+func (_e *MockRpmDao_Expecter) ListTemplateErrata(ctx any, orgId any, templateUUID any, filters any, pageOpts any) *MockRpmDao_ListTemplateErrata_Call {
 	return &MockRpmDao_ListTemplateErrata_Call{Call: _e.mock.On("ListTemplateErrata", ctx, orgId, templateUUID, filters, pageOpts)}
 }
 
@@ -2977,7 +2978,7 @@ type MockRpmDao_ListTemplateRpms_Call struct {
 //   - templateUUID string
 //   - search string
 //   - pageOpts api.PaginationData
-func (_e *MockRpmDao_Expecter) ListTemplateRpms(ctx interface{}, orgId interface{}, templateUUID interface{}, search interface{}, pageOpts interface{}) *MockRpmDao_ListTemplateRpms_Call {
+func (_e *MockRpmDao_Expecter) ListTemplateRpms(ctx any, orgId any, templateUUID any, search any, pageOpts any) *MockRpmDao_ListTemplateRpms_Call {
 	return &MockRpmDao_ListTemplateRpms_Call{Call: _e.mock.On("ListTemplateRpms", ctx, orgId, templateUUID, search, pageOpts)}
 }
 
@@ -3048,7 +3049,7 @@ type MockRpmDao_OrphanCleanup_Call struct {
 
 // OrphanCleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRpmDao_Expecter) OrphanCleanup(ctx interface{}) *MockRpmDao_OrphanCleanup_Call {
+func (_e *MockRpmDao_Expecter) OrphanCleanup(ctx any) *MockRpmDao_OrphanCleanup_Call {
 	return &MockRpmDao_OrphanCleanup_Call{Call: _e.mock.On("OrphanCleanup", ctx)}
 }
 
@@ -3112,7 +3113,7 @@ type MockRpmDao_Search_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.ContentUnitSearchRequest
-func (_e *MockRpmDao_Expecter) Search(ctx interface{}, orgID interface{}, request interface{}) *MockRpmDao_Search_Call {
+func (_e *MockRpmDao_Expecter) Search(ctx any, orgID any, request any) *MockRpmDao_Search_Call {
 	return &MockRpmDao_Search_Call{Call: _e.mock.On("Search", ctx, orgID, request)}
 }
 
@@ -3186,7 +3187,7 @@ type MockRpmDao_SearchSnapshotRpms_Call struct {
 //   - ctx context.Context
 //   - orgId string
 //   - request api.SnapshotSearchRpmRequest
-func (_e *MockRpmDao_Expecter) SearchSnapshotRpms(ctx interface{}, orgId interface{}, request interface{}) *MockRpmDao_SearchSnapshotRpms_Call {
+func (_e *MockRpmDao_Expecter) SearchSnapshotRpms(ctx any, orgId any, request any) *MockRpmDao_SearchSnapshotRpms_Call {
 	return &MockRpmDao_SearchSnapshotRpms_Call{Call: _e.mock.On("SearchSnapshotRpms", ctx, orgId, request)}
 }
 
@@ -3285,7 +3286,7 @@ type MockRepositoryDao_FetchForUrl_Call struct {
 //   - ctx context.Context
 //   - url string
 //   - origin *string
-func (_e *MockRepositoryDao_Expecter) FetchForUrl(ctx interface{}, url interface{}, origin interface{}) *MockRepositoryDao_FetchForUrl_Call {
+func (_e *MockRepositoryDao_Expecter) FetchForUrl(ctx any, url any, origin any) *MockRepositoryDao_FetchForUrl_Call {
 	return &MockRepositoryDao_FetchForUrl_Call{Call: _e.mock.On("FetchForUrl", ctx, url, origin)}
 }
 
@@ -3356,7 +3357,7 @@ type MockRepositoryDao_FetchRepositoryRPMCount_Call struct {
 // FetchRepositoryRPMCount is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoUUID string
-func (_e *MockRepositoryDao_Expecter) FetchRepositoryRPMCount(ctx interface{}, repoUUID interface{}) *MockRepositoryDao_FetchRepositoryRPMCount_Call {
+func (_e *MockRepositoryDao_Expecter) FetchRepositoryRPMCount(ctx any, repoUUID any) *MockRepositoryDao_FetchRepositoryRPMCount_Call {
 	return &MockRepositoryDao_FetchRepositoryRPMCount_Call{Call: _e.mock.On("FetchRepositoryRPMCount", ctx, repoUUID)}
 }
 
@@ -3416,7 +3417,7 @@ type MockRepositoryDao_InternalOnly_UpdateCounts_Call struct {
 //   - packageCount int
 //   - buildCount int
 //   - versionCount int
-func (_e *MockRepositoryDao_Expecter) InternalOnly_UpdateCounts(ctx interface{}, repoUUID interface{}, packageCount interface{}, buildCount interface{}, versionCount interface{}) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
+func (_e *MockRepositoryDao_Expecter) InternalOnly_UpdateCounts(ctx any, repoUUID any, packageCount any, buildCount any, versionCount any) *MockRepositoryDao_InternalOnly_UpdateCounts_Call {
 	return &MockRepositoryDao_InternalOnly_UpdateCounts_Call{Call: _e.mock.On("InternalOnly_UpdateCounts", ctx, repoUUID, packageCount, buildCount, versionCount)}
 }
 
@@ -3500,7 +3501,7 @@ type MockRepositoryDao_ListForIntrospection_Call struct {
 //   - ctx context.Context
 //   - urls *[]string
 //   - force bool
-func (_e *MockRepositoryDao_Expecter) ListForIntrospection(ctx interface{}, urls interface{}, force interface{}) *MockRepositoryDao_ListForIntrospection_Call {
+func (_e *MockRepositoryDao_Expecter) ListForIntrospection(ctx any, urls any, force any) *MockRepositoryDao_ListForIntrospection_Call {
 	return &MockRepositoryDao_ListForIntrospection_Call{Call: _e.mock.On("ListForIntrospection", ctx, urls, force)}
 }
 
@@ -3578,7 +3579,7 @@ type MockRepositoryDao_ListPublic_Call struct {
 //   - ctx context.Context
 //   - paginationData api.PaginationData
 //   - filterData api.FilterData
-func (_e *MockRepositoryDao_Expecter) ListPublic(ctx interface{}, paginationData interface{}, filterData interface{}) *MockRepositoryDao_ListPublic_Call {
+func (_e *MockRepositoryDao_Expecter) ListPublic(ctx any, paginationData any, filterData any) *MockRepositoryDao_ListPublic_Call {
 	return &MockRepositoryDao_ListPublic_Call{Call: _e.mock.On("ListPublic", ctx, paginationData, filterData)}
 }
 
@@ -3640,7 +3641,7 @@ type MockRepositoryDao_MarkAsNotPublic_Call struct {
 // MarkAsNotPublic is a helper method to define mock.On call
 //   - ctx context.Context
 //   - url string
-func (_e *MockRepositoryDao_Expecter) MarkAsNotPublic(ctx interface{}, url interface{}) *MockRepositoryDao_MarkAsNotPublic_Call {
+func (_e *MockRepositoryDao_Expecter) MarkAsNotPublic(ctx any, url any) *MockRepositoryDao_MarkAsNotPublic_Call {
 	return &MockRepositoryDao_MarkAsNotPublic_Call{Call: _e.mock.On("MarkAsNotPublic", ctx, url)}
 }
 
@@ -3696,7 +3697,7 @@ type MockRepositoryDao_OrphanCleanup_Call struct {
 
 // OrphanCleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRepositoryDao_Expecter) OrphanCleanup(ctx interface{}) *MockRepositoryDao_OrphanCleanup_Call {
+func (_e *MockRepositoryDao_Expecter) OrphanCleanup(ctx any) *MockRepositoryDao_OrphanCleanup_Call {
 	return &MockRepositoryDao_OrphanCleanup_Call{Call: _e.mock.On("OrphanCleanup", ctx)}
 }
 
@@ -3748,7 +3749,7 @@ type MockRepositoryDao_Update_Call struct {
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repo RepositoryUpdate
-func (_e *MockRepositoryDao_Expecter) Update(ctx interface{}, repo interface{}) *MockRepositoryDao_Update_Call {
+func (_e *MockRepositoryDao_Expecter) Update(ctx any, repo any) *MockRepositoryDao_Update_Call {
 	return &MockRepositoryDao_Update_Call{Call: _e.mock.On("Update", ctx, repo)}
 }
 
@@ -3834,7 +3835,7 @@ type MockSnapshotDao_BulkDelete_Call struct {
 // BulkDelete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - uuids []string
-func (_e *MockSnapshotDao_Expecter) BulkDelete(ctx interface{}, uuids interface{}) *MockSnapshotDao_BulkDelete_Call {
+func (_e *MockSnapshotDao_Expecter) BulkDelete(ctx any, uuids any) *MockSnapshotDao_BulkDelete_Call {
 	return &MockSnapshotDao_BulkDelete_Call{Call: _e.mock.On("BulkDelete", ctx, uuids)}
 }
 
@@ -3891,7 +3892,7 @@ type MockSnapshotDao_ClearDeletedAt_Call struct {
 // ClearDeletedAt is a helper method to define mock.On call
 //   - ctx context.Context
 //   - snapUUID string
-func (_e *MockSnapshotDao_Expecter) ClearDeletedAt(ctx interface{}, snapUUID interface{}) *MockSnapshotDao_ClearDeletedAt_Call {
+func (_e *MockSnapshotDao_Expecter) ClearDeletedAt(ctx any, snapUUID any) *MockSnapshotDao_ClearDeletedAt_Call {
 	return &MockSnapshotDao_ClearDeletedAt_Call{Call: _e.mock.On("ClearDeletedAt", ctx, snapUUID)}
 }
 
@@ -3948,7 +3949,7 @@ type MockSnapshotDao_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - snap *models.Snapshot
-func (_e *MockSnapshotDao_Expecter) Create(ctx interface{}, snap interface{}) *MockSnapshotDao_Create_Call {
+func (_e *MockSnapshotDao_Expecter) Create(ctx any, snap any) *MockSnapshotDao_Create_Call {
 	return &MockSnapshotDao_Create_Call{Call: _e.mock.On("Create", ctx, snap)}
 }
 
@@ -4005,7 +4006,7 @@ type MockSnapshotDao_Delete_Call struct {
 // Delete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - snapUUID string
-func (_e *MockSnapshotDao_Expecter) Delete(ctx interface{}, snapUUID interface{}) *MockSnapshotDao_Delete_Call {
+func (_e *MockSnapshotDao_Expecter) Delete(ctx any, snapUUID any) *MockSnapshotDao_Delete_Call {
 	return &MockSnapshotDao_Delete_Call{Call: _e.mock.On("Delete", ctx, snapUUID)}
 }
 
@@ -4072,7 +4073,7 @@ type MockSnapshotDao_Fetch_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockSnapshotDao_Expecter) Fetch(ctx interface{}, orgID interface{}, uuid interface{}) *MockSnapshotDao_Fetch_Call {
+func (_e *MockSnapshotDao_Expecter) Fetch(ctx any, orgID any, uuid any) *MockSnapshotDao_Fetch_Call {
 	return &MockSnapshotDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgID, uuid)}
 }
 
@@ -4146,7 +4147,7 @@ type MockSnapshotDao_FetchForRepoConfigUUID_Call struct {
 //   - ctx context.Context
 //   - repoConfigUUID string
 //   - inclSoftDel bool
-func (_e *MockSnapshotDao_Expecter) FetchForRepoConfigUUID(ctx interface{}, repoConfigUUID interface{}, inclSoftDel interface{}) *MockSnapshotDao_FetchForRepoConfigUUID_Call {
+func (_e *MockSnapshotDao_Expecter) FetchForRepoConfigUUID(ctx any, repoConfigUUID any, inclSoftDel any) *MockSnapshotDao_FetchForRepoConfigUUID_Call {
 	return &MockSnapshotDao_FetchForRepoConfigUUID_Call{Call: _e.mock.On("FetchForRepoConfigUUID", ctx, repoConfigUUID, inclSoftDel)}
 }
 
@@ -4217,7 +4218,7 @@ type MockSnapshotDao_FetchLatestPublishedSnapshotModel_Call struct {
 // FetchLatestPublishedSnapshotModel is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockSnapshotDao_Expecter) FetchLatestPublishedSnapshotModel(ctx interface{}, repoConfigUUID interface{}) *MockSnapshotDao_FetchLatestPublishedSnapshotModel_Call {
+func (_e *MockSnapshotDao_Expecter) FetchLatestPublishedSnapshotModel(ctx any, repoConfigUUID any) *MockSnapshotDao_FetchLatestPublishedSnapshotModel_Call {
 	return &MockSnapshotDao_FetchLatestPublishedSnapshotModel_Call{Call: _e.mock.On("FetchLatestPublishedSnapshotModel", ctx, repoConfigUUID)}
 }
 
@@ -4283,7 +4284,7 @@ type MockSnapshotDao_FetchLatestSnapshot_Call struct {
 // FetchLatestSnapshot is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshot(ctx interface{}, repoConfigUUID interface{}) *MockSnapshotDao_FetchLatestSnapshot_Call {
+func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshot(ctx any, repoConfigUUID any) *MockSnapshotDao_FetchLatestSnapshot_Call {
 	return &MockSnapshotDao_FetchLatestSnapshot_Call{Call: _e.mock.On("FetchLatestSnapshot", ctx, repoConfigUUID)}
 }
 
@@ -4349,7 +4350,7 @@ type MockSnapshotDao_FetchLatestSnapshotForDistribution_Call struct {
 // FetchLatestSnapshotForDistribution is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshotForDistribution(ctx interface{}, repoConfigUUID interface{}) *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call {
+func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshotForDistribution(ctx any, repoConfigUUID any) *MockSnapshotDao_FetchLatestSnapshotForDistribution_Call {
 	return &MockSnapshotDao_FetchLatestSnapshotForDistribution_Call{Call: _e.mock.On("FetchLatestSnapshotForDistribution", ctx, repoConfigUUID)}
 }
 
@@ -4415,7 +4416,7 @@ type MockSnapshotDao_FetchLatestSnapshotModel_Call struct {
 // FetchLatestSnapshotModel is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshotModel(ctx interface{}, repoConfigUUID interface{}) *MockSnapshotDao_FetchLatestSnapshotModel_Call {
+func (_e *MockSnapshotDao_Expecter) FetchLatestSnapshotModel(ctx any, repoConfigUUID any) *MockSnapshotDao_FetchLatestSnapshotModel_Call {
 	return &MockSnapshotDao_FetchLatestSnapshotModel_Call{Call: _e.mock.On("FetchLatestSnapshotModel", ctx, repoConfigUUID)}
 }
 
@@ -4482,7 +4483,7 @@ type MockSnapshotDao_FetchModel_Call struct {
 //   - ctx context.Context
 //   - uuid string
 //   - includeSoftDel bool
-func (_e *MockSnapshotDao_Expecter) FetchModel(ctx interface{}, uuid interface{}, includeSoftDel interface{}) *MockSnapshotDao_FetchModel_Call {
+func (_e *MockSnapshotDao_Expecter) FetchModel(ctx any, uuid any, includeSoftDel any) *MockSnapshotDao_FetchModel_Call {
 	return &MockSnapshotDao_FetchModel_Call{Call: _e.mock.On("FetchModel", ctx, uuid, includeSoftDel)}
 }
 
@@ -4556,7 +4557,7 @@ type MockSnapshotDao_FetchSnapshotByVersionHref_Call struct {
 //   - ctx context.Context
 //   - repoConfigUUID string
 //   - versionHref string
-func (_e *MockSnapshotDao_Expecter) FetchSnapshotByVersionHref(ctx interface{}, repoConfigUUID interface{}, versionHref interface{}) *MockSnapshotDao_FetchSnapshotByVersionHref_Call {
+func (_e *MockSnapshotDao_Expecter) FetchSnapshotByVersionHref(ctx any, repoConfigUUID any, versionHref any) *MockSnapshotDao_FetchSnapshotByVersionHref_Call {
 	return &MockSnapshotDao_FetchSnapshotByVersionHref_Call{Call: _e.mock.On("FetchSnapshotByVersionHref", ctx, repoConfigUUID, versionHref)}
 }
 
@@ -4628,7 +4629,7 @@ type MockSnapshotDao_FetchSnapshotsByDateAndRepository_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.ListSnapshotByDateRequest
-func (_e *MockSnapshotDao_Expecter) FetchSnapshotsByDateAndRepository(ctx interface{}, orgID interface{}, request interface{}) *MockSnapshotDao_FetchSnapshotsByDateAndRepository_Call {
+func (_e *MockSnapshotDao_Expecter) FetchSnapshotsByDateAndRepository(ctx any, orgID any, request any) *MockSnapshotDao_FetchSnapshotsByDateAndRepository_Call {
 	return &MockSnapshotDao_FetchSnapshotsByDateAndRepository_Call{Call: _e.mock.On("FetchSnapshotsByDateAndRepository", ctx, orgID, request)}
 }
 
@@ -4702,7 +4703,7 @@ type MockSnapshotDao_FetchSnapshotsModelByDateAndRepository_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.ListSnapshotByDateRequest
-func (_e *MockSnapshotDao_Expecter) FetchSnapshotsModelByDateAndRepository(ctx interface{}, orgID interface{}, request interface{}) *MockSnapshotDao_FetchSnapshotsModelByDateAndRepository_Call {
+func (_e *MockSnapshotDao_Expecter) FetchSnapshotsModelByDateAndRepository(ctx any, orgID any, request any) *MockSnapshotDao_FetchSnapshotsModelByDateAndRepository_Call {
 	return &MockSnapshotDao_FetchSnapshotsModelByDateAndRepository_Call{Call: _e.mock.On("FetchSnapshotsModelByDateAndRepository", ctx, orgID, request)}
 }
 
@@ -4775,7 +4776,7 @@ type MockSnapshotDao_GetRepositoryConfigurationFile_Call struct {
 //   - orgID string
 //   - snapshotUUID string
 //   - isLatest bool
-func (_e *MockSnapshotDao_Expecter) GetRepositoryConfigurationFile(ctx interface{}, orgID interface{}, snapshotUUID interface{}, isLatest interface{}) *MockSnapshotDao_GetRepositoryConfigurationFile_Call {
+func (_e *MockSnapshotDao_Expecter) GetRepositoryConfigurationFile(ctx any, orgID any, snapshotUUID any, isLatest any) *MockSnapshotDao_GetRepositoryConfigurationFile_Call {
 	return &MockSnapshotDao_GetRepositoryConfigurationFile_Call{Call: _e.mock.On("GetRepositoryConfigurationFile", ctx, orgID, snapshotUUID, isLatest)}
 }
 
@@ -4851,7 +4852,7 @@ type MockSnapshotDao_HasPublishedSnapshot_Call struct {
 // HasPublishedSnapshot is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockSnapshotDao_Expecter) HasPublishedSnapshot(ctx interface{}, repoConfigUUID interface{}) *MockSnapshotDao_HasPublishedSnapshot_Call {
+func (_e *MockSnapshotDao_Expecter) HasPublishedSnapshot(ctx any, repoConfigUUID any) *MockSnapshotDao_HasPublishedSnapshot_Call {
 	return &MockSnapshotDao_HasPublishedSnapshot_Call{Call: _e.mock.On("HasPublishedSnapshot", ctx, repoConfigUUID)}
 }
 
@@ -4926,7 +4927,7 @@ type MockSnapshotDao_List_Call struct {
 //   - repoConfigUuid string
 //   - paginationData api.PaginationData
 //   - filterData api.FilterData
-func (_e *MockSnapshotDao_Expecter) List(ctx interface{}, orgID interface{}, repoConfigUuid interface{}, paginationData interface{}, filterData interface{}) *MockSnapshotDao_List_Call {
+func (_e *MockSnapshotDao_Expecter) List(ctx any, orgID any, repoConfigUuid any, paginationData any, filterData any) *MockSnapshotDao_List_Call {
 	return &MockSnapshotDao_List_Call{Call: _e.mock.On("List", ctx, orgID, repoConfigUuid, paginationData, filterData)}
 }
 
@@ -5016,7 +5017,7 @@ type MockSnapshotDao_ListByTemplate_Call struct {
 //   - template api.TemplateResponse
 //   - repositorySearch string
 //   - paginationData api.PaginationData
-func (_e *MockSnapshotDao_Expecter) ListByTemplate(ctx interface{}, orgID interface{}, template interface{}, repositorySearch interface{}, paginationData interface{}) *MockSnapshotDao_ListByTemplate_Call {
+func (_e *MockSnapshotDao_Expecter) ListByTemplate(ctx any, orgID any, template any, repositorySearch any, paginationData any) *MockSnapshotDao_ListByTemplate_Call {
 	return &MockSnapshotDao_ListByTemplate_Call{Call: _e.mock.On("ListByTemplate", ctx, orgID, template, repositorySearch, paginationData)}
 }
 
@@ -5097,7 +5098,7 @@ type MockSnapshotDao_SetDetectedOSVersion_Call struct {
 // SetDetectedOSVersion is a helper method to define mock.On call
 //   - ctx context.Context
 //   - uuid string
-func (_e *MockSnapshotDao_Expecter) SetDetectedOSVersion(ctx interface{}, uuid interface{}) *MockSnapshotDao_SetDetectedOSVersion_Call {
+func (_e *MockSnapshotDao_Expecter) SetDetectedOSVersion(ctx any, uuid any) *MockSnapshotDao_SetDetectedOSVersion_Call {
 	return &MockSnapshotDao_SetDetectedOSVersion_Call{Call: _e.mock.On("SetDetectedOSVersion", ctx, uuid)}
 }
 
@@ -5154,7 +5155,7 @@ type MockSnapshotDao_SoftDelete_Call struct {
 // SoftDelete is a helper method to define mock.On call
 //   - ctx context.Context
 //   - snapUUID string
-func (_e *MockSnapshotDao_Expecter) SoftDelete(ctx interface{}, snapUUID interface{}) *MockSnapshotDao_SoftDelete_Call {
+func (_e *MockSnapshotDao_Expecter) SoftDelete(ctx any, snapUUID any) *MockSnapshotDao_SoftDelete_Call {
 	return &MockSnapshotDao_SoftDelete_Call{Call: _e.mock.On("SoftDelete", ctx, snapUUID)}
 }
 
@@ -5223,7 +5224,7 @@ type MockSnapshotDao_UpdatePublishedStatus_Call struct {
 //   - published bool
 //   - repoConfigUUID string
 //   - snapshotUUID string
-func (_e *MockSnapshotDao_Expecter) UpdatePublishedStatus(ctx interface{}, orgID interface{}, published interface{}, repoConfigUUID interface{}, snapshotUUID interface{}) *MockSnapshotDao_UpdatePublishedStatus_Call {
+func (_e *MockSnapshotDao_Expecter) UpdatePublishedStatus(ctx any, orgID any, published any, repoConfigUUID any, snapshotUUID any) *MockSnapshotDao_UpdatePublishedStatus_Call {
 	return &MockSnapshotDao_UpdatePublishedStatus_Call{Call: _e.mock.On("UpdatePublishedStatus", ctx, orgID, published, repoConfigUUID, snapshotUUID)}
 }
 
@@ -5321,7 +5322,7 @@ type MockMetricsDao_OrganizationTotal_Call struct {
 
 // OrganizationTotal is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) OrganizationTotal(ctx interface{}) *MockMetricsDao_OrganizationTotal_Call {
+func (_e *MockMetricsDao_Expecter) OrganizationTotal(ctx any) *MockMetricsDao_OrganizationTotal_Call {
 	return &MockMetricsDao_OrganizationTotal_Call{Call: _e.mock.On("OrganizationTotal", ctx)}
 }
 
@@ -5372,7 +5373,7 @@ type MockMetricsDao_PendingTasksAverageLatency_Call struct {
 
 // PendingTasksAverageLatency is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) PendingTasksAverageLatency(ctx interface{}) *MockMetricsDao_PendingTasksAverageLatency_Call {
+func (_e *MockMetricsDao_Expecter) PendingTasksAverageLatency(ctx any) *MockMetricsDao_PendingTasksAverageLatency_Call {
 	return &MockMetricsDao_PendingTasksAverageLatency_Call{Call: _e.mock.On("PendingTasksAverageLatency", ctx)}
 }
 
@@ -5423,7 +5424,7 @@ type MockMetricsDao_PendingTasksCount_Call struct {
 
 // PendingTasksCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) PendingTasksCount(ctx interface{}) *MockMetricsDao_PendingTasksCount_Call {
+func (_e *MockMetricsDao_Expecter) PendingTasksCount(ctx any) *MockMetricsDao_PendingTasksCount_Call {
 	return &MockMetricsDao_PendingTasksCount_Call{Call: _e.mock.On("PendingTasksCount", ctx)}
 }
 
@@ -5474,7 +5475,7 @@ type MockMetricsDao_PendingTasksOldestTask_Call struct {
 
 // PendingTasksOldestTask is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) PendingTasksOldestTask(ctx interface{}) *MockMetricsDao_PendingTasksOldestTask_Call {
+func (_e *MockMetricsDao_Expecter) PendingTasksOldestTask(ctx any) *MockMetricsDao_PendingTasksOldestTask_Call {
 	return &MockMetricsDao_PendingTasksOldestTask_Call{Call: _e.mock.On("PendingTasksOldestTask", ctx)}
 }
 
@@ -5525,7 +5526,7 @@ type MockMetricsDao_PublicRepositoriesFailedIntrospectionCount_Call struct {
 
 // PublicRepositoriesFailedIntrospectionCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) PublicRepositoriesFailedIntrospectionCount(ctx interface{}) *MockMetricsDao_PublicRepositoriesFailedIntrospectionCount_Call {
+func (_e *MockMetricsDao_Expecter) PublicRepositoriesFailedIntrospectionCount(ctx any) *MockMetricsDao_PublicRepositoriesFailedIntrospectionCount_Call {
 	return &MockMetricsDao_PublicRepositoriesFailedIntrospectionCount_Call{Call: _e.mock.On("PublicRepositoriesFailedIntrospectionCount", ctx)}
 }
 
@@ -5576,7 +5577,7 @@ type MockMetricsDao_RHReposSnapshotNotCompletedInLast36HoursCount_Call struct {
 
 // RHReposSnapshotNotCompletedInLast36HoursCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) RHReposSnapshotNotCompletedInLast36HoursCount(ctx interface{}) *MockMetricsDao_RHReposSnapshotNotCompletedInLast36HoursCount_Call {
+func (_e *MockMetricsDao_Expecter) RHReposSnapshotNotCompletedInLast36HoursCount(ctx any) *MockMetricsDao_RHReposSnapshotNotCompletedInLast36HoursCount_Call {
 	return &MockMetricsDao_RHReposSnapshotNotCompletedInLast36HoursCount_Call{Call: _e.mock.On("RHReposSnapshotNotCompletedInLast36HoursCount", ctx)}
 }
 
@@ -5627,7 +5628,7 @@ type MockMetricsDao_RepositoriesCount_Call struct {
 
 // RepositoriesCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) RepositoriesCount(ctx interface{}) *MockMetricsDao_RepositoriesCount_Call {
+func (_e *MockMetricsDao_Expecter) RepositoriesCount(ctx any) *MockMetricsDao_RepositoriesCount_Call {
 	return &MockMetricsDao_RepositoriesCount_Call{Call: _e.mock.On("RepositoriesCount", ctx)}
 }
 
@@ -5680,7 +5681,7 @@ type MockMetricsDao_RepositoriesIntrospectionCount_Call struct {
 //   - ctx context.Context
 //   - hours int
 //   - public bool
-func (_e *MockMetricsDao_Expecter) RepositoriesIntrospectionCount(ctx interface{}, hours interface{}, public interface{}) *MockMetricsDao_RepositoriesIntrospectionCount_Call {
+func (_e *MockMetricsDao_Expecter) RepositoriesIntrospectionCount(ctx any, hours any, public any) *MockMetricsDao_RepositoriesIntrospectionCount_Call {
 	return &MockMetricsDao_RepositoriesIntrospectionCount_Call{Call: _e.mock.On("RepositoriesIntrospectionCount", ctx, hours, public)}
 }
 
@@ -5741,7 +5742,7 @@ type MockMetricsDao_RepositoryConfigsCount_Call struct {
 
 // RepositoryConfigsCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) RepositoryConfigsCount(ctx interface{}) *MockMetricsDao_RepositoryConfigsCount_Call {
+func (_e *MockMetricsDao_Expecter) RepositoryConfigsCount(ctx any) *MockMetricsDao_RepositoryConfigsCount_Call {
 	return &MockMetricsDao_RepositoryConfigsCount_Call{Call: _e.mock.On("RepositoryConfigsCount", ctx)}
 }
 
@@ -5794,7 +5795,7 @@ type MockMetricsDao_TaskPendingTimeAverageByType_Call struct {
 
 // TaskPendingTimeAverageByType is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) TaskPendingTimeAverageByType(ctx interface{}) *MockMetricsDao_TaskPendingTimeAverageByType_Call {
+func (_e *MockMetricsDao_Expecter) TaskPendingTimeAverageByType(ctx any) *MockMetricsDao_TaskPendingTimeAverageByType_Call {
 	return &MockMetricsDao_TaskPendingTimeAverageByType_Call{Call: _e.mock.On("TaskPendingTimeAverageByType", ctx)}
 }
 
@@ -5845,7 +5846,7 @@ type MockMetricsDao_TemplatesAgeAverage_Call struct {
 
 // TemplatesAgeAverage is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) TemplatesAgeAverage(ctx interface{}) *MockMetricsDao_TemplatesAgeAverage_Call {
+func (_e *MockMetricsDao_Expecter) TemplatesAgeAverage(ctx any) *MockMetricsDao_TemplatesAgeAverage_Call {
 	return &MockMetricsDao_TemplatesAgeAverage_Call{Call: _e.mock.On("TemplatesAgeAverage", ctx)}
 }
 
@@ -5896,7 +5897,7 @@ type MockMetricsDao_TemplatesUpdatedInLast24HoursCount_Call struct {
 
 // TemplatesUpdatedInLast24HoursCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) TemplatesUpdatedInLast24HoursCount(ctx interface{}) *MockMetricsDao_TemplatesUpdatedInLast24HoursCount_Call {
+func (_e *MockMetricsDao_Expecter) TemplatesUpdatedInLast24HoursCount(ctx any) *MockMetricsDao_TemplatesUpdatedInLast24HoursCount_Call {
 	return &MockMetricsDao_TemplatesUpdatedInLast24HoursCount_Call{Call: _e.mock.On("TemplatesUpdatedInLast24HoursCount", ctx)}
 }
 
@@ -5947,7 +5948,7 @@ type MockMetricsDao_TemplatesUseDateCount_Call struct {
 
 // TemplatesUseDateCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) TemplatesUseDateCount(ctx interface{}) *MockMetricsDao_TemplatesUseDateCount_Call {
+func (_e *MockMetricsDao_Expecter) TemplatesUseDateCount(ctx any) *MockMetricsDao_TemplatesUseDateCount_Call {
 	return &MockMetricsDao_TemplatesUseDateCount_Call{Call: _e.mock.On("TemplatesUseDateCount", ctx)}
 }
 
@@ -5998,7 +5999,7 @@ type MockMetricsDao_TemplatesUseLatestCount_Call struct {
 
 // TemplatesUseLatestCount is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMetricsDao_Expecter) TemplatesUseLatestCount(ctx interface{}) *MockMetricsDao_TemplatesUseLatestCount_Call {
+func (_e *MockMetricsDao_Expecter) TemplatesUseLatestCount(ctx any) *MockMetricsDao_TemplatesUseLatestCount_Call {
 	return &MockMetricsDao_TemplatesUseLatestCount_Call{Call: _e.mock.On("TemplatesUseLatestCount", ctx)}
 }
 
@@ -6076,7 +6077,7 @@ type MockTaskInfoDao_Cleanup_Call struct {
 
 // Cleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockTaskInfoDao_Expecter) Cleanup(ctx interface{}) *MockTaskInfoDao_Cleanup_Call {
+func (_e *MockTaskInfoDao_Expecter) Cleanup(ctx any) *MockTaskInfoDao_Cleanup_Call {
 	return &MockTaskInfoDao_Cleanup_Call{Call: _e.mock.On("Cleanup", ctx)}
 }
 
@@ -6138,7 +6139,7 @@ type MockTaskInfoDao_Fetch_Call struct {
 //   - ctx context.Context
 //   - OrgID string
 //   - id string
-func (_e *MockTaskInfoDao_Expecter) Fetch(ctx interface{}, OrgID interface{}, id interface{}) *MockTaskInfoDao_Fetch_Call {
+func (_e *MockTaskInfoDao_Expecter) Fetch(ctx any, OrgID any, id any) *MockTaskInfoDao_Fetch_Call {
 	return &MockTaskInfoDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, OrgID, id)}
 }
 
@@ -6178,11 +6179,11 @@ func (_c *MockTaskInfoDao_Fetch_Call) RunAndReturn(run func(ctx context.Context,
 // FetchActiveTasks provides a mock function for the type MockTaskInfoDao
 func (_mock *MockTaskInfoDao) FetchActiveTasks(ctx context.Context, orgID string, objectUUID string, taskTypes ...string) ([]string, error) {
 	// string
-	_va := make([]interface{}, len(taskTypes))
+	_va := make([]any, len(taskTypes))
 	for _i := range taskTypes {
 		_va[_i] = taskTypes[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, orgID, objectUUID)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -6221,9 +6222,9 @@ type MockTaskInfoDao_FetchActiveTasks_Call struct {
 //   - orgID string
 //   - objectUUID string
 //   - taskTypes ...string
-func (_e *MockTaskInfoDao_Expecter) FetchActiveTasks(ctx interface{}, orgID interface{}, objectUUID interface{}, taskTypes ...interface{}) *MockTaskInfoDao_FetchActiveTasks_Call {
+func (_e *MockTaskInfoDao_Expecter) FetchActiveTasks(ctx any, orgID any, objectUUID any, taskTypes ...any) *MockTaskInfoDao_FetchActiveTasks_Call {
 	return &MockTaskInfoDao_FetchActiveTasks_Call{Call: _e.mock.On("FetchActiveTasks",
-		append([]interface{}{ctx, orgID, objectUUID}, taskTypes...)...)}
+		append([]any{ctx, orgID, objectUUID}, taskTypes...)...)}
 }
 
 func (_c *MockTaskInfoDao_FetchActiveTasks_Call) Run(run func(ctx context.Context, orgID string, objectUUID string, taskTypes ...string)) *MockTaskInfoDao_FetchActiveTasks_Call {
@@ -6310,7 +6311,7 @@ type MockTaskInfoDao_List_Call struct {
 //   - OrgID string
 //   - pageData api.PaginationData
 //   - filterData api.TaskInfoFilterData
-func (_e *MockTaskInfoDao_Expecter) List(ctx interface{}, OrgID interface{}, pageData interface{}, filterData interface{}) *MockTaskInfoDao_List_Call {
+func (_e *MockTaskInfoDao_Expecter) List(ctx any, OrgID any, pageData any, filterData any) *MockTaskInfoDao_List_Call {
 	return &MockTaskInfoDao_List_Call{Call: _e.mock.On("List", ctx, OrgID, pageData, filterData)}
 }
 
@@ -6413,7 +6414,7 @@ type MockAdminTaskDao_Fetch_Call struct {
 // Fetch is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id string
-func (_e *MockAdminTaskDao_Expecter) Fetch(ctx interface{}, id interface{}) *MockAdminTaskDao_Fetch_Call {
+func (_e *MockAdminTaskDao_Expecter) Fetch(ctx any, id any) *MockAdminTaskDao_Fetch_Call {
 	return &MockAdminTaskDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, id)}
 }
 
@@ -6486,7 +6487,7 @@ type MockAdminTaskDao_List_Call struct {
 //   - ctx context.Context
 //   - pageData api.PaginationData
 //   - filterData api.AdminTaskFilterData
-func (_e *MockAdminTaskDao_Expecter) List(ctx interface{}, pageData interface{}, filterData interface{}) *MockAdminTaskDao_List_Call {
+func (_e *MockAdminTaskDao_Expecter) List(ctx any, pageData any, filterData any) *MockAdminTaskDao_List_Call {
 	return &MockAdminTaskDao_List_Call{Call: _e.mock.On("List", ctx, pageData, filterData)}
 }
 
@@ -6576,7 +6577,7 @@ type MockDomainDao_Delete_Call struct {
 //   - ctx context.Context
 //   - orgId string
 //   - domainName string
-func (_e *MockDomainDao_Expecter) Delete(ctx interface{}, orgId interface{}, domainName interface{}) *MockDomainDao_Delete_Call {
+func (_e *MockDomainDao_Expecter) Delete(ctx any, orgId any, domainName any) *MockDomainDao_Delete_Call {
 	return &MockDomainDao_Delete_Call{Call: _e.mock.On("Delete", ctx, orgId, domainName)}
 }
 
@@ -6647,7 +6648,7 @@ type MockDomainDao_Fetch_Call struct {
 // Fetch is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgId string
-func (_e *MockDomainDao_Expecter) Fetch(ctx interface{}, orgId interface{}) *MockDomainDao_Fetch_Call {
+func (_e *MockDomainDao_Expecter) Fetch(ctx any, orgId any) *MockDomainDao_Fetch_Call {
 	return &MockDomainDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgId)}
 }
 
@@ -6713,7 +6714,7 @@ type MockDomainDao_FetchOrCreateDomain_Call struct {
 // FetchOrCreateDomain is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgId string
-func (_e *MockDomainDao_Expecter) FetchOrCreateDomain(ctx interface{}, orgId interface{}) *MockDomainDao_FetchOrCreateDomain_Call {
+func (_e *MockDomainDao_Expecter) FetchOrCreateDomain(ctx any, orgId any) *MockDomainDao_FetchOrCreateDomain_Call {
 	return &MockDomainDao_FetchOrCreateDomain_Call{Call: _e.mock.On("FetchOrCreateDomain", ctx, orgId)}
 }
 
@@ -6780,7 +6781,7 @@ type MockDomainDao_List_Call struct {
 
 // List is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockDomainDao_Expecter) List(ctx interface{}) *MockDomainDao_List_Call {
+func (_e *MockDomainDao_Expecter) List(ctx any) *MockDomainDao_List_Call {
 	return &MockDomainDao_List_Call{Call: _e.mock.On("List", ctx)}
 }
 
@@ -6869,7 +6870,7 @@ type MockPackageGroupDao_InsertForRepository_Call struct {
 //   - ctx context.Context
 //   - repoUuid string
 //   - pkgGroups []yum.PackageGroup
-func (_e *MockPackageGroupDao_Expecter) InsertForRepository(ctx interface{}, repoUuid interface{}, pkgGroups interface{}) *MockPackageGroupDao_InsertForRepository_Call {
+func (_e *MockPackageGroupDao_Expecter) InsertForRepository(ctx any, repoUuid any, pkgGroups any) *MockPackageGroupDao_InsertForRepository_Call {
 	return &MockPackageGroupDao_InsertForRepository_Call{Call: _e.mock.On("InsertForRepository", ctx, repoUuid, pkgGroups)}
 }
 
@@ -6951,7 +6952,7 @@ type MockPackageGroupDao_List_Call struct {
 //   - offset int
 //   - search string
 //   - sortBy string
-func (_e *MockPackageGroupDao_Expecter) List(ctx interface{}, orgID interface{}, uuidRepo interface{}, limit interface{}, offset interface{}, search interface{}, sortBy interface{}) *MockPackageGroupDao_List_Call {
+func (_e *MockPackageGroupDao_Expecter) List(ctx any, orgID any, uuidRepo any, limit any, offset any, search any, sortBy any) *MockPackageGroupDao_List_Call {
 	return &MockPackageGroupDao_List_Call{Call: _e.mock.On("List", ctx, orgID, uuidRepo, limit, offset, search, sortBy)}
 }
 
@@ -7032,7 +7033,7 @@ type MockPackageGroupDao_OrphanCleanup_Call struct {
 
 // OrphanCleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPackageGroupDao_Expecter) OrphanCleanup(ctx interface{}) *MockPackageGroupDao_OrphanCleanup_Call {
+func (_e *MockPackageGroupDao_Expecter) OrphanCleanup(ctx any) *MockPackageGroupDao_OrphanCleanup_Call {
 	return &MockPackageGroupDao_OrphanCleanup_Call{Call: _e.mock.On("OrphanCleanup", ctx)}
 }
 
@@ -7096,7 +7097,7 @@ type MockPackageGroupDao_Search_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.ContentUnitSearchRequest
-func (_e *MockPackageGroupDao_Expecter) Search(ctx interface{}, orgID interface{}, request interface{}) *MockPackageGroupDao_Search_Call {
+func (_e *MockPackageGroupDao_Expecter) Search(ctx any, orgID any, request any) *MockPackageGroupDao_Search_Call {
 	return &MockPackageGroupDao_Search_Call{Call: _e.mock.On("Search", ctx, orgID, request)}
 }
 
@@ -7170,7 +7171,7 @@ type MockPackageGroupDao_SearchSnapshotPackageGroups_Call struct {
 //   - ctx context.Context
 //   - orgId string
 //   - request api.SnapshotSearchRpmRequest
-func (_e *MockPackageGroupDao_Expecter) SearchSnapshotPackageGroups(ctx interface{}, orgId interface{}, request interface{}) *MockPackageGroupDao_SearchSnapshotPackageGroups_Call {
+func (_e *MockPackageGroupDao_Expecter) SearchSnapshotPackageGroups(ctx any, orgId any, request any) *MockPackageGroupDao_SearchSnapshotPackageGroups_Call {
 	return &MockPackageGroupDao_SearchSnapshotPackageGroups_Call{Call: _e.mock.On("SearchSnapshotPackageGroups", ctx, orgId, request)}
 }
 
@@ -7269,7 +7270,7 @@ type MockEnvironmentDao_InsertForRepository_Call struct {
 //   - ctx context.Context
 //   - repoUuid string
 //   - environments []yum.Environment
-func (_e *MockEnvironmentDao_Expecter) InsertForRepository(ctx interface{}, repoUuid interface{}, environments interface{}) *MockEnvironmentDao_InsertForRepository_Call {
+func (_e *MockEnvironmentDao_Expecter) InsertForRepository(ctx any, repoUuid any, environments any) *MockEnvironmentDao_InsertForRepository_Call {
 	return &MockEnvironmentDao_InsertForRepository_Call{Call: _e.mock.On("InsertForRepository", ctx, repoUuid, environments)}
 }
 
@@ -7351,7 +7352,7 @@ type MockEnvironmentDao_List_Call struct {
 //   - offset int
 //   - search string
 //   - sortBy string
-func (_e *MockEnvironmentDao_Expecter) List(ctx interface{}, orgID interface{}, uuidRepo interface{}, limit interface{}, offset interface{}, search interface{}, sortBy interface{}) *MockEnvironmentDao_List_Call {
+func (_e *MockEnvironmentDao_Expecter) List(ctx any, orgID any, uuidRepo any, limit any, offset any, search any, sortBy any) *MockEnvironmentDao_List_Call {
 	return &MockEnvironmentDao_List_Call{Call: _e.mock.On("List", ctx, orgID, uuidRepo, limit, offset, search, sortBy)}
 }
 
@@ -7432,7 +7433,7 @@ type MockEnvironmentDao_OrphanCleanup_Call struct {
 
 // OrphanCleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockEnvironmentDao_Expecter) OrphanCleanup(ctx interface{}) *MockEnvironmentDao_OrphanCleanup_Call {
+func (_e *MockEnvironmentDao_Expecter) OrphanCleanup(ctx any) *MockEnvironmentDao_OrphanCleanup_Call {
 	return &MockEnvironmentDao_OrphanCleanup_Call{Call: _e.mock.On("OrphanCleanup", ctx)}
 }
 
@@ -7496,7 +7497,7 @@ type MockEnvironmentDao_Search_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - request api.ContentUnitSearchRequest
-func (_e *MockEnvironmentDao_Expecter) Search(ctx interface{}, orgID interface{}, request interface{}) *MockEnvironmentDao_Search_Call {
+func (_e *MockEnvironmentDao_Expecter) Search(ctx any, orgID any, request any) *MockEnvironmentDao_Search_Call {
 	return &MockEnvironmentDao_Search_Call{Call: _e.mock.On("Search", ctx, orgID, request)}
 }
 
@@ -7570,7 +7571,7 @@ type MockEnvironmentDao_SearchSnapshotEnvironments_Call struct {
 //   - ctx context.Context
 //   - orgId string
 //   - request api.SnapshotSearchRpmRequest
-func (_e *MockEnvironmentDao_Expecter) SearchSnapshotEnvironments(ctx interface{}, orgId interface{}, request interface{}) *MockEnvironmentDao_SearchSnapshotEnvironments_Call {
+func (_e *MockEnvironmentDao_Expecter) SearchSnapshotEnvironments(ctx any, orgId any, request any) *MockEnvironmentDao_SearchSnapshotEnvironments_Call {
 	return &MockEnvironmentDao_SearchSnapshotEnvironments_Call{Call: _e.mock.On("SearchSnapshotEnvironments", ctx, orgId, request)}
 }
 
@@ -7660,7 +7661,7 @@ type MockTemplateDao_ClearDeletedAt_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockTemplateDao_Expecter) ClearDeletedAt(ctx interface{}, orgID interface{}, uuid interface{}) *MockTemplateDao_ClearDeletedAt_Call {
+func (_e *MockTemplateDao_Expecter) ClearDeletedAt(ctx any, orgID any, uuid any) *MockTemplateDao_ClearDeletedAt_Call {
 	return &MockTemplateDao_ClearDeletedAt_Call{Call: _e.mock.On("ClearDeletedAt", ctx, orgID, uuid)}
 }
 
@@ -7731,7 +7732,7 @@ type MockTemplateDao_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - templateRequest api.TemplateRequest
-func (_e *MockTemplateDao_Expecter) Create(ctx interface{}, templateRequest interface{}) *MockTemplateDao_Create_Call {
+func (_e *MockTemplateDao_Expecter) Create(ctx any, templateRequest any) *MockTemplateDao_Create_Call {
 	return &MockTemplateDao_Create_Call{Call: _e.mock.On("Create", ctx, templateRequest)}
 }
 
@@ -7789,7 +7790,7 @@ type MockTemplateDao_Delete_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockTemplateDao_Expecter) Delete(ctx interface{}, orgID interface{}, uuid interface{}) *MockTemplateDao_Delete_Call {
+func (_e *MockTemplateDao_Expecter) Delete(ctx any, orgID any, uuid any) *MockTemplateDao_Delete_Call {
 	return &MockTemplateDao_Delete_Call{Call: _e.mock.On("Delete", ctx, orgID, uuid)}
 }
 
@@ -7852,7 +7853,7 @@ type MockTemplateDao_DeleteTemplateRepoConfigs_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - keepRepoConfigUUIDs []string
-func (_e *MockTemplateDao_Expecter) DeleteTemplateRepoConfigs(ctx interface{}, templateUUID interface{}, keepRepoConfigUUIDs interface{}) *MockTemplateDao_DeleteTemplateRepoConfigs_Call {
+func (_e *MockTemplateDao_Expecter) DeleteTemplateRepoConfigs(ctx any, templateUUID any, keepRepoConfigUUIDs any) *MockTemplateDao_DeleteTemplateRepoConfigs_Call {
 	return &MockTemplateDao_DeleteTemplateRepoConfigs_Call{Call: _e.mock.On("DeleteTemplateRepoConfigs", ctx, templateUUID, keepRepoConfigUUIDs)}
 }
 
@@ -7914,7 +7915,7 @@ type MockTemplateDao_DeleteTemplateSnapshot_Call struct {
 // DeleteTemplateSnapshot is a helper method to define mock.On call
 //   - ctx context.Context
 //   - snapshotUUID string
-func (_e *MockTemplateDao_Expecter) DeleteTemplateSnapshot(ctx interface{}, snapshotUUID interface{}) *MockTemplateDao_DeleteTemplateSnapshot_Call {
+func (_e *MockTemplateDao_Expecter) DeleteTemplateSnapshot(ctx any, snapshotUUID any) *MockTemplateDao_DeleteTemplateSnapshot_Call {
 	return &MockTemplateDao_DeleteTemplateSnapshot_Call{Call: _e.mock.On("DeleteTemplateSnapshot", ctx, snapshotUUID)}
 }
 
@@ -7982,7 +7983,7 @@ type MockTemplateDao_Fetch_Call struct {
 //   - orgID string
 //   - uuid string
 //   - includeSoftDel bool
-func (_e *MockTemplateDao_Expecter) Fetch(ctx interface{}, orgID interface{}, uuid interface{}, includeSoftDel interface{}) *MockTemplateDao_Fetch_Call {
+func (_e *MockTemplateDao_Expecter) Fetch(ctx any, orgID any, uuid any, includeSoftDel any) *MockTemplateDao_Fetch_Call {
 	return &MockTemplateDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgID, uuid, includeSoftDel)}
 }
 
@@ -8061,7 +8062,7 @@ type MockTemplateDao_GetDistributionHref_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - repoConfigUUID string
-func (_e *MockTemplateDao_Expecter) GetDistributionHref(ctx interface{}, templateUUID interface{}, repoConfigUUID interface{}) *MockTemplateDao_GetDistributionHref_Call {
+func (_e *MockTemplateDao_Expecter) GetDistributionHref(ctx any, templateUUID any, repoConfigUUID any) *MockTemplateDao_GetDistributionHref_Call {
 	return &MockTemplateDao_GetDistributionHref_Call{Call: _e.mock.On("GetDistributionHref", ctx, templateUUID, repoConfigUUID)}
 }
 
@@ -8159,7 +8160,7 @@ type MockTemplateDao_GetRepoChanges_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - newRepoConfigUUIDs []string
-func (_e *MockTemplateDao_Expecter) GetRepoChanges(ctx interface{}, templateUUID interface{}, newRepoConfigUUIDs interface{}) *MockTemplateDao_GetRepoChanges_Call {
+func (_e *MockTemplateDao_Expecter) GetRepoChanges(ctx any, templateUUID any, newRepoConfigUUIDs any) *MockTemplateDao_GetRepoChanges_Call {
 	return &MockTemplateDao_GetRepoChanges_Call{Call: _e.mock.On("GetRepoChanges", ctx, templateUUID, newRepoConfigUUIDs)}
 }
 
@@ -8231,7 +8232,7 @@ type MockTemplateDao_GetRepositoryConfigurationFile_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - templateUUID string
-func (_e *MockTemplateDao_Expecter) GetRepositoryConfigurationFile(ctx interface{}, orgID interface{}, templateUUID interface{}) *MockTemplateDao_GetRepositoryConfigurationFile_Call {
+func (_e *MockTemplateDao_Expecter) GetRepositoryConfigurationFile(ctx any, orgID any, templateUUID any) *MockTemplateDao_GetRepositoryConfigurationFile_Call {
 	return &MockTemplateDao_GetRepositoryConfigurationFile_Call{Call: _e.mock.On("GetRepositoryConfigurationFile", ctx, orgID, templateUUID)}
 }
 
@@ -8302,7 +8303,7 @@ type MockTemplateDao_InternalOnlyFetchByName_Call struct {
 // InternalOnlyFetchByName is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockTemplateDao_Expecter) InternalOnlyFetchByName(ctx interface{}, name interface{}) *MockTemplateDao_InternalOnlyFetchByName_Call {
+func (_e *MockTemplateDao_Expecter) InternalOnlyFetchByName(ctx any, name any) *MockTemplateDao_InternalOnlyFetchByName_Call {
 	return &MockTemplateDao_InternalOnlyFetchByName_Call{Call: _e.mock.On("InternalOnlyFetchByName", ctx, name)}
 }
 
@@ -8371,7 +8372,7 @@ type MockTemplateDao_InternalOnlyGetTemplatesForRepoConfig_Call struct {
 //   - ctx context.Context
 //   - repoUUID string
 //   - useLatestOnly bool
-func (_e *MockTemplateDao_Expecter) InternalOnlyGetTemplatesForRepoConfig(ctx interface{}, repoUUID interface{}, useLatestOnly interface{}) *MockTemplateDao_InternalOnlyGetTemplatesForRepoConfig_Call {
+func (_e *MockTemplateDao_Expecter) InternalOnlyGetTemplatesForRepoConfig(ctx any, repoUUID any, useLatestOnly any) *MockTemplateDao_InternalOnlyGetTemplatesForRepoConfig_Call {
 	return &MockTemplateDao_InternalOnlyGetTemplatesForRepoConfig_Call{Call: _e.mock.On("InternalOnlyGetTemplatesForRepoConfig", ctx, repoUUID, useLatestOnly)}
 }
 
@@ -8444,7 +8445,7 @@ type MockTemplateDao_InternalOnlyGetTemplatesForSnapshots_Call struct {
 // InternalOnlyGetTemplatesForSnapshots is a helper method to define mock.On call
 //   - ctx context.Context
 //   - snapUUIDs []string
-func (_e *MockTemplateDao_Expecter) InternalOnlyGetTemplatesForSnapshots(ctx interface{}, snapUUIDs interface{}) *MockTemplateDao_InternalOnlyGetTemplatesForSnapshots_Call {
+func (_e *MockTemplateDao_Expecter) InternalOnlyGetTemplatesForSnapshots(ctx any, snapUUIDs any) *MockTemplateDao_InternalOnlyGetTemplatesForSnapshots_Call {
 	return &MockTemplateDao_InternalOnlyGetTemplatesForSnapshots_Call{Call: _e.mock.On("InternalOnlyGetTemplatesForSnapshots", ctx, snapUUIDs)}
 }
 
@@ -8519,7 +8520,7 @@ type MockTemplateDao_List_Call struct {
 //   - includeSoftDel bool
 //   - paginationData api.PaginationData
 //   - filterData api.TemplateFilterData
-func (_e *MockTemplateDao_Expecter) List(ctx interface{}, orgID interface{}, includeSoftDel interface{}, paginationData interface{}, filterData interface{}) *MockTemplateDao_List_Call {
+func (_e *MockTemplateDao_Expecter) List(ctx any, orgID any, includeSoftDel any, paginationData any, filterData any) *MockTemplateDao_List_Call {
 	return &MockTemplateDao_List_Call{Call: _e.mock.On("List", ctx, orgID, includeSoftDel, paginationData, filterData)}
 }
 
@@ -8591,7 +8592,7 @@ type MockTemplateDao_SetEnvironmentCreated_Call struct {
 // SetEnvironmentCreated is a helper method to define mock.On call
 //   - ctx context.Context
 //   - templateUUID string
-func (_e *MockTemplateDao_Expecter) SetEnvironmentCreated(ctx interface{}, templateUUID interface{}) *MockTemplateDao_SetEnvironmentCreated_Call {
+func (_e *MockTemplateDao_Expecter) SetEnvironmentCreated(ctx any, templateUUID any) *MockTemplateDao_SetEnvironmentCreated_Call {
 	return &MockTemplateDao_SetEnvironmentCreated_Call{Call: _e.mock.On("SetEnvironmentCreated", ctx, templateUUID)}
 }
 
@@ -8649,7 +8650,7 @@ type MockTemplateDao_SoftDelete_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - uuid string
-func (_e *MockTemplateDao_Expecter) SoftDelete(ctx interface{}, orgID interface{}, uuid interface{}) *MockTemplateDao_SoftDelete_Call {
+func (_e *MockTemplateDao_Expecter) SoftDelete(ctx any, orgID any, uuid any) *MockTemplateDao_SoftDelete_Call {
 	return &MockTemplateDao_SoftDelete_Call{Call: _e.mock.On("SoftDelete", ctx, orgID, uuid)}
 }
 
@@ -8722,7 +8723,7 @@ type MockTemplateDao_Update_Call struct {
 //   - orgID string
 //   - uuid string
 //   - templParams api.TemplateUpdateRequest
-func (_e *MockTemplateDao_Expecter) Update(ctx interface{}, orgID interface{}, uuid interface{}, templParams interface{}) *MockTemplateDao_Update_Call {
+func (_e *MockTemplateDao_Expecter) Update(ctx any, orgID any, uuid any, templParams any) *MockTemplateDao_Update_Call {
 	return &MockTemplateDao_Update_Call{Call: _e.mock.On("Update", ctx, orgID, uuid, templParams)}
 }
 
@@ -8792,7 +8793,7 @@ type MockTemplateDao_UpdateDistributionHrefs_Call struct {
 //   - repoUUIDs []string
 //   - snapshots []models.Snapshot
 //   - repoDistributionMap map[string]string
-func (_e *MockTemplateDao_Expecter) UpdateDistributionHrefs(ctx interface{}, templateUUID interface{}, repoUUIDs interface{}, snapshots interface{}, repoDistributionMap interface{}) *MockTemplateDao_UpdateDistributionHrefs_Call {
+func (_e *MockTemplateDao_Expecter) UpdateDistributionHrefs(ctx any, templateUUID any, repoUUIDs any, snapshots any, repoDistributionMap any) *MockTemplateDao_UpdateDistributionHrefs_Call {
 	return &MockTemplateDao_UpdateDistributionHrefs_Call{Call: _e.mock.On("UpdateDistributionHrefs", ctx, templateUUID, repoUUIDs, snapshots, repoDistributionMap)}
 }
 
@@ -8866,7 +8867,7 @@ type MockTemplateDao_UpdateLastError_Call struct {
 //   - orgID string
 //   - templateUUID string
 //   - lastUpdateSnapshotError string
-func (_e *MockTemplateDao_Expecter) UpdateLastError(ctx interface{}, orgID interface{}, templateUUID interface{}, lastUpdateSnapshotError interface{}) *MockTemplateDao_UpdateLastError_Call {
+func (_e *MockTemplateDao_Expecter) UpdateLastError(ctx any, orgID any, templateUUID any, lastUpdateSnapshotError any) *MockTemplateDao_UpdateLastError_Call {
 	return &MockTemplateDao_UpdateLastError_Call{Call: _e.mock.On("UpdateLastError", ctx, orgID, templateUUID, lastUpdateSnapshotError)}
 }
 
@@ -8935,7 +8936,7 @@ type MockTemplateDao_UpdateLastUpdateTask_Call struct {
 //   - taskUUID string
 //   - orgID string
 //   - templateUUID string
-func (_e *MockTemplateDao_Expecter) UpdateLastUpdateTask(ctx interface{}, taskUUID interface{}, orgID interface{}, templateUUID interface{}) *MockTemplateDao_UpdateLastUpdateTask_Call {
+func (_e *MockTemplateDao_Expecter) UpdateLastUpdateTask(ctx any, taskUUID any, orgID any, templateUUID any) *MockTemplateDao_UpdateLastUpdateTask_Call {
 	return &MockTemplateDao_UpdateLastUpdateTask_Call{Call: _e.mock.On("UpdateLastUpdateTask", ctx, taskUUID, orgID, templateUUID)}
 }
 
@@ -9004,7 +9005,7 @@ type MockTemplateDao_UpdateSnapshots_Call struct {
 //   - templateUUID string
 //   - repoUUIDs []string
 //   - snapshots []models.Snapshot
-func (_e *MockTemplateDao_Expecter) UpdateSnapshots(ctx interface{}, templateUUID interface{}, repoUUIDs interface{}, snapshots interface{}) *MockTemplateDao_UpdateSnapshots_Call {
+func (_e *MockTemplateDao_Expecter) UpdateSnapshots(ctx any, templateUUID any, repoUUIDs any, snapshots any) *MockTemplateDao_UpdateSnapshots_Call {
 	return &MockTemplateDao_UpdateSnapshots_Call{Call: _e.mock.On("UpdateSnapshots", ctx, templateUUID, repoUUIDs, snapshots)}
 }
 
@@ -9106,7 +9107,7 @@ type MockMemoDao_GetLastSuccessfulPulpLogDate_Call struct {
 
 // GetLastSuccessfulPulpLogDate is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockMemoDao_Expecter) GetLastSuccessfulPulpLogDate(ctx interface{}) *MockMemoDao_GetLastSuccessfulPulpLogDate_Call {
+func (_e *MockMemoDao_Expecter) GetLastSuccessfulPulpLogDate(ctx any) *MockMemoDao_GetLastSuccessfulPulpLogDate_Call {
 	return &MockMemoDao_GetLastSuccessfulPulpLogDate_Call{Call: _e.mock.On("GetLastSuccessfulPulpLogDate", ctx)}
 }
 
@@ -9169,7 +9170,7 @@ type MockMemoDao_Read_Call struct {
 // Read is a helper method to define mock.On call
 //   - ctx context.Context
 //   - key string
-func (_e *MockMemoDao_Expecter) Read(ctx interface{}, key interface{}) *MockMemoDao_Read_Call {
+func (_e *MockMemoDao_Expecter) Read(ctx any, key any) *MockMemoDao_Read_Call {
 	return &MockMemoDao_Read_Call{Call: _e.mock.On("Read", ctx, key)}
 }
 
@@ -9226,7 +9227,7 @@ type MockMemoDao_SaveLastSuccessfulPulpLogDate_Call struct {
 // SaveLastSuccessfulPulpLogDate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - date time.Time
-func (_e *MockMemoDao_Expecter) SaveLastSuccessfulPulpLogDate(ctx interface{}, date interface{}) *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call {
+func (_e *MockMemoDao_Expecter) SaveLastSuccessfulPulpLogDate(ctx any, date any) *MockMemoDao_SaveLastSuccessfulPulpLogDate_Call {
 	return &MockMemoDao_SaveLastSuccessfulPulpLogDate_Call{Call: _e.mock.On("SaveLastSuccessfulPulpLogDate", ctx, date)}
 }
 
@@ -9295,7 +9296,7 @@ type MockMemoDao_Write_Call struct {
 //   - ctx context.Context
 //   - key string
 //   - memo json.RawMessage
-func (_e *MockMemoDao_Expecter) Write(ctx interface{}, key interface{}, memo interface{}) *MockMemoDao_Write_Call {
+func (_e *MockMemoDao_Expecter) Write(ctx any, key any, memo any) *MockMemoDao_Write_Call {
 	return &MockMemoDao_Write_Call{Call: _e.mock.On("Write", ctx, key, memo)}
 }
 
@@ -9384,7 +9385,7 @@ type MockMavenPackagesDao_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - mavenPackage *models.MavenPackage
-func (_e *MockMavenPackagesDao_Expecter) Create(ctx interface{}, mavenPackage interface{}) *MockMavenPackagesDao_Create_Call {
+func (_e *MockMavenPackagesDao_Expecter) Create(ctx any, mavenPackage any) *MockMavenPackagesDao_Create_Call {
 	return &MockMavenPackagesDao_Create_Call{Call: _e.mock.On("Create", ctx, mavenPackage)}
 }
 
@@ -9453,7 +9454,7 @@ type MockMavenPackagesDao_Fetch_Call struct {
 //   - ctx context.Context
 //   - groupID string
 //   - name string
-func (_e *MockMavenPackagesDao_Expecter) Fetch(ctx interface{}, groupID interface{}, name interface{}) *MockMavenPackagesDao_Fetch_Call {
+func (_e *MockMavenPackagesDao_Expecter) Fetch(ctx any, groupID any, name any) *MockMavenPackagesDao_Fetch_Call {
 	return &MockMavenPackagesDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, groupID, name)}
 }
 
@@ -9517,6 +9518,214 @@ func (_m *MockLightwellAdvisoryDao) EXPECT() *MockLightwellAdvisoryDao_Expecter 
 	return &MockLightwellAdvisoryDao_Expecter{mock: &_m.Mock}
 }
 
+// CountAdvisoriesByRepo provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) CountAdvisoriesByRepo(ctx context.Context, repoConfigUUID uuid.UUID) (int64, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountAdvisoriesByRepo")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (int64, error)); ok {
+		return returnFunc(ctx, repoConfigUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) int64); ok {
+		r0 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountAdvisoriesByRepo'
+type MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call struct {
+	*mock.Call
+}
+
+// CountAdvisoriesByRepo is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID uuid.UUID
+func (_e *MockLightwellAdvisoryDao_Expecter) CountAdvisoriesByRepo(ctx any, repoConfigUUID any) *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call {
+	return &MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call{Call: _e.mock.On("CountAdvisoriesByRepo", ctx, repoConfigUUID)}
+}
+
+func (_c *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call) Run(run func(ctx context.Context, repoConfigUUID uuid.UUID)) *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call) Return(n int64, err error) *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID uuid.UUID) (int64, error)) *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAdvisories provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error) {
+	ret := _mock.Called(ctx, opts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAdvisories")
+	}
+
+	var r0 []api.LightwellAdvisoryResponse
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error)); ok {
+		return returnFunc(ctx, opts)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListLightwellAdvisoriesOptions) []api.LightwellAdvisoryResponse); ok {
+		r0 = returnFunc(ctx, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]api.LightwellAdvisoryResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ListLightwellAdvisoriesOptions) int64); ok {
+		r1 = returnFunc(ctx, opts)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, ListLightwellAdvisoriesOptions) error); ok {
+		r2 = returnFunc(ctx, opts)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockLightwellAdvisoryDao_ListAdvisories_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAdvisories'
+type MockLightwellAdvisoryDao_ListAdvisories_Call struct {
+	*mock.Call
+}
+
+// ListAdvisories is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts ListLightwellAdvisoriesOptions
+func (_e *MockLightwellAdvisoryDao_Expecter) ListAdvisories(ctx any, opts any) *MockLightwellAdvisoryDao_ListAdvisories_Call {
+	return &MockLightwellAdvisoryDao_ListAdvisories_Call{Call: _e.mock.On("ListAdvisories", ctx, opts)}
+}
+
+func (_c *MockLightwellAdvisoryDao_ListAdvisories_Call) Run(run func(ctx context.Context, opts ListLightwellAdvisoriesOptions)) *MockLightwellAdvisoryDao_ListAdvisories_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 ListLightwellAdvisoriesOptions
+		if args[1] != nil {
+			arg1 = args[1].(ListLightwellAdvisoriesOptions)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListAdvisories_Call) Return(lightwellAdvisoryResponses []api.LightwellAdvisoryResponse, n int64, err error) *MockLightwellAdvisoryDao_ListAdvisories_Call {
+	_c.Call.Return(lightwellAdvisoryResponses, n, err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListAdvisories_Call) RunAndReturn(run func(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error)) *MockLightwellAdvisoryDao_ListAdvisories_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAdvisoriesByCveID provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]LightwellAdvisoryCveMatch, error) {
+	ret := _mock.Called(ctx, cveID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAdvisoriesByCveID")
+	}
+
+	var r0 []LightwellAdvisoryCveMatch
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]LightwellAdvisoryCveMatch, error)); ok {
+		return returnFunc(ctx, cveID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []LightwellAdvisoryCveMatch); ok {
+		r0 = returnFunc(ctx, cveID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]LightwellAdvisoryCveMatch)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, cveID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAdvisoriesByCveID'
+type MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call struct {
+	*mock.Call
+}
+
+// ListAdvisoriesByCveID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - cveID string
+func (_e *MockLightwellAdvisoryDao_Expecter) ListAdvisoriesByCveID(ctx any, cveID any) *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call {
+	return &MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call{Call: _e.mock.On("ListAdvisoriesByCveID", ctx, cveID)}
+}
+
+func (_c *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call) Run(run func(ctx context.Context, cveID string)) *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call) Return(lightwellAdvisoryCveMatchs []LightwellAdvisoryCveMatch, err error) *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call {
+	_c.Call.Return(lightwellAdvisoryCveMatchs, err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call) RunAndReturn(run func(ctx context.Context, cveID string) ([]LightwellAdvisoryCveMatch, error)) *MockLightwellAdvisoryDao_ListAdvisoriesByCveID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListByRepository provides a mock function for the type MockLightwellAdvisoryDao
 func (_mock *MockLightwellAdvisoryDao) ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error) {
 	ret := _mock.Called(ctx, repoConfigUUID)
@@ -9553,7 +9762,7 @@ type MockLightwellAdvisoryDao_ListByRepository_Call struct {
 // ListByRepository is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockLightwellAdvisoryDao_Expecter) ListByRepository(ctx interface{}, repoConfigUUID interface{}) *MockLightwellAdvisoryDao_ListByRepository_Call {
+func (_e *MockLightwellAdvisoryDao_Expecter) ListByRepository(ctx any, repoConfigUUID any) *MockLightwellAdvisoryDao_ListByRepository_Call {
 	return &MockLightwellAdvisoryDao_ListByRepository_Call{Call: _e.mock.On("ListByRepository", ctx, repoConfigUUID)}
 }
 
@@ -9622,7 +9831,7 @@ type MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call struct {
 //   - ctx context.Context
 //   - repoConfigUUID string
 //   - orgID string
-func (_e *MockLightwellAdvisoryDao_Expecter) ListUnnotifiedAdvisories(ctx interface{}, repoConfigUUID interface{}, orgID interface{}) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+func (_e *MockLightwellAdvisoryDao_Expecter) ListUnnotifiedAdvisories(ctx any, repoConfigUUID any, orgID any) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
 	return &MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call{Call: _e.mock.On("ListUnnotifiedAdvisories", ctx, repoConfigUUID, orgID)}
 }
 
@@ -9686,7 +9895,7 @@ type MockLightwellAdvisoryDao_MarkAsNotified_Call struct {
 //   - repoConfigUUID string
 //   - orgID string
 //   - data []LightwellNotificationData
-func (_e *MockLightwellAdvisoryDao_Expecter) MarkAsNotified(ctx interface{}, repoConfigUUID interface{}, orgID interface{}, data interface{}) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+func (_e *MockLightwellAdvisoryDao_Expecter) MarkAsNotified(ctx any, repoConfigUUID any, orgID any, data any) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
 	return &MockLightwellAdvisoryDao_MarkAsNotified_Call{Call: _e.mock.On("MarkAsNotified", ctx, repoConfigUUID, orgID, data)}
 }
 
@@ -9755,7 +9964,7 @@ type MockLightwellAdvisoryDao_SyncForRepository_Call struct {
 //   - repoConfigUUID string
 //   - repoName string
 //   - advisories []LightwellAdvisoryInput
-func (_e *MockLightwellAdvisoryDao_Expecter) SyncForRepository(ctx interface{}, repoConfigUUID interface{}, repoName interface{}, advisories interface{}) *MockLightwellAdvisoryDao_SyncForRepository_Call {
+func (_e *MockLightwellAdvisoryDao_Expecter) SyncForRepository(ctx any, repoConfigUUID any, repoName any, advisories any) *MockLightwellAdvisoryDao_SyncForRepository_Call {
 	return &MockLightwellAdvisoryDao_SyncForRepository_Call{Call: _e.mock.On("SyncForRepository", ctx, repoConfigUUID, repoName, advisories)}
 }
 
@@ -9880,7 +10089,7 @@ type MockLightwellVulnerabilityDao_List_Call struct {
 // List is a helper method to define mock.On call
 //   - ctx context.Context
 //   - opts ListLightwellVulnerabilitiesOptions
-func (_e *MockLightwellVulnerabilityDao_Expecter) List(ctx interface{}, opts interface{}) *MockLightwellVulnerabilityDao_List_Call {
+func (_e *MockLightwellVulnerabilityDao_Expecter) List(ctx any, opts any) *MockLightwellVulnerabilityDao_List_Call {
 	return &MockLightwellVulnerabilityDao_List_Call{Call: _e.mock.On("List", ctx, opts)}
 }
 
@@ -9947,7 +10156,7 @@ type MockLightwellVulnerabilityDao_ListCustomerIds_Call struct {
 
 // ListCustomerIds is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockLightwellVulnerabilityDao_Expecter) ListCustomerIds(ctx interface{}) *MockLightwellVulnerabilityDao_ListCustomerIds_Call {
+func (_e *MockLightwellVulnerabilityDao_Expecter) ListCustomerIds(ctx any) *MockLightwellVulnerabilityDao_ListCustomerIds_Call {
 	return &MockLightwellVulnerabilityDao_ListCustomerIds_Call{Call: _e.mock.On("ListCustomerIds", ctx)}
 }
 
@@ -10010,7 +10219,7 @@ type MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call struct {
 // ListLtwlsuptTicketIds is a helper method to define mock.On call
 //   - ctx context.Context
 //   - customerID string
-func (_e *MockLightwellVulnerabilityDao_Expecter) ListLtwlsuptTicketIds(ctx interface{}, customerID interface{}) *MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call {
+func (_e *MockLightwellVulnerabilityDao_Expecter) ListLtwlsuptTicketIds(ctx any, customerID any) *MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call {
 	return &MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call{Call: _e.mock.On("ListLtwlsuptTicketIds", ctx, customerID)}
 }
 
@@ -10106,7 +10315,7 @@ type MockUserPreferenceDao_List_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - userID string
-func (_e *MockUserPreferenceDao_Expecter) List(ctx interface{}, orgID interface{}, userID interface{}) *MockUserPreferenceDao_List_Call {
+func (_e *MockUserPreferenceDao_Expecter) List(ctx any, orgID any, userID any) *MockUserPreferenceDao_List_Call {
 	return &MockUserPreferenceDao_List_Call{Call: _e.mock.On("List", ctx, orgID, userID)}
 }
 
@@ -10180,7 +10389,7 @@ type MockUserPreferenceDao_ListDistinctOrgsByPreference_Call struct {
 //   - ctx context.Context
 //   - label string
 //   - value string
-func (_e *MockUserPreferenceDao_Expecter) ListDistinctOrgsByPreference(ctx interface{}, label interface{}, value interface{}) *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call {
+func (_e *MockUserPreferenceDao_Expecter) ListDistinctOrgsByPreference(ctx any, label any, value any) *MockUserPreferenceDao_ListDistinctOrgsByPreference_Call {
 	return &MockUserPreferenceDao_ListDistinctOrgsByPreference_Call{Call: _e.mock.On("ListDistinctOrgsByPreference", ctx, label, value)}
 }
 
@@ -10254,7 +10463,7 @@ type MockUserPreferenceDao_Set_Call struct {
 //   - userID string
 //   - label string
 //   - value string
-func (_e *MockUserPreferenceDao_Expecter) Set(ctx interface{}, orgID interface{}, userID interface{}, label interface{}, value interface{}) *MockUserPreferenceDao_Set_Call {
+func (_e *MockUserPreferenceDao_Expecter) Set(ctx any, orgID any, userID any, label any, value any) *MockUserPreferenceDao_Set_Call {
 	return &MockUserPreferenceDao_Set_Call{Call: _e.mock.On("Set", ctx, orgID, userID, label, value)}
 }
 
@@ -10363,7 +10572,7 @@ type MockCoverageReportDao_Create_Call struct {
 //   - ctx context.Context
 //   - report CreateCoverageReportParams
 //   - upload CreateCoverageUploadParams
-func (_e *MockCoverageReportDao_Expecter) Create(ctx interface{}, report interface{}, upload interface{}) *MockCoverageReportDao_Create_Call {
+func (_e *MockCoverageReportDao_Expecter) Create(ctx any, report any, upload any) *MockCoverageReportDao_Create_Call {
 	return &MockCoverageReportDao_Create_Call{Call: _e.mock.On("Create", ctx, report, upload)}
 }
 
@@ -10401,8 +10610,8 @@ func (_c *MockCoverageReportDao_Create_Call) RunAndReturn(run func(ctx context.C
 }
 
 // Fetch provides a mock function for the type MockCoverageReportDao
-func (_mock *MockCoverageReportDao) Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error) {
-	ret := _mock.Called(ctx, orgID, uuid)
+func (_mock *MockCoverageReportDao) Fetch(ctx context.Context, orgID string, uuid1 string) (api.CoverageReportResponse, error) {
+	ret := _mock.Called(ctx, orgID, uuid1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Fetch")
@@ -10411,15 +10620,15 @@ func (_mock *MockCoverageReportDao) Fetch(ctx context.Context, orgID string, uui
 	var r0 api.CoverageReportResponse
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (api.CoverageReportResponse, error)); ok {
-		return returnFunc(ctx, orgID, uuid)
+		return returnFunc(ctx, orgID, uuid1)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) api.CoverageReportResponse); ok {
-		r0 = returnFunc(ctx, orgID, uuid)
+		r0 = returnFunc(ctx, orgID, uuid1)
 	} else {
 		r0 = ret.Get(0).(api.CoverageReportResponse)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, orgID, uuid)
+		r1 = returnFunc(ctx, orgID, uuid1)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -10434,12 +10643,12 @@ type MockCoverageReportDao_Fetch_Call struct {
 // Fetch is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-//   - uuid string
-func (_e *MockCoverageReportDao_Expecter) Fetch(ctx interface{}, orgID interface{}, uuid interface{}) *MockCoverageReportDao_Fetch_Call {
-	return &MockCoverageReportDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgID, uuid)}
+//   - uuid1 string
+func (_e *MockCoverageReportDao_Expecter) Fetch(ctx any, orgID any, uuid1 any) *MockCoverageReportDao_Fetch_Call {
+	return &MockCoverageReportDao_Fetch_Call{Call: _e.mock.On("Fetch", ctx, orgID, uuid1)}
 }
 
-func (_c *MockCoverageReportDao_Fetch_Call) Run(run func(ctx context.Context, orgID string, uuid string)) *MockCoverageReportDao_Fetch_Call {
+func (_c *MockCoverageReportDao_Fetch_Call) Run(run func(ctx context.Context, orgID string, uuid1 string)) *MockCoverageReportDao_Fetch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -10467,7 +10676,7 @@ func (_c *MockCoverageReportDao_Fetch_Call) Return(coverageReportResponse api.Co
 	return _c
 }
 
-func (_c *MockCoverageReportDao_Fetch_Call) RunAndReturn(run func(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error)) *MockCoverageReportDao_Fetch_Call {
+func (_c *MockCoverageReportDao_Fetch_Call) RunAndReturn(run func(ctx context.Context, orgID string, uuid1 string) (api.CoverageReportResponse, error)) *MockCoverageReportDao_Fetch_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10515,7 +10724,7 @@ type MockCoverageReportDao_ListPackages_Call struct {
 //   - reportUUID string
 //   - pageData api.PaginationData
 //   - filterData api.ListCoverageReportPackagesRequest
-func (_e *MockCoverageReportDao_Expecter) ListPackages(ctx interface{}, orgID interface{}, reportUUID interface{}, pageData interface{}, filterData interface{}) *MockCoverageReportDao_ListPackages_Call {
+func (_e *MockCoverageReportDao_Expecter) ListPackages(ctx any, orgID any, reportUUID any, pageData any, filterData any) *MockCoverageReportDao_ListPackages_Call {
 	return &MockCoverageReportDao_ListPackages_Call{Call: _e.mock.On("ListPackages", ctx, orgID, reportUUID, pageData, filterData)}
 }
 

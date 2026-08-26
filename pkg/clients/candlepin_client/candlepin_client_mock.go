@@ -64,7 +64,7 @@ type MockCandlepinClient_AddContentBatchToProduct_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - contentIDs []string
-func (_e *MockCandlepinClient_Expecter) AddContentBatchToProduct(ctx interface{}, orgID interface{}, contentIDs interface{}) *MockCandlepinClient_AddContentBatchToProduct_Call {
+func (_e *MockCandlepinClient_Expecter) AddContentBatchToProduct(ctx any, orgID any, contentIDs any) *MockCandlepinClient_AddContentBatchToProduct_Call {
 	return &MockCandlepinClient_AddContentBatchToProduct_Call{Call: _e.mock.On("AddContentBatchToProduct", ctx, orgID, contentIDs)}
 }
 
@@ -128,7 +128,7 @@ type MockCandlepinClient_AssociateEnvironment_Call struct {
 //   - orgID string
 //   - templateName string
 //   - consumerUuid string
-func (_e *MockCandlepinClient_Expecter) AssociateEnvironment(ctx interface{}, orgID interface{}, templateName interface{}, consumerUuid interface{}) *MockCandlepinClient_AssociateEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) AssociateEnvironment(ctx any, orgID any, templateName any, consumerUuid any) *MockCandlepinClient_AssociateEnvironment_Call {
 	return &MockCandlepinClient_AssociateEnvironment_Call{Call: _e.mock.On("AssociateEnvironment", ctx, orgID, templateName, consumerUuid)}
 }
 
@@ -207,7 +207,7 @@ type MockCandlepinClient_CreateConsumer_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - name string
-func (_e *MockCandlepinClient_Expecter) CreateConsumer(ctx interface{}, orgID interface{}, name interface{}) *MockCandlepinClient_CreateConsumer_Call {
+func (_e *MockCandlepinClient_Expecter) CreateConsumer(ctx any, orgID any, name any) *MockCandlepinClient_CreateConsumer_Call {
 	return &MockCandlepinClient_CreateConsumer_Call{Call: _e.mock.On("CreateConsumer", ctx, orgID, name)}
 }
 
@@ -270,7 +270,7 @@ type MockCandlepinClient_CreateContent_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - content caliri.ContentDTO
-func (_e *MockCandlepinClient_Expecter) CreateContent(ctx interface{}, orgID interface{}, content interface{}) *MockCandlepinClient_CreateContent_Call {
+func (_e *MockCandlepinClient_Expecter) CreateContent(ctx any, orgID any, content any) *MockCandlepinClient_CreateContent_Call {
 	return &MockCandlepinClient_CreateContent_Call{Call: _e.mock.On("CreateContent", ctx, orgID, content)}
 }
 
@@ -333,7 +333,7 @@ type MockCandlepinClient_CreateContentBatch_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - content []caliri.ContentDTO
-func (_e *MockCandlepinClient_Expecter) CreateContentBatch(ctx interface{}, orgID interface{}, content interface{}) *MockCandlepinClient_CreateContentBatch_Call {
+func (_e *MockCandlepinClient_Expecter) CreateContentBatch(ctx any, orgID any, content any) *MockCandlepinClient_CreateContentBatch_Call {
 	return &MockCandlepinClient_CreateContentBatch_Call{Call: _e.mock.On("CreateContentBatch", ctx, orgID, content)}
 }
 
@@ -409,7 +409,7 @@ type MockCandlepinClient_CreateEnvironment_Call struct {
 //   - name string
 //   - id string
 //   - prefix string
-func (_e *MockCandlepinClient_Expecter) CreateEnvironment(ctx interface{}, orgID interface{}, name interface{}, id interface{}, prefix interface{}) *MockCandlepinClient_CreateEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) CreateEnvironment(ctx any, orgID any, name any, id any, prefix any) *MockCandlepinClient_CreateEnvironment_Call {
 	return &MockCandlepinClient_CreateEnvironment_Call{Call: _e.mock.On("CreateEnvironment", ctx, orgID, name, id, prefix)}
 }
 
@@ -480,7 +480,7 @@ type MockCandlepinClient_CreateOwner_Call struct {
 
 // CreateOwner is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCandlepinClient_Expecter) CreateOwner(ctx interface{}) *MockCandlepinClient_CreateOwner_Call {
+func (_e *MockCandlepinClient_Expecter) CreateOwner(ctx any) *MockCandlepinClient_CreateOwner_Call {
 	return &MockCandlepinClient_CreateOwner_Call{Call: _e.mock.On("CreateOwner", ctx)}
 }
 
@@ -541,7 +541,7 @@ type MockCandlepinClient_CreatePool_Call struct {
 // CreatePool is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockCandlepinClient_Expecter) CreatePool(ctx interface{}, orgID interface{}) *MockCandlepinClient_CreatePool_Call {
+func (_e *MockCandlepinClient_Expecter) CreatePool(ctx any, orgID any) *MockCandlepinClient_CreatePool_Call {
 	return &MockCandlepinClient_CreatePool_Call{Call: _e.mock.On("CreatePool", ctx, orgID)}
 }
 
@@ -598,7 +598,7 @@ type MockCandlepinClient_CreateProduct_Call struct {
 // CreateProduct is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockCandlepinClient_Expecter) CreateProduct(ctx interface{}, orgID interface{}) *MockCandlepinClient_CreateProduct_Call {
+func (_e *MockCandlepinClient_Expecter) CreateProduct(ctx any, orgID any) *MockCandlepinClient_CreateProduct_Call {
 	return &MockCandlepinClient_CreateProduct_Call{Call: _e.mock.On("CreateProduct", ctx, orgID)}
 }
 
@@ -655,7 +655,7 @@ type MockCandlepinClient_DeleteConsumer_Call struct {
 // DeleteConsumer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - consumerUUID string
-func (_e *MockCandlepinClient_Expecter) DeleteConsumer(ctx interface{}, consumerUUID interface{}) *MockCandlepinClient_DeleteConsumer_Call {
+func (_e *MockCandlepinClient_Expecter) DeleteConsumer(ctx any, consumerUUID any) *MockCandlepinClient_DeleteConsumer_Call {
 	return &MockCandlepinClient_DeleteConsumer_Call{Call: _e.mock.On("DeleteConsumer", ctx, consumerUUID)}
 }
 
@@ -713,7 +713,7 @@ type MockCandlepinClient_DeleteContent_Call struct {
 //   - ctx context.Context
 //   - ownerKey string
 //   - repoConfigUUID string
-func (_e *MockCandlepinClient_Expecter) DeleteContent(ctx interface{}, ownerKey interface{}, repoConfigUUID interface{}) *MockCandlepinClient_DeleteContent_Call {
+func (_e *MockCandlepinClient_Expecter) DeleteContent(ctx any, ownerKey any, repoConfigUUID any) *MockCandlepinClient_DeleteContent_Call {
 	return &MockCandlepinClient_DeleteContent_Call{Call: _e.mock.On("DeleteContent", ctx, ownerKey, repoConfigUUID)}
 }
 
@@ -775,7 +775,7 @@ type MockCandlepinClient_DeleteEnvironment_Call struct {
 // DeleteEnvironment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - templateUUID string
-func (_e *MockCandlepinClient_Expecter) DeleteEnvironment(ctx interface{}, templateUUID interface{}) *MockCandlepinClient_DeleteEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) DeleteEnvironment(ctx any, templateUUID any) *MockCandlepinClient_DeleteEnvironment_Call {
 	return &MockCandlepinClient_DeleteEnvironment_Call{Call: _e.mock.On("DeleteEnvironment", ctx, templateUUID)}
 }
 
@@ -833,7 +833,7 @@ type MockCandlepinClient_DemoteContentFromEnvironment_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - customRepoConfigUUIDs []string
-func (_e *MockCandlepinClient_Expecter) DemoteContentFromEnvironment(ctx interface{}, templateUUID interface{}, customRepoConfigUUIDs interface{}) *MockCandlepinClient_DemoteContentFromEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) DemoteContentFromEnvironment(ctx any, templateUUID any, customRepoConfigUUIDs any) *MockCandlepinClient_DemoteContentFromEnvironment_Call {
 	return &MockCandlepinClient_DemoteContentFromEnvironment_Call{Call: _e.mock.On("DemoteContentFromEnvironment", ctx, templateUUID, customRepoConfigUUIDs)}
 }
 
@@ -906,7 +906,7 @@ type MockCandlepinClient_FetchConsumer_Call struct {
 // FetchConsumer is a helper method to define mock.On call
 //   - ctx context.Context
 //   - consumerUUID string
-func (_e *MockCandlepinClient_Expecter) FetchConsumer(ctx interface{}, consumerUUID interface{}) *MockCandlepinClient_FetchConsumer_Call {
+func (_e *MockCandlepinClient_Expecter) FetchConsumer(ctx any, consumerUUID any) *MockCandlepinClient_FetchConsumer_Call {
 	return &MockCandlepinClient_FetchConsumer_Call{Call: _e.mock.On("FetchConsumer", ctx, consumerUUID)}
 }
 
@@ -975,7 +975,7 @@ type MockCandlepinClient_FetchContent_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - repoConfigUUID string
-func (_e *MockCandlepinClient_Expecter) FetchContent(ctx interface{}, orgID interface{}, repoConfigUUID interface{}) *MockCandlepinClient_FetchContent_Call {
+func (_e *MockCandlepinClient_Expecter) FetchContent(ctx any, orgID any, repoConfigUUID any) *MockCandlepinClient_FetchContent_Call {
 	return &MockCandlepinClient_FetchContent_Call{Call: _e.mock.On("FetchContent", ctx, orgID, repoConfigUUID)}
 }
 
@@ -1048,7 +1048,7 @@ type MockCandlepinClient_FetchContentOverrides_Call struct {
 // FetchContentOverrides is a helper method to define mock.On call
 //   - ctx context.Context
 //   - templateUUID string
-func (_e *MockCandlepinClient_Expecter) FetchContentOverrides(ctx interface{}, templateUUID interface{}) *MockCandlepinClient_FetchContentOverrides_Call {
+func (_e *MockCandlepinClient_Expecter) FetchContentOverrides(ctx any, templateUUID any) *MockCandlepinClient_FetchContentOverrides_Call {
 	return &MockCandlepinClient_FetchContentOverrides_Call{Call: _e.mock.On("FetchContentOverrides", ctx, templateUUID)}
 }
 
@@ -1117,7 +1117,7 @@ type MockCandlepinClient_FetchContentOverridesForRepo_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - label string
-func (_e *MockCandlepinClient_Expecter) FetchContentOverridesForRepo(ctx interface{}, templateUUID interface{}, label interface{}) *MockCandlepinClient_FetchContentOverridesForRepo_Call {
+func (_e *MockCandlepinClient_Expecter) FetchContentOverridesForRepo(ctx any, templateUUID any, label any) *MockCandlepinClient_FetchContentOverridesForRepo_Call {
 	return &MockCandlepinClient_FetchContentOverridesForRepo_Call{Call: _e.mock.On("FetchContentOverridesForRepo", ctx, templateUUID, label)}
 }
 
@@ -1191,7 +1191,7 @@ type MockCandlepinClient_FetchContentsByLabel_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - labels []string
-func (_e *MockCandlepinClient_Expecter) FetchContentsByLabel(ctx interface{}, orgID interface{}, labels interface{}) *MockCandlepinClient_FetchContentsByLabel_Call {
+func (_e *MockCandlepinClient_Expecter) FetchContentsByLabel(ctx any, orgID any, labels any) *MockCandlepinClient_FetchContentsByLabel_Call {
 	return &MockCandlepinClient_FetchContentsByLabel_Call{Call: _e.mock.On("FetchContentsByLabel", ctx, orgID, labels)}
 }
 
@@ -1264,7 +1264,7 @@ type MockCandlepinClient_FetchEnvironment_Call struct {
 // FetchEnvironment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - templateUUID string
-func (_e *MockCandlepinClient_Expecter) FetchEnvironment(ctx interface{}, templateUUID interface{}) *MockCandlepinClient_FetchEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) FetchEnvironment(ctx any, templateUUID any) *MockCandlepinClient_FetchEnvironment_Call {
 	return &MockCandlepinClient_FetchEnvironment_Call{Call: _e.mock.On("FetchEnvironment", ctx, templateUUID)}
 }
 
@@ -1332,7 +1332,7 @@ type MockCandlepinClient_FetchPool_Call struct {
 // FetchPool is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockCandlepinClient_Expecter) FetchPool(ctx interface{}, orgID interface{}) *MockCandlepinClient_FetchPool_Call {
+func (_e *MockCandlepinClient_Expecter) FetchPool(ctx any, orgID any) *MockCandlepinClient_FetchPool_Call {
 	return &MockCandlepinClient_FetchPool_Call{Call: _e.mock.On("FetchPool", ctx, orgID)}
 }
 
@@ -1401,7 +1401,7 @@ type MockCandlepinClient_FetchProduct_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - productID string
-func (_e *MockCandlepinClient_Expecter) FetchProduct(ctx interface{}, orgID interface{}, productID interface{}) *MockCandlepinClient_FetchProduct_Call {
+func (_e *MockCandlepinClient_Expecter) FetchProduct(ctx any, orgID any, productID any) *MockCandlepinClient_FetchProduct_Call {
 	return &MockCandlepinClient_FetchProduct_Call{Call: _e.mock.On("FetchProduct", ctx, orgID, productID)}
 }
 
@@ -1463,7 +1463,7 @@ type MockCandlepinClient_ImportManifest_Call struct {
 // ImportManifest is a helper method to define mock.On call
 //   - ctx context.Context
 //   - filename string
-func (_e *MockCandlepinClient_Expecter) ImportManifest(ctx interface{}, filename interface{}) *MockCandlepinClient_ImportManifest_Call {
+func (_e *MockCandlepinClient_Expecter) ImportManifest(ctx any, filename any) *MockCandlepinClient_ImportManifest_Call {
 	return &MockCandlepinClient_ImportManifest_Call{Call: _e.mock.On("ImportManifest", ctx, filename)}
 }
 
@@ -1539,7 +1539,7 @@ type MockCandlepinClient_ListContents_Call struct {
 // ListContents is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockCandlepinClient_Expecter) ListContents(ctx interface{}, orgID interface{}) *MockCandlepinClient_ListContents_Call {
+func (_e *MockCandlepinClient_Expecter) ListContents(ctx any, orgID any) *MockCandlepinClient_ListContents_Call {
 	return &MockCandlepinClient_ListContents_Call{Call: _e.mock.On("ListContents", ctx, orgID)}
 }
 
@@ -1608,7 +1608,7 @@ type MockCandlepinClient_ListProducts_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - productIDs []string
-func (_e *MockCandlepinClient_Expecter) ListProducts(ctx interface{}, orgID interface{}, productIDs interface{}) *MockCandlepinClient_ListProducts_Call {
+func (_e *MockCandlepinClient_Expecter) ListProducts(ctx any, orgID any, productIDs any) *MockCandlepinClient_ListProducts_Call {
 	return &MockCandlepinClient_ListProducts_Call{Call: _e.mock.On("ListProducts", ctx, orgID, productIDs)}
 }
 
@@ -1671,7 +1671,7 @@ type MockCandlepinClient_PromoteContentToEnvironment_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - repoConfigUUIDs []string
-func (_e *MockCandlepinClient_Expecter) PromoteContentToEnvironment(ctx interface{}, templateUUID interface{}, repoConfigUUIDs interface{}) *MockCandlepinClient_PromoteContentToEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) PromoteContentToEnvironment(ctx any, templateUUID any, repoConfigUUIDs any) *MockCandlepinClient_PromoteContentToEnvironment_Call {
 	return &MockCandlepinClient_PromoteContentToEnvironment_Call{Call: _e.mock.On("PromoteContentToEnvironment", ctx, templateUUID, repoConfigUUIDs)}
 }
 
@@ -1734,7 +1734,7 @@ type MockCandlepinClient_RemoveContentFromProduct_Call struct {
 //   - ctx context.Context
 //   - orgID string
 //   - repoConfigUUID string
-func (_e *MockCandlepinClient_Expecter) RemoveContentFromProduct(ctx interface{}, orgID interface{}, repoConfigUUID interface{}) *MockCandlepinClient_RemoveContentFromProduct_Call {
+func (_e *MockCandlepinClient_Expecter) RemoveContentFromProduct(ctx any, orgID any, repoConfigUUID any) *MockCandlepinClient_RemoveContentFromProduct_Call {
 	return &MockCandlepinClient_RemoveContentFromProduct_Call{Call: _e.mock.On("RemoveContentFromProduct", ctx, orgID, repoConfigUUID)}
 }
 
@@ -1797,7 +1797,7 @@ type MockCandlepinClient_RemoveContentOverrides_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - toRemove []caliri.ContentOverrideDTO
-func (_e *MockCandlepinClient_Expecter) RemoveContentOverrides(ctx interface{}, templateUUID interface{}, toRemove interface{}) *MockCandlepinClient_RemoveContentOverrides_Call {
+func (_e *MockCandlepinClient_Expecter) RemoveContentOverrides(ctx any, templateUUID any, toRemove any) *MockCandlepinClient_RemoveContentOverrides_Call {
 	return &MockCandlepinClient_RemoveContentOverrides_Call{Call: _e.mock.On("RemoveContentOverrides", ctx, templateUUID, toRemove)}
 }
 
@@ -1871,7 +1871,7 @@ type MockCandlepinClient_RenameEnvironment_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - name string
-func (_e *MockCandlepinClient_Expecter) RenameEnvironment(ctx interface{}, templateUUID interface{}, name interface{}) *MockCandlepinClient_RenameEnvironment_Call {
+func (_e *MockCandlepinClient_Expecter) RenameEnvironment(ctx any, templateUUID any, name any) *MockCandlepinClient_RenameEnvironment_Call {
 	return &MockCandlepinClient_RenameEnvironment_Call{Call: _e.mock.On("RenameEnvironment", ctx, templateUUID, name)}
 }
 
@@ -1935,7 +1935,7 @@ type MockCandlepinClient_UpdateContent_Call struct {
 //   - orgID string
 //   - repoConfigUUID string
 //   - content caliri.ContentDTO
-func (_e *MockCandlepinClient_Expecter) UpdateContent(ctx interface{}, orgID interface{}, repoConfigUUID interface{}, content interface{}) *MockCandlepinClient_UpdateContent_Call {
+func (_e *MockCandlepinClient_Expecter) UpdateContent(ctx any, orgID any, repoConfigUUID any, content any) *MockCandlepinClient_UpdateContent_Call {
 	return &MockCandlepinClient_UpdateContent_Call{Call: _e.mock.On("UpdateContent", ctx, orgID, repoConfigUUID, content)}
 }
 
@@ -2003,7 +2003,7 @@ type MockCandlepinClient_UpdateContentOverrides_Call struct {
 //   - ctx context.Context
 //   - templateUUID string
 //   - dtos []caliri.ContentOverrideDTO
-func (_e *MockCandlepinClient_Expecter) UpdateContentOverrides(ctx interface{}, templateUUID interface{}, dtos interface{}) *MockCandlepinClient_UpdateContentOverrides_Call {
+func (_e *MockCandlepinClient_Expecter) UpdateContentOverrides(ctx any, templateUUID any, dtos any) *MockCandlepinClient_UpdateContentOverrides_Call {
 	return &MockCandlepinClient_UpdateContentOverrides_Call{Call: _e.mock.On("UpdateContentOverrides", ctx, templateUUID, dtos)}
 }
 
