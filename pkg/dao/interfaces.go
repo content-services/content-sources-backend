@@ -275,8 +275,8 @@ type MavenPackagesDao interface {
 type LightwellAdvisoryDao interface {
 	SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error
 	ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)
-	ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error)
-	MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error
+	ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error)
+	MarkAsNotified(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData) error
 }
 
 type LightwellVulnerabilityDao interface {

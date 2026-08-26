@@ -25,7 +25,8 @@ import (
 
 type UserPreferencesSuite struct {
 	suite.Suite
-	reg *dao.MockDaoRegistry
+	reg           *dao.MockDaoRegistry
+	oldFeatureSet config.FeatureSet
 }
 
 func TestUserPreferencesSuite(t *testing.T) {
@@ -33,8 +34,19 @@ func TestUserPreferencesSuite(t *testing.T) {
 }
 
 func (suite *UserPreferencesSuite) SetupTest() {
+	// Backup previous config
+	suite.oldFeatureSet = config.Get().Features
+
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	config.Get().Features.LightwellNotifications.Enabled = true
+	config.Get().Features.LightwellNotifications.Accounts = nil
+	config.Get().Features.LightwellNotifications.Organizations = nil
+	config.Get().Features.LightwellNotifications.Users = nil
+}
+
+func (suite *UserPreferencesSuite) TearDownTest() {
+	// Restore previous config
+	config.Get().Features = suite.oldFeatureSet
 }
 
 func (suite *UserPreferencesSuite) serveRouter(req *http.Request) (int, []byte, error) {

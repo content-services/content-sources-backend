@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/IBM/sarama/mocks"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -15,6 +16,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func setupMockProducer(t *testing.T, expectedMessages int) *mocks.SyncProducer {
+	t.Helper()
+	mockProducer := mocks.NewSyncProducer(t, nil)
+	for range expectedMessages {
+		mockProducer.ExpectSendMessageAndSucceed()
+	}
+	origProducer := config.Get().NotificationsProducer
+	config.Get().NotificationsProducer = &config.NotificationsKafkaProducer{
+		Producer: mockProducer,
+		Topic:    "test-notifications",
+	}
+	t.Cleanup(func() {
+		config.Get().NotificationsProducer = origProducer
+	})
+	return mockProducer
+}
 
 const testRepoConfigUUID = "test-repo-config-uuid"
 const testRepoName = "lightwell/java/remediated"
@@ -70,7 +88,10 @@ func testEntry() external_repos.LightwellAllowlistEntry {
 func TestProcessOsvForEntry_Success(t *testing.T) {
 	config.Get().Features.LightwellNotifications.Enabled = true
 	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
-	// Serve two OSV advisory files from a test HTTP server
+
+	// 2 orgs × 1 message each = 2 expected sends
+	setupMockProducer(t, 2)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
@@ -86,28 +107,26 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 	mockDao := dao.GetMockDaoRegistry(t)
 	mockRepoConfigFetch(mockDao)
 
-	// Phase 1: Sync advisories from OSV files into the database
 	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
 	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
 		return len(advisories) == 2
 	})).Return(nil)
 
-	// Phase 2: After sync, sendAdvisoryNotifications queries for unnotified advisories
-	// and opted-in orgs, then marks them as notified
 	unnotified := []dao.LightwellNotificationData{
 		{PackageName: "com.example:lib-a", AdvisoryID: "ADV-001", Severity: "9.8", FixedVersions: []string{"1.0.1"}},
 		{PackageName: "com.example:lib-b", AdvisoryID: "ADV-002", Severity: "7.5", FixedVersions: []string{"2.0.0"}},
 	}
-	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID).Return(unnotified, nil)
 	mockDao.UserPreference.On("ListDistinctOrgsByPreference", mock.Anything,
 		models.UserPreferenceLightwellNotificationEnabled, "true",
 	).Return([]string{"org-1", "org-2"}, nil)
-	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, unnotified).Return(nil)
+	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-1").Return(unnotified, nil)
+	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-2").Return(unnotified, nil)
+	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified).Return(nil)
+	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-2", unnotified).Return(nil)
 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
-	// Verify advisories were synced with correct data
 	mockDao.LightwellAdvisory.AssertCalled(t, "SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
 		if len(advisories) != 2 {
 			return false
@@ -120,11 +139,10 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 			advisories[1].Checksum == "checksum-bbb"
 	}))
 
-	// Verify the notification flow ran: queried unnotified, queried opted-in orgs, marked as notified
-	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID)
-	mockDao.UserPreference.AssertCalled(t, "ListDistinctOrgsByPreference", mock.Anything,
-		models.UserPreferenceLightwellNotificationEnabled, "true")
-	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, unnotified)
+	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-1")
+	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-2")
+	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified)
+	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-2", unnotified)
 }
 
 func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) {
@@ -153,11 +171,13 @@ func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
-	mockDao.LightwellAdvisory.AssertNotCalled(t, "ListUnnotifiedAdvisories", mock.Anything, mock.Anything)
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "ListUnnotifiedAdvisories", mock.Anything, mock.Anything, mock.Anything)
 	mockDao.UserPreference.AssertNotCalled(t, "ListDistinctOrgsByPreference", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestProcessOsvForEntry_SkipsExistingByChecksum(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
@@ -178,13 +198,52 @@ func TestProcessOsvForEntry_SkipsExistingByChecksum(t *testing.T) {
 	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
 		return len(advisories) == 2
 	})).Return(nil)
-	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellNotificationData{}, nil)
 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 }
 
+func TestProcessOsvForEntry_SkipsSyncWhenAllChecksumsMatch(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = true
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
+
+	setupMockProducer(t, 1)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testManifest)
+	})
+
+	server := setupTestServer(t, mux)
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+
+	existing := []dao.LightwellAdvisoryInput{
+		{AdvisoryID: "ADV-001", PackageName: "com.example:lib-a", Checksum: "checksum-aaa"},
+		{AdvisoryID: "ADV-002", PackageName: "com.example:lib-b", Checksum: "checksum-bbb"},
+	}
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return(existing, nil)
+
+	unnotified := []dao.LightwellNotificationData{
+		{PackageName: "com.example:lib-a", AdvisoryID: "ADV-001", Severity: "9.8", FixedVersions: []string{"1.0.1"}},
+	}
+	mockDao.UserPreference.On("ListDistinctOrgsByPreference", mock.Anything,
+		models.UserPreferenceLightwellNotificationEnabled, "true",
+	).Return([]string{"org-1"}, nil)
+	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-1").Return(unnotified, nil)
+	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified).Return(nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "SyncForRepository", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-1")
+	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified)
+}
+
 func TestProcessOsvForEntry_ForceRefetchesAll(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
 	advisory1Fetched := false
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +269,6 @@ func TestProcessOsvForEntry_ForceRefetchesAll(t *testing.T) {
 	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
 		return len(advisories) == 2
 	})).Return(nil)
-	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellNotificationData{}, nil)
 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), true)
 	assert.NoError(t, err)
@@ -245,6 +303,8 @@ func TestProcessOsvForEntry_ManifestFetchError(t *testing.T) {
 }
 
 func TestProcessOsvForEntry_SkipsFailedOSVFetch(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
@@ -259,11 +319,11 @@ func TestProcessOsvForEntry_SkipsFailedOSVFetch(t *testing.T) {
 	server := setupTestServer(t, mux)
 	mockDao := dao.GetMockDaoRegistry(t)
 	mockRepoConfigFetch(mockDao)
+
 	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
 	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
 		return len(advisories) == 1 && advisories[0].AdvisoryID == "ADV-002"
 	})).Return(nil)
-	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellNotificationData{}, nil)
 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
 	assert.NoError(t, err)

@@ -62,15 +62,14 @@ func SendNotification(orgID string, eventName EventName, repos []RepositoryPaylo
 	}
 }
 
-func SendLightwellNotification(orgID, eventType, severity string, events []NotificationEvent) {
+func SendLightwellNotification(orgID, eventType, severity string, events []NotificationEvent) error {
 	if !config.Get().Features.LightwellNotifications.Enabled {
 		log.Warn().Msg("notifications disabled for lightwell")
-		return
+		return nil
 	}
 	producer := config.Get().NotificationsProducer
 	if producer == nil {
-		log.Error().Msg("notifications producer is nil")
-		return
+		return fmt.Errorf("notifications producer is nil")
 	}
 	if len(events) > 0 {
 		action := NotificationAction{
@@ -87,8 +86,7 @@ func SendLightwellNotification(orgID, eventType, severity string, events []Notif
 
 		msgBytes, err := json.Marshal(action)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to marshal lightwell notification action")
-			return
+			return fmt.Errorf("failed to marshal lightwell notification action: %w", err)
 		}
 
 		_, _, err = producer.Producer.SendMessage(&sarama.ProducerMessage{
@@ -96,12 +94,12 @@ func SendLightwellNotification(orgID, eventType, severity string, events []Notif
 			Value: sarama.ByteEncoder(msgBytes),
 		})
 		if err != nil {
-			log.Error().Err(err).Msg("lightwell notification message failed to send")
-			return
+			return fmt.Errorf("lightwell notification message failed to send: %w", err)
 		}
 
 		log.Info().Str("org_id", orgID).Str("event_type", eventType).Str("severity", severity).Int("event_count", len(events)).Msg("sent lightwell notification")
 	}
+	return nil
 }
 
 func SendTestNotification(orgID string, payload json.RawMessage) (json.RawMessage, error) {

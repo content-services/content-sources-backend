@@ -7,6 +7,7 @@ type LightwellAdvisoryNotification struct {
 	RepositoryConfigurationUUID string `json:"repository_configuration_uuid" gorm:"not null"`
 	AdvisoryID                  string `json:"advisory_id" gorm:"not null"`
 	PackageName                 string `json:"package_name"`
+	OrgID                       string `json:"org_id" gorm:"not null;default:''"`
 }
 
 func (*LightwellAdvisoryNotification) TableName() string {
