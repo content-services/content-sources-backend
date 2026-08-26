@@ -173,7 +173,7 @@ func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisories() {
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/list-all", advisories)
 	s.Require().NoError(err)
 
-	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.NoError(err)
 	s.Len(unnotified, 3)
 }
@@ -189,14 +189,14 @@ func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesExcludesNotified() 
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/excludes", advisories)
 	s.Require().NoError(err)
 
-	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.Require().NoError(err)
 	s.Len(unnotified, 2)
 
-	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, unnotified[:1])
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, "org-1", unnotified[:1])
 	s.Require().NoError(err)
 
-	unnotified, err = dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	unnotified, err = dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.NoError(err)
 	s.Len(unnotified, 1)
 	s.Equal("CVE-2026-0002", unnotified[0].AdvisoryID)
@@ -212,24 +212,50 @@ func (s *LightwellAdvisorySuite) TestMarkAsNotifiedIdempotent() {
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/idempotent", advisories)
 	s.Require().NoError(err)
 
-	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.Require().NoError(err)
 
-	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, unnotified)
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, "org-1", unnotified)
 	s.NoError(err)
 
-	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, unnotified)
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, "org-1", unnotified)
 	s.NoError(err)
 
-	result, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	result, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.NoError(err)
 	s.Empty(result)
 }
 
 func (s *LightwellAdvisorySuite) TestMarkAsNotifiedEmpty() {
 	dao := GetLightwellAdvisoryDao(s.tx)
-	err := dao.MarkAsNotified(context.Background(), "some-uuid", nil)
+	err := dao.MarkAsNotified(context.Background(), "some-uuid", "org-1", nil)
 	s.NoError(err)
+}
+
+func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesPerOrg() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/per-org")
+
+	advisories := []LightwellAdvisoryInput{
+		{AdvisoryID: "CVE-2026-0001", PackageName: "com.example:lib-a", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "aaa"},
+	}
+	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/per-org", advisories)
+	s.Require().NoError(err)
+
+	unnotifiedOrg1, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
+	s.Require().NoError(err)
+	s.Len(unnotifiedOrg1, 1)
+
+	err = dao.MarkAsNotified(context.Background(), repoConfigUUID, "org-1", unnotifiedOrg1)
+	s.Require().NoError(err)
+
+	unnotifiedOrg1, err = dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
+	s.NoError(err)
+	s.Empty(unnotifiedOrg1)
+
+	unnotifiedOrg2, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-2")
+	s.NoError(err)
+	s.Len(unnotifiedOrg2, 1)
 }
 
 func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesFixedVersions() {
@@ -242,7 +268,7 @@ func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesFixedVersions() {
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/versions", advisories)
 	s.Require().NoError(err)
 
-	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.NoError(err)
 	s.Require().Len(unnotified, 1)
 	s.Equal("CVE-2026-0001", unnotified[0].AdvisoryID)
@@ -261,7 +287,7 @@ func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesMultipleFixedVersio
 	err := dao.SyncForRepository(context.Background(), repoConfigUUID, "lightwell/notif/multi-versions", advisories)
 	s.Require().NoError(err)
 
-	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID)
+	unnotified, err := dao.ListUnnotifiedAdvisories(context.Background(), repoConfigUUID, "org-1")
 	s.NoError(err)
 	s.Require().Len(unnotified, 1)
 	s.Equal([]string{"1.0.1", "2.0.0"}, unnotified[0].FixedVersions)

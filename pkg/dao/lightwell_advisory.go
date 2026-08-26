@@ -110,12 +110,12 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 	})
 }
 
-func (d lightwellAdvisoryDaoImpl) ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error) {
+func (d lightwellAdvisoryDaoImpl) ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error) {
 	var advisories []models.LightwellAdvisory
 	result := d.db.WithContext(ctx).
 		Table("lightwell_advisories AS la").
 		Select("la.*").
-		Joins("LEFT JOIN lightwell_advisory_notifications AS lan ON la.repository_configuration_uuid = lan.repository_configuration_uuid AND la.advisory_id = lan.advisory_id AND la.package_name = lan.package_name").
+		Joins("LEFT JOIN lightwell_advisory_notifications AS lan ON la.repository_configuration_uuid = lan.repository_configuration_uuid AND la.advisory_id = lan.advisory_id AND la.package_name = lan.package_name AND lan.org_id = ?", orgID).
 		Where("la.repository_configuration_uuid = ? AND lan.uuid IS NULL", repoConfigUUID).
 		Find(&advisories)
 	if result.Error != nil {
@@ -135,7 +135,7 @@ func (d lightwellAdvisoryDaoImpl) ListUnnotifiedAdvisories(ctx context.Context, 
 	return data, nil
 }
 
-func (d lightwellAdvisoryDaoImpl) MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error {
+func (d lightwellAdvisoryDaoImpl) MarkAsNotified(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -146,6 +146,7 @@ func (d lightwellAdvisoryDaoImpl) MarkAsNotified(ctx context.Context, repoConfig
 			RepositoryConfigurationUUID: repoConfigUUID,
 			AdvisoryID:                  d.AdvisoryID,
 			PackageName:                 d.PackageName,
+			OrgID:                       orgID,
 		})
 	}
 
@@ -154,6 +155,7 @@ func (d lightwellAdvisoryDaoImpl) MarkAsNotified(ctx context.Context, repoConfig
 			{Name: "repository_configuration_uuid"},
 			{Name: "advisory_id"},
 			{Name: "package_name"},
+			{Name: "org_id"},
 		},
 		DoNothing: true,
 	}).CreateInBatches(&notifications, 100)

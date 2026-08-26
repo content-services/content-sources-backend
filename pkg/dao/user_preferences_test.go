@@ -124,7 +124,11 @@ func (s *UserPreferenceSuite) TestListScopedToUser() {
 func (s *UserPreferenceSuite) TestListDistinctOrgsByPreference() {
 	dao := userPreferenceDaoImpl{db: s.tx}
 
-	_, err := dao.Set(context.Background(), "org-1", "user-a", models.UserPreferenceLightwellNotificationEnabled, "true")
+	// Count existing orgs with this preference before seeding
+	initialOrgs, err := dao.ListDistinctOrgsByPreference(context.Background(), models.UserPreferenceLightwellNotificationEnabled, "true")
+	assert.NoError(s.T(), err)
+
+	_, err = dao.Set(context.Background(), "org-1", "user-a", models.UserPreferenceLightwellNotificationEnabled, "true")
 	assert.NoError(s.T(), err)
 	_, err = dao.Set(context.Background(), "org-1", "user-b", models.UserPreferenceLightwellNotificationEnabled, "true")
 	assert.NoError(s.T(), err)
@@ -135,7 +139,7 @@ func (s *UserPreferenceSuite) TestListDistinctOrgsByPreference() {
 
 	orgs, err := dao.ListDistinctOrgsByPreference(context.Background(), models.UserPreferenceLightwellNotificationEnabled, "true")
 	assert.NoError(s.T(), err)
-	assert.Len(s.T(), orgs, 2)
+	assert.Len(s.T(), orgs, len(initialOrgs)+2)
 	assert.Contains(s.T(), orgs, "org-1")
 	assert.Contains(s.T(), orgs, "org-2")
 }
@@ -143,7 +147,9 @@ func (s *UserPreferenceSuite) TestListDistinctOrgsByPreference() {
 func (s *UserPreferenceSuite) TestListDistinctOrgsByPreferenceEmpty() {
 	dao := userPreferenceDaoImpl{db: s.tx}
 
-	orgs, err := dao.ListDistinctOrgsByPreference(context.Background(), models.UserPreferenceLightwellNotificationEnabled, "true")
+	// Query for a value that no one has set to verify we get an empty result
+	// (regardless of what other preferences may exist in the database)
+	orgs, err := dao.ListDistinctOrgsByPreference(context.Background(), models.UserPreferenceLightwellNotificationEnabled, "invalid-value-not-in-use")
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), orgs)
 }

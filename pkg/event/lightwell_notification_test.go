@@ -99,7 +99,8 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 		},
 	}
 
-	events := BuildLightwellNotificationEvents(inputs)
+	repoName := "lightwell/java/remediated"
+	events := BuildLightwellNotificationEvents(repoName, inputs)
 	require.Len(t, events, 2)
 
 	// Index by package name to avoid depending on map iteration order
@@ -112,7 +113,7 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 
 	// lib-a: 3 advisories should produce 2 releases (grouped by shared fixed versions)
 	libA := payloadsByPkg["org.example:lib-a"]
-	assert.Equal(t, LightwellPackageLink("org.example:lib-a"), libA.PackageLink)
+	assert.Equal(t, LightwellPackageLink(repoName, "org.example:lib-a"), libA.PackageLink)
 	require.Len(t, libA.Releases, 2)
 
 	// Index releases by their version names to avoid depending on map iteration order
@@ -142,14 +143,14 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 
 	// lib-b: single advisory, single release
 	libB := payloadsByPkg["org.example:lib-b"]
-	assert.Equal(t, LightwellPackageLink("org.example:lib-b"), libB.PackageLink)
+	assert.Equal(t, LightwellPackageLink(repoName, "org.example:lib-b"), libB.PackageLink)
 	require.Len(t, libB.Releases, 1)
 	require.Len(t, libB.Releases[0].RelatedCVE, 1)
 	assert.Equal(t, "CVE-2026-0004", libB.Releases[0].RelatedCVE[0].CVE)
 }
 
 func TestBuildLightwellNotificationEventsEmpty(t *testing.T) {
-	events := BuildLightwellNotificationEvents(nil)
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", nil)
 	assert.Empty(t, events)
 }
 
@@ -163,8 +164,18 @@ func TestBuildLightwellNotificationEventsMetadata(t *testing.T) {
 		},
 	}
 
-	events := BuildLightwellNotificationEvents(inputs)
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs)
 	require.Len(t, events, 1)
 	assert.NotNil(t, events[0].Metadata)
 	assert.Empty(t, events[0].Metadata)
+}
+
+func TestLightwellPackageLinkJavaMaven(t *testing.T) {
+	link := LightwellPackageLink("lightwell/java/remediated", "ch.qos.logback:logback-access")
+	assert.True(t, strings.HasSuffix(link, "/lightwell/java-remediated/ch.qos.logback/logback-access"))
+}
+
+func TestLightwellPackageLinkNoColon(t *testing.T) {
+	link := LightwellPackageLink("lightwell/python/remediated", "requests")
+	assert.True(t, strings.HasSuffix(link, "/lightwell/python-remediated/requests"))
 }
