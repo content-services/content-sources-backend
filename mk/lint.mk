@@ -11,7 +11,7 @@ install-pre-commit: install-golangci-lint .venv ## Install pre-commit linter
 
 .PHONY: install-golangci-lint
 install-golangci-lint: ## Install golangci-lint Go linter
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GO_OUTPUT) $(GOLANGCI_LINT_VERSION)
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GO_OUTPUT) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: lint
 lint: ## Run Go linter

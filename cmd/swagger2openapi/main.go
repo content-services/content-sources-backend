@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/getkin/kin-openapi/openapi2conv"
@@ -13,8 +14,8 @@ func main() {
 	if len(os.Args) != 3 {
 		panic("Usage: ./command  input_filename output_filename")
 	}
-	inputFile := os.Args[1]
-	outputFile := os.Args[2]
+	inputFile := filepath.Clean(os.Args[1])
+	outputFile := filepath.Clean(os.Args[2])
 
 	input, err := os.ReadFile(inputFile)
 	if err != nil {

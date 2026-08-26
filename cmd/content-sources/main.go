@@ -166,7 +166,7 @@ func apiServer(ctx context.Context, wg *sync.WaitGroup, allRoutes bool, metrics 
 		defer wg.Done()
 		<-ctx.Done()
 		log.Logger.Info().Msg("Caught context done, closing api server.")
-		if err := echo.Shutdown(context.Background()); err != nil {
+		if err := echo.Shutdown(context.WithoutCancel(ctx)); err != nil {
 			echo.Logger.Fatal(err)
 		}
 	}()
@@ -232,7 +232,7 @@ func instrumentation(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics
 
 	go func() {
 		<-ctx.Done()
-		shutdownContext, cancel := context.WithTimeout(context.Background(), time.Duration(config.Get().Metrics.CollectionFrequency)*time.Second)
+		shutdownContext, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Duration(config.Get().Metrics.CollectionFrequency)*time.Second)
 		if err := e.Shutdown(shutdownContext); err != nil {
 			log.Logger.Error().Msgf("error stopping instrumentation: %s", err.Error())
 		}
@@ -294,9 +294,9 @@ func mockRbac(ctx context.Context, wg *sync.WaitGroup) {
 		<-ctx.Done()
 		defer cancel()
 		log.Logger.Info().Msgf("stopping mock rbac service")
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		if err := e.Shutdown(ctx); err != nil {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer shutdownCancel()
+		if err := e.Shutdown(shutdownCtx); err != nil {
 			log.Fatal().Msgf("error shutting down mock rbac service: %s", err.Error())
 		}
 	}()
