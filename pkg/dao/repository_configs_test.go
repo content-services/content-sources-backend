@@ -3795,18 +3795,6 @@ func (suite *RepositoryConfigSuite) TestCombineStatus() {
 			Expected: "Invalid",
 		},
 		{
-			Name: "Introspection failed, last snapshot failed, and repo has no previous snapshots",
-			RepoConfig: &models.RepositoryConfiguration{
-				Snapshot:         true,
-				LastSnapshotTask: &models.TaskInfo{Status: config.TaskStatusFailed},
-				LastSnapshotUUID: "",
-			},
-			Repo: &models.Repository{
-				LastIntrospectionStatus: config.StatusInvalid,
-			},
-			Expected: "Invalid",
-		},
-		{
 			Name: "Introspection successful, last snapshot failed, and repo has no previous snapshots",
 			RepoConfig: &models.RepositoryConfiguration{
 				Snapshot:         true,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
@@ -17,8 +18,8 @@ type UserPreferencesHandler struct {
 
 func RegisterUserPreferencesRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	h := UserPreferencesHandler{DaoRegistry: *daoReg}
-	engine.GET("/user_preferences/", h.listUserPreferences)
-	engine.PUT("/user_preferences/:label", h.setUserPreference)
+	addRepoRoute(engine, http.MethodGet, "/user_preferences/", h.listUserPreferences, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodPut, "/user_preferences/:label", h.setUserPreference, rbac.RbacVerbWrite)
 }
 
 // ListUserPreferences godoc
