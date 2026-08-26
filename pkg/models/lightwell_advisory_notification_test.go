@@ -11,6 +11,7 @@ func validAdvisoryNotification() LightwellAdvisoryNotification {
 		RepositoryConfigurationUUID: "some-uuid",
 		AdvisoryID:                  "CVE-2026-1111",
 		PackageName:                 "com.example:fake-lib",
+		OrgID:                       "org-123",
 	}
 }
 

@@ -25,8 +25,16 @@ const (
 	SeverityLow       = "low"
 )
 
-func LightwellPackageLink(pkgName string) string {
-	return strings.TrimSuffix(config.Get().Options.ExternalURL, "/") + "/lightwell/packages/" + pkgName
+func LightwellPackageLink(repoName, pkgName string) string {
+	slug := strings.TrimPrefix(repoName, "lightwell/")
+	slug = strings.ReplaceAll(slug, "/", "-")
+
+	pkgPath := pkgName
+	if parts := strings.SplitN(pkgName, ":", 2); len(parts) == 2 {
+		pkgPath = parts[0] + "/" + parts[1]
+	}
+
+	return strings.TrimSuffix(config.Get().Options.ExternalURL, "/") + "/lightwell/" + slug + "/" + pkgPath
 }
 
 func LightwellCVEURL(advisoryID string) string {
@@ -73,7 +81,7 @@ type LightwellReleaseName struct {
 }
 
 // BuildLightwellNotificationEvents transforms a flat list of advisory data into notification events, one event per unique package.
-func BuildLightwellNotificationEvents(advisories []LightwellNotificationInput) []NotificationEvent {
+func BuildLightwellNotificationEvents(repoName string, advisories []LightwellNotificationInput) []NotificationEvent {
 	grouped := groupByPackage(advisories)
 
 	events := make([]NotificationEvent, 0, len(grouped))
@@ -82,7 +90,7 @@ func BuildLightwellNotificationEvents(advisories []LightwellNotificationInput) [
 	// Each payload contains a package link, name, and a releases list
 	for pkgName, inputs := range grouped {
 		payload := LightwellPackagePayload{
-			PackageLink: LightwellPackageLink(pkgName),
+			PackageLink: LightwellPackageLink(repoName, pkgName),
 			PackageName: pkgName,
 			Releases:    buildReleases(inputs),
 		}

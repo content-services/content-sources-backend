@@ -8,6 +8,11 @@ import (
 )
 
 func (s *SeedSuite) TestSeedCoverageReport() {
+	// Count existing demand signals before seeding
+	var initialDemandSignalCount int64
+	err := s.tx.Model(&models.CoverageDemandSignal{}).Count(&initialDemandSignalCount).Error
+	assert.NoError(s.T(), err)
+
 	pendingReport := models.CoverageReport{
 		OrgID:  RandomOrgId(),
 		Status: config.TaskStatusPending,
@@ -27,7 +32,7 @@ func (s *SeedSuite) TestSeedCoverageReport() {
 	var demandSignalCount int64
 	err = s.tx.Model(&models.CoverageDemandSignal{}).Count(&demandSignalCount).Error
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(4), demandSignalCount)
+	assert.Equal(s.T(), initialDemandSignalCount+4, demandSignalCount)
 
 	assert.Equal(s.T(), config.TaskStatusCompleted, completedReport.Status)
 	assert.Equal(s.T(), 5, *completedReport.ExactMatches)

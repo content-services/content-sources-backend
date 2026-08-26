@@ -94,7 +94,6 @@ func processOSVForEntry(
 	if err != nil {
 		return fmt.Errorf("error fetching manifest from %s: %w", manifestURL, err)
 	}
-
 	manifestEntries := vp.ParseManifest(manifestData)
 
 	existingAdvisories, err := daoReg.LightwellAdvisory.ListByRepository(ctx, repoConfigUUID)
@@ -106,13 +105,13 @@ func processOSVForEntry(
 	for _, a := range existingAdvisories {
 		existingByChecksum[a.Checksum] = append(existingByChecksum[a.Checksum], a)
 	}
-
 	advisories, updated := buildAdvisoryInputs(ctx, logger, httpClient, baseURL, manifestEntries, existingByChecksum, force)
 
-	logger.Info().Int("total", len(advisories)).Int("updated", updated).Msg("Syncing advisories")
-
-	if err := daoReg.LightwellAdvisory.SyncForRepository(ctx, repoConfigUUID, entry.Name, advisories); err != nil {
-		return err
+	if updated > 0 || len(advisories) != len(existingAdvisories) {
+		logger.Info().Int("total", len(advisories)).Int("updated", updated).Msg("Syncing advisories")
+		if err := daoReg.LightwellAdvisory.SyncForRepository(ctx, repoConfigUUID, entry.Name, advisories); err != nil {
+			return err
+		}
 	}
 
 	return sendAdvisoryNotifications(ctx, daoReg, logger, repoConfigUUID, entry.Name)
@@ -135,14 +134,6 @@ func sendAdvisoryNotifications(
 		return nil
 	}
 
-	unnotified, err := daoReg.LightwellAdvisory.ListUnnotifiedAdvisories(ctx, repoConfigUUID)
-	if err != nil {
-		return fmt.Errorf("error listing unnotified advisories: %w", err)
-	}
-	if len(unnotified) == 0 {
-		return nil
-	}
-
 	orgs, err := daoReg.UserPreference.ListDistinctOrgsByPreference(ctx,
 		models.UserPreferenceLightwellNotificationEnabled, "true")
 	if err != nil {
@@ -150,32 +141,45 @@ func sendAdvisoryNotifications(
 	}
 
 	if len(orgs) == 0 {
-		log.Debug().Msg("No orgs opted-in for lightwell notifications")
+		logger.Debug().Msg("No orgs opted-in for lightwell notifications")
 		return nil
 	}
 
-	inputs := make([]event.LightwellNotificationInput, len(unnotified))
-	for i, u := range unnotified {
-		inputs[i] = event.LightwellNotificationInput{
-			PackageName:   u.PackageName,
-			AdvisoryID:    u.AdvisoryID,
-			Severity:      u.Severity,
-			FixedVersions: u.FixedVersions,
-			ReferenceURLs: u.ReferenceURLs,
-		}
-	}
-
-	events := event.BuildLightwellNotificationEvents(inputs)
-	severity := event.MaximumSeverity(inputs)
-
 	for _, orgID := range orgs {
-		event.SendLightwellNotification(orgID, eventType, severity, events)
-	}
+		unnotified, err := daoReg.LightwellAdvisory.ListUnnotifiedAdvisories(ctx, repoConfigUUID, orgID)
+		if err != nil {
+			logger.Error().Err(err).Str("org_id", orgID).Msg("Error listing unnotified advisories for org")
+			continue
+		}
+		if len(unnotified) == 0 {
+			continue
+		}
 
-	logger.Info().Int("advisory_count", len(unnotified)).Int("org_count", len(orgs)).Msg("Sent lightwell advisory notifications")
+		inputs := make([]event.LightwellNotificationInput, len(unnotified))
+		for i, u := range unnotified {
+			inputs[i] = event.LightwellNotificationInput{
+				PackageName:   u.PackageName,
+				AdvisoryID:    u.AdvisoryID,
+				Severity:      u.Severity,
+				FixedVersions: u.FixedVersions,
+				ReferenceURLs: u.ReferenceURLs,
+			}
+		}
 
-	if err := daoReg.LightwellAdvisory.MarkAsNotified(ctx, repoConfigUUID, unnotified); err != nil {
-		return fmt.Errorf("error marking advisories as notified: %w", err)
+		events := event.BuildLightwellNotificationEvents(repoName, inputs)
+		severity := event.MaximumSeverity(inputs)
+
+		if err := event.SendLightwellNotification(orgID, eventType, severity, events); err != nil {
+			logger.Error().Err(err).Str("org_id", orgID).Msg("Failed to send lightwell notification for org")
+			continue
+		}
+
+		if err := daoReg.LightwellAdvisory.MarkAsNotified(ctx, repoConfigUUID, orgID, unnotified); err != nil {
+			logger.Error().Err(err).Str("org_id", orgID).Msg("Error marking advisories as notified for org")
+			continue
+		}
+
+		logger.Info().Str("org_id", orgID).Int("advisory_count", len(unnotified)).Msg("Sent lightwell advisory notifications")
 	}
 
 	return nil
