@@ -110,6 +110,18 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 	}
 }
 
+func CheckAdminLightwellAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.AdminLightwell.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage Lightwell customer mappings",
+			"Admin Lightwell feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.AdminLightwell) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot manage Lightwell customer mappings",
+			"Neither the user nor account is allowed.")
+	}
+}
+
 func CheckLightwellBeaconAndLensAccessible(ctx context.Context) (err error) {
 	if !config.Get().Features.LightwellBeaconAndLens.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access this Lightwell feature",

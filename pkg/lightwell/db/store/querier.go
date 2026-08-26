@@ -11,6 +11,8 @@ import (
 type Querier interface {
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
+	CreateCustomerStaml(ctx context.Context, arg CreateCustomerStamlParams) (LightwellCustomerStaml, error)
+	DeleteCustomerStaml(ctx context.Context, arg DeleteCustomerStamlParams) (int64, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)

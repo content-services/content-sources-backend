@@ -844,3 +844,36 @@ func TestCustomerStamlManyToMany(t *testing.T) {
 	_, err = tx.Exec(ctx, `INSERT INTO lightwell_customer_stamls (customer_id, staml) VALUES ('cid-1', 'staml-1')`)
 	require.Error(t, err)
 }
+
+func TestCreateAndDeleteCustomerStamlQueries(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	params := store.CreateCustomerStamlParams{
+		CustomerID: "cid-query-1",
+		Staml:      "staml-query-1",
+	}
+	created, err := q.CreateCustomerStaml(ctx, params)
+	require.NoError(t, err)
+	assert.Equal(t, "cid-query-1", created.CustomerID)
+	assert.Equal(t, "staml-query-1", created.Staml)
+
+	n, err := q.DeleteCustomerStaml(ctx, store.DeleteCustomerStamlParams{
+		CustomerID: "cid-query-1",
+		Staml:      "staml-query-1",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), n)
+
+	n, err = q.DeleteCustomerStaml(ctx, store.DeleteCustomerStamlParams{
+		CustomerID: "cid-query-1",
+		Staml:      "staml-query-1",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), n)
+
+	_, err = q.CreateCustomerStaml(ctx, params)
+	require.NoError(t, err)
+	_, err = q.CreateCustomerStaml(ctx, params)
+	require.Error(t, err)
+}

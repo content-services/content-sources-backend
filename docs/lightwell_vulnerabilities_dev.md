@@ -44,6 +44,15 @@ With the API running, authenticated clients can call:
 
 `customer_id` is required on the list and `ltwlsupt-ticket-ids` endpoints. Filters (`severity`, `stage`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo`, `duplicate`, and `blocked` (OR). `search` requires at least 2 characters when provided.
 
+## Admin API
+
+Admins with the `admin_lightwell` feature can add and remove STAML to CID mappings:
+
+- `POST /api/content-sources/v1/admin/lightwell/customer-stamls/` — create a mapping
+- `DELETE /api/content-sources/v1/admin/lightwell/customer-stamls/` — remove a mapping
+
+Both take JSON `{"customer_id": "...", "staml": "..."}`. Create returns `201` (or `409` if the pair already exists). Delete returns `204` (or `404` if the pair is missing).
+
 ## Run tests
 
 Integration tests use the configured database and roll back per test:

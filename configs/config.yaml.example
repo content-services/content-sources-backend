@@ -225,6 +225,11 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
+  admin_lightwell:
+    enabled: false
+    accounts: #["lightwellAdminAccount"]
+    users: #["lightwellAdminUser"]
+    organizations: #["lightwellAdminOrg"]
   lightwell_beacon_and_lens:
     enabled: false
     accounts: #["lightwellAccount"]

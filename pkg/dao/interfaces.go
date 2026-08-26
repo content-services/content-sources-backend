@@ -35,6 +35,7 @@ type DaoRegistry struct {
 	MavenPackages          MavenPackagesDao
 	LightwellAdvisory      LightwellAdvisoryDao
 	LightwellVulnerability LightwellVulnerabilityDao
+	LightwellCustomerStaml LightwellCustomerStamlDao
 	UserPreference         UserPreferenceDao
 	CoverageReport         CoverageReportDao
 }
@@ -82,6 +83,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		MavenPackages:          mavenPackagesDaoImpl{db: db},
 		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db},
 		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
+		LightwellCustomerStaml: newLightwellCustomerStamlDao(csdb.LightwellQueries),
 		UserPreference:         userPreferenceDaoImpl{db: db},
 		CoverageReport:         coverageReportDaoImpl{db: db},
 	}
@@ -283,6 +285,11 @@ type LightwellVulnerabilityDao interface {
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
+}
+
+type LightwellCustomerStamlDao interface {
+	Create(ctx context.Context, customerID, staml string) (api.LightwellCustomerStamlResponse, error)
+	Delete(ctx context.Context, customerID, staml string) error
 }
 
 type UserPreferenceDao interface {
