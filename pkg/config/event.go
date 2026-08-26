@@ -148,7 +148,8 @@ type NotificationsKafkaProducer struct {
 // SetupNotifications creates a Sarama SyncProducer for sending notification
 // Action messages to the notifications ingress topic.
 func SetupNotifications() {
-	if !LoadedConfig.Options.EnableNotifications {
+	if !LoadedConfig.Options.EnableNotifications &&
+		!LoadedConfig.Features.LightwellNotifications.Enabled {
 		return
 	}
 

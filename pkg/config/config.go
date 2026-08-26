@@ -100,6 +100,9 @@ type FeatureSet struct {
 	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
 	AdminNotifications       Feature `mapstructure:"admin_notifications"`
 	LightwellBeaconAndLens   Feature `mapstructure:"lightwell_beacon_and_lens"`
+	LightwellBeacon          Feature `mapstructure:"lightwell_beacon"`
+	LightwellLens            Feature `mapstructure:"lightwell_lens"`
+	LightwellStoreUploads    Feature `mapstructure:"lightwell_store_uploads"`
 }
 
 type Feature struct {
@@ -136,6 +139,11 @@ type Pulp struct {
 type Lightwell struct {
 	Username string
 	Password string
+	S3       S3 `mapstructure:"s3"`
+}
+
+type S3 struct {
+	CoverageUploads ObjectStore `mapstructure:"coverage_uploads"`
 }
 
 type Candlepin struct {
@@ -185,6 +193,7 @@ type KesselAuth struct {
 }
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
+const LightwellCoverageUploadsBucketName = "lightwell-ui-coverage-uploads"
 
 type ObjectStore struct {
 	URL        string
@@ -451,6 +460,13 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp_log_parser.s3.region", "")
 	v.SetDefault("clients.pulp_log_parser.s3.file_prefix", "")
 
+	v.SetDefault("clients.lightwell.s3.coverage_uploads.url", "")
+	v.SetDefault("clients.lightwell.s3.coverage_uploads.name", "")
+	v.SetDefault("clients.lightwell.s3.coverage_uploads.access_key", "")
+	v.SetDefault("clients.lightwell.s3.coverage_uploads.secret_key", "")
+	v.SetDefault("clients.lightwell.s3.coverage_uploads.region", "")
+	v.SetDefault("clients.lightwell.s3.coverage_uploads.file_prefix", "")
+
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
 	v.SetDefault("tasking.pgx_logging", true)
@@ -484,6 +500,18 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.lightwell_beacon_and_lens.accounts", nil)
 	v.SetDefault("features.lightwell_beacon_and_lens.organizations", nil)
 	v.SetDefault("features.lightwell_beacon_and_lens.users", nil)
+	v.SetDefault("features.lightwell_beacon.enabled", false)
+	v.SetDefault("features.lightwell_beacon.accounts", nil)
+	v.SetDefault("features.lightwell_beacon.organizations", nil)
+	v.SetDefault("features.lightwell_beacon.users", nil)
+	v.SetDefault("features.lightwell_lens.enabled", false)
+	v.SetDefault("features.lightwell_lens.accounts", nil)
+	v.SetDefault("features.lightwell_lens.organizations", nil)
+	v.SetDefault("features.lightwell_lens.users", nil)
+	v.SetDefault("features.lightwell_store_uploads.enabled", false)
+	v.SetDefault("features.lightwell_store_uploads.accounts", nil)
+	v.SetDefault("features.lightwell_store_uploads.organizations", nil)
+	v.SetDefault("features.lightwell_store_uploads.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
@@ -582,6 +610,30 @@ func Load() {
 					log.Error().Msg("Object store Access Key is empty or nil!")
 				} else {
 					v.Set("clients.pulp.custom_repo_objects.access_key", bucket.AccessKey)
+				}
+			}
+
+			lightwellBucket, ok := clowder.ObjectBuckets[LightwellCoverageUploadsBucketName]
+			if !ok {
+				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", LightwellCoverageUploadsBucketName)
+			} else {
+				v.Set("clients.lightwell.s3.coverage_uploads.url", ClowderS3Url(*clowder.LoadedConfig.ObjectStore))
+				v.Set("clients.lightwell.s3.coverage_uploads.name", lightwellBucket.Name)
+				log.Logger.Warn().Msgf("Bucket name: %v", lightwellBucket.Name)
+				if lightwellBucket.Region == nil || *lightwellBucket.Region == "" {
+					v.Set("clients.lightwell.s3.coverage_uploads.region", "DummyRegion")
+				} else {
+					v.Set("clients.lightwell.s3.coverage_uploads.region", lightwellBucket.Region)
+				}
+				if lightwellBucket.SecretKey == nil || *lightwellBucket.SecretKey == "" {
+					log.Error().Msg("Object store secret Key is empty or nil!")
+				} else {
+					v.Set("clients.lightwell.s3.coverage_uploads.secret_key", *lightwellBucket.SecretKey)
+				}
+				if lightwellBucket.AccessKey == nil || *lightwellBucket.AccessKey == "" {
+					log.Error().Msg("Object store Access Key is empty or nil!")
+				} else {
+					v.Set("clients.lightwell.s3.coverage_uploads.access_key", lightwellBucket.AccessKey)
 				}
 			}
 		}

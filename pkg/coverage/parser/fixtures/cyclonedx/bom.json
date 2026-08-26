@@ -1,0 +1,44 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "my-app",
+      "purl": "pkg:maven/com.example/my-app@1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "group": "org.springframework",
+      "name": "spring-core",
+      "version": "5.3.20",
+      "purl": "pkg:maven/org.springframework/spring-core@5.3.20"
+    },
+    {
+      "type": "library",
+      "name": "flask",
+      "version": "3.0.3",
+      "purl": "pkg:pypi/flask@3.0.3"
+    },
+    {
+      "type": "library",
+      "name": "express",
+      "purl": "pkg:npm/express@4.18.2"
+    },
+    {
+      "type": "library",
+      "group": "org.apache.commons",
+      "name": "commons-lang3",
+      "version": "3.12.0",
+      "components": [
+        {
+          "type": "library",
+          "name": "requests",
+          "purl": "pkg:pypi/requests@2.31.0"
+        }
+      ]
+    }
+  ]
+}

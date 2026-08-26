@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bufio"
 	"strings"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func TestDetectFormat_CaseInsensitive(t *testing.T) {
-	format, err := detectFormat("REPORT.CSV")
+	format, err := detectFormat("REPORT.CSV", bufio.NewReader(strings.NewReader("")))
 	assert.NoError(t, err)
 	assert.Equal(t, FormatCSV, format)
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -72,6 +73,16 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	if err != nil {
 		panic(err)
 	}
+	var s3Client s3_client.S3Client
+	if config.Get().Clients.Lightwell.S3.CoverageUploads.Name == "" {
+		log.Warn().Msg("s3 not configured")
+	} else {
+		s3Client, err = s3_client.NewS3Client(config.Get().Clients.Lightwell.S3.CoverageUploads)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	ch := cache.Initialize()
 
 	for i := 0; i < len(paths); i++ {
@@ -99,7 +110,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
-		RegisterCoverageReportRoutes(group, daoReg)
+		RegisterCoverageReportRoutes(group, daoReg, s3Client)
 
 		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")

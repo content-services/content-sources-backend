@@ -9586,8 +9586,8 @@ func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) RunAndReturn(run func(
 }
 
 // ListUnnotifiedAdvisories provides a mock function for the type MockLightwellAdvisoryDao
-func (_mock *MockLightwellAdvisoryDao) ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error) {
-	ret := _mock.Called(ctx, repoConfigUUID)
+func (_mock *MockLightwellAdvisoryDao) ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, orgID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListUnnotifiedAdvisories")
@@ -9595,18 +9595,18 @@ func (_mock *MockLightwellAdvisoryDao) ListUnnotifiedAdvisories(ctx context.Cont
 
 	var r0 []LightwellNotificationData
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]LightwellNotificationData, error)); ok {
-		return returnFunc(ctx, repoConfigUUID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]LightwellNotificationData, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, orgID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []LightwellNotificationData); ok {
-		r0 = returnFunc(ctx, repoConfigUUID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []LightwellNotificationData); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, orgID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]LightwellNotificationData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, repoConfigUUID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, orgID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9621,11 +9621,12 @@ type MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call struct {
 // ListUnnotifiedAdvisories is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
-func (_e *MockLightwellAdvisoryDao_Expecter) ListUnnotifiedAdvisories(ctx interface{}, repoConfigUUID interface{}) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
-	return &MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call{Call: _e.mock.On("ListUnnotifiedAdvisories", ctx, repoConfigUUID)}
+//   - orgID string
+func (_e *MockLightwellAdvisoryDao_Expecter) ListUnnotifiedAdvisories(ctx interface{}, repoConfigUUID interface{}, orgID interface{}) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+	return &MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call{Call: _e.mock.On("ListUnnotifiedAdvisories", ctx, repoConfigUUID, orgID)}
 }
 
-func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) Run(run func(ctx context.Context, repoConfigUUID string)) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) Run(run func(ctx context.Context, repoConfigUUID string, orgID string)) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9635,9 +9636,14 @@ func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) Run(run func(c
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -9648,22 +9654,22 @@ func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) Return(lightwe
 	return _c
 }
 
-func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) ([]LightwellNotificationData, error)) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
+func (_c *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error)) *MockLightwellAdvisoryDao_ListUnnotifiedAdvisories_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // MarkAsNotified provides a mock function for the type MockLightwellAdvisoryDao
-func (_mock *MockLightwellAdvisoryDao) MarkAsNotified(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error {
-	ret := _mock.Called(ctx, repoConfigUUID, data)
+func (_mock *MockLightwellAdvisoryDao) MarkAsNotified(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData) error {
+	ret := _mock.Called(ctx, repoConfigUUID, orgID, data)
 
 	if len(ret) == 0 {
 		panic("no return value specified for MarkAsNotified")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []LightwellNotificationData) error); ok {
-		r0 = returnFunc(ctx, repoConfigUUID, data)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, []LightwellNotificationData) error); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, orgID, data)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -9678,12 +9684,13 @@ type MockLightwellAdvisoryDao_MarkAsNotified_Call struct {
 // MarkAsNotified is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoConfigUUID string
+//   - orgID string
 //   - data []LightwellNotificationData
-func (_e *MockLightwellAdvisoryDao_Expecter) MarkAsNotified(ctx interface{}, repoConfigUUID interface{}, data interface{}) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
-	return &MockLightwellAdvisoryDao_MarkAsNotified_Call{Call: _e.mock.On("MarkAsNotified", ctx, repoConfigUUID, data)}
+func (_e *MockLightwellAdvisoryDao_Expecter) MarkAsNotified(ctx interface{}, repoConfigUUID interface{}, orgID interface{}, data interface{}) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+	return &MockLightwellAdvisoryDao_MarkAsNotified_Call{Call: _e.mock.On("MarkAsNotified", ctx, repoConfigUUID, orgID, data)}
 }
 
-func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) Run(run func(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData)) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) Run(run func(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData)) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9693,14 +9700,19 @@ func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) Run(run func(ctx context
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 []LightwellNotificationData
+		var arg2 string
 		if args[2] != nil {
-			arg2 = args[2].([]LightwellNotificationData)
+			arg2 = args[2].(string)
+		}
+		var arg3 []LightwellNotificationData
+		if args[3] != nil {
+			arg3 = args[3].([]LightwellNotificationData)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -9711,7 +9723,7 @@ func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) Return(err error) *MockL
 	return _c
 }
 
-func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, data []LightwellNotificationData) error) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
+func (_c *MockLightwellAdvisoryDao_MarkAsNotified_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData) error) *MockLightwellAdvisoryDao_MarkAsNotified_Call {
 	_c.Call.Return(run)
 	return _c
 }

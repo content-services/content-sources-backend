@@ -110,14 +110,26 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 	}
 }
 
-func CheckLightwellBeaconAndLensAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.LightwellBeaconAndLens.Enabled {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access this Lightwell feature",
-			"This Lightwell feature is disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellBeaconAndLens) {
+func CheckLightwellBeaconAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellBeacon.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Beacon",
+			"Lightwell Beacon is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellBeacon) {
 		return nil
 	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access this Lightwell feature",
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Beacon",
+			"Neither the user nor account is allowed.")
+	}
+}
+
+func CheckLightwellLensAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellLens.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Lens",
+			"Lightwell Lens is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellLens) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Lens",
 			"Neither the user nor account is allowed.")
 	}
 }
