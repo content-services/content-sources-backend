@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -18,9 +19,10 @@ import (
 func createMigrationFile(migrationName string) error {
 	// datetime format in YYYYMMDDhhmmss - uses the reference time Mon Jan 2 15:04:05 MST 2006
 	datetime := time.Now().Format("20060102150405")
+	migrationName = filepath.Base(migrationName)
 
-	filenameUp := fmt.Sprintf("./db/migrations/%s_%s.up.sql", datetime, migrationName)
-	filenameDown := fmt.Sprintf("./db/migrations/%s_%s.down.sql", datetime, migrationName)
+	filenameUp := filepath.Join("db", "migrations", fmt.Sprintf("%s_%s.up.sql", datetime, migrationName))
+	filenameDown := filepath.Join("db", "migrations", fmt.Sprintf("%s_%s.down.sql", datetime, migrationName))
 
 	migrationTemplate := fmt.Sprintf("" +
 		"BEGIN;\n" +

@@ -4,6 +4,7 @@ package external_repos
 import (
 	"context"
 	"fmt"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -94,7 +95,7 @@ func TestIntrospect(t *testing.T) {
 				)
 				w.Header().Add("Content-Type", "text/plain")
 				w.WriteHeader(400)
-				content := fmt.Sprintf("Unexpected '%s' path", r.URL.Path)
+				content := fmt.Sprintf("Unexpected '%s' path", html.EscapeString(r.URL.Path))
 				body := []byte(content)
 				if count, err = w.Write(body); err != nil {
 					t.Error(err.Error())

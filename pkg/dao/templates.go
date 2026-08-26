@@ -535,18 +535,22 @@ func (t templateDaoImpl) UpdateDistributionHrefs(ctx context.Context, templateUU
 	templateRepoConfigs := make([]models.TemplateRepositoryConfiguration, len(repoUUIDs))
 	var missingRepoUUIDs []string
 	for i, repo := range repoUUIDs {
-		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
-			return s.RepositoryConfigurationUUID == repo
-		})
+		var snapshot *models.Snapshot
+		for j := range snapshots {
+			if snapshots[j].RepositoryConfigurationUUID == repo {
+				snapshot = &snapshots[j]
+				break
+			}
+		}
 
-		if snapIndex < 0 || snapIndex >= len(snapshots) {
+		if snapshot == nil {
 			missingRepoUUIDs = append(missingRepoUUIDs, repo)
 			continue
 		}
 
 		templateRepoConfigs[i].TemplateUUID = templateUUID
 		templateRepoConfigs[i].RepositoryConfigurationUUID = repo
-		templateRepoConfigs[i].SnapshotUUID = snapshots[snapIndex].UUID
+		templateRepoConfigs[i].SnapshotUUID = snapshot.UUID
 		if repoDistributionMap != nil {
 			templateRepoConfigs[i].DistributionHref = repoDistributionMap[repo]
 		}
@@ -619,11 +623,15 @@ func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID strin
 	var missingRepoUUIDs []string
 
 	for _, repo := range repoUUIDs {
-		snapIndex := slices.IndexFunc(snapshots, func(s models.Snapshot) bool {
-			return s.RepositoryConfigurationUUID == repo
-		})
+		var snapshot *models.Snapshot
+		for j := range snapshots {
+			if snapshots[j].RepositoryConfigurationUUID == repo {
+				snapshot = &snapshots[j]
+				break
+			}
+		}
 
-		if snapIndex < 0 || snapIndex >= len(snapshots) {
+		if snapshot == nil {
 			missingRepoUUIDs = append(missingRepoUUIDs, repo)
 			continue
 		}
@@ -631,7 +639,7 @@ func (t templateDaoImpl) UpdateSnapshots(ctx context.Context, templateUUID strin
 		templateRepoConfigs = append(templateRepoConfigs, models.TemplateRepositoryConfiguration{
 			TemplateUUID:                templateUUID,
 			RepositoryConfigurationUUID: repo,
-			SnapshotUUID:                snapshots[snapIndex].UUID,
+			SnapshotUUID:                snapshot.UUID,
 		})
 	}
 
