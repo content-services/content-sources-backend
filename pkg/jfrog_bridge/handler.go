@@ -178,7 +178,7 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	props := map[string]string{
 		"catalog.name":                   fmt.Sprintf("%s:%s", rem.GroupID, rem.ArtifactID),
 		"catalog.version":                rem.Version,
-		"catalog.compatible_with":        rem.BaseVersion,
+		"catalog.compatible_with":        rem.BaseVersion, // comma-separated if multiple base versions match in the future
 		"catalog.vendor_remote_repo_url": regURL,
 		"license":                        "Apache-2.0",
 	}
