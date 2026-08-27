@@ -13,8 +13,8 @@ import (
 	csdb "github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
-	"github.com/google/uuid"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
