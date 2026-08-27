@@ -11,9 +11,9 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
 	csdb "github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/google/uuid"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
+	"github.com/google/uuid"
 	"github.com/content-services/yummy/pkg/yum"
 	"gorm.io/gorm"
 )
