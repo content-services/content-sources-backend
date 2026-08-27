@@ -31,6 +31,8 @@ spec:
     value: build/Dockerfile
   - name: path-context
     value: .
+  - name: prefetch-input
+    value: gomod
   - name: skip-sast-coverity-check
     value: "true"
   pipelineRef:
