@@ -125,6 +125,10 @@
                         "description": "Ecosystem of the package",
                         "type": "string"
                     },
+                    "match_status": {
+                        "description": "Match status of the package (exact, partial, none)",
+                        "type": "string"
+                    },
                     "name": {
                         "description": "Package name from the manifest",
                         "type": "string"
@@ -2985,7 +2989,7 @@
                         }
                     },
                     {
-                        "description": "Filter by ecosystem",
+                        "description": "A comma separated list of ecosystems to filter on",
                         "in": "query",
                         "name": "ecosystem",
                         "schema": {
@@ -2993,11 +2997,11 @@
                         }
                     },
                     {
-                        "description": "Filter by coverage status (true = covered, false = not covered)",
+                        "description": "A comma separated list of match statuses to filter on (exact, partial, none)",
                         "in": "query",
-                        "name": "covered",
+                        "name": "match_status",
                         "schema": {
-                            "type": "boolean"
+                            "type": "string"
                         }
                     },
                     {
