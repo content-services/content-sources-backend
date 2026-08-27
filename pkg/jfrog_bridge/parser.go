@@ -74,10 +74,10 @@ func parseCloudEvent(data []byte) ([]Remediation, error) {
 			for _, rn := range rel.ReleaseNames {
 				result = append(result, Remediation{
 					GroupID:     group,
-					ArtifactID: artifact,
-					Version:    rn.Name,
+					ArtifactID:  artifact,
+					Version:     rn.Name,
 					BaseVersion: stripRHLWSuffix(rn.Name),
-					CVEsFixed:  cves,
+					CVEsFixed:   cves,
 				})
 			}
 		}
