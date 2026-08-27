@@ -32,6 +32,12 @@ export interface ApiCoverageReportPackageResponse {
      */
     ecosystem?: string;
     /**
+     * Match status of the package (exact, partial, none)
+     * @type {string}
+     * @memberof ApiCoverageReportPackageResponse
+     */
+    matchStatus?: string;
+    /**
      * Package name from the manifest
      * @type {string}
      * @memberof ApiCoverageReportPackageResponse
@@ -64,6 +70,7 @@ export function ApiCoverageReportPackageResponseFromJSONTyped(json: any, ignoreD
         
         'covered': json['covered'] == null ? undefined : json['covered'],
         'ecosystem': json['ecosystem'] == null ? undefined : json['ecosystem'],
+        'matchStatus': json['match_status'] == null ? undefined : json['match_status'],
         'name': json['name'] == null ? undefined : json['name'],
         'version': json['version'] == null ? undefined : json['version'],
     };
@@ -82,6 +89,7 @@ export function ApiCoverageReportPackageResponseToJSONTyped(value?: ApiCoverageR
         
         'covered': value['covered'],
         'ecosystem': value['ecosystem'],
+        'match_status': value['matchStatus'],
         'name': value['name'],
         'version': value['version'],
     };

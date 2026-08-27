@@ -177,8 +177,8 @@ func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
 // @Produce      json
 // @Param        uuid path string true "Coverage report UUID"
 // @Param        search query string false "Filter by package name"
-// @Param        ecosystem query string false "Filter by ecosystem"
-// @Param        covered query bool false "Filter by coverage status (true = covered, false = not covered)"
+// @Param        ecosystem query string false "A comma separated list of ecosystems to filter on"
+// @Param        match_status query string false "A comma separated list of match statuses to filter on (exact, partial, none)"
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
 // @Success      200 {object} api.CoverageReportPackageCollectionResponse

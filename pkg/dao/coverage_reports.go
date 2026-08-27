@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -81,14 +82,12 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 		query = query.Where("name ILIKE ?", "%"+filterData.Search+"%")
 	}
 	if filterData.Ecosystem != "" {
-		query = query.Where("ecosystem = ?", filterData.Ecosystem)
+		ecosystems := strings.Split(filterData.Ecosystem, ",")
+		query = query.Where("ecosystem IN ?", ecosystems)
 	}
-	if filterData.Covered != nil {
-		if *filterData.Covered {
-			query = query.Where("match_status IN ?", []string{models.CoverageMatchStatusExact, models.CoverageMatchStatusPartial})
-		} else {
-			query = query.Where("match_status = ?", models.CoverageMatchStatusNone)
-		}
+	if filterData.MatchStatus != "" {
+		matchStatuses := strings.Split(filterData.MatchStatus, ",")
+		query = query.Where("match_status IN ?", matchStatuses)
 	}
 
 	var totalPackages int64
@@ -104,10 +103,11 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 	items := make([]api.CoverageReportPackageResponse, len(packages))
 	for i, pkg := range packages {
 		items[i] = api.CoverageReportPackageResponse{
-			Name:      pkg.Name,
-			Version:   pkg.Version,
-			Ecosystem: pkg.Ecosystem,
-			Covered:   pkg.MatchStatus != models.CoverageMatchStatusNone,
+			Name:        pkg.Name,
+			Version:     pkg.Version,
+			Ecosystem:   pkg.Ecosystem,
+			Covered:     pkg.MatchStatus != models.CoverageMatchStatusNone,
+			MatchStatus: pkg.MatchStatus,
 		}
 	}
 

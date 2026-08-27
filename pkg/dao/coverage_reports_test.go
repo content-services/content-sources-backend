@@ -130,42 +130,9 @@ func (s *CoverageReportDaoSuite) TestListPackages() {
 	assert.Equal(s.T(), "6.1.0", byName["spring-core"].Version)
 	assert.True(s.T(), byName["lodash"].Covered)
 	assert.False(s.T(), byName["unknown-pkg"].Covered)
-}
-
-func (s *CoverageReportDaoSuite) TestListPackagesFilterByCoveredTrue() {
-	orgID := seeds.RandomOrgId()
-	report := s.createReport(orgID, config.TaskStatusCompleted)
-
-	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
-	s.createPackage(report.UUID, "lodash", "4.17.21", "NPM", models.CoverageMatchStatusPartial)
-	s.createPackage(report.UUID, "unknown-pkg", "1.0.0", "Java", models.CoverageMatchStatusNone)
-
-	covered := true
-	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
-		api.PaginationData{Limit: 100, Offset: 0},
-		api.ListCoverageReportPackagesRequest{Covered: &covered})
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(2), total)
-	for _, p := range resp.Data {
-		assert.True(s.T(), p.Covered)
-	}
-}
-
-func (s *CoverageReportDaoSuite) TestListPackagesFilterByCoveredFalse() {
-	orgID := seeds.RandomOrgId()
-	report := s.createReport(orgID, config.TaskStatusCompleted)
-
-	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
-	s.createPackage(report.UUID, "unknown-pkg", "1.0.0", "Java", models.CoverageMatchStatusNone)
-
-	covered := false
-	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
-		api.PaginationData{Limit: 100, Offset: 0},
-		api.ListCoverageReportPackagesRequest{Covered: &covered})
-	require.NoError(s.T(), err)
-	assert.Equal(s.T(), int64(1), total)
-	assert.Equal(s.T(), "unknown-pkg", resp.Data[0].Name)
-	assert.False(s.T(), resp.Data[0].Covered)
+	assert.Equal(s.T(), models.CoverageMatchStatusExact, byName["spring-core"].MatchStatus)
+	assert.Equal(s.T(), models.CoverageMatchStatusPartial, byName["lodash"].MatchStatus)
+	assert.Equal(s.T(), models.CoverageMatchStatusNone, byName["unknown-pkg"].MatchStatus)
 }
 
 func (s *CoverageReportDaoSuite) TestListPackagesFilterByEcosystem() {
@@ -181,6 +148,12 @@ func (s *CoverageReportDaoSuite) TestListPackagesFilterByEcosystem() {
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Equal(s.T(), "Java", resp.Data[0].Ecosystem)
+
+	resp, total, err = s.dao().ListPackages(context.Background(), orgID, report.UUID,
+		api.PaginationData{Limit: 100, Offset: 0},
+		api.ListCoverageReportPackagesRequest{Ecosystem: "Java,NPM"})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
 }
 
 func (s *CoverageReportDaoSuite) TestListPackagesFilterBySearch() {
@@ -196,6 +169,34 @@ func (s *CoverageReportDaoSuite) TestListPackagesFilterBySearch() {
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
 	assert.Equal(s.T(), "spring-core", resp.Data[0].Name)
+}
+
+func (s *CoverageReportDaoSuite) TestListPackagesFilterByMatchStatus() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusCompleted)
+
+	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "lodash", "4.17.21", "NPM", models.CoverageMatchStatusPartial)
+
+	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
+		api.PaginationData{Limit: 100, Offset: 0},
+		api.ListCoverageReportPackagesRequest{MatchStatus: "exact"})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Equal(s.T(), "spring-core", resp.Data[0].Name)
+
+	resp, total, err = s.dao().ListPackages(context.Background(), orgID, report.UUID,
+		api.PaginationData{Limit: 100, Offset: 0},
+		api.ListCoverageReportPackagesRequest{MatchStatus: "partial"})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Equal(s.T(), "lodash", resp.Data[0].Name)
+
+	resp, total, err = s.dao().ListPackages(context.Background(), orgID, report.UUID,
+		api.PaginationData{Limit: 100, Offset: 0},
+		api.ListCoverageReportPackagesRequest{MatchStatus: "partial,exact"})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
 }
 
 func (s *CoverageReportDaoSuite) TestListPackagesPagination() {

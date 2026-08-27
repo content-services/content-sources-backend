@@ -139,14 +139,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by ecosystem",
+                        "description": "A comma separated list of ecosystems to filter on",
                         "name": "ecosystem",
                         "in": "query"
                     },
                     {
-                        "type": "boolean",
-                        "description": "Filter by coverage status (true = covered, false = not covered)",
-                        "name": "covered",
+                        "type": "string",
+                        "description": "A comma separated list of match statuses to filter on (exact, partial, none)",
+                        "name": "match_status",
                         "in": "query"
                     },
                     {
@@ -4896,6 +4896,10 @@ const docTemplate = `{
                 },
                 "ecosystem": {
                     "description": "Ecosystem of the package",
+                    "type": "string"
+                },
+                "match_status": {
+                    "description": "Match status of the package (exact, partial, none)",
                     "type": "string"
                 },
                 "name": {
