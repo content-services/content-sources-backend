@@ -47,7 +47,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
-// @Param        type            query  string  false  "Filter by content type (maven, python, npm)"
+// @Param        content_type    query  string  false  "Filter by content type (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
 // @Param        limit           query  int     false  "Limit of results to return"
@@ -92,7 +92,7 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
-// @Param        type                 query  string  false  "Filter by content type (maven, python, npm)"
+// @Param        content_type         query  string  false  "Filter by content type (maven, python, npm)"
 // @Param        name                 query  string  false  "Filter by package name (substring match)"
 // @Param        security_level       query  string  false  "Filter by security level (validated, remediated)"
 // @Param        repository           query  string  false  "Filter by repository name"
