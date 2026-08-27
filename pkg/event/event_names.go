@@ -12,6 +12,7 @@ const (
 	TemplateCreated
 	TemplateUpdated
 	TemplateDeleted
+	LightwellAdvisoryCreated
 )
 
 func (d EventName) String() string {
@@ -32,6 +33,8 @@ func (d EventName) String() string {
 		return "template-updated"
 	case TemplateDeleted:
 		return "template-deleted"
+	case LightwellAdvisoryCreated:
+		return "lightwell-advisory-created"
 	// Add more cases here when expanding EventName enum above
 	default:
 		return ""

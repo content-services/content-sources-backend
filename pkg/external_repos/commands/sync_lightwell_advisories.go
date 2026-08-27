@@ -134,6 +134,23 @@ func sendAdvisoryNotifications(
 		return nil
 	}
 
+	// Send bridge event to the dedicated topic (org-independent, all advisories)
+	allAdvisories, err := daoReg.LightwellAdvisory.ListByRepository(ctx, repoConfigUUID)
+	if err == nil && len(allAdvisories) > 0 {
+		bridgeInputs := make([]event.LightwellNotificationInput, len(allAdvisories))
+		for i, a := range allAdvisories {
+			bridgeInputs[i] = event.LightwellNotificationInput{
+				PackageName:   a.PackageName,
+				AdvisoryID:    a.AdvisoryID,
+				Severity:      a.Severity,
+				FixedVersions: a.FixedVersions,
+				ReferenceURLs: a.ReferenceURLs,
+			}
+		}
+		bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs)
+		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, bridgeEvents)
+	}
+
 	orgs, err := daoReg.UserPreference.ListDistinctOrgsByPreference(ctx,
 		models.UserPreferenceLightwellNotificationEnabled, "true")
 	if err != nil {
