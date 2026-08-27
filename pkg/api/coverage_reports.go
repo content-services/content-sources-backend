@@ -29,10 +29,11 @@ type EcosystemCoverageSummary struct {
 
 // CoverageReportPackageResponse represents a package in a coverage report
 type CoverageReportPackageResponse struct {
-	Name      string `json:"name"`      // Package name from the manifest
-	Version   string `json:"version"`   // Package version from the manifest
-	Ecosystem string `json:"ecosystem"` // Ecosystem of the package
-	Covered   bool   `json:"covered"`   // Whether the package is covered (true = exact or partial match)
+	Name        string `json:"name"`         // Package name from the manifest
+	Version     string `json:"version"`      // Package version from the manifest
+	Ecosystem   string `json:"ecosystem"`    // Ecosystem of the package
+	Covered     bool   `json:"covered"`      // Whether the package is covered (true = exact or partial match)
+	MatchStatus string `json:"match_status"` // Match status of the package (exact, partial, none)
 }
 
 // CoverageReportPackageCollectionResponse represents the paginated response for packages in a coverage report
@@ -49,9 +50,9 @@ func (r *CoverageReportPackageCollectionResponse) SetMetadata(meta ResponseMetad
 
 // ListCoverageReportPackagesRequest represents the request for listing packages in a coverage report
 type ListCoverageReportPackagesRequest struct {
-	Covered   *bool  `query:"covered"`   // Optional filter for coverage status (true = covered, false = not covered)
-	Ecosystem string `query:"ecosystem"` // Optional filter for ecosystem
-	Search    string `query:"search"`    // Optional filter for package name
+	Ecosystem   string `query:"ecosystem"`    // Optional filter for ecosystem
+	Search      string `query:"search"`       // Optional filter for package name
+	MatchStatus string `query:"match_status"` // Optional filter for match status (exact, partial, none)
 }
 
 // CreateCoverageReportRequest represents the request for creating a coverage report

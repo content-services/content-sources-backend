@@ -16,6 +16,7 @@ const (
 const (
 	FormatCSV          = "csv"
 	FormatRequirements = "requirements.txt"
+	FormatPOM          = "pom.xml"
 	FormatCycloneDX    = "CycloneDX"
 	FormatSPDX         = "SPDX"
 )
@@ -48,6 +49,8 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 		packages, err = parseCSV(br)
 	case FormatRequirements:
 		packages, err = parseRequirements(br)
+	case FormatPOM:
+		packages, err = parsePOM(br)
 	case FormatCycloneDX:
 		packages, err = parseCycloneDX(br)
 	case FormatSPDX:
@@ -73,6 +76,8 @@ func detectFormat(filename string, r *bufio.Reader) (string, error) {
 		return FormatCSV, nil
 	case strings.HasSuffix(lower, "requirements.txt"):
 		return FormatRequirements, nil
+	case path.Base(lower) == "pom.xml" || strings.HasSuffix(lower, ".pom"):
+		return FormatPOM, nil
 	case hasAnySuffix(lower, ".cdx.json", ".cdx.xml") ||
 		path.Base(lower) == "bom.json" || path.Base(lower) == "bom.xml":
 		return FormatCycloneDX, nil

@@ -4,4 +4,5 @@ import "encoding/json"
 
 type AdminSendTestNotificationRequest struct {
 	Notification json.RawMessage `json:"notification"`
+	Topic        string          `json:"topic"`
 }

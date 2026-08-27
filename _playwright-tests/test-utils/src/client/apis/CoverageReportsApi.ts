@@ -41,7 +41,7 @@ export interface ListCoverageReportPackagesRequest {
     uuid: string;
     search?: string;
     ecosystem?: string;
-    covered?: boolean;
+    matchStatus?: string;
     offset?: number;
     limit?: number;
 }
@@ -186,8 +186,8 @@ export class CoverageReportsApi extends runtime.BaseAPI {
             queryParameters['ecosystem'] = requestParameters['ecosystem'];
         }
 
-        if (requestParameters['covered'] != null) {
-            queryParameters['covered'] = requestParameters['covered'];
+        if (requestParameters['matchStatus'] != null) {
+            queryParameters['match_status'] = requestParameters['matchStatus'];
         }
 
         if (requestParameters['offset'] != null) {

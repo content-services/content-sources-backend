@@ -206,7 +206,6 @@ func (suite *CoverageReportSuite) TestListCoverageReportPackagesWithFilters() {
 	orgID := test_handler.MockOrgId
 	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
 
-	covered := true
 	expectedResp := api.CoverageReportPackageCollectionResponse{
 		Data: []api.CoverageReportPackageResponse{
 			{Name: "spring-core", Version: "6.1.0", Ecosystem: "Java", Covered: true},
@@ -215,7 +214,7 @@ func (suite *CoverageReportSuite) TestListCoverageReportPackagesWithFilters() {
 
 	suite.reg.CoverageReport.On("ListPackages", test.MockCtx(), orgID, reportUUID,
 		api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset, SortBy: DefaultSortBy},
-		api.ListCoverageReportPackagesRequest{Covered: &covered, Ecosystem: "Java", Search: "spring"},
+		api.ListCoverageReportPackagesRequest{Ecosystem: "Java", Search: "spring"},
 	).Return(expectedResp, int64(1), nil)
 
 	path := fmt.Sprintf("%s/coverage_reports/%s/packages?covered=true&ecosystem=Java&search=spring", api.FullRootPath(), reportUUID)
