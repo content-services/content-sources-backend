@@ -566,7 +566,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Filter by content type (maven, python, npm)",
-                        "name": "type",
+                        "name": "content_type",
                         "in": "query"
                     },
                     {
@@ -652,7 +652,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Filter by content type (maven, python, npm)",
-                        "name": "type",
+                        "name": "content_type",
                         "in": "query"
                     },
                     {

@@ -3690,7 +3690,7 @@
                     {
                         "description": "Filter by content type (maven, python, npm)",
                         "in": "query",
-                        "name": "type",
+                        "name": "content_type",
                         "schema": {
                             "type": "string"
                         }
@@ -3798,7 +3798,7 @@
                     {
                         "description": "Filter by content type (maven, python, npm)",
                         "in": "query",
-                        "name": "type",
+                        "name": "content_type",
                         "schema": {
                             "type": "string"
                         }
