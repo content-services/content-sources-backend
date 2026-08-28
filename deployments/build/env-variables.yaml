@@ -99,6 +99,12 @@ env:
     value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
     value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+    value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ACCOUNTS
+    value: ${FEATURES_ADMIN_JFROG_UPLOAD_ACCOUNTS}
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+    value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
   - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -452,6 +458,13 @@ parameters:
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+    description: Whether the Admin JFrog Upload feature should be turned on
+    value: 'false'
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
