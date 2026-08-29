@@ -43,9 +43,16 @@ type VulnerabilityStore interface {
 	Save(ctx context.Context, input dao.LightwellVulnerabilityInput) (dao.LightwellVulnerabilitySaveOutcome, error)
 }
 
+// AdvisoryStore is the subset of dao.LightwellAdvisoryDao used to decide
+// whether a vulnerability has been published on the Lightwell Network.
+type AdvisoryStore interface {
+	List(ctx context.Context, offset int, limit int) ([]dao.LightwellAdvisoryInput, int64, error)
+}
+
 type Ingestor struct {
 	jira            jira_client.JiraClient
 	vulnerabilities VulnerabilityStore
+	advisories      AdvisoryStore
 	cache           map[string]cachedIssue
 }
 
@@ -54,8 +61,8 @@ type cachedIssue struct {
 	err   error
 }
 
-func NewIngestor(jira jira_client.JiraClient, vulnerabilities VulnerabilityStore) *Ingestor {
-	return &Ingestor{jira: jira, vulnerabilities: vulnerabilities, cache: make(map[string]cachedIssue)}
+func NewIngestor(jira jira_client.JiraClient, vulnerabilities VulnerabilityStore, advisories AdvisoryStore) *Ingestor {
+	return &Ingestor{jira: jira, vulnerabilities: vulnerabilities, advisories: advisories, cache: make(map[string]cachedIssue)}
 }
 
 func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
@@ -69,14 +76,45 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 		return SyncSummary{}, err
 	}
 
+	advisories, err := i.loadAdvisories(ctx)
+	if err != nil {
+		return SyncSummary{}, err
+	}
+
 	var summary SyncSummary
 	for _, issue := range issues {
-		if err := i.syncIssue(ctx, issue, accountFieldID, &summary); err != nil {
+		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, &summary); err != nil {
 			summary.Failed++
 			summary.Failures = append(summary.Failures, err.Error())
 		}
 	}
 	return summary, nil
+}
+
+const advisoryPageSize = 100
+
+func (i *Ingestor) loadAdvisories(ctx context.Context) ([]PublishedAdvisory, error) {
+	if i.advisories == nil {
+		return nil, nil
+	}
+	var advisories []PublishedAdvisory
+	for offset := 0; ; offset += advisoryPageSize {
+		rows, total, err := i.advisories.List(ctx, offset, advisoryPageSize)
+		if err != nil {
+			return nil, fmt.Errorf("list advisories: %w", err)
+		}
+		for _, row := range rows {
+			advisories = append(advisories, PublishedAdvisory{
+				RepoName:      row.RepoName,
+				AdvisoryID:    row.AdvisoryID,
+				PackageName:   row.PackageName,
+				FixedVersions: row.FixedVersions,
+			})
+		}
+		if len(rows) == 0 || offset+len(rows) >= int(total) {
+			return advisories, nil
+		}
+	}
 }
 
 func (i *Ingestor) searchAll(ctx context.Context) ([]jira_client.JiraIssue, error) {
@@ -120,7 +158,7 @@ func (i *Ingestor) accountFieldID(ctx context.Context) (string, error) {
 	return matches[0], nil
 }
 
-func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, accountFieldID string, summary *SyncSummary) error {
+func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, accountFieldID string, advisories []PublishedAdvisory, summary *SyncSummary) error {
 	vulnerability, err := mapVulnerability(issue)
 	if err != nil {
 		return err
@@ -130,6 +168,8 @@ func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, a
 	if err != nil {
 		return fmt.Errorf("issue %s relationships: %w", issue.Key, err)
 	}
+
+	applyPublishedStage(&vulnerability, advisories)
 
 	outcome, err := i.vulnerabilities.Save(ctx, vulnerabilityInput(vulnerability, tickets))
 	if err != nil {
@@ -179,6 +219,15 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 		})
 	}
 	return input
+}
+
+func applyPublishedStage(vulnerability *Vulnerability, advisories []PublishedAdvisory) {
+	if vulnerability.Stage != "Validation" {
+		return
+	}
+	if publishedOnNetwork(*vulnerability, advisories) {
+		vulnerability.Stage = "Lightwell Network"
+	}
 }
 
 // issueRelationships resolves the support-ticket links for a vulnerability. A

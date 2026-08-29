@@ -80,7 +80,7 @@ func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
 	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	summary, err := NewIngestor(jira, store).Sync(context.Background())
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
 	require.Len(t, store.saved, 1)
@@ -108,7 +108,7 @@ func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
 	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityUnchanged}
 
-	summary, err := NewIngestor(jira, store).Sync(context.Background())
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, SyncSummary{Unchanged: 1}, summary)
 	assert.Equal(t, []string{"BATCH-1", "EPIC-1"}, jira.issueCalls)
@@ -143,7 +143,7 @@ func TestIngestorLoadsMultipleBatchRelationships(t *testing.T) {
 	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	_, err := NewIngestor(jira, store).Sync(context.Background())
+	_, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{
@@ -171,7 +171,7 @@ func TestIngestorStoresEpicFromBatchParent(t *testing.T) {
 	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	_, err := NewIngestor(jira, store).Sync(context.Background())
+	_, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []string{"parent", "issuelinks"}, jira.issueFields[0])
@@ -196,7 +196,7 @@ func TestIngestorLinksCustomerWithoutSupportTicket(t *testing.T) {
 	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	_, err := NewIngestor(jira, store).Sync(context.Background())
+	_, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "789"}}, store.saved[0].Tickets)
@@ -209,7 +209,7 @@ func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
 	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{bad, good}}}}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	summary, err := NewIngestor(jira, store).Sync(context.Background())
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 1, summary.Inserted)
 	assert.Equal(t, 1, summary.Failed)
@@ -221,7 +221,7 @@ func TestIngestorSearchFailureWritesNothing(t *testing.T) {
 	jira := &fakeJira{searchErr: errors.New("search failed")}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	_, err := NewIngestor(jira, store).Sync(context.Background())
+	_, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	assert.ErrorContains(t, err, "search failed")
 	assert.Empty(t, store.saved)
 }
@@ -232,6 +232,174 @@ func TestIngestorRejectsAmbiguousAccountField(t *testing.T) {
 		{ID: "customfield_2", Name: "account number"},
 	}}
 
-	_, err := NewIngestor(jira, &fakeVulnerabilityStore{}).Sync(context.Background())
+	_, err := NewIngestor(jira, &fakeVulnerabilityStore{}, nil).Sync(context.Background())
 	assert.ErrorContains(t, err, "multiple Jira fields")
+}
+
+type fakeAdvisories struct {
+	rows []dao.LightwellAdvisoryInput
+	err  error
+}
+
+func (f fakeAdvisories) List(_ context.Context, offset int, limit int) ([]dao.LightwellAdvisoryInput, int64, error) {
+	if f.err != nil {
+		return nil, 0, f.err
+	}
+	total := int64(len(f.rows))
+	if offset >= len(f.rows) {
+		return nil, total, nil
+	}
+	end := offset + limit
+	if end > len(f.rows) {
+		end = len(f.rows)
+	}
+	return f.rows[offset:end], total, nil
+}
+
+func TestIngestorPromotesClosedIssueWhenPublished(t *testing.T) {
+	issue := validJiraIssue("LTWL-1")
+	issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+	issue.Fields["description"] = json.RawMessage(`{
+		"type":"doc","content":[
+			{"type":"paragraph","content":[{"type":"text","text":"Component: com.example:demo-lib"}]},
+			{"type":"paragraph","content":[{"type":"text","text":"version: 1.2.3"}]}
+		]}`)
+	issue.Fields["labels"] = json.RawMessage(`["java"]`)
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{{
+		RepoName:      "lightwell/java/remediated",
+		AdvisoryID:    "x_DEMO-LW-0000-0001-1.2.3",
+		PackageName:   "com.example:demo-lib",
+		FixedVersions: []string{"1.2.3.build-00001"},
+	}}}
+
+	_, err := NewIngestor(jira, store, advisories).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+}
+
+func TestIngestorKeepsValidationWhenNotPublished(t *testing.T) {
+	issue := validJiraIssue("LTWL-1")
+	issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, fakeAdvisories{}).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Validation", store.saved[0].Stage)
+}
+
+func TestIngestorPromotesEveryValidationStatusWhenPublished(t *testing.T) {
+	advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{matchingJavaAdvisory("LW-0000-0001")}}
+	for _, status := range []string{"Closed", "Verified", "Release Pending", "Released"} {
+		t.Run(status, func(t *testing.T) {
+			issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", status, "java", "com.example:demo-lib", "1.2.3")
+			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+			_, err := NewIngestor(jira, store, advisories).Sync(context.Background())
+			require.NoError(t, err)
+			require.Len(t, store.saved, 1)
+			assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+		})
+	}
+}
+
+func TestIngestorDoesNotMissMatchingClosedIssues(t *testing.T) {
+	issues := []jira_client.JiraIssue{
+		publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Closed", "java", "com.example:demo-lib", "1.2.3"),
+		publishedJiraIssue("LTWL-2", "LW-0000-0002 Example", "Closed", "python", "demo-pkg", "4.0.0"),
+		publishedJiraIssue("LTWL-3", "LW-0000-0003 Example", "Closed", "java", "com.example:other-lib", "9.9.9"),
+		publishedJiraIssue("LTWL-4", "LW-0000-0001 Example", "In Progress", "java", "com.example:demo-lib", "1.2.3"),
+	}
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: issues}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{
+		matchingJavaAdvisory("LW-0000-0001"),
+		{
+			RepoName:      "lightwell/python/validated",
+			AdvisoryID:    "x_DEMO-LW-0000-0002-4.0.0",
+			PackageName:   "demo-pkg",
+			FixedVersions: []string{"4.0.0"},
+		},
+	}}
+
+	_, err := NewIngestor(jira, store, advisories).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 4)
+
+	byKey := map[string]string{}
+	for _, saved := range store.saved {
+		byKey[saved.VulnerabilityKey] = saved.Stage
+	}
+	assert.Equal(t, "Lightwell Network", byKey["LTWL-1"])
+	assert.Equal(t, "Lightwell Network", byKey["LTWL-2"])
+	assert.Equal(t, "Validation", byKey["LTWL-3"])
+	assert.Equal(t, "Fix in Progress", byKey["LTWL-4"])
+}
+
+func publishedJiraIssue(key, summary, status, lang, component, version string) jira_client.JiraIssue {
+	issue := validJiraIssue(key)
+	summaryJSON, err := json.Marshal(summary)
+	if err != nil {
+		panic(err)
+	}
+	statusJSON, err := json.Marshal(map[string]string{"name": status})
+	if err != nil {
+		panic(err)
+	}
+	labelsJSON, err := json.Marshal([]string{lang})
+	if err != nil {
+		panic(err)
+	}
+	issue.Fields["summary"] = summaryJSON
+	issue.Fields["status"] = statusJSON
+	issue.Fields["labels"] = labelsJSON
+	issue.Fields["description"] = json.RawMessage(`{
+		"type":"doc","content":[
+			{"type":"paragraph","content":[{"type":"text","text":"Component: ` + component + `"}]},
+			{"type":"paragraph","content":[{"type":"text","text":"version: ` + version + `"}]}
+		]}`)
+	return issue
+}
+
+func matchingJavaAdvisory(vulnID string) dao.LightwellAdvisoryInput {
+	return dao.LightwellAdvisoryInput{
+		RepoName:      "lightwell/java/remediated",
+		AdvisoryID:    "x_DEMO-" + vulnID + "-1.2.3",
+		PackageName:   "com.example:demo-lib",
+		FixedVersions: []string{"1.2.3.build-00001"},
+	}
+}
+
+func TestIngestorPaginatesAdvisories(t *testing.T) {
+	rows := make([]dao.LightwellAdvisoryInput, advisoryPageSize+1)
+	advisories := &countingAdvisories{fakeAdvisories: fakeAdvisories{rows: rows}}
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{validJiraIssue("LTWL-1")}}}}
+
+	_, err := NewIngestor(jira, &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}, advisories).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 2, advisories.calls)
+}
+
+type countingAdvisories struct {
+	fakeAdvisories
+	calls int
+}
+
+func (c *countingAdvisories) List(ctx context.Context, offset int, limit int) ([]dao.LightwellAdvisoryInput, int64, error) {
+	c.calls++
+	return c.fakeAdvisories.List(ctx, offset, limit)
+}
+
+func TestIngestorAdvisoryListFailureWritesNothing(t *testing.T) {
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{validJiraIssue("LTWL-1")}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, fakeAdvisories{err: errors.New("list failed")}).Sync(context.Background())
+	assert.ErrorContains(t, err, "list failed")
+	assert.Empty(t, store.saved)
 }

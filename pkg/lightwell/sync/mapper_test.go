@@ -91,6 +91,17 @@ func TestMapVulnerabilityRejectsMissingTimestamp(t *testing.T) {
 	assert.ErrorContains(t, err, "updated timestamp")
 }
 
+func TestStage(t *testing.T) {
+	assert.Equal(t, "Submitted", stage(json.RawMessage(`{"name":"New"}`)))
+	assert.Equal(t, "Classified", stage(json.RawMessage(`{"name":"Backlog"}`)))
+	assert.Equal(t, "Fix in Progress", stage(json.RawMessage(`{"name":"In Progress"}`)))
+	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Verified"}`)))
+	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Release Pending"}`)))
+	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Released"}`)))
+	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Closed"}`)))
+	assert.Equal(t, "Submitted", stage(json.RawMessage(`{"name":"Unknown"}`)))
+}
+
 func TestParseCVSSNumeric(t *testing.T) {
 	score, vector := parseCVSS(json.RawMessage(`"7.5"`))
 	require.NotNil(t, score)

@@ -40,7 +40,7 @@ func runLightwellVulnerabilitySync(ctx context.Context) (lightwellsync.SyncSumma
 		return lightwellsync.SyncSummary{}, err
 	}
 
-	vulnerabilityDao := dao.GetDaoRegistry(db.DB).LightwellVulnerability
-	ingestor := lightwellsync.NewIngestor(jiraClient, vulnerabilityDao)
+	daos := dao.GetDaoRegistry(db.DB)
+	ingestor := lightwellsync.NewIngestor(jiraClient, daos.LightwellVulnerability, daos.LightwellAdvisory)
 	return ingestor.Sync(ctx)
 }

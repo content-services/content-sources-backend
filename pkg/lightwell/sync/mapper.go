@@ -272,7 +272,8 @@ func stage(raw json.RawMessage) string {
 	if json.Unmarshal(raw, &status) != nil {
 		return ""
 	}
-	return map[string]string{
+
+	statusMap := map[string]string{
 		"new":             "Submitted",
 		"backlog":         "Classified",
 		"to do":           "Classified",
@@ -282,7 +283,13 @@ func stage(raw json.RawMessage) string {
 		"release pending": "Validation",
 		"released":        "Validation",
 		"closed":          "Validation",
-	}[strings.ToLower(strings.TrimSpace(status.Name))]
+	}
+
+	if s, ok := statusMap[strings.ToLower(strings.TrimSpace(status.Name))]; ok {
+		return s
+	} else {
+		return "Submitted"
+	}
 }
 
 func language(raw json.RawMessage) *string {
