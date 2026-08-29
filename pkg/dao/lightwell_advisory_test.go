@@ -136,6 +136,48 @@ func (s *LightwellAdvisorySuite) TestSyncDeletesStale() {
 	s.Equal("FAKE-001", result[0].AdvisoryID)
 }
 
+func (s *LightwellAdvisorySuite) TestList() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	javaUUID := s.createLightwellRepoConfig("lightwell/java/remediated")
+	pythonUUID := s.createLightwellRepoConfig("lightwell/python/validated")
+
+	err := dao.SyncForRepository(context.Background(), javaUUID, "lightwell/java/remediated", []LightwellAdvisoryInput{
+		{
+			AdvisoryID:    "x_DEMO-CVE-0000-0001-1.2.3",
+			PackageName:   "com.example:demo-lib",
+			FixedVersions: []string{"1.2.3.build-00001"},
+			Checksum:      "aaa111",
+		},
+	})
+	s.Require().NoError(err)
+	err = dao.SyncForRepository(context.Background(), pythonUUID, "lightwell/python/validated", []LightwellAdvisoryInput{
+		{
+			AdvisoryID:    "x_DEMO-CVE-0000-0002-4.0.0",
+			PackageName:   "demo-pkg",
+			FixedVersions: []string{"4.0.0"},
+			Checksum:      "bbb222",
+		},
+	})
+	s.Require().NoError(err)
+
+	result, total, err := dao.List(context.Background(), 0, 10)
+	s.NoError(err)
+	s.Equal(int64(2), total)
+	s.Require().Len(result, 2)
+	byID := map[string]LightwellAdvisoryInput{}
+	for _, row := range result {
+		byID[row.AdvisoryID] = row
+	}
+	s.Equal("lightwell/java/remediated", byID["x_DEMO-CVE-0000-0001-1.2.3"].RepoName)
+	s.Equal("com.example:demo-lib", byID["x_DEMO-CVE-0000-0001-1.2.3"].PackageName)
+	s.Equal("lightwell/python/validated", byID["x_DEMO-CVE-0000-0002-4.0.0"].RepoName)
+
+	page, total, err := dao.List(context.Background(), 0, 1)
+	s.NoError(err)
+	s.Equal(int64(2), total)
+	s.Len(page, 1)
+}
+
 func (s *LightwellAdvisorySuite) TestListByRepository() {
 	dao := GetLightwellAdvisoryDao(s.tx)
 	repoConfigUUID1 := s.createLightwellRepoConfig("lightwell/java/remediated")

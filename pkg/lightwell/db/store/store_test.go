@@ -214,7 +214,7 @@ func TestStore_CustomerScopingAndFilters(t *testing.T) {
 			complexity:  "Extensive",
 			ticketID:    "ticket-beta",
 			daysAgo:     31,
-			component:   "jackson-databind",
+			component:   "demo-lib",
 			title:       "Deserialization gadget test",
 			customerIDs: []string{customerA},
 		},
@@ -907,4 +907,32 @@ func TestStore_UpsertVulnerabilityIsIdempotent(t *testing.T) {
 		ticket.VulnerabilityUuid, ticket.TicketID,
 	).Scan(&ticketCount))
 	assert.Equal(t, 1, ticketCount)
+}
+
+func TestStore_UpsertDoesNotDowngradeLightwellNetworkToValidation(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	params := store.UpsertVulnerabilityParams{
+		Uuid:             uuid.New(),
+		VulnerabilityKey: fmt.Sprintf("LTWL-%d-NET", time.Now().UnixNano()),
+		VulnerabilityID:  fmt.Sprintf("LWL-NET-%d", time.Now().UnixNano()),
+		ComponentName:    "component",
+		ComponentVersion: "1.0",
+		Severity:         "Important",
+		Stage:            "Lightwell Network",
+		Complexity:       "",
+		SubmittedDate:    time.Now().UTC(),
+		LastUpdated:      time.Now().UTC().Truncate(time.Second),
+	}
+	inserted, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	assert.True(t, inserted.Inserted)
+
+	params.Stage = "Validation"
+	_, err = q.UpsertVulnerability(ctx, params)
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+	after, err := q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, "Lightwell Network", after.Stage)
 }

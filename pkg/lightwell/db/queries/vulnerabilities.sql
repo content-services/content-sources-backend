@@ -121,7 +121,11 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
     exploit_tested = EXCLUDED.exploit_tested,
     reproducer_included = EXCLUDED.reproducer_included,
     customer_priority = EXCLUDED.customer_priority,
-    stage = EXCLUDED.stage,
+    stage = CASE
+        WHEN lightwell_vulnerabilities.stage = 'Lightwell Network' AND EXCLUDED.stage = 'Validation'
+            THEN lightwell_vulnerabilities.stage
+        ELSE EXCLUDED.stage
+    END,
     language = EXCLUDED.language,
     complexity = EXCLUDED.complexity,
     submitted_date = EXCLUDED.submitted_date,
@@ -144,7 +148,12 @@ WHERE (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
     EXCLUDED.component_version, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
     EXCLUDED.severity, EXCLUDED.cvss, EXCLUDED.cvss_vector, EXCLUDED.exploit_tested,
-    EXCLUDED.reproducer_included, EXCLUDED.customer_priority, EXCLUDED.stage,
+    EXCLUDED.reproducer_included, EXCLUDED.customer_priority,
+    CASE
+        WHEN lightwell_vulnerabilities.stage = 'Lightwell Network' AND EXCLUDED.stage = 'Validation'
+            THEN lightwell_vulnerabilities.stage
+        ELSE EXCLUDED.stage
+    END,
     EXCLUDED.language, EXCLUDED.complexity, EXCLUDED.submitted_date, EXCLUDED.last_updated,
     EXCLUDED.embargo, EXCLUDED.duplicate
 )
