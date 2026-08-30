@@ -46,13 +46,20 @@ func (f *fakeJira) Issue(_ context.Context, key string, fields []string) (jira_c
 }
 
 type fakeVulnerabilityStore struct {
-	saved   []dao.LightwellVulnerabilityInput
-	outcome dao.LightwellVulnerabilitySaveOutcome
+	saved         []dao.LightwellVulnerabilityInput
+	deleted       []string
+	outcome       dao.LightwellVulnerabilitySaveOutcome
+	deleteExisted bool
 }
 
 func (f *fakeVulnerabilityStore) Save(_ context.Context, input dao.LightwellVulnerabilityInput) (dao.LightwellVulnerabilitySaveOutcome, error) {
 	f.saved = append(f.saved, input)
 	return f.outcome, nil
+}
+
+func (f *fakeVulnerabilityStore) DeleteByKey(_ context.Context, key string) (bool, error) {
+	f.deleted = append(f.deleted, key)
+	return f.deleteExisted, nil
 }
 
 func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
@@ -215,6 +222,57 @@ func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
 	assert.Equal(t, 1, summary.Failed)
 	assert.Len(t, summary.Failures, 1)
 	assert.Len(t, store.saved, 1)
+}
+
+func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
+	for _, name := range []string{"Not a bug", "Duplicate", "Won't do"} {
+		t.Run(name, func(t *testing.T) {
+			issue := validJiraIssue("LTWL-1")
+			issue.Fields["resolution"] = resolutionJSON(name)
+			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			store := &fakeVulnerabilityStore{}
+
+			summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, SyncSummary{}, summary)
+			assert.Empty(t, store.saved)
+			assert.Equal(t, []string{"LTWL-1"}, store.deleted)
+		})
+	}
+}
+
+func TestIngestorDeletesPreviouslyIngestedDiscardedIssue(t *testing.T) {
+	issue := validJiraIssue("LTWL-1")
+	issue.Fields["resolution"] = resolutionJSON("Duplicate")
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{deleteExisted: true}
+
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, SyncSummary{Deleted: 1}, summary)
+	assert.Empty(t, store.saved)
+	assert.Equal(t, []string{"LTWL-1"}, store.deleted)
+}
+
+func TestIngestorSavesIssueWithOtherResolution(t *testing.T) {
+	issue := validJiraIssue("LTWL-1")
+	issue.Fields["resolution"] = resolutionJSON("Done")
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
+	require.Len(t, store.saved, 1)
+	assert.Empty(t, store.deleted)
+}
+
+func resolutionJSON(name string) json.RawMessage {
+	raw, err := json.Marshal(map[string]string{"name": name})
+	if err != nil {
+		panic(err)
+	}
+	return raw
 }
 
 func TestIngestorSearchFailureWritesNothing(t *testing.T) {

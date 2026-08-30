@@ -29,6 +29,7 @@ func SyncLightwellVulnerabilities(_ []string) {
 		Int("inserted", summary.Inserted).
 		Int("updated", summary.Updated).
 		Int("unchanged", summary.Unchanged).
+		Int("deleted", summary.Deleted).
 		Int("failed", summary.Failed).
 		Msg("Finished syncing Lightwell vulnerabilities from Jira")
 }

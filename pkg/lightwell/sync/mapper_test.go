@@ -91,6 +91,16 @@ func TestMapVulnerabilityRejectsMissingTimestamp(t *testing.T) {
 	assert.ErrorContains(t, err, "updated timestamp")
 }
 
+func TestDiscardedResolution(t *testing.T) {
+	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Not a bug"}`)))
+	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Duplicate"}`)))
+	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Won't do"}`)))
+	assert.True(t, discardedResolution(json.RawMessage(`{"name":" won't do "}`)))
+	assert.False(t, discardedResolution(json.RawMessage(`{"name":"Done"}`)))
+	assert.False(t, discardedResolution(json.RawMessage(`null`)))
+	assert.False(t, discardedResolution(nil))
+}
+
 func TestStage(t *testing.T) {
 	assert.Equal(t, "Submitted", stage(json.RawMessage(`{"name":"New"}`)))
 	assert.Equal(t, "Classified", stage(json.RawMessage(`{"name":"Backlog"}`)))

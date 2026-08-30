@@ -265,6 +265,26 @@ func severity(raw json.RawMessage) string {
 	}[option.ID]
 }
 
+var discardedResolutions = map[string]struct{}{
+	"not a bug": {},
+	"duplicate": {},
+	"won't do":  {},
+}
+
+func discardedResolution(raw json.RawMessage) bool {
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return false
+	}
+	var resolution struct {
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(raw, &resolution) != nil {
+		return false
+	}
+	_, ok := discardedResolutions[strings.ToLower(strings.TrimSpace(resolution.Name))]
+	return ok
+}
+
 func stage(raw json.RawMessage) string {
 	var status struct {
 		Name string `json:"name"`

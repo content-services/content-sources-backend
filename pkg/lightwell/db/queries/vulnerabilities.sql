@@ -94,6 +94,10 @@ SELECT *
 FROM lightwell_vulnerabilities
 WHERE vulnerability_key = sqlc.arg(vulnerability_key);
 
+-- name: DeleteVulnerabilityByKey :execrows
+DELETE FROM lightwell_vulnerabilities
+WHERE vulnerability_key = sqlc.arg(vulnerability_key);
+
 -- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
     uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description,

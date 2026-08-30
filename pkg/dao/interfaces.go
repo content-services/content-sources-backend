@@ -285,6 +285,7 @@ type LightwellVulnerabilityDao interface {
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
 	Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)
+	DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error)
 }
 
 type UserPreferenceDao interface {
