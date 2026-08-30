@@ -9904,6 +9904,72 @@ func (_m *MockLightwellVulnerabilityDao) EXPECT() *MockLightwellVulnerabilityDao
 	return &MockLightwellVulnerabilityDao_Expecter{mock: &_m.Mock}
 }
 
+// DeleteByKey provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error) {
+	ret := _mock.Called(ctx, vulnerabilityKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteByKey")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, vulnerabilityKey)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, vulnerabilityKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, vulnerabilityKey)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellVulnerabilityDao_DeleteByKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByKey'
+type MockLightwellVulnerabilityDao_DeleteByKey_Call struct {
+	*mock.Call
+}
+
+// DeleteByKey is a helper method to define mock.On call
+//   - ctx context.Context
+//   - vulnerabilityKey string
+func (_e *MockLightwellVulnerabilityDao_Expecter) DeleteByKey(ctx interface{}, vulnerabilityKey interface{}) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	return &MockLightwellVulnerabilityDao_DeleteByKey_Call{Call: _e.mock.On("DeleteByKey", ctx, vulnerabilityKey)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) Run(run func(ctx context.Context, vulnerabilityKey string)) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) Return(b bool, err error) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) RunAndReturn(run func(ctx context.Context, vulnerabilityKey string) (bool, error)) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function for the type MockLightwellVulnerabilityDao
 func (_mock *MockLightwellVulnerabilityDao) List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error) {
 	ret := _mock.Called(ctx, opts)

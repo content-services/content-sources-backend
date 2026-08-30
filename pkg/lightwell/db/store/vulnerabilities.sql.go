@@ -129,6 +129,19 @@ func (q *Queries) CountByStage(ctx context.Context, arg CountByStageParams) ([]C
 	return items, nil
 }
 
+const deleteVulnerabilityByKey = `-- name: DeleteVulnerabilityByKey :execrows
+DELETE FROM lightwell_vulnerabilities
+WHERE vulnerability_key = $1
+`
+
+func (q *Queries) DeleteVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteVulnerabilityByKey, vulnerabilityKey)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteVulnerabilityCustomersNotIn = `-- name: DeleteVulnerabilityCustomersNotIn :exec
 DELETE FROM lightwell_vulnerability_customers
 WHERE vulnerability_uuid = $1

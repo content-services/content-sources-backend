@@ -17,6 +17,7 @@ var vulnerabilityFields = []string{
 	"status",
 	"created",
 	"updated",
+	"resolution",
 	"labels",
 	"issuelinks",
 	fieldPURL,
@@ -30,6 +31,7 @@ type SyncSummary struct {
 	Inserted  int
 	Updated   int
 	Unchanged int
+	Deleted   int
 	Failed    int
 	// Failures are per-issue problems encountered while the sync still completed.
 	// A non-nil Sync error means the job could not run at all.
@@ -41,6 +43,7 @@ type SyncSummary struct {
 // actually uses, which keeps the constructor easy to fake in tests.
 type VulnerabilityStore interface {
 	Save(ctx context.Context, input dao.LightwellVulnerabilityInput) (dao.LightwellVulnerabilitySaveOutcome, error)
+	DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error)
 }
 
 // AdvisoryStore is the subset of dao.LightwellAdvisoryDao used to decide
@@ -159,6 +162,10 @@ func (i *Ingestor) accountFieldID(ctx context.Context) (string, error) {
 }
 
 func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, accountFieldID string, advisories []PublishedAdvisory, summary *SyncSummary) error {
+	if discardedResolution(issue.Fields["resolution"]) {
+		return i.deleteDiscardedIssue(ctx, issue.Key, summary)
+	}
+
 	vulnerability, err := mapVulnerability(issue)
 	if err != nil {
 		return err
@@ -182,6 +189,20 @@ func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, a
 		summary.Updated++
 	default:
 		summary.Unchanged++
+	}
+	return nil
+}
+
+func (i *Ingestor) deleteDiscardedIssue(ctx context.Context, key string, summary *SyncSummary) error {
+	if key == "" {
+		return fmt.Errorf("issue has no key")
+	}
+	deleted, err := i.vulnerabilities.DeleteByKey(ctx, key)
+	if err != nil {
+		return fmt.Errorf("issue %s database delete: %w", key, err)
+	}
+	if deleted {
+		summary.Deleted++
 	}
 	return nil
 }

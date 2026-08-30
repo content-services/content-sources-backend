@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
+	DeleteVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (int64, error)
 	DeleteVulnerabilityCustomersNotIn(ctx context.Context, arg DeleteVulnerabilityCustomersNotInParams) error
 	DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg DeleteVulnerabilityTicketsNotInParams) error
 	GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (LightwellVulnerability, error)
