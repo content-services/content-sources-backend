@@ -56,7 +56,7 @@ func TestMapVulnerabilitySkipsMalformedOptionalFields(t *testing.T) {
 
 	vulnerability, err := mapVulnerability(issue)
 	require.NoError(t, err)
-	assert.Nil(t, vulnerability.Title)
+	assert.Equal(t, "Example component", *vulnerability.Title)
 	assert.Empty(t, vulnerability.ComponentName)
 	assert.Nil(t, vulnerability.CWE)
 	assert.Nil(t, vulnerability.CVSS)
@@ -73,6 +73,7 @@ func TestMapVulnerabilityUsesCVEFromSummary(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "LTWL-4", vulnerability.VulnerabilityKey)
 	assert.Equal(t, "CVE-0000-0001", vulnerability.VulnerabilityID)
+	assert.Equal(t, "Example product", *vulnerability.Title)
 }
 
 func TestMapVulnerabilityRejectsMissingVulnerabilityID(t *testing.T) {
@@ -99,6 +100,124 @@ func TestDiscardedResolution(t *testing.T) {
 	assert.False(t, discardedResolution(json.RawMessage(`{"name":"Done"}`)))
 	assert.False(t, discardedResolution(json.RawMessage(`null`)))
 	assert.False(t, discardedResolution(nil))
+}
+
+func TestLanguagePrefersLabelOverPURL(t *testing.T) {
+	purl := "pkg:pypi/flask@3.0.3"
+	got := language(json.RawMessage(`["backend","javascript"]`), &purl)
+	require.NotNil(t, got)
+	assert.Equal(t, "javascript", *got)
+}
+
+func TestLanguageFromPURL(t *testing.T) {
+	npm := "pkg:npm/react@18.2.0"
+	maven := "pkg:maven/org.springframework/spring-core@5.3.20"
+	pypi := "pkg:PYPI/flask@3.0.3"
+	unsupported := "pkg:golang/github.com/gin-gonic/gin@1.9.1"
+
+	assert.Equal(t, "javascript", *language(json.RawMessage(`["backend"]`), &npm))
+	assert.Equal(t, "java", *language(nil, &maven))
+	assert.Equal(t, "python", *languageFromPURL(pypi))
+	assert.Nil(t, languageFromPURL(unsupported))
+	assert.Nil(t, languageFromPURL("not-a-purl"))
+	assert.Nil(t, language(json.RawMessage(`["backend"]`), nil))
+}
+
+func TestComponentPrefersDescriptionOverPURL(t *testing.T) {
+	purl := "pkg:pypi/flask@3.0.3"
+	assert.Equal(t, "from-description", componentName("from-description", &purl))
+	assert.Equal(t, "9.9.9", componentVersion("9.9.9", &purl))
+}
+
+func TestComponentFromPURL(t *testing.T) {
+	npm := "pkg:npm/react@18.2.0"
+	scoped := "pkg:npm/%40angular/core@15.0.0"
+	maven := "pkg:maven/org.springframework/spring-core@5.3.20?type=jar"
+	pypi := "pkg:pypi/flask@3.0.3"
+
+	assert.Equal(t, "react", componentName("", &npm))
+	assert.Equal(t, "18.2.0", componentVersion("", &npm))
+	assert.Equal(t, "@angular/core", componentName("", &scoped))
+	assert.Equal(t, "org.springframework:spring-core", componentName("", &maven))
+	assert.Equal(t, "5.3.20", componentVersion("", &maven))
+	assert.Equal(t, "flask", componentName("", &pypi))
+	assert.Equal(t, "3.0.3", componentVersion("", &pypi))
+	assert.Empty(t, componentName("", nil))
+	assert.Empty(t, componentVersion("", nil))
+	assert.Empty(t, componentName("", optionalString("not-a-purl")))
+	assert.Empty(t, componentVersion("", optionalString("not-a-purl")))
+}
+
+func TestPackageURLPrefersCustomFieldOverDescription(t *testing.T) {
+	got := packageURL(json.RawMessage(`"pkg:maven/from-field@1"`), "PURL: pkg:pypi/flask@3.0.3")
+	require.NotNil(t, got)
+	assert.Equal(t, "pkg:maven/from-field@1", *got)
+}
+
+func TestPackageURLFromDescription(t *testing.T) {
+	got := packageURL(nil, "Title: ignored\nPURL: pkg:npm/react@18.2.0\n")
+	require.NotNil(t, got)
+	assert.Equal(t, "pkg:npm/react@18.2.0", *got)
+	assert.Nil(t, packageURL(nil, "no purl here"))
+}
+
+func TestMapVulnerabilityUsesDescriptionPURLWhenFieldMissing(t *testing.T) {
+	issue := validJiraIssue("LTWL-7")
+	issue.Fields["description"] = json.RawMessage(`{
+		"type":"doc","content":[
+			{"type":"paragraph","content":[{"type":"text","text":"PURL: pkg:pypi/flask@3.0.3"}]}
+		]}`)
+
+	vulnerability, err := mapVulnerability(issue)
+	require.NoError(t, err)
+	assert.Equal(t, "pkg:pypi/flask@3.0.3", *vulnerability.PURL)
+	assert.Equal(t, "flask", vulnerability.ComponentName)
+	assert.Equal(t, "3.0.3", vulnerability.ComponentVersion)
+	assert.Equal(t, "python", *vulnerability.Language)
+}
+
+func TestMapVulnerabilityUsesPURLWhenDescriptionOmitsComponent(t *testing.T) {
+	issue := validJiraIssue("LTWL-6")
+	issue.Fields[fieldPURL] = json.RawMessage(`"pkg:maven/com.example/demo-lib@1.2.3"`)
+
+	vulnerability, err := mapVulnerability(issue)
+	require.NoError(t, err)
+	assert.Equal(t, "com.example:demo-lib", vulnerability.ComponentName)
+	assert.Equal(t, "1.2.3", vulnerability.ComponentVersion)
+	assert.Equal(t, "java", *vulnerability.Language)
+}
+
+func TestTitlePrefersDescriptionOverSummary(t *testing.T) {
+	assert.Equal(t, "from description", title("Title: from description\n", "LW-0000-0001 Example component"))
+}
+
+func TestTitleFromSummaryWithoutVulnerabilityPrefix(t *testing.T) {
+	assert.Equal(t, "Example component", title("", "LW-0000-0001 Example component"))
+	assert.Equal(t, "Example product", title("no title line", "CVE-0000-0001 Example product"))
+	assert.Empty(t, title("", "LW-0000-0001"))
+}
+
+func TestSeverityPrefersCustomFieldOverLabel(t *testing.T) {
+	assert.Equal(t, "Critical", severity(json.RawMessage(`{"id":"19917"}`), json.RawMessage(`["severity::MEDIUM"]`)))
+}
+
+func TestSeverityFromLabelWhenFieldMissing(t *testing.T) {
+	assert.Equal(t, "Moderate", severity(nil, json.RawMessage(`["backend","severity::MEDIUM"]`)))
+	assert.Equal(t, "Moderate", severity(json.RawMessage(`{"id":"unknown"}`), json.RawMessage(`["severity::medium"]`)))
+	assert.Equal(t, "Critical", severity(nil, json.RawMessage(`["severity::CRITICAL"]`)))
+	assert.Equal(t, "Important", severity(nil, json.RawMessage(`["severity::HIGH"]`)))
+	assert.Equal(t, "Low", severity(nil, json.RawMessage(`["severity::low"]`)))
+	assert.Empty(t, severity(nil, json.RawMessage(`["backend","not-severity"]`)))
+	assert.Empty(t, severity(nil, json.RawMessage(`["severity::unknown"]`)))
+}
+
+func TestMapVulnerabilityUsesSeverityLabelWhenFieldMissing(t *testing.T) {
+	issue := validJiraIssue("LTWL-8")
+	issue.Fields["labels"] = json.RawMessage(`["java","severity::MEDIUM"]`)
+
+	vulnerability, err := mapVulnerability(issue)
+	require.NoError(t, err)
+	assert.Equal(t, "Moderate", vulnerability.Severity)
 }
 
 func TestStage(t *testing.T) {

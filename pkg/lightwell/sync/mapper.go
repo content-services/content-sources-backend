@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -78,7 +79,8 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 	if issue.Key == "" {
 		return Vulnerability{}, errors.New("issue has no key")
 	}
-	vulnerabilityID := vulnerabilityIDFromSummary(rawString(issue.Fields["summary"]))
+	summary := rawString(issue.Fields["summary"])
+	vulnerabilityID := vulnerabilityIDFromSummary(summary)
 	if vulnerabilityID == "" {
 		return Vulnerability{}, fmt.Errorf("issue %s has no LW- or CVE- vulnerability id in summary", issue.Key)
 	}
@@ -93,27 +95,25 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 	}
 
 	description := flattenADF(issue.Fields["description"])
-	title := descriptionValue(description, "title")
-	component := descriptionValue(description, "component")
-	version := descriptionValue(description, "version")
 	customerPriority := descriptionValue(description, "customer priority")
 	cvss, vector := parseCVSS(issue.Fields[fieldCVSS])
+	purl := packageURL(issue.Fields[fieldPURL], description)
 
 	return Vulnerability{
 		VulnerabilityKey: issue.Key,
 		VulnerabilityID:  vulnerabilityID,
-		PURL:             optionalString(rawString(issue.Fields[fieldPURL])),
-		ComponentName:    component,
-		ComponentVersion: version,
-		Title:            optionalString(title),
+		PURL:             purl,
+		ComponentName:    componentName(descriptionValue(description, "component"), purl),
+		ComponentVersion: componentVersion(descriptionValue(description, "version"), purl),
+		Title:            optionalString(title(description, summary)),
 		CWE:              joinedValues(issue.Fields[fieldCWE]),
 		Description:      optionalString(description),
-		Severity:         severity(issue.Fields[fieldSeverity]),
+		Severity:         severity(issue.Fields[fieldSeverity], issue.Fields["labels"]),
 		CVSS:             cvss,
 		CVSSVector:       vector,
 		CustomerPriority: optionalString(customerPriority),
 		Stage:            stage(issue.Fields["status"]),
-		Language:         language(issue.Fields["labels"]),
+		Language:         language(issue.Fields["labels"], purl),
 		Complexity:       "",
 		SubmittedDate:    created.UTC(),
 		LastUpdated:      updated.UTC(),
@@ -179,6 +179,17 @@ func vulnerabilityIDFromSummary(summary string) string {
 		return id
 	}
 	return ""
+}
+
+func title(description, summary string) string {
+	if value := descriptionValue(description, "title"); value != "" {
+		return value
+	}
+	_, rest, found := strings.Cut(strings.TrimSpace(summary), " ")
+	if !found {
+		return ""
+	}
+	return strings.TrimSpace(rest)
 }
 
 func descriptionValue(description, prefix string) string {
@@ -250,7 +261,16 @@ func normalizedValues(raw json.RawMessage) []string {
 	return values
 }
 
-func severity(raw json.RawMessage) string {
+const severityLabelPrefix = "severity::"
+
+func severity(field, labels json.RawMessage) string {
+	if value := severityFromField(field); value != "" {
+		return value
+	}
+	return severityFromLabels(labels)
+}
+
+func severityFromField(raw json.RawMessage) string {
 	var option struct {
 		ID string `json:"id"`
 	}
@@ -263,6 +283,37 @@ func severity(raw json.RawMessage) string {
 		"19919": "Moderate",
 		"19920": "Low",
 	}[option.ID]
+}
+
+func severityFromLabels(raw json.RawMessage) string {
+	var labels []string
+	if json.Unmarshal(raw, &labels) != nil {
+		return ""
+	}
+	for _, label := range labels {
+		trimmed := strings.TrimSpace(label)
+		if len(trimmed) < len(severityLabelPrefix) {
+			continue
+		}
+		if !strings.EqualFold(trimmed[:len(severityLabelPrefix)], severityLabelPrefix) {
+			continue
+		}
+		if mapped := mapSeverityName(trimmed[len(severityLabelPrefix):]); mapped != "" {
+			return mapped
+		}
+	}
+	return ""
+}
+
+func mapSeverityName(value string) string {
+	return map[string]string{
+		"critical":  "Critical",
+		"important": "Important",
+		"high":      "Important",
+		"moderate":  "Moderate",
+		"medium":    "Moderate",
+		"low":       "Low",
+	}[strings.ToLower(strings.TrimSpace(value))]
 }
 
 var discardedResolutions = map[string]struct{}{
@@ -312,18 +363,112 @@ func stage(raw json.RawMessage) string {
 	}
 }
 
-func language(raw json.RawMessage) *string {
-	var labels []string
-	if json.Unmarshal(raw, &labels) != nil {
-		return nil
+func packageURL(raw json.RawMessage, description string) *string {
+	if value := rawString(raw); value != "" {
+		return &value
 	}
-	for _, label := range labels {
-		value := strings.ToLower(strings.TrimSpace(label))
-		if value == "java" || value == "python" {
-			return &value
+	return optionalString(descriptionValue(description, "purl"))
+}
+
+func language(raw json.RawMessage, purl *string) *string {
+	var labels []string
+	if json.Unmarshal(raw, &labels) == nil {
+		for _, label := range labels {
+			value := strings.ToLower(strings.TrimSpace(label))
+			if value == "java" || value == "python" || value == "javascript" {
+				return &value
+			}
 		}
 	}
-	return nil
+
+	if purl == nil {
+		return nil
+	}
+	return languageFromPURL(*purl)
+}
+
+func languageFromPURL(purl string) *string {
+	mapped := map[string]string{
+		"npm":   "javascript",
+		"maven": "java",
+		"pypi":  "python",
+	}[parsePURL(purl).Type]
+	if mapped == "" {
+		return nil
+	}
+	return &mapped
+}
+
+func componentName(value string, purl *string) string {
+	if value != "" {
+		return value
+	}
+	if purl == nil {
+		return ""
+	}
+	return parsePURL(*purl).Name
+}
+
+func componentVersion(value string, purl *string) string {
+	if value != "" {
+		return value
+	}
+	if purl == nil {
+		return ""
+	}
+	return parsePURL(*purl).Version
+}
+
+type parsedPURL struct {
+	Type    string
+	Name    string
+	Version string
+}
+
+func parsePURL(raw string) parsedPURL {
+	rest, ok := strings.CutPrefix(strings.TrimSpace(raw), "pkg:")
+	if !ok {
+		return parsedPURL{}
+	}
+	typePart, remainder, ok := strings.Cut(rest, "/")
+	if !ok || typePart == "" || remainder == "" {
+		return parsedPURL{}
+	}
+
+	if idx := strings.IndexAny(remainder, "?#"); idx >= 0 {
+		remainder = remainder[:idx]
+	}
+
+	nameBlock, version := remainder, ""
+	if idx := strings.LastIndex(remainder, "@"); idx >= 0 {
+		nameBlock = remainder[:idx]
+		version = remainder[idx+1:]
+	}
+	nameBlock, _ = url.PathUnescape(nameBlock)
+	version, _ = url.PathUnescape(version)
+
+	namespace, name := "", nameBlock
+	if idx := strings.LastIndex(nameBlock, "/"); idx >= 0 {
+		namespace = nameBlock[:idx]
+		name = nameBlock[idx+1:]
+	}
+	if name == "" {
+		return parsedPURL{}
+	}
+
+	typ := strings.ToLower(typePart)
+	switch typ {
+	case "maven":
+		if namespace != "" {
+			name = strings.ReplaceAll(namespace, "/", ".") + ":" + name
+		}
+	case "npm":
+		if namespace != "" {
+			name = namespace + "/" + name
+		}
+	}
+
+	return parsedPURL{Type: typ, Name: name, Version: version}
 }
 
 func parseCVSS(raw json.RawMessage) (*float64, *string) {
