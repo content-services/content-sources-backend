@@ -3,6 +3,7 @@ package jfrog_bridge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -65,7 +66,19 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 				continue
 			}
 
+			if err := ValidateNotificationCVEs(rem); err != nil {
+				log.Error().Err(err).Str("gav", gav).Msg("embargo check failed")
+				h.metrics.messagesFailed.Inc()
+				continue
+			}
+
 			if err := h.processRemediation(session.Context(), rem); err != nil {
+				var embargoErr *EmbargoError
+				if errors.As(err, &embargoErr) {
+					log.Error().Err(err).Str("gav", gav).Msg("embargo check failed (content)")
+					h.metrics.messagesFailed.Inc()
+					continue
+				}
 				log.Error().Err(err).Str("gav", gav).Msg("pipeline failed")
 				h.metrics.messagesFailed.Inc()
 				allSucceeded = false
@@ -130,6 +143,11 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	osvRecords, err := h.registry.FetchOSVRecords(ctx, rem.BaseVersion)
 	if err != nil {
 		return fmt.Errorf("fetch OSV records: %w", err)
+	}
+
+	// 2b. Validate OSV records contain only public CVEs
+	if err := ValidateOSVRecords(osvRecords); err != nil {
+		return fmt.Errorf("content embargo check: %w", err)
 	}
 
 	// 3. Generate CycloneDX VEX
