@@ -133,15 +133,3 @@ func CheckLightwellLensAccessible(ctx context.Context) (err error) {
 			"Neither the user nor account is allowed.")
 	}
 }
-
-func CheckAdminJfrogUploadAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.AdminJfrogUpload.Enabled {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access JFrog upload",
-			"Admin JFrog upload feature is disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.AdminJfrogUpload) {
-		return nil
-	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access JFrog upload",
-			"Neither the user nor account is allowed.")
-	}
-}
