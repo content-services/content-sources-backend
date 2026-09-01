@@ -134,7 +134,7 @@ func (c *httpJFrogClient) Ping(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxJFrogPingBytes))
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("ping: HTTP %d: %s", resp.StatusCode, string(body))
 	}

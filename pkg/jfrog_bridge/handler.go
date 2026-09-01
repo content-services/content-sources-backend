@@ -3,9 +3,9 @@ package jfrog_bridge
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -16,6 +16,8 @@ const (
 	allowedEventType = "java-remediated"
 )
 
+const maxProcessedGAVs = 10000
+
 // BridgeHandler implements sarama.ConsumerGroupHandler and orchestrates
 // the full pipeline for each remediation message.
 type BridgeHandler struct {
@@ -24,17 +26,17 @@ type BridgeHandler struct {
 	evidence    EvidenceCreator
 	metrics     *bridgeMetrics
 	registryURL string
-	// GAV dedup: records only after successful processing
-	processed sync.Map
+	processed   *boundedSet
 }
 
 // NewBridgeHandler creates a BridgeHandler with the given clients.
 func NewBridgeHandler(registry RegistryClient, jfrog JFrogClient, evidence EvidenceCreator, metrics *bridgeMetrics) *BridgeHandler {
 	return &BridgeHandler{
-		registry: registry,
-		jfrog:    jfrog,
-		evidence: evidence,
-		metrics:  metrics,
+		registry:  registry,
+		jfrog:     jfrog,
+		evidence:  evidence,
+		metrics:   metrics,
+		processed: newBoundedSet(maxProcessedGAVs),
 	}
 }
 
@@ -61,7 +63,7 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 		allSucceeded := true
 		for _, rem := range remediations {
 			gav := gavKey(rem)
-			if _, loaded := h.processed.Load(gav); loaded {
+			if h.processed.Contains(gav) {
 				log.Debug().Str("gav", gav).Msg("skipping already-processed GAV")
 				continue
 			}
@@ -87,7 +89,7 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 				continue
 			}
 
-			h.processed.Store(gav, true)
+			h.processed.Add(gav)
 			h.metrics.messagesProcessed.Inc()
 			log.Info().Str("gav", gav).Msg("pipeline completed")
 		}
@@ -223,20 +225,42 @@ func gavKey(rem Remediation) string {
 	return fmt.Sprintf("%s:%s:%s", rem.GroupID, rem.ArtifactID, rem.Version)
 }
 
+type mavenMetadata struct {
+	XMLName    xml.Name         `xml:"metadata"`
+	GroupID    string           `xml:"groupId"`
+	ArtifactID string          `xml:"artifactId"`
+	Versioning mavenVersioning `xml:"versioning"`
+}
+
+type mavenVersioning struct {
+	Latest      string           `xml:"latest"`
+	Release     string           `xml:"release"`
+	Versions    mavenVersionList `xml:"versions"`
+	LastUpdated string           `xml:"lastUpdated"`
+}
+
+type mavenVersionList struct {
+	Version []string `xml:"version"`
+}
+
 func generateMavenMetadata(groupID, artifactID, version string) []byte {
 	ts := time.Now().UTC().Format("20060102150405")
-	return []byte(fmt.Sprintf(
-		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
-			"<metadata>\n"+
-			"  <groupId>%s</groupId>\n"+
-			"  <artifactId>%s</artifactId>\n"+
-			"  <versioning>\n"+
-			"    <latest>%s</latest>\n"+
-			"    <release>%s</release>\n"+
-			"    <versions><version>%s</version></versions>\n"+
-			"    <lastUpdated>%s</lastUpdated>\n"+
-			"  </versioning>\n"+
-			"</metadata>\n",
-		groupID, artifactID, version, version, version, ts))
+	meta := mavenMetadata{
+		GroupID:    groupID,
+		ArtifactID: artifactID,
+		Versioning: mavenVersioning{
+			Latest:  version,
+			Release: version,
+			Versions: mavenVersionList{
+				Version: []string{version},
+			},
+			LastUpdated: ts,
+		},
+	}
+	data, err := xml.MarshalIndent(meta, "", "  ")
+	if err != nil {
+		return []byte{}
+	}
+	return append([]byte(xml.Header), data...)
 }
 

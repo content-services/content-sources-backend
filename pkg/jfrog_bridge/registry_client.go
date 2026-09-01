@@ -23,6 +23,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	maxRegistryResponseBytes = 200 << 20 // 200 MB
+	maxJFrogPingBytes        = 1 << 10   // 1 KB
+	maxEvidenceResponseBytes = 1 << 20   // 1 MB
+)
+
 // OSVRecord holds the bridge-internal representation of a single CVE
 // extracted from an OSV JSON file.
 type OSVRecord struct {
@@ -168,7 +174,7 @@ func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, err
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
 	}
-	return io.ReadAll(resp.Body)
+	return io.ReadAll(io.LimitReader(resp.Body, maxRegistryResponseBytes))
 }
 
 // osvFile extends the shared OSVAdvisory struct to include fields

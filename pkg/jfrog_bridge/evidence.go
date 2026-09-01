@@ -208,7 +208,7 @@ func (e *evidenceCreator) doPost(ctx context.Context, url string, body []byte) (
 		if err != nil {
 			return err
 		}
-		respBody, readErr := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, maxEvidenceResponseBytes))
 		resp.Body.Close()
 		if readErr != nil {
 			return fmt.Errorf("read response: %w", readErr)
