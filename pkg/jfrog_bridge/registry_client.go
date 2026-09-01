@@ -1,5 +1,13 @@
 package jfrog_bridge
 
+// TODO: This file mixes four concerns that should be split into distinct files:
+//   1. HTTP transport + retry  (httpRegistryClient, getWithRetry, doGet, FetchJAR, FetchPOM, FetchOSVRecords)
+//   2. OSV parsing + CVE extraction  (osvFile, parseOSVFile, OSVRecord)
+//   3. CVSS 3.1 scoring  (computeCVSS31BaseScore, parseCVSSVector, cvssMetricValue, cvssScoreToSeverity)
+//   4. Maven path utility  (groupPath)
+// Concerns 2-3 are pure functions with no HTTP dependency and could move to
+// dedicated files (osv_parser.go, cvss.go) or into the shared vulnerability_parser package.
+
 import (
 	"context"
 	"crypto/sha256"
