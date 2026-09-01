@@ -52,7 +52,7 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	defer registryServer.Close()
 
 	// OSV server: serves from testdata/osv/
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	// JFrog server: records all requests
@@ -256,7 +256,7 @@ func TestProcessRemediation_EvidenceFailure(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -340,7 +340,7 @@ func TestProcessRemediation_UploadFailure(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -409,7 +409,7 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)

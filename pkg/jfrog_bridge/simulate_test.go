@@ -58,7 +58,7 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
