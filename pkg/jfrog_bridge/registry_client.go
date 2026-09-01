@@ -95,10 +95,12 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 
 	entries := vulnerability_parser.ParseManifest(manifestData)
 	var records []OSVRecord
+	var matched int
 	for _, entry := range entries {
 		if !strings.Contains(entry.Filename, "-"+baseVersion+".") {
 			continue
 		}
+		matched++
 		fileURL := c.osvURL + "/" + entry.Filename
 		data, err := c.getWithRetry(ctx, fileURL)
 		if err != nil {
@@ -111,6 +113,9 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 			continue
 		}
 		records = append(records, rec)
+	}
+	if len(records) == 0 && matched > 0 {
+		return nil, fmt.Errorf("all %d matching OSV files failed to fetch for version %s", matched, baseVersion)
 	}
 	return records, nil
 }
@@ -136,22 +141,13 @@ func (c *httpRegistryClient) Ping(ctx context.Context) error {
 }
 
 func (c *httpRegistryClient) getWithRetry(ctx context.Context, url string) ([]byte, error) {
-	var lastErr error
-	for attempt := 0; attempt <= c.maxRetries; attempt++ {
-		if attempt > 0 {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(attempt) * time.Second):
-			}
-		}
-		data, err := c.doGet(ctx, url)
-		if err == nil {
-			return data, nil
-		}
-		lastErr = err
-	}
-	return nil, lastErr
+	var data []byte
+	err := retryWithBackoff(ctx, c.maxRetries, func() error {
+		var fetchErr error
+		data, fetchErr = c.doGet(ctx, url)
+		return fetchErr
+	})
+	return data, err
 }
 
 func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, error) {

@@ -131,3 +131,22 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "success")
 }
+
+func TestSimulateHandler_EmbargoRejection(t *testing.T) {
+	metrics := newBridgeMetrics(prometheus.NewRegistry())
+	bh := NewBridgeHandler(nil, nil, nil, metrics)
+	h := &adminHandler{bridgeHandler: bh}
+
+	payload := `{"package_name":"org.test:test","releases":[{"name":"1.0.rhlw-00001","cves_fixed":["LTWL-0001"]}]}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
+		strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := h.simulate(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "rejected")
+}

@@ -132,8 +132,14 @@ func TestValidateOSVRecords_AllValid(t *testing.T) {
 }
 
 func TestValidateOSVRecords_Empty(t *testing.T) {
-	assert.NoError(t, ValidateOSVRecords(nil))
-	assert.NoError(t, ValidateOSVRecords([]OSVRecord{}))
+	err := ValidateOSVRecords(nil)
+	require.Error(t, err)
+	var embargoErr *EmbargoError
+	assert.True(t, errors.As(err, &embargoErr))
+
+	err = ValidateOSVRecords([]OSVRecord{})
+	require.Error(t, err)
+	assert.True(t, errors.As(err, &embargoErr))
 }
 
 func TestValidateOSVRecords_NonCVE(t *testing.T) {

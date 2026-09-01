@@ -25,6 +25,15 @@ func (h *adminHandler) simulate(c echo.Context) error {
 	var results []map[string]string
 	for _, rem := range remediations {
 		gav := gavKey(rem)
+		if err := ValidateNotificationCVEs(rem); err != nil {
+			log.Warn().Err(err).Str("gav", gav).Msg("embargo check rejected")
+			results = append(results, map[string]string{
+				"gav":    gav,
+				"status": "rejected",
+				"error":  err.Error(),
+			})
+			continue
+		}
 		if err := h.bridgeHandler.processRemediation(c.Request().Context(), rem); err != nil {
 			log.Error().Err(err).Str("gav", gav).Msg("simulate pipeline failed")
 			results = append(results, map[string]string{

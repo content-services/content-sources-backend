@@ -193,3 +193,27 @@ func TestFetchOSVRecords_VersionFilterPrecision(t *testing.T) {
 	require.Len(t, records, 1, "only exact version 5.3.1 should match, not 5.3.18")
 	assert.Equal(t, "CVE-2099-99999", records[0].CVEID)
 }
+
+func TestFetchOSVRecords_AllFilesFail(t *testing.T) {
+	manifest := "x_RHLW-CVE-2023-20860-5.3.18.json,abc123,1234\nx_RHLW-CVE-2025-41249-5.3.18.json,def456,1234\n"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/PULP_MANIFEST" {
+			_, _ = w.Write([]byte(manifest))
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{
+		httpClient: server.Client(),
+		osvURL:     server.URL,
+		maxRetries: 0,
+	}
+
+	_, err := client.FetchOSVRecords(context.Background(), "5.3.18")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch")
+	assert.Contains(t, err.Error(), "5.3.18")
+}

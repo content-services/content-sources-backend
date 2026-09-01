@@ -47,6 +47,9 @@ func ValidateNotificationCVEs(rem Remediation) error {
 // the Pulp repository.  This is a separate data source from the Kafka
 // notification, so it gets its own validation pass.
 func ValidateOSVRecords(records []OSVRecord) error {
+	if len(records) == 0 {
+		return &EmbargoError{msg: "embargo check: no OSV records to validate"}
+	}
 	var bad []string
 	for _, rec := range records {
 		if !cvePattern.MatchString(rec.CVEID) {
