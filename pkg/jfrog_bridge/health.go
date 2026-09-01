@@ -6,6 +6,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type healthResponse struct {
+	Healthy  bool          `json:"healthy"`
+	JFrog    serviceHealth `json:"jfrog"`
+	Registry serviceHealth `json:"registry"`
+}
+
+type serviceHealth struct {
+	Reachable bool   `json:"reachable"`
+	Error     string `json:"error,omitempty"`
+}
+
 func (h *adminHandler) health(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -14,21 +25,17 @@ func (h *adminHandler) health(c echo.Context) error {
 
 	healthy := jfrogErr == nil && registryErr == nil
 
-	result := map[string]interface{}{
-		"healthy": healthy,
-		"jfrog": map[string]interface{}{
-			"reachable": jfrogErr == nil,
-		},
-		"registry": map[string]interface{}{
-			"reachable": registryErr == nil,
-		},
+	result := healthResponse{
+		Healthy:  healthy,
+		JFrog:    serviceHealth{Reachable: jfrogErr == nil},
+		Registry: serviceHealth{Reachable: registryErr == nil},
 	}
 
 	if jfrogErr != nil {
-		result["jfrog"].(map[string]interface{})["error"] = jfrogErr.Error()
+		result.JFrog.Error = jfrogErr.Error()
 	}
 	if registryErr != nil {
-		result["registry"].(map[string]interface{})["error"] = registryErr.Error()
+		result.Registry.Error = registryErr.Error()
 	}
 
 	status := http.StatusOK
