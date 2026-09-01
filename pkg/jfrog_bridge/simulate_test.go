@@ -73,7 +73,7 @@ func TestSimulateHandler_Status(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	h := &simulateHandler{}
+	h := &adminHandler{}
 	err := h.status(c)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -88,7 +88,7 @@ func TestSimulateHandler_BadPayload(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	h := &simulateHandler{}
+	h := &adminHandler{}
 	err := h.simulate(c)
 	require.Error(t, err)
 }
@@ -173,7 +173,7 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 
 	metrics := newBridgeMetrics(prometheus.NewRegistry())
 	bh := NewBridgeHandler(registry, jfrog, evidence, metrics)
-	h := &simulateHandler{bridgeHandler: bh}
+	h := &adminHandler{bridgeHandler: bh}
 
 	payload := `{"package_name":"org.springframework:spring-core","releases":[{"name":"5.3.18.rhlw-00003","cves_fixed":["CVE-2025-41249"]}]}`
 	e := echo.New()
