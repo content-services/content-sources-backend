@@ -40,6 +40,7 @@ type RegistryClient interface {
 	FetchJAR(ctx context.Context, groupID, artifactID, version string) (body []byte, sha256hex string, err error)
 	FetchPOM(ctx context.Context, groupID, artifactID, version string) ([]byte, error)
 	FetchOSVRecords(ctx context.Context, baseVersion string) ([]OSVRecord, error)
+	Ping(ctx context.Context) error
 }
 
 type httpRegistryClient struct {
@@ -112,6 +113,26 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 		records = append(records, rec)
 	}
 	return records, nil
+}
+
+func (c *httpRegistryClient) Ping(ctx context.Context) error {
+	url := c.osvURL + "/PULP_MANIFEST"
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return fmt.Errorf("create ping request: %w", err)
+	}
+	if c.username != "" {
+		req.SetBasicAuth(c.username, c.password)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("registry ping: %w", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("registry ping: HTTP %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func (c *httpRegistryClient) getWithRetry(ctx context.Context, url string) ([]byte, error) {
