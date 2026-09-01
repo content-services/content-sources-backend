@@ -68,6 +68,7 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 
 			if err := ValidateNotificationCVEs(rem); err != nil {
 				log.Error().Err(err).Str("gav", gav).Msg("embargo check failed")
+				h.metrics.embargoRejections.Inc()
 				h.metrics.messagesFailed.Inc()
 				continue
 			}
@@ -76,6 +77,7 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 				var embargoErr *EmbargoError
 				if errors.As(err, &embargoErr) {
 					log.Error().Err(err).Str("gav", gav).Msg("embargo check failed (content)")
+					h.metrics.embargoRejections.Inc()
 					h.metrics.messagesFailed.Inc()
 					continue
 				}
@@ -104,7 +106,7 @@ func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error)
 	var env struct {
 		EventType string `json:"event_type"`
 	}
-	if err := safeUnmarshal(data, &env); err != nil {
+	if err := json.Unmarshal(data, &env); err != nil {
 		return nil, true, fmt.Errorf("invalid message: %w", err)
 	}
 	if env.EventType != "" && env.EventType != allowedEventType {
@@ -238,6 +240,3 @@ func generateMavenMetadata(groupID, artifactID, version string) []byte {
 		groupID, artifactID, version, version, version, ts))
 }
 
-func safeUnmarshal(data []byte, v interface{}) error {
-	return json.Unmarshal(data, v)
-}

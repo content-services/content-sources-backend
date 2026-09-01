@@ -11,11 +11,11 @@ import (
 )
 
 func (h *adminHandler) simulate(c echo.Context) error {
+	defer c.Request().Body.Close()
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error reading body", err.Error())
 	}
-	defer c.Request().Body.Close()
 
 	remediations, err := ParseRemediations(body)
 	if err != nil {
