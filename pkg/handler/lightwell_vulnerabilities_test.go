@@ -171,6 +171,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListSearchOneChar() {
 
 func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() {
 	dupOf := "LWL-2026-4027"
+	jsEcosystem := "javascript"
 	search := "log4j"
 	now := time.Date(2026, 8, 18, 0, 0, 0, 0, time.UTC)
 	rows := []api.LightwellVulnerabilityResponse{{
@@ -181,6 +182,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		ComponentVersion:  "0.7.33",
 		Severity:          "Moderate",
 		Status:            "Validation",
+		Ecosystem:         &jsEcosystem,
 		Complexity:        "Standard",
 		SubmittedDate:     now,
 		LastUpdated:       now,
@@ -235,6 +237,8 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.NotContains(suite.T(), string(body), `"blocked"`)
 	assert.NotContains(suite.T(), string(body), `"stage"`)
 	assert.Contains(suite.T(), string(body), `"status":"Validation"`)
+	assert.NotContains(suite.T(), string(body), `"language"`)
+	assert.Contains(suite.T(), string(body), `"ecosystem":"javascript"`)
 	require := assert.New(suite.T())
 	require.NotNil(resp.Data[0].DuplicateOf)
 	assert.Equal(suite.T(), "LWL-2026-4027", *resp.Data[0].DuplicateOf)

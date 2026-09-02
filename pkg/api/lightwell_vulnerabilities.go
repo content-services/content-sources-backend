@@ -20,7 +20,7 @@ type LightwellVulnerabilityResponse struct {
 	ReproducerIncluded bool      `json:"reproducer_included"`         // Whether a reproducer is included
 	CustomerPriority   *string   `json:"customer_priority,omitempty"` // Customer priority
 	Status             string    `json:"status"`                      // Workflow status
-	Language           *string   `json:"language,omitempty"`          // Derived language (java, python, javascript, csharp)
+	Ecosystem          *string   `json:"ecosystem,omitempty"`         // Derived ecosystem (java, python, javascript, csharp)
 	Complexity         string    `json:"complexity"`                  // Standard, Complex, or Extensive
 	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
 	LastUpdated        time.Time `json:"last_updated"`                // Last update timestamp

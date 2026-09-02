@@ -5233,6 +5233,10 @@ const docTemplate = `{
                     "description": "Canonical vulnerability_id when duplicate",
                     "type": "string"
                 },
+                "ecosystem": {
+                    "description": "Derived ecosystem (java, python, javascript, csharp)",
+                    "type": "string"
+                },
                 "embargo": {
                     "description": "Embargo flag",
                     "type": "boolean"
@@ -5240,10 +5244,6 @@ const docTemplate = `{
                 "exploit_tested": {
                     "description": "Whether an exploit was tested",
                     "type": "boolean"
-                },
-                "language": {
-                    "description": "Derived language (java, python, javascript, csharp)",
-                    "type": "string"
                 },
                 "last_updated": {
                     "description": "Last update timestamp",
