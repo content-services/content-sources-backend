@@ -312,8 +312,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated stages to filter on.",
-                        "name": "stage",
+                        "description": "Comma-separated statuses to filter on.",
+                        "name": "status",
                         "in": "query"
                     },
                     {
@@ -5148,8 +5148,8 @@ const docTemplate = `{
                     "description": "Offset into results used for the request",
                     "type": "integer"
                 },
-                "stage_counts": {
-                    "description": "Per-stage counts matching filters",
+                "status_counts": {
+                    "description": "Per-status counts matching filters",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer",
@@ -5272,8 +5272,8 @@ const docTemplate = `{
                     "description": "Severity (Critical, Important, Moderate, Low)",
                     "type": "string"
                 },
-                "stage": {
-                    "description": "Workflow stage",
+                "status": {
+                    "description": "Workflow status",
                     "type": "string"
                 },
                 "submitted_date": {

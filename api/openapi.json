@@ -375,12 +375,12 @@
                         "description": "Offset into results used for the request",
                         "type": "integer"
                     },
-                    "stage_counts": {
+                    "status_counts": {
                         "additionalProperties": {
                             "format": "int64",
                             "type": "integer"
                         },
-                        "description": "Per-stage counts matching filters",
+                        "description": "Per-status counts matching filters",
                         "type": "object"
                     }
                 },
@@ -499,8 +499,8 @@
                         "description": "Severity (Critical, Important, Moderate, Low)",
                         "type": "string"
                     },
-                    "stage": {
-                        "description": "Workflow stage",
+                    "status": {
+                        "description": "Workflow status",
                         "type": "string"
                     },
                     "submitted_date": {
@@ -3193,9 +3193,9 @@
                         }
                     },
                     {
-                        "description": "Comma-separated stages to filter on.",
+                        "description": "Comma-separated statuses to filter on.",
                         "in": "query",
-                        "name": "stage",
+                        "name": "status",
                         "schema": {
                             "type": "string"
                         }

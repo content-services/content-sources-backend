@@ -180,7 +180,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		Package:           "ua-parser-js",
 		ComponentVersion:  "0.7.33",
 		Severity:          "Moderate",
-		Stage:             "Validation",
+		Status:            "Validation",
 		Complexity:        "Standard",
 		SubmittedDate:     now,
 		LastUpdated:       now,
@@ -212,7 +212,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	q := url.Values{}
 	q.Set("customer_id", "demo-customer-1")
 	q.Set("severity", "Moderate,Critical")
-	q.Set("stage", "Validation")
+	q.Set("status", "Validation")
 	q.Set("complexity", "Standard")
 	q.Set("ltwlsupt_ticket_id", "demo-tk-3")
 	q.Set("flag", "duplicate")
@@ -233,12 +233,14 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.Equal(suite.T(), []string{"demo-tk-3"}, resp.Data[0].LtwlsuptTicketIDs)
 	assert.Contains(suite.T(), string(body), `"ltwlsupt_ticket_ids":["demo-tk-3"]`)
 	assert.NotContains(suite.T(), string(body), `"blocked"`)
+	assert.NotContains(suite.T(), string(body), `"stage"`)
+	assert.Contains(suite.T(), string(body), `"status":"Validation"`)
 	require := assert.New(suite.T())
 	require.NotNil(resp.Data[0].DuplicateOf)
 	assert.Equal(suite.T(), "LWL-2026-4027", *resp.Data[0].DuplicateOf)
 	assert.Equal(suite.T(), int64(1), resp.Meta.Count)
 	assert.Equal(suite.T(), int64(0), resp.Meta.CriticalCount)
-	assert.Equal(suite.T(), int64(1), resp.Meta.StageCounts["Validation"])
+	assert.Equal(suite.T(), int64(1), resp.Meta.StatusCounts["Validation"])
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListUnknownFiltersEmpty() {
