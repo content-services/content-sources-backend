@@ -21,7 +21,9 @@ services:
       retries: 10
       timeout: 3s
   candlepin:
-    image: quay.io/candlepin/candlepin:dev-latest
+    # 5.x is UBI10 (x86-64-v3) and fails under Apple Silicon emulation
+    image: quay.io/candlepin/candlepin:dev-4.8.4-1
+    platform: linux/amd64
     pull_policy: always
     ports:
       - 8181:8080
