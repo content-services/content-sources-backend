@@ -1,0 +1,38 @@
+---
+description: Database layer patterns — query tools, code generation, migrations
+globs: pkg/lightwell/db/**,db/migrations/**,pkg/dao/**,pkg/models/**
+alwaysApply: false
+---
+
+# Database Layer Patterns
+
+## Dual Query Approach
+
+- **GORM**: Primary ORM for most entities. Used for writes, simple reads, and all non-Lightwell tables. Models live in `pkg/models/` and embed `models.Base` (UUID PK + timestamps).
+- **sqlc + pgx/v5**: Used for Lightwell-specific complex read queries. SQL in `pkg/lightwell/db/queries/*.sql`, generated code in `pkg/lightwell/db/store/`, config in `pkg/lightwell/db/sqlc.yaml`.
+
+Hybrid DAOs (e.g., `lightwellAdvisoryDaoImpl`) hold both `*gorm.DB` and `store.Querier`. GORM handles writes; sqlc handles reads.
+
+## Code Generation
+
+After changing `pkg/lightwell/db/queries/*.sql`:
+- Run `make sqlc-generate-lightwell`
+- CI runs `sqlcdiff` — regenerates and fails on `git diff`
+
+After changing DAO interfaces in `pkg/dao/interfaces.go`:
+- Run `make mock` to regenerate mockery mocks
+
+## Migrations
+
+- Tool: golang-migrate v4. Files: `db/migrations/<YYYYMMDDHHMMSS>_<name>.{up,down}.sql`
+- Create new: `go run cmd/dbmigrate/main.go new <name>`
+- Wrap in `BEGIN;` / `COMMIT;`
+- Update `db/migrations.latest` to match the new timestamp
+- Keep `pkg/lightwell/db/schema.sql` in sync (manual DDL snapshot for sqlc)
+- Run: `make db-migrate-up`
+
+## Connection Management
+
+- GORM: global singleton `db.DB`, pool via `Database.PoolLimit` config
+- pgx: separate `*pgxpool.Pool` for Lightwell queries, max 10 conns, exposed as `db.LightwellQueries`
+- Both closed via `db.Close()`

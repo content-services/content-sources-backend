@@ -1,0 +1,17 @@
+---
+description: Edit the deployment template, not deployment.yaml directly
+globs: deployments/**
+alwaysApply: false
+---
+
+# Deployment Template Is the Source of Truth
+
+`deployments/deployment.yaml` is generated. Do not edit it directly.
+
+Edit `deployments/build/deployment.template.yaml` (and `deployments/build/env-variables.yaml` for env vars), then regenerate:
+
+```bash
+make deployment-generate
+```
+
+CI runs this and checks `git diff --exit-code deployments/deployment.yaml`. Direct edits to `deployment.yaml` will be overwritten and cause CI failure.

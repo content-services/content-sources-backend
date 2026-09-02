@@ -41,6 +41,43 @@ See [docs/architecture.md](docs/architecture.md) for a description of the servic
 - PRs should come with good tests.
 - SQL migrations must be non-destructive (see [CONTRIBUTING.md](CONTRIBUTING.md) for the two-stage migration approach).
 
+## Lint before push
+
+After making Go code changes, run the project linter before committing:
+
+```bash
+golangci-lint run --timeout=5m
+```
+
+The project uses golangci-lint **v2** (`.golangci.yaml` has `version: "2"`). Install with:
+
+```bash
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+```
+
+If lint fails, use `--fix` to auto-correct formatting issues (e.g., `gci` import ordering), then re-run until `0 issues`.
+
+## Build pipeline sync
+
+After modifying SQL queries in `pkg/lightwell/db/queries/`:
+- Run `make sqlc-generate-lightwell` to regenerate Go code
+- Verify `pkg/lightwell/db/store/*.sql.go` and `models.go` match
+
+After modifying handler swag annotations or API types in `pkg/api/`:
+- Run `make openapi-doc` to regenerate `api/openapi.json` and `api/docs.go`
+- CI checks `git diff --exit-code api/openapi.json` and fails on drift
+
+After adding or renaming migration files in `db/migrations/`:
+- Update `db/migrations.latest` to match the latest migration timestamp
+- Keep `pkg/lightwell/db/schema.sql` in sync with the cumulative DDL
+
+After adding methods to a `Querier` or DAO interface:
+- Regenerate mocks (`mockery`) so mock types satisfy the full interface
+
+## Generated files
+
+Generated files (`api/docs.go`, `api/openapi.json`, sqlc output in `pkg/lightwell/db/store/`) on feature branches should match `origin/main` until post-merge regeneration. Do not commit regenerated output that only differs due to a rebase or local toolchain version.
+
 ## Commit guidelines
 
 - PR titles should reference the tracking ticket: `<JIRA Number>: description`

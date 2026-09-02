@@ -1,0 +1,47 @@
+---
+description: DAO interface, implementation, error handling, and testing conventions
+globs: pkg/dao/**,pkg/models/**,pkg/errors/**
+alwaysApply: false
+---
+
+# DAO Conventions
+
+## Interface & Implementation
+
+- All DAO interfaces defined in `pkg/dao/interfaces.go`.
+- Naming: `type <Entity>Dao interface`, impl: `<entity>DaoImpl` (private struct).
+- Every method takes `ctx context.Context` as its first parameter.
+- `DaoRegistry` composes all DAO interfaces; `GetDaoRegistry(db)` is the factory.
+- Per-entity factories also exist: `Get<Entity>Dao(db)`.
+
+## Transactions
+
+Use GORM's closure-based `Transaction()` — never raw `Begin/Commit`:
+
+```go
+err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+    // use tx, not r.db
+    return tx.Create(&model).Error
+})
+```
+
+## Error Handling
+
+Return `*ce.DaoError` (from `pkg/errors/dao_error.go`) with semantic flags:
+- `NotFound`, `BadValidation`, `AlreadyExists`, `Forbidden`
+
+Each entity has a `<Entity>DBErrorToApi()` function translating Postgres errors (`pgconn.PgError`) and GORM errors into `DaoError`.
+
+## Testing
+
+- Integration tests against real Postgres, isolated via transaction rollback per test.
+- Suites embed `*DaoSuite` (from `suite_test.go`): `SetupTest()` calls `Begin()`, `TearDownTest()` calls `Rollback()`.
+- sqlc store tests use `beginTestTx(t)` / `rollbackTestTx(t, tx)` with `store.New(tx)`.
+- Handler tests use `GetMockDaoRegistry(t)` → `.ToDaoRegistry()` for mock injection.
+- Seed helpers in `pkg/seeds/` for test data (`SeedRepositoryConfigurations`, `SeedSnapshots`, etc.).
+
+## Models
+
+- All models embed `models.Base` (UUID PK + `CreatedAt`/`UpdatedAt`).
+- UUID generated in `BeforeCreate` hook. Timestamps normalized to UTC in `AfterFind`/`AfterSave`.
+- One file per table in `pkg/models/`.
