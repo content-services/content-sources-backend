@@ -6316,7 +6316,7 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
-                "advisories_count": {
+                "advisory_count": {
                     "description": "Lightwell: total security advisories",
                     "type": "integer",
                     "readOnly": true
@@ -6446,11 +6446,6 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
-                "packages_count": {
-                    "description": "Lightwell: total distinct packages",
-                    "type": "integer",
-                    "readOnly": true
-                },
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
@@ -6486,11 +6481,6 @@ const docTemplate = `{
                 "version_count": {
                     "description": "Number of versions last read in the repository, not applicable to all repositories",
                     "type": "integer"
-                },
-                "versions_count": {
-                    "description": "Lightwell: total distinct versions",
-                    "type": "integer",
-                    "readOnly": true
                 },
                 "warnings": {
                     "description": "Warnings to alert user of mismatched fields if there is an existing repo with the same URL",
@@ -6661,7 +6651,7 @@ const docTemplate = `{
                     "type": "string",
                     "readOnly": true
                 },
-                "advisories_count": {
+                "advisory_count": {
                     "description": "Lightwell: total security advisories",
                     "type": "integer",
                     "readOnly": true
@@ -6791,11 +6781,6 @@ const docTemplate = `{
                     "description": "Number of packages last read in the repository",
                     "type": "integer"
                 },
-                "packages_count": {
-                    "description": "Lightwell: total distinct packages",
-                    "type": "integer",
-                    "readOnly": true
-                },
                 "partner": {
                     "description": "Whether this upload repository is marked as a partner repository",
                     "type": "boolean",
@@ -6831,11 +6816,6 @@ const docTemplate = `{
                 "version_count": {
                     "description": "Number of versions last read in the repository, not applicable to all repositories",
                     "type": "integer"
-                },
-                "versions_count": {
-                    "description": "Lightwell: total distinct versions",
-                    "type": "integer",
-                    "readOnly": true
                 }
             }
         },
