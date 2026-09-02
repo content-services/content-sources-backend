@@ -276,6 +276,7 @@ type MavenPackagesDao interface {
 type LightwellAdvisoryDao interface {
 	SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error
 	ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)
+	List(ctx context.Context, offset int, limit int) ([]LightwellAdvisoryInput, int64, error)
 	ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error)
 	MarkAsNotified(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData) error
 	ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error)
@@ -287,6 +288,8 @@ type LightwellVulnerabilityDao interface {
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
+	Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)
+	DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error)
 }
 
 type UserPreferenceDao interface {

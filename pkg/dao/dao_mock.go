@@ -9584,6 +9584,86 @@ func (_c *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call) RunAndReturn(run 
 	return _c
 }
 
+// List provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) List(ctx context.Context, offset int, limit int) ([]LightwellAdvisoryInput, int64, error) {
+	ret := _mock.Called(ctx, offset, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for List")
+	}
+
+	var r0 []LightwellAdvisoryInput
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) ([]LightwellAdvisoryInput, int64, error)); ok {
+		return returnFunc(ctx, offset, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) []LightwellAdvisoryInput); ok {
+		r0 = returnFunc(ctx, offset, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]LightwellAdvisoryInput)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int) int64); ok {
+		r1 = returnFunc(ctx, offset, limit)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, int, int) error); ok {
+		r2 = returnFunc(ctx, offset, limit)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockLightwellAdvisoryDao_List_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'List'
+type MockLightwellAdvisoryDao_List_Call struct {
+	*mock.Call
+}
+
+// List is a helper method to define mock.On call
+//   - ctx context.Context
+//   - offset int
+//   - limit int
+func (_e *MockLightwellAdvisoryDao_Expecter) List(ctx any, offset any, limit any) *MockLightwellAdvisoryDao_List_Call {
+	return &MockLightwellAdvisoryDao_List_Call{Call: _e.mock.On("List", ctx, offset, limit)}
+}
+
+func (_c *MockLightwellAdvisoryDao_List_Call) Run(run func(ctx context.Context, offset int, limit int)) *MockLightwellAdvisoryDao_List_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int
+		if args[1] != nil {
+			arg1 = args[1].(int)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_List_Call) Return(lightwellAdvisoryInputs []LightwellAdvisoryInput, n int64, err error) *MockLightwellAdvisoryDao_List_Call {
+	_c.Call.Return(lightwellAdvisoryInputs, n, err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_List_Call) RunAndReturn(run func(ctx context.Context, offset int, limit int) ([]LightwellAdvisoryInput, int64, error)) *MockLightwellAdvisoryDao_List_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListAdvisories provides a mock function for the type MockLightwellAdvisoryDao
 func (_mock *MockLightwellAdvisoryDao) ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error) {
 	ret := _mock.Called(ctx, opts)
@@ -10033,6 +10113,72 @@ func (_m *MockLightwellVulnerabilityDao) EXPECT() *MockLightwellVulnerabilityDao
 	return &MockLightwellVulnerabilityDao_Expecter{mock: &_m.Mock}
 }
 
+// DeleteByKey provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error) {
+	ret := _mock.Called(ctx, vulnerabilityKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteByKey")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, vulnerabilityKey)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, vulnerabilityKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, vulnerabilityKey)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellVulnerabilityDao_DeleteByKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteByKey'
+type MockLightwellVulnerabilityDao_DeleteByKey_Call struct {
+	*mock.Call
+}
+
+// DeleteByKey is a helper method to define mock.On call
+//   - ctx context.Context
+//   - vulnerabilityKey string
+func (_e *MockLightwellVulnerabilityDao_Expecter) DeleteByKey(ctx any, vulnerabilityKey any) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	return &MockLightwellVulnerabilityDao_DeleteByKey_Call{Call: _e.mock.On("DeleteByKey", ctx, vulnerabilityKey)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) Run(run func(ctx context.Context, vulnerabilityKey string)) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) Return(b bool, err error) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) RunAndReturn(run func(ctx context.Context, vulnerabilityKey string) (bool, error)) *MockLightwellVulnerabilityDao_DeleteByKey_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function for the type MockLightwellVulnerabilityDao
 func (_mock *MockLightwellVulnerabilityDao) List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error) {
 	ret := _mock.Called(ctx, opts)
@@ -10247,6 +10393,72 @@ func (_c *MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call) Return(strin
 }
 
 func (_c *MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call) RunAndReturn(run func(ctx context.Context, customerID string) ([]string, error)) *MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Save provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
+
+	var r0 LightwellVulnerabilitySaveOutcome
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LightwellVulnerabilityInput) LightwellVulnerabilitySaveOutcome); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		r0 = ret.Get(0).(LightwellVulnerabilitySaveOutcome)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, LightwellVulnerabilityInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellVulnerabilityDao_Save_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Save'
+type MockLightwellVulnerabilityDao_Save_Call struct {
+	*mock.Call
+}
+
+// Save is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input LightwellVulnerabilityInput
+func (_e *MockLightwellVulnerabilityDao_Expecter) Save(ctx any, input any) *MockLightwellVulnerabilityDao_Save_Call {
+	return &MockLightwellVulnerabilityDao_Save_Call{Call: _e.mock.On("Save", ctx, input)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_Save_Call) Run(run func(ctx context.Context, input LightwellVulnerabilityInput)) *MockLightwellVulnerabilityDao_Save_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 LightwellVulnerabilityInput
+		if args[1] != nil {
+			arg1 = args[1].(LightwellVulnerabilityInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_Save_Call) Return(lightwellVulnerabilitySaveOutcome LightwellVulnerabilitySaveOutcome, err error) *MockLightwellVulnerabilityDao_Save_Call {
+	_c.Call.Return(lightwellVulnerabilitySaveOutcome, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_Save_Call) RunAndReturn(run func(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)) *MockLightwellVulnerabilityDao_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10715,7 +10927,7 @@ type MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call struct {
 // InternalOnlyFetchCoverageUpload is a helper method to define mock.On call
 //   - ctx context.Context
 //   - uploadUUID string
-func (_e *MockCoverageReportDao_Expecter) InternalOnlyFetchCoverageUpload(ctx interface{}, uploadUUID interface{}) *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call {
+func (_e *MockCoverageReportDao_Expecter) InternalOnlyFetchCoverageUpload(ctx any, uploadUUID any) *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call {
 	return &MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call{Call: _e.mock.On("InternalOnlyFetchCoverageUpload", ctx, uploadUUID)}
 }
 
@@ -10863,7 +11075,7 @@ type MockCoverageReportDao_SaveCoverageAnalysis_Call struct {
 //   - ctx context.Context
 //   - reportUUID string
 //   - params SaveCoverageAnalysisParams
-func (_e *MockCoverageReportDao_Expecter) SaveCoverageAnalysis(ctx interface{}, reportUUID interface{}, params interface{}) *MockCoverageReportDao_SaveCoverageAnalysis_Call {
+func (_e *MockCoverageReportDao_Expecter) SaveCoverageAnalysis(ctx any, reportUUID any, params any) *MockCoverageReportDao_SaveCoverageAnalysis_Call {
 	return &MockCoverageReportDao_SaveCoverageAnalysis_Call{Call: _e.mock.On("SaveCoverageAnalysis", ctx, reportUUID, params)}
 }
 
@@ -10926,7 +11138,7 @@ type MockCoverageReportDao_SetAnalysisTaskUUID_Call struct {
 //   - ctx context.Context
 //   - reportUUID string
 //   - taskUUID string
-func (_e *MockCoverageReportDao_Expecter) SetAnalysisTaskUUID(ctx interface{}, reportUUID interface{}, taskUUID interface{}) *MockCoverageReportDao_SetAnalysisTaskUUID_Call {
+func (_e *MockCoverageReportDao_Expecter) SetAnalysisTaskUUID(ctx any, reportUUID any, taskUUID any) *MockCoverageReportDao_SetAnalysisTaskUUID_Call {
 	return &MockCoverageReportDao_SetAnalysisTaskUUID_Call{Call: _e.mock.On("SetAnalysisTaskUUID", ctx, reportUUID, taskUUID)}
 }
 
@@ -10990,7 +11202,7 @@ type MockCoverageReportDao_UpdateCoverageReportStatus_Call struct {
 //   - reportUUID string
 //   - status string
 //   - errMsg *string
-func (_e *MockCoverageReportDao_Expecter) UpdateCoverageReportStatus(ctx interface{}, reportUUID interface{}, status interface{}, errMsg interface{}) *MockCoverageReportDao_UpdateCoverageReportStatus_Call {
+func (_e *MockCoverageReportDao_Expecter) UpdateCoverageReportStatus(ctx any, reportUUID any, status any, errMsg any) *MockCoverageReportDao_UpdateCoverageReportStatus_Call {
 	return &MockCoverageReportDao_UpdateCoverageReportStatus_Call{Call: _e.mock.On("UpdateCoverageReportStatus", ctx, reportUUID, status, errMsg)}
 }
 

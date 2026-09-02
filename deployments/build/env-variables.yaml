@@ -99,6 +99,12 @@ env:
     value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
     value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+    value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+    value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+    value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
   - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
     value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
   - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -263,6 +269,16 @@ env:
         name: jfrog-bridge-signing-key
         key: pem
         optional: true
+  - name: CLIENTS_JIRA_URL
+    value: ${{CLIENTS_JIRA_URL}}
+  - name: CLIENTS_JIRA_USER
+    value: ${{CLIENTS_JIRA_USER}}
+  - name: CLIENTS_JIRA_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: jira-ltwl-ui-bot-token
+        key: token
+        optional: true
   - name: EPEL_ORG_ID_SKIP
     value: ${EPEL_ORG_ID_SKIP}
   - name: OPTIONS_INTERNAL_USER
@@ -321,6 +337,12 @@ parameters:
     description: whether to suspend the sync-lightwell-advisories cronjob
     required: false
     value: "false"
+  - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB
+    value: "0 */2 * * *"
+  - name: SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES
+    description: whether to suspend the sync-lightwell-vulnerabilities cronjob
+    required: false
+    value: "true"
   - name: SUSPEND_CRON_JOB
     value: "false"
   - name: IMAGE_TAG
@@ -453,6 +475,13 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+    description: Whether the Admin JFrog Upload feature should be turned on
+    value: 'false'
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
   - name: OPTIONS_SEED_LIGHTWELL
@@ -547,6 +576,12 @@ parameters:
   - name: JFROG_BRIDGE_ENABLED
     description: Whether the JFrog bridge Kafka consumer should be enabled
     value: 'false'
+  - name: CLIENTS_JIRA_URL
+    description: URL of the Jira instance used for Lightwell vulnerability ingestion
+    value: ''
+  - name: CLIENTS_JIRA_USER
+    description: Username for Jira API access
+    value: ''
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off
   - name: OPTIONS_INTERNAL_USER

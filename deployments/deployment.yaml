@@ -185,6 +185,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -348,6 +354,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -517,6 +533,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -680,6 +702,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -816,6 +848,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -979,6 +1017,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -1103,6 +1151,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1266,6 +1320,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -1393,6 +1457,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1556,6 +1626,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -1684,6 +1764,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1847,6 +1933,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -1977,6 +2073,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2140,6 +2242,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -2268,6 +2380,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2431,6 +2549,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -2556,6 +2684,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2719,6 +2853,320 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
+                    optional: true
+              - name: EPEL_ORG_ID_SKIP
+                value: ${EPEL_ORG_ID_SKIP}
+              - name: OPTIONS_INTERNAL_USER
+                value: ${OPTIONS_INTERNAL_USER}
+              - name: OPTIONS_LOAD_LIGHTWELL_DEMO
+                value: ${OPTIONS_LOAD_LIGHTWELL_DEMO}
+              - name: OPTIONS_SEED_LIGHTWELL
+                value: ${OPTIONS_SEED_LIGHTWELL}
+              - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
+                value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+
+        - name: sync-lightwell-vulns
+          schedule: ${SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB}
+          suspend: ${{SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - sync-lightwell-vulnerabilities
+            env:
+              - name: CLOWDER_ENABLED
+                value: ${CLOWDER_ENABLED}
+              - name: RH_CDN_CERT_PAIR
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-certs
+                    key: cdn.redhat.com
+              - name: CLIENTS_PULP_SERVER
+                value: ${{CLIENTS_PULP_SERVER}}
+              - name: CLIENTS_PULP_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
+                value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
+              - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
+                value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
+              - name: CLIENTS_PULP_GUARD_SUBJECT_DN
+                value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
+              - name: CLIENTS_PULP_DOWNLOAD_POLICY
+                value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
+              - name: CLIENTS_PULP_USERNAME
+                value: ${{CLIENTS_PULP_USERNAME}}
+              - name: CLIENTS_PULP_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_PULP_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_PULP_PROXY
+                value: ${{CLIENTS_PULP_PROXY}}
+              - name: LOGGING_LEVEL
+                value: ${{LOGGING_LEVEL}}
+              - name: CLIENTS_RBAC_BASE_URL
+                value: ${{CLIENTS_RBAC_BASE_URL}}
+              - name: OPTIONS_EXTERNAL_URL
+                value: ${OPTIONS_EXTERNAL_URL}
+              - name: FEATURES_SNAPSHOTS_ENABLED
+                value: ${FEATURES_SNAPSHOTS_ENABLED}
+              - name: FEATURES_SNAPSHOTS_ACCOUNTS
+                value: ${FEATURES_SNAPSHOTS_ACCOUNTS}
+              - name: FEATURES_SNAPSHOTS_ORGANIZATIONS
+                value: ${FEATURES_SNAPSHOTS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_TASKS_ENABLED
+                value: ${FEATURES_ADMIN_TASKS_ENABLED}
+              - name: FEATURES_ADMIN_TASKS_ACCOUNTS
+                value: ${FEATURES_ADMIN_TASKS_ACCOUNTS}
+              - name: FEATURES_ADMIN_TASKS_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_ENABLED
+                value: ${FEATURES_LIGHTWELL_ENABLED}
+              - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
+                value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED}
+              - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED
+                value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ENABLED}
+              - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS
+                value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ACCOUNTS}
+              - name: FEATURES_ADMIN_PARTNER_REPOSITORIES_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_PARTNER_REPOSITORIES_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_NOTIFICATIONS_ENABLED
+                value: ${FEATURES_ADMIN_NOTIFICATIONS_ENABLED}
+              - name: FEATURES_ADMIN_NOTIFICATIONS_ACCOUNTS
+                value: ${FEATURES_ADMIN_NOTIFICATIONS_ACCOUNTS}
+              - name: FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED
+                value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED}
+              - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_BEACON_ENABLED
+                value: ${FEATURES_LIGHTWELL_BEACON_ENABLED}
+              - name: FEATURES_LIGHTWELL_BEACON_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_BEACON_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_BEACON_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_BEACON_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_BEACON_USERS
+                value: ${FEATURES_LIGHTWELL_BEACON_USERS}
+              - name: FEATURES_LIGHTWELL_LENS_ENABLED
+                value: ${FEATURES_LIGHTWELL_LENS_ENABLED}
+              - name: FEATURES_LIGHTWELL_LENS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_LENS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_LENS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_LENS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED
+                value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED}
+              - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
+                value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
+              - name: OPTIONS_ENABLE_NOTIFICATIONS
+                value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: OPTIONS_LIGHTWELL_BRIDGE_TOPIC
+                value: ${OPTIONS_LIGHTWELL_BRIDGE_TOPIC}
+              - name: SENTRY_DSN
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-glitchtip
+                    key: dsn
+                    optional: true
+              - name: CLIENTS_PULP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-content-sources-password
+                    key: password
+                    optional: true
+              - name: OPTIONS_REPOSITORY_IMPORT_FILTER
+                value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
+              - name: OPTIONS_FEATURE_FILTER
+                value: ${OPTIONS_FEATURE_FILTER}
+              - name: OPTIONS_ENTITLE_ALL
+                value: ${OPTIONS_ENTITLE_ALL}
+              - name: TASKING_WORKER_COUNT
+                value: ${TASKING_WORKER_COUNT}
+              - name: TASKING_POOL_LIMIT
+                value: ${TASKING_POOL_LIMIT}
+              - name: FEATURES_EXTENDED_RELEASE_REPOS_ENABLED
+                value: ${FEATURES_EXTENDED_RELEASE_REPOS_ENABLED}
+              - name: CLIENTS_PULP_DATABASE_HOST
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.host
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.port
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.user
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.password
+                    optional: false
+              - name: CLIENTS_PULP_DATABASE_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: pulp-db
+                    key: db.name
+                    optional: false
+              - name: CLIENTS_CANDLEPIN_SERVER
+                value: ${CLIENTS_CANDLEPIN_SERVER}
+              - name: CLIENTS_CANDLEPIN_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_CA_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: ca
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_SERVER
+                value: ${CLIENTS_FEATURE_SERVICE_SERVER}
+              - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: cert
+                    optional: true
+              - name: CLIENTS_FEATURE_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_ROADMAP_SERVER
+                value: ${CLIENTS_ROADMAP_SERVER}
+              - name: FEATURES_KESSEL_ENABLED
+                value: ${FEATURES_KESSEL_ENABLED}
+              - name: FEATURES_KESSEL_ORGANIZATIONS
+                value: ${FEATURES_KESSEL_ORGANIZATIONS}
+              - name: FEATURES_KESSEL_ACCOUNTS
+                value: ${FEATURES_KESSEL_ACCOUNTS}
+              - name: CLIENTS_KESSEL_SERVER
+                value: ${CLIENTS_KESSEL_SERVER}
+              - name: CLIENTS_KESSEL_AUTH_ENABLED
+                value: ${CLIENTS_KESSEL_AUTH_ENABLED}
+              - name: CLIENTS_KESSEL_AUTH_GRPC_INSECURE
+                value: ${CLIENTS_KESSEL_AUTH_GRPC_INSECURE}
+              - name: CLIENTS_KESSEL_AUTH_OIDC_ISSUER
+                value: ${CLIENTS_KESSEL_AUTH_OIDC_ISSUER}
+              - name: CLIENTS_KESSEL_AUTH_CLIENT_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sso-service-account
+                    key: client_id
+                    optional: true
+              - name: CLIENTS_KESSEL_AUTH_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-sso-service-account
+                    key: client_secret
+                    optional: true
+              - name: OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT
+                value: ${OPTIONS_SNAPSHOT_RETAIN_DAYS_LIMIT}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP
+                value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_GROUP}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION
+                value: ${CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_REGION}
+              - name: CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX
+                value: ${CLIENTS_PULP_LOG_PARSER_S3_FILE_PREFIX}
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-appsre-log-access-pulp
+                    key: aws_access_key_id
+                    optional: true
+              - name: CLIENTS_PULP_LOG_PARSER_CLOUDWATCH_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-appsre-log-access-pulp
+                    key: aws_secret_access_key
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_USERNAME
+                value: ${{CLIENTS_LIGHTWELL_USERNAME}}
+              - name: CLIENTS_LIGHTWELL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-content-sources-password
+                    key: password
+                    optional: true
+              - name: JFROG_BRIDGE_ENABLED
+                value: ${JFROG_BRIDGE_ENABLED}
+              - name: JFROG_BRIDGE_CATALOG_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jfrog-bridge-catalog-token
+                    key: token
+                    optional: true
+              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
+                valueFrom:
+                  secretKeyRef:
+                    name: jfrog-bridge-signing-key
+                    key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -2844,6 +3292,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3007,6 +3461,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -3155,6 +3619,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3318,6 +3788,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -3444,6 +3924,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3607,6 +4093,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -3750,6 +4246,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3913,6 +4415,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4035,6 +4547,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4198,6 +4716,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4320,6 +4848,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4483,6 +5017,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4605,6 +5149,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4768,6 +5318,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -4890,6 +5450,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5053,6 +5619,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -5175,6 +5751,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5338,6 +5920,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -5460,6 +6052,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5623,6 +6221,16 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-signing-key
                     key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
@@ -5745,6 +6353,12 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5909,6 +6523,16 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
+                    optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
               - name: OPTIONS_INTERNAL_USER
@@ -6012,6 +6636,12 @@ parameters:
     description: whether to suspend the sync-lightwell-advisories cronjob
     required: false
     value: 'false'
+  - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB
+    value: 0 */2 * * *
+  - name: SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES
+    description: whether to suspend the sync-lightwell-vulnerabilities cronjob
+    required: false
+    value: 'true'
   - name: SUSPEND_CRON_JOB
     value: 'false'
   - name: IMAGE_TAG
@@ -6144,6 +6774,13 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+    description: Whether the Admin JFrog Upload feature should be turned on
+    value: 'false'
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
   - name: OPTIONS_SEED_LIGHTWELL
@@ -6239,6 +6876,12 @@ parameters:
   - name: JFROG_BRIDGE_ENABLED
     description: Whether the JFrog bridge Kafka consumer should be enabled
     value: 'false'
+  - name: CLIENTS_JIRA_URL
+    description: URL of the Jira instance used for Lightwell vulnerability ingestion
+    value: ''
+  - name: CLIENTS_JIRA_USER
+    description: Username for Jira API access
+    value: ''
   - name: EPEL_ORG_ID_SKIP
     description: comma separated list of org ids to skip when turning snapshotting off
   - name: OPTIONS_INTERNAL_USER

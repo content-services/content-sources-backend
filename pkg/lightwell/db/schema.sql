@@ -32,7 +32,8 @@ CREATE INDEX idx_lightwell_advisories_package_name
 
 CREATE TABLE lightwell_vulnerabilities (
     uuid UUID PRIMARY KEY,
-    vulnerability_id TEXT NOT NULL UNIQUE,
+    vulnerability_key TEXT NOT NULL UNIQUE,
+    vulnerability_id TEXT NOT NULL,
     purl TEXT,
     component_name TEXT NOT NULL,
     component_version TEXT NOT NULL,

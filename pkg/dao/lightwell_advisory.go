@@ -15,6 +15,7 @@ import (
 )
 
 type LightwellAdvisoryInput struct {
+	RepoName      string
 	AdvisoryID    string
 	Severity      string
 	Details       string
@@ -63,9 +64,28 @@ func (d lightwellAdvisoryDaoImpl) ListByRepository(ctx context.Context, repoConf
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to list advisories for repository configuration %s: %w", repoConfigUUID, result.Error)
 	}
+	return advisoryInputs(advisories), nil
+}
+
+func (d lightwellAdvisoryDaoImpl) List(ctx context.Context, offset int, limit int) ([]LightwellAdvisoryInput, int64, error) {
+	var total int64
+	query := d.db.WithContext(ctx).Model(&models.LightwellAdvisory{})
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count advisories: %w", err)
+	}
+	var advisories []models.LightwellAdvisory
+	result := query.Order("uuid ASC").Offset(offset).Limit(limit).Find(&advisories)
+	if result.Error != nil {
+		return nil, 0, fmt.Errorf("failed to list advisories: %w", result.Error)
+	}
+	return advisoryInputs(advisories), total, nil
+}
+
+func advisoryInputs(advisories []models.LightwellAdvisory) []LightwellAdvisoryInput {
 	inputs := make([]LightwellAdvisoryInput, len(advisories))
 	for i, a := range advisories {
 		inputs[i] = LightwellAdvisoryInput{
+			RepoName:      a.RepoName,
 			AdvisoryID:    a.AdvisoryID,
 			Severity:      a.Severity,
 			Details:       a.Details,
@@ -75,7 +95,7 @@ func (d lightwellAdvisoryDaoImpl) ListByRepository(ctx context.Context, repoConf
 			Checksum:      a.Checksum,
 		}
 	}
-	return inputs, nil
+	return inputs
 }
 
 func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error {

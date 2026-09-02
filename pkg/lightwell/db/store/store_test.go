@@ -78,12 +78,13 @@ func insertTestVulnerabilities(t *testing.T, ctx context.Context, tx pgx.Tx, spe
 		ids[spec.vulnID] = id
 		_, err := tx.Exec(ctx, `
 			INSERT INTO lightwell_vulnerabilities (
-				uuid, vulnerability_id, component_name, component_version, title, severity, stage, language, complexity,
+				uuid, vulnerability_key, vulnerability_id, component_name, component_version, title, severity, stage, language, complexity,
 				submitted_date, last_updated, embargo, duplicate, duplicate_of
 			) VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE - $10::int, NOW(), $11, $12, $13
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE - $11::int, NOW(), $12, $13, $14
 			)`,
 			id,
+			spec.vulnID,
 			spec.vulnID,
 			spec.component,
 			"1.0.0",
@@ -214,7 +215,7 @@ func TestStore_CustomerScopingAndFilters(t *testing.T) {
 			complexity:  "Extensive",
 			ticketID:    "ticket-beta",
 			daysAgo:     31,
-			component:   "jackson-databind",
+			component:   "demo-lib",
 			title:       "Deserialization gadget test",
 			customerIDs: []string{customerA},
 		},
@@ -924,4 +925,130 @@ func TestStore_ListAdvisoriesByPackage(t *testing.T) {
 		assert.NotEmpty(t, r.AdvisoryID)
 		assert.NotEmpty(t, r.FixedVersions)
 	}
+}
+
+func TestStore_UpsertAllowsDuplicateVulnerabilityIDs(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	sharedID := fmt.Sprintf("LW-%d", time.Now().UnixNano())
+	first := store.UpsertVulnerabilityParams{
+		Uuid:             uuid.New(),
+		VulnerabilityKey: fmt.Sprintf("LTWL-%d-A", time.Now().UnixNano()),
+		VulnerabilityID:  sharedID,
+		ComponentName:    "component",
+		ComponentVersion: "1.0",
+		Severity:         "Important",
+		Stage:            "Submitted",
+		Complexity:       "",
+		SubmittedDate:    time.Now().UTC(),
+		LastUpdated:      time.Now().UTC().Truncate(time.Second),
+	}
+	second := first
+	second.Uuid = uuid.New()
+	second.VulnerabilityKey = fmt.Sprintf("LTWL-%d-B", time.Now().UnixNano())
+
+	insertedFirst, err := q.UpsertVulnerability(ctx, first)
+	require.NoError(t, err)
+	insertedSecond, err := q.UpsertVulnerability(ctx, second)
+	require.NoError(t, err)
+	assert.NotEqual(t, insertedFirst.Uuid, insertedSecond.Uuid)
+
+	gotFirst, err := q.GetVulnerabilityByKey(ctx, first.VulnerabilityKey)
+	require.NoError(t, err)
+	gotSecond, err := q.GetVulnerabilityByKey(ctx, second.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, sharedID, gotFirst.VulnerabilityID)
+	assert.Equal(t, sharedID, gotSecond.VulnerabilityID)
+}
+
+func TestStore_UpsertVulnerabilityIsIdempotent(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	params := store.UpsertVulnerabilityParams{
+		Uuid:               uuid.New(),
+		VulnerabilityKey:   fmt.Sprintf("LTWL-%d-A", time.Now().UnixNano()),
+		VulnerabilityID:    fmt.Sprintf("LWL-UPSERT-%d", time.Now().UnixNano()),
+		ComponentName:      "component",
+		ComponentVersion:   "1.0",
+		Severity:           "Important",
+		ExploitTested:      false,
+		ReproducerIncluded: false,
+		Stage:              "Submitted",
+		Complexity:         "",
+		SubmittedDate:      time.Now().UTC(),
+		LastUpdated:        time.Now().UTC().Truncate(time.Second),
+		Embargo:            false,
+		Duplicate:          false,
+	}
+
+	inserted, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	assert.True(t, inserted.Inserted)
+
+	before, err := q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	_, err = q.UpsertVulnerability(ctx, params)
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+	after, err := q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, before.UpdatedAt, after.UpdatedAt)
+
+	params.Stage = "Classified"
+	updated, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	assert.False(t, updated.Inserted)
+	after, err = q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, "Classified", after.Stage)
+	assert.Equal(t, inserted.Uuid, after.Uuid)
+
+	customer := store.InsertVulnerabilityCustomerParams{CustomerID: "customer-1", VulnerabilityUuid: inserted.Uuid}
+	require.NoError(t, q.InsertVulnerabilityCustomer(ctx, customer))
+	require.NoError(t, q.InsertVulnerabilityCustomer(ctx, customer))
+	var count int
+	require.NoError(t, tx.QueryRow(ctx,
+		`SELECT COUNT(*) FROM lightwell_vulnerability_customers WHERE customer_id = $1 AND vulnerability_uuid = $2`,
+		customer.CustomerID, customer.VulnerabilityUuid,
+	).Scan(&count))
+	assert.Equal(t, 1, count)
+
+	ticket := store.UpsertVulnerabilityTicketParams{VulnerabilityUuid: inserted.Uuid, CustomerID: "customer-1", TicketID: "EPIC-1"}
+	require.NoError(t, q.UpsertVulnerabilityTicket(ctx, ticket))
+	require.NoError(t, q.UpsertVulnerabilityTicket(ctx, ticket))
+	var ticketCount int
+	require.NoError(t, tx.QueryRow(ctx,
+		`SELECT COUNT(*) FROM lightwell_vulnerability_support_tickets WHERE vulnerability_uuid = $1 AND ticket_id = $2`,
+		ticket.VulnerabilityUuid, ticket.TicketID,
+	).Scan(&ticketCount))
+	assert.Equal(t, 1, ticketCount)
+}
+
+func TestStore_UpsertDoesNotDowngradeLightwellNetworkToValidation(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	params := store.UpsertVulnerabilityParams{
+		Uuid:             uuid.New(),
+		VulnerabilityKey: fmt.Sprintf("LTWL-%d-NET", time.Now().UnixNano()),
+		VulnerabilityID:  fmt.Sprintf("LWL-NET-%d", time.Now().UnixNano()),
+		ComponentName:    "component",
+		ComponentVersion: "1.0",
+		Severity:         "Important",
+		Stage:            "Lightwell Network",
+		Complexity:       "",
+		SubmittedDate:    time.Now().UTC(),
+		LastUpdated:      time.Now().UTC().Truncate(time.Second),
+	}
+	inserted, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	assert.True(t, inserted.Inserted)
+
+	params.Stage = "Validation"
+	_, err = q.UpsertVulnerability(ctx, params)
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+	after, err := q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, "Lightwell Network", after.Stage)
 }

@@ -25,6 +25,21 @@ func checkBridgeEnabled(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func checkAdminJfrogUploadAccessible(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		feature := config.Get().Features.AdminJfrogUpload
+		if !feature.Enabled {
+			return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access JFrog upload",
+				"Admin JFrog upload feature is disabled.")
+		}
+		if !config.FeatureAccessible(c.Request().Context(), feature) {
+			return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access JFrog upload",
+				"Neither the user nor account is allowed.")
+		}
+		return next(c)
+	}
+}
+
 // RegisterJFrogBridgeRoutes adds the simulate and status routes to the
 // admin API group, following the RegisterAdminNotificationsRoutes pattern.
 func RegisterJFrogBridgeRoutes(engine *echo.Group) {
@@ -51,11 +66,11 @@ func RegisterJFrogBridgeRoutes(engine *echo.Group) {
 	bh.registryURL = cfg.RegistryURL
 	h := &simulateHandler{bridgeHandler: bh}
 
-	engine.Add(http.MethodPost, "/admin/jfrog_bridge/simulate", h.simulate, checkBridgeEnabled)
+	engine.Add(http.MethodPost, "/admin/jfrog_bridge/simulate", h.simulate, checkBridgeEnabled, checkAdminJfrogUploadAccessible)
 	rbac.ServicePermissions.Add(http.MethodPost, "/admin/jfrog_bridge/simulate",
 		rbac.ResourceRepositories, rbac.RbacVerbWrite)
 
-	engine.Add(http.MethodGet, "/admin/jfrog_bridge/status", h.status, checkBridgeEnabled)
+	engine.Add(http.MethodGet, "/admin/jfrog_bridge/status", h.status, checkBridgeEnabled, checkAdminJfrogUploadAccessible)
 	rbac.ServicePermissions.Add(http.MethodGet, "/admin/jfrog_bridge/status",
 		rbac.ResourceRepositories, rbac.RbacVerbRead)
 }

@@ -59,6 +59,12 @@ type JFrogBridge struct {
 	RequestTimeout  int    `mapstructure:"request_timeout"`
 }
 
+type Jira struct {
+	URL   string `mapstructure:"url"`
+	User  string `mapstructure:"user"`
+	Token string `mapstructure:"token"`
+}
+
 type Clients struct {
 	RbacEnabled    bool           `mapstructure:"rbac_enabled"`
 	RbacBaseUrl    string         `mapstructure:"rbac_base_url"`
@@ -71,6 +77,7 @@ type Clients struct {
 	FeatureService FeatureService `mapstructure:"feature_service"`
 	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
 	Roadmap        Roadmap        `mapstructure:"roadmap"`
+	Jira           Jira           `mapstructure:"jira"`
 }
 
 type Mocks struct {
@@ -103,6 +110,7 @@ type FeatureSet struct {
 	LightwellBeacon          Feature `mapstructure:"lightwell_beacon"`
 	LightwellLens            Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads    Feature `mapstructure:"lightwell_store_uploads"`
+	AdminJfrogUpload         Feature `mapstructure:"admin_jfrog_upload"`
 }
 
 type Feature struct {
@@ -374,6 +382,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9000)
 	v.SetDefault("metrics.collection_frequency", 60)
+	v.SetDefault("clients.jira.url", "")
+	v.SetDefault("clients.jira.user", "")
+	v.SetDefault("clients.jira.token", "")
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)
@@ -512,6 +523,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.lightwell_store_uploads.accounts", nil)
 	v.SetDefault("features.lightwell_store_uploads.organizations", nil)
 	v.SetDefault("features.lightwell_store_uploads.users", nil)
+	v.SetDefault("features.admin_jfrog_upload.enabled", false)
+	v.SetDefault("features.admin_jfrog_upload.accounts", nil)
+	v.SetDefault("features.admin_jfrog_upload.organizations", nil)
+	v.SetDefault("features.admin_jfrog_upload.users", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})
