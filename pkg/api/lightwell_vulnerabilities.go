@@ -19,7 +19,7 @@ type LightwellVulnerabilityResponse struct {
 	ExploitTested      bool      `json:"exploit_tested"`              // Whether an exploit was tested
 	ReproducerIncluded bool      `json:"reproducer_included"`         // Whether a reproducer is included
 	CustomerPriority   *string   `json:"customer_priority,omitempty"` // Customer priority
-	Stage              string    `json:"stage"`                       // Workflow stage
+	Status             string    `json:"status"`                      // Workflow status
 	Language           *string   `json:"language,omitempty"`          // Derived language (java, python, javascript, csharp)
 	Complexity         string    `json:"complexity"`                  // Standard, Complex, or Extensive
 	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
@@ -36,7 +36,7 @@ type LightwellVulnerabilityCollectionMeta struct {
 	ResponseMetadata
 	CriticalCount int64            `json:"critical_count"` // Count of Critical severity rows matching filters
 	EmbargoCount  int64            `json:"embargo_count"`  // Count of embargoed rows matching filters
-	StageCounts   map[string]int64 `json:"stage_counts"`   // Per-stage counts matching filters
+	StatusCounts  map[string]int64 `json:"status_counts"`  // Per-status counts matching filters
 }
 
 // LightwellVulnerabilityCollectionResponse is a paginated list of vulnerabilities.
