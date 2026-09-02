@@ -17,7 +17,11 @@
 # Intended for local development against the Pulp instance started via docker-compose.
 #
 # Usage:
-#   ./scripts/create_lightwell_repo.sh [--remote-url URL]
+#   ./scripts/create_lightwell_repo.sh [--remote-url URL] [--java-predisclosure]
+#
+# Options:
+#   --remote-url URL          Set the Maven remote URL (default: Maven Central)
+#   --java-predisclosure      Create and populate java/predisclosure repo with all packages from maven-novel
 #
 # Auth:
 #   Basic auth (default): set PULP_USER and PULP_PASS
@@ -70,11 +74,13 @@ DOMAIN="${DOMAIN:-lightwell}"
 DEMO_DOMAIN="${DEMO_DOMAIN:-public-lightwell-demo}"
 REMOTE_URL="${REMOTE_URL:-https://repo.maven.apache.org/maven2/}"
 PYTHON_REMOTE_URL="${PYTHON_REMOTE_URL:-https://pypi.org/simple/}"
+PREDISCLOSED_REMOTE_URL="${PREDISCLOSED_REMOTE_URL:-https://rverdile.github.io/fixtures/maven/maven-novel/}"
 API_ROOT="/api/pulp"
 SUFFIX="$(date +%s)"
 REPO_DIR="$(cd "$(dirname "$0")/.."; pwd)"
 LIGHTWELL_JSON="${REPO_DIR}/pkg/external_repos/lightwell_repos.json"
 LIGHTWELL_DEMO_JSON="${REPO_DIR}/pkg/external_repos/lightwell_demo_repos.json"
+CREATE_JAVA_PREDISCLOSED=false
 
 # If no user is set, default to basic auth with admin/password for backwards compat
 if [[ -z "$PULP_USER" && -z "$PULP_CLIENT_CERT" ]]; then
@@ -88,8 +94,9 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --remote-url) REMOTE_URL="$2"; shift 2 ;;
-    *)            echo "Unknown option: $1" >&2; exit 1 ;;
+    --remote-url)         REMOTE_URL="$2"; shift 2 ;;
+    --java-predisclosure) CREATE_JAVA_PREDISCLOSED=true; shift 1 ;;
+    *)                    echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
@@ -385,6 +392,78 @@ populate_maven_repo() {
   echo "    Fetched ${success}/${count} packages successfully."
 }
 
+# Fetches all packages from the predisclosed maven-novel repository.
+# Populates com.example.fixture:raccoon and com.example.fixture:cheetah with all available versions.
+#   populate_predisclosed_maven_repo <DOMAIN_NAME> <BASE_PATH>
+populate_predisclosed_maven_repo() {
+  local domain_name="$1"
+  local base_path="$2"
+  local content_url="${PULP_CONTENT_URL}/api/pulp-content/${domain_name}/${base_path}"
+
+  # All raccoon versions available at the predisclosed URL
+  local -a RACCOON_VERSIONS=(
+    "1.0.0.rhlw-00001"
+    "1.0.0.rhlw-00002"
+    "1.0.0-rhlw.00003"
+    "1.0.0-rhlw.00003.n00001"
+    "1.0.0-rhlw.00003.hf00001"
+    "1.0.0-rhlw.00003.n00001.hf00001"
+    "1.0.0-rhlw.00004"
+    "1.1.0-rhlw.00001"
+  )
+
+  # All cheetah versions available at the predisclosed URL
+  local -a CHEETAH_VERSIONS=(
+    "1.0.0-rhlw.00001"
+    "1.0.0-rhlw.00002"
+    "1.0.0-rhlw.00002.hf00001"
+    "1.0.0-rhlw.00002.hf00002"
+    "1.0.0-rhlw.00002.n00001"
+    "1.0.0-rhlw.00002.n00001.hf00001"
+    "1.0.0-rhlw.00002.n00002"
+    "2.0.0-rhlw.00001"
+    "2.0.0-rhlw.00002"
+    "2.0.0-rhlw.00002.hf00001"
+    "2.0.0-rhlw.00002.hf00002"
+    "2.0.0-rhlw.00002.n00001"
+    "2.0.0-rhlw.00002.n00002"
+  )
+
+  local -a PREDISCLOSED_PACKAGES=()
+  for version in "${RACCOON_VERSIONS[@]}"; do
+    PREDISCLOSED_PACKAGES+=(
+      "/com/example/fixture/raccoon/${version}/com.example.fixture.raccoon.${version}.pom"
+      "/com/example/fixture/raccoon/${version}/com.example.fixture.raccoon.${version}.jar"
+    )
+  done
+
+  for version in "${CHEETAH_VERSIONS[@]}"; do
+    PREDISCLOSED_PACKAGES+=(
+      "/com/example/fixture/cheetah/${version}/com.example.fixture.cheetah.${version}.pom"
+      "/com/example/fixture/cheetah/${version}/com.example.fixture.cheetah.${version}.jar"
+    )
+  done
+
+  echo "    Fetching ${#PREDISCLOSED_PACKAGES[@]} predisclosed package(s) to populate ${base_path}..."
+
+  local success=0
+  local failed=0
+  for pkg in "${PREDISCLOSED_PACKAGES[@]}"; do
+    local status
+    status=$(curl -s -o /dev/null -w "%{http_code}" "${content_url}${pkg}")
+    local name
+    name=$(basename "$pkg")
+    if [[ "$status" -ge 200 && "$status" -lt 400 ]]; then
+      success=$((success + 1))
+      echo "      OK: ${name}"
+    else
+      failed=$((failed + 1))
+      echo "      WARN: ${name} returned HTTP ${status}"
+    fi
+  done
+  echo "    Fetched ${success}/${#PREDISCLOSED_PACKAGES[@]} packages successfully."
+}
+
 # Ensures repos from a JSON allowlist file under the given domain.
 #   create_repos_from_json <DOMAIN_NAME> <JSON_FILE>
 create_repos_from_json() {
@@ -406,8 +485,14 @@ create_repos_from_json() {
 
     case "$entry_type" in
       maven)
-        ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
-        populate_maven_repo "$domain_name" "$entry_base_path"
+        # Special handling for java/predisclosure when --java-predisclosed flag is set
+        if [[ "$entry_base_path" == "java/predisclosure" && "$CREATE_JAVA_PREDISCLOSED" == "true" ]]; then
+          ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$PREDISCLOSED_REMOTE_URL"
+          populate_predisclosed_maven_repo "$domain_name" "$entry_base_path"
+        else
+          ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
+          populate_maven_repo "$domain_name" "$entry_base_path"
+        fi
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
