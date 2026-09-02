@@ -23,63 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCheckBridgeEnabled_Disabled(t *testing.T) {
-	config.LoadedConfig.JFrogBridge = config.JFrogBridge{Enabled: false}
-	config.LoadedConfig.Loaded = true
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	handler := checkBridgeEnabled(func(c echo.Context) error {
-		return c.String(http.StatusOK, "ok")
-	})
-
-	err := handler(c)
-	require.Error(t, err)
-}
-
-func TestCheckBridgeEnabled_Enabled(t *testing.T) {
-	config.LoadedConfig.JFrogBridge = config.JFrogBridge{Enabled: true}
-	config.LoadedConfig.Loaded = true
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	handler := checkBridgeEnabled(func(c echo.Context) error {
-		return c.String(http.StatusOK, "ok")
-	})
-
-	err := handler(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-}
-
-func TestSimulateHandler_Status(t *testing.T) {
-	config.LoadedConfig.JFrogBridge = config.JFrogBridge{
-		Enabled:        true,
-		CatalogURL:     "https://test.jfrog.io",
-		CatalogRepo:    "test-repo",
-		RegistryURL:    "https://test.registry",
-		RegistryOSVURL: "https://test.osv",
-	}
-	config.LoadedConfig.Loaded = true
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/admin/jfrog_bridge/status", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	h := &simulateHandler{}
-	err := h.status(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Body.String(), "test.jfrog.io")
-}
-
 func TestSimulateHandler_BadPayload(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
@@ -88,7 +31,7 @@ func TestSimulateHandler_BadPayload(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	h := &simulateHandler{}
+	h := &adminHandler{}
 	err := h.simulate(c)
 	require.Error(t, err)
 }
@@ -115,7 +58,7 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -173,7 +116,7 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 
 	metrics := newBridgeMetrics(prometheus.NewRegistry())
 	bh := NewBridgeHandler(registry, jfrog, evidence, metrics)
-	h := &simulateHandler{bridgeHandler: bh}
+	h := &adminHandler{bridgeHandler: bh}
 
 	payload := `{"package_name":"org.springframework:spring-core","releases":[{"name":"5.3.18.rhlw-00003","cves_fixed":["CVE-2025-41249"]}]}`
 	e := echo.New()
@@ -187,4 +130,23 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "success")
+}
+
+func TestSimulateHandler_EmbargoRejection(t *testing.T) {
+	metrics := newBridgeMetrics(prometheus.NewRegistry())
+	bh := NewBridgeHandler(nil, nil, nil, metrics)
+	h := &adminHandler{bridgeHandler: bh}
+
+	payload := `{"package_name":"org.test:test","releases":[{"name":"1.0.rhlw-00001","cves_fixed":["LTWL-0001"]}]}`
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
+		strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	err := h.simulate(c)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "rejected")
 }

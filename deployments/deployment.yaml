@@ -208,7 +208,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -556,7 +556,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -871,7 +871,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -1174,7 +1174,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -1480,7 +1480,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -1787,7 +1787,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -2096,7 +2096,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -2403,7 +2403,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -2707,7 +2707,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -3011,7 +3011,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -3315,7 +3315,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -3642,7 +3642,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -3947,7 +3947,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -4269,7 +4269,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -4570,7 +4570,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -4871,7 +4871,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -5172,7 +5172,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -5473,7 +5473,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -5774,7 +5774,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -6075,7 +6075,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -6376,7 +6376,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER

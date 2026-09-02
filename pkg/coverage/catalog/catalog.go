@@ -15,11 +15,13 @@ import (
 )
 
 const (
-	javaValidatedBasePath   = "java/validated"
-	pythonValidatedBasePath = "python/validated"
+	javaValidatedBasePath    = "java/validated"
+	javaRemediatedBasePath   = "java/remediated"
+	pythonValidatedBasePath  = "python/validated"
+	pythonRemediatedBasePath = "python/remediated"
 )
 
-// LoadCatalog returns packages from the validated catalog and the time the catalog was fetched
+// LoadCatalog returns packages from the validated and remediated catalog and the time the catalog was fetched
 func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.PulpClient, tang tangy.Tangy) ([]matcher.Package, time.Time, error) {
 	logger := zerolog.Ctx(ctx)
 	snapshotAt := time.Now().UTC()
@@ -35,18 +37,21 @@ func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.
 		return nil, time.Time{}, fmt.Errorf("failed to fetch repoConfig: %w", err)
 	}
 
-	validated := make([]api.RepositoryResponse, 0, 2)
+	catalogRepos := make([]api.RepositoryResponse, 0, 4)
 	for _, repo := range repos {
-		if repo.PublishedDistBasePath == javaValidatedBasePath || repo.PublishedDistBasePath == pythonValidatedBasePath {
-			validated = append(validated, repo)
+		if repo.PublishedDistBasePath == javaValidatedBasePath ||
+			repo.PublishedDistBasePath == javaRemediatedBasePath ||
+			repo.PublishedDistBasePath == pythonValidatedBasePath ||
+			repo.PublishedDistBasePath == pythonRemediatedBasePath {
+			catalogRepos = append(catalogRepos, repo)
 		}
 	}
-	if len(validated) == 0 {
-		return nil, time.Time{}, fmt.Errorf("no validated java/python repositories found")
+	if len(catalogRepos) == 0 {
+		return nil, time.Time{}, fmt.Errorf("no validated or remediated repositories found")
 	}
 
 	catalog := make([]matcher.Package, 0)
-	for _, repo := range validated {
+	for _, repo := range catalogRepos {
 		start := time.Now()
 		href, err := pulp.ResolveRepositoryFromBasePath(ctx, repo.PublishedDistBasePath)
 		if err != nil {

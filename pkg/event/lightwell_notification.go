@@ -15,7 +15,8 @@ const (
 )
 
 const (
-	LightwellEventTypeJavaRemediated = "java-remediated"
+	LightwellEventTypeJavaRemediated    = "java-remediated"
+	LightwellEventTypeJavaPredisclosure = "java-predisclosure"
 )
 
 const (
@@ -46,6 +47,8 @@ func LightwellEventType(repoName string) string {
 	switch repoName {
 	case "lightwell/java/remediated":
 		return LightwellEventTypeJavaRemediated
+	case "lightwell/java/predisclosure":
+		return LightwellEventTypeJavaPredisclosure
 	default:
 		return ""
 	}
