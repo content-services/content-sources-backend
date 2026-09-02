@@ -17,6 +17,10 @@ type serviceHealth struct {
 	Error     string `json:"error,omitempty"`
 }
 
+// health is a readiness check: it probes external dependencies (JFrog
+// Artifactory and the Lightwell registry) and returns 503 when either is
+// unreachable. A failure means the bridge cannot do useful work, but
+// restarting the process would not help — do not use this as a liveness probe.
 func (h *adminHandler) health(c echo.Context) error {
 	ctx := c.Request().Context()
 
