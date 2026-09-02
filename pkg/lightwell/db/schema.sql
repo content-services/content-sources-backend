@@ -94,11 +94,6 @@ WHERE vc.customer_id = p_customer_id
         OR (
             ('embargo' = ANY (p_flags) AND v.embargo = true)
             OR ('duplicate' = ANY (p_flags) AND v.duplicate = true)
-            OR (
-                'blocked' = ANY (p_flags)
-                AND v.stage <> 'Lightwell Network'
-                AND (CURRENT_DATE - v.submitted_date) > 30
-            )
         )
     )
     AND (

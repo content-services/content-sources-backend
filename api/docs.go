@@ -330,7 +330,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated flags to filter on (embargo, duplicate, blocked).",
+                        "description": "Comma-separated flags to filter on (embargo, duplicate).",
                         "name": "flag",
                         "in": "query"
                     },
@@ -5128,10 +5128,6 @@ const docTemplate = `{
         "api.LightwellVulnerabilityCollectionMeta": {
             "type": "object",
             "properties": {
-                "blocked_count": {
-                    "description": "Count of blocked rows matching filters",
-                    "type": "integer"
-                },
                 "count": {
                     "description": "Total count of results",
                     "type": "integer"
@@ -5196,10 +5192,6 @@ const docTemplate = `{
                 "age_days": {
                     "description": "UTC calendar days since submitted_date",
                     "type": "integer"
-                },
-                "blocked": {
-                    "description": "True when stage is not Lightwell Network and age_days \u003e 30",
-                    "type": "boolean"
                 },
                 "complexity": {
                     "description": "Standard, Complex, or Extensive",

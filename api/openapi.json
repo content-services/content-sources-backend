@@ -355,10 +355,6 @@
             },
             "api.LightwellVulnerabilityCollectionMeta": {
                 "properties": {
-                    "blocked_count": {
-                        "description": "Count of blocked rows matching filters",
-                        "type": "integer"
-                    },
                     "count": {
                         "description": "Total count of results",
                         "type": "integer"
@@ -423,10 +419,6 @@
                     "age_days": {
                         "description": "UTC calendar days since submitted_date",
                         "type": "integer"
-                    },
-                    "blocked": {
-                        "description": "True when stage is not Lightwell Network and age_days \u003e 30",
-                        "type": "boolean"
                     },
                     "complexity": {
                         "description": "Standard, Complex, or Extensive",
@@ -3225,7 +3217,7 @@
                         }
                     },
                     {
-                        "description": "Comma-separated flags to filter on (embargo, duplicate, blocked).",
+                        "description": "Comma-separated flags to filter on (embargo, duplicate).",
                         "in": "query",
                         "name": "flag",
                         "schema": {

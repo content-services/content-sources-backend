@@ -185,7 +185,6 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		SubmittedDate:     now,
 		LastUpdated:       now,
 		AgeDays:           19,
-		Blocked:           false,
 		Duplicate:         true,
 		DuplicateOf:       &dupOf,
 		LtwlsuptTicketIDs: []string{"demo-tk-3"},
@@ -194,7 +193,6 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		TotalCount:    1,
 		CriticalCount: 0,
 		EmbargoCount:  0,
-		BlockedCount:  0,
 	}
 	stageCounts := []dao.LightwellVulnerabilityStageCount{{Stage: "Validation", Count: 1}}
 
@@ -234,8 +232,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.NotContains(suite.T(), string(body), `"id":`)
 	assert.Equal(suite.T(), []string{"demo-tk-3"}, resp.Data[0].LtwlsuptTicketIDs)
 	assert.Contains(suite.T(), string(body), `"ltwlsupt_ticket_ids":["demo-tk-3"]`)
-	assert.False(suite.T(), resp.Data[0].Blocked)
-	assert.Contains(suite.T(), string(body), `"blocked":false`)
+	assert.NotContains(suite.T(), string(body), `"blocked"`)
 	require := assert.New(suite.T())
 	require.NotNil(resp.Data[0].DuplicateOf)
 	assert.Equal(suite.T(), "LWL-2026-4027", *resp.Data[0].DuplicateOf)
@@ -370,7 +367,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListEmptyCSVIgnored() {
 func (suite *LightwellVulnerabilitiesSuite) TestListFlagsCSVForwarded() {
 	opts := dao.ListLightwellVulnerabilitiesOptions{
 		CustomerID: "demo-customer-1",
-		Flags:      []string{"embargo", "blocked"},
+		Flags:      []string{"embargo", "duplicate"},
 		Limit:      100,
 		Offset:     0,
 	}
@@ -382,7 +379,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListFlagsCSVForwarded() {
 		nil,
 	)
 
-	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1&flag=embargo,blocked", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1&flag=embargo,duplicate", api.FullRootPath())
 	code, _, err := suite.serveRouter(suite.newGet(path))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusOK, code)
