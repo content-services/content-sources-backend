@@ -226,8 +226,8 @@ func gavKey(rem Remediation) string {
 }
 
 type mavenMetadata struct {
-	XMLName    xml.Name         `xml:"metadata"`
-	GroupID    string           `xml:"groupId"`
+	XMLName    xml.Name        `xml:"metadata"`
+	GroupID    string          `xml:"groupId"`
 	ArtifactID string          `xml:"artifactId"`
 	Versioning mavenVersioning `xml:"versioning"`
 }
@@ -263,4 +263,3 @@ func generateMavenMetadata(groupID, artifactID, version string) []byte {
 	}
 	return append([]byte(xml.Header), data...)
 }
-
