@@ -3,8 +3,9 @@ package jfrog_bridge
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
+	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -15,6 +16,8 @@ const (
 	allowedEventType = "java-remediated"
 )
 
+const maxProcessedGAVs = 10000
+
 // BridgeHandler implements sarama.ConsumerGroupHandler and orchestrates
 // the full pipeline for each remediation message.
 type BridgeHandler struct {
@@ -23,17 +26,17 @@ type BridgeHandler struct {
 	evidence    EvidenceCreator
 	metrics     *bridgeMetrics
 	registryURL string
-	// GAV dedup: records only after successful processing
-	processed sync.Map
+	processed   *boundedSet
 }
 
 // NewBridgeHandler creates a BridgeHandler with the given clients.
 func NewBridgeHandler(registry RegistryClient, jfrog JFrogClient, evidence EvidenceCreator, metrics *bridgeMetrics) *BridgeHandler {
 	return &BridgeHandler{
-		registry: registry,
-		jfrog:    jfrog,
-		evidence: evidence,
-		metrics:  metrics,
+		registry:  registry,
+		jfrog:     jfrog,
+		evidence:  evidence,
+		metrics:   metrics,
+		processed: newBoundedSet(maxProcessedGAVs),
 	}
 }
 
@@ -60,19 +63,33 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 		allSucceeded := true
 		for _, rem := range remediations {
 			gav := gavKey(rem)
-			if _, loaded := h.processed.Load(gav); loaded {
+			if h.processed.Contains(gav) {
 				log.Debug().Str("gav", gav).Msg("skipping already-processed GAV")
 				continue
 			}
 
+			if err := ValidateNotificationCVEs(rem); err != nil {
+				log.Error().Err(err).Str("gav", gav).Msg("embargo check failed")
+				h.metrics.embargoRejections.Inc()
+				h.metrics.messagesFailed.Inc()
+				continue
+			}
+
 			if err := h.processRemediation(session.Context(), rem); err != nil {
+				var embargoErr *EmbargoError
+				if errors.As(err, &embargoErr) {
+					log.Error().Err(err).Str("gav", gav).Msg("embargo check failed (content)")
+					h.metrics.embargoRejections.Inc()
+					h.metrics.messagesFailed.Inc()
+					continue
+				}
 				log.Error().Err(err).Str("gav", gav).Msg("pipeline failed")
 				h.metrics.messagesFailed.Inc()
 				allSucceeded = false
 				continue
 			}
 
-			h.processed.Store(gav, true)
+			h.processed.Add(gav)
 			h.metrics.messagesProcessed.Inc()
 			log.Info().Str("gav", gav).Msg("pipeline completed")
 		}
@@ -91,7 +108,7 @@ func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error)
 	var env struct {
 		EventType string `json:"event_type"`
 	}
-	if err := safeUnmarshal(data, &env); err != nil {
+	if err := json.Unmarshal(data, &env); err != nil {
 		return nil, true, fmt.Errorf("invalid message: %w", err)
 	}
 	if env.EventType != "" && env.EventType != allowedEventType {
@@ -130,6 +147,11 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	osvRecords, err := h.registry.FetchOSVRecords(ctx, rem.BaseVersion)
 	if err != nil {
 		return fmt.Errorf("fetch OSV records: %w", err)
+	}
+
+	// 2b. Validate OSV records contain only public CVEs
+	if err := ValidateOSVRecords(osvRecords); err != nil {
+		return fmt.Errorf("content embargo check: %w", err)
 	}
 
 	// 3. Generate CycloneDX VEX
@@ -203,23 +225,41 @@ func gavKey(rem Remediation) string {
 	return fmt.Sprintf("%s:%s:%s", rem.GroupID, rem.ArtifactID, rem.Version)
 }
 
-func generateMavenMetadata(groupID, artifactID, version string) []byte {
-	ts := time.Now().UTC().Format("20060102150405")
-	return []byte(fmt.Sprintf(
-		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
-			"<metadata>\n"+
-			"  <groupId>%s</groupId>\n"+
-			"  <artifactId>%s</artifactId>\n"+
-			"  <versioning>\n"+
-			"    <latest>%s</latest>\n"+
-			"    <release>%s</release>\n"+
-			"    <versions><version>%s</version></versions>\n"+
-			"    <lastUpdated>%s</lastUpdated>\n"+
-			"  </versioning>\n"+
-			"</metadata>\n",
-		groupID, artifactID, version, version, version, ts))
+type mavenMetadata struct {
+	XMLName    xml.Name        `xml:"metadata"`
+	GroupID    string          `xml:"groupId"`
+	ArtifactID string          `xml:"artifactId"`
+	Versioning mavenVersioning `xml:"versioning"`
 }
 
-func safeUnmarshal(data []byte, v interface{}) error {
-	return json.Unmarshal(data, v)
+type mavenVersioning struct {
+	Latest      string           `xml:"latest"`
+	Release     string           `xml:"release"`
+	Versions    mavenVersionList `xml:"versions"`
+	LastUpdated string           `xml:"lastUpdated"`
+}
+
+type mavenVersionList struct {
+	Version []string `xml:"version"`
+}
+
+func generateMavenMetadata(groupID, artifactID, version string) []byte {
+	ts := time.Now().UTC().Format("20060102150405")
+	meta := mavenMetadata{
+		GroupID:    groupID,
+		ArtifactID: artifactID,
+		Versioning: mavenVersioning{
+			Latest:  version,
+			Release: version,
+			Versions: mavenVersionList{
+				Version: []string{version},
+			},
+			LastUpdated: ts,
+		},
+	}
+	data, err := xml.MarshalIndent(meta, "", "  ")
+	if err != nil {
+		return []byte{}
+	}
+	return append([]byte(xml.Header), data...)
 }

@@ -11,6 +11,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -51,7 +52,7 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	defer registryServer.Close()
 
 	// OSV server: serves from testdata/osv/
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	// JFrog server: records all requests
@@ -181,13 +182,11 @@ func TestGAVDedup(t *testing.T) {
 
 	gav := gavKey(rem)
 
-	_, loaded := handler.processed.Load(gav)
-	assert.False(t, loaded)
+	assert.False(t, handler.processed.Contains(gav))
 
-	handler.processed.Store(gav, true)
+	handler.processed.Add(gav)
 
-	_, loaded = handler.processed.Load(gav)
-	assert.True(t, loaded)
+	assert.True(t, handler.processed.Contains(gav))
 }
 
 func TestFilterAndParse_IgnoresApplicationField(t *testing.T) {
@@ -257,7 +256,7 @@ func TestProcessRemediation_EvidenceFailure(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -341,7 +340,7 @@ func TestProcessRemediation_UploadFailure(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -410,7 +409,7 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -481,8 +480,21 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 	require.NoError(t, err)
 
 	gav := gavKey(rem)
-	handler.processed.Store(gav, true)
+	handler.processed.Add(gav)
 
-	_, loaded := handler.processed.Load(gav)
-	assert.True(t, loaded, "GAV should be in processed map after successful pipeline")
+	assert.True(t, handler.processed.Contains(gav), "GAV should be in processed set after successful pipeline")
+}
+
+func TestGenerateMavenMetadata_SpecialChars(t *testing.T) {
+	data := generateMavenMetadata("<foo>&bar", "test-artifact", "1.0.0")
+	require.NotEmpty(t, data)
+
+	xmlStr := string(data)
+	assert.Contains(t, xmlStr, "&lt;foo&gt;&amp;bar")
+	assert.Contains(t, xmlStr, "<artifactId>test-artifact</artifactId>")
+	assert.Contains(t, xmlStr, "<version>1.0.0</version>")
+
+	var meta mavenMetadata
+	require.NoError(t, xml.Unmarshal(data, &meta), "output must be well-formed XML")
+	assert.Equal(t, "<foo>&bar", meta.GroupID)
 }

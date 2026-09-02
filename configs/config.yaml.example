@@ -267,3 +267,8 @@ features:
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
+  admin_jfrog_upload:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
