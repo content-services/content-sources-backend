@@ -95,9 +95,9 @@ components:
         - name
         - security_level
         - content_type
-        - packages_count
-        - versions_count
-        - advisories_count
+        - package_count
+        - version_count
+        - advisory_count
       properties:
         name:
           type: string
@@ -106,13 +106,13 @@ components:
           $ref: "#/components/schemas/SecurityLevel"
         content_type:
           $ref: "#/components/schemas/ContentType"
-        packages_count:
+        package_count:
           type: integer
           example: 456
-        versions_count:
+        version_count:
           type: integer
           example: 1024
-        advisories_count:
+        advisory_count:
           type: integer
           example: 200
 
