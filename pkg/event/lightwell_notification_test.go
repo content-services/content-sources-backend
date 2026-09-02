@@ -59,6 +59,7 @@ func TestMaximumSeverityEmpty(t *testing.T) {
 
 func TestLightwellEventType(t *testing.T) {
 	assert.Equal(t, LightwellEventTypeJavaRemediated, LightwellEventType("lightwell/java/remediated"))
+	assert.Equal(t, LightwellEventTypeJavaPredisclosure, LightwellEventType("lightwell/java/predisclosure"))
 	assert.Equal(t, "", LightwellEventType("lightwell/java/validated"))
 	assert.Equal(t, "", LightwellEventType("unknown"))
 }
