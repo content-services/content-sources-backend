@@ -413,6 +413,7 @@ objects:
               - api
               - instrumentation
               - pulp-data-importer
+              - jfrog-bridge
             livenessProbe:
               failureThreshold: 3
               httpGet:
