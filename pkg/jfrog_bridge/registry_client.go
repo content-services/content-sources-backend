@@ -1,5 +1,13 @@
 package jfrog_bridge
 
+// TODO: This file mixes four concerns that should be split into distinct files:
+//   1. HTTP transport + retry  (httpRegistryClient, getWithRetry, doGet, FetchJAR, FetchPOM, FetchOSVRecords)
+//   2. OSV parsing + CVE extraction  (osvFile, parseOSVFile, OSVRecord)
+//   3. CVSS 3.1 scoring  (computeCVSS31BaseScore, parseCVSSVector, cvssMetricValue, cvssScoreToSeverity)
+//   4. Maven path utility  (groupPath)
+// Concerns 2-3 are pure functions with no HTTP dependency and could move to
+// dedicated files (osv_parser.go, cvss.go) or into the shared vulnerability_parser package.
+
 import (
 	"context"
 	"crypto/sha256"
@@ -13,6 +21,12 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	maxRegistryResponseBytes = 200 << 20 // 200 MB
+	maxJFrogPingBytes        = 1 << 10   // 1 KB
+	maxEvidenceResponseBytes = 1 << 20   // 1 MB
 )
 
 // OSVRecord holds the bridge-internal representation of a single CVE
@@ -32,6 +46,7 @@ type RegistryClient interface {
 	FetchJAR(ctx context.Context, groupID, artifactID, version string) (body []byte, sha256hex string, err error)
 	FetchPOM(ctx context.Context, groupID, artifactID, version string) ([]byte, error)
 	FetchOSVRecords(ctx context.Context, baseVersion string) ([]OSVRecord, error)
+	Ping(ctx context.Context) error
 }
 
 type httpRegistryClient struct {
@@ -86,10 +101,12 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 
 	entries := vulnerability_parser.ParseManifest(manifestData)
 	var records []OSVRecord
+	var matched int
 	for _, entry := range entries {
 		if !strings.Contains(entry.Filename, "-"+baseVersion+".") {
 			continue
 		}
+		matched++
 		fileURL := c.osvURL + "/" + entry.Filename
 		data, err := c.getWithRetry(ctx, fileURL)
 		if err != nil {
@@ -103,26 +120,40 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 		}
 		records = append(records, rec)
 	}
+	if len(records) == 0 && matched > 0 {
+		return nil, fmt.Errorf("all %d matching OSV files failed to fetch for version %s", matched, baseVersion)
+	}
 	return records, nil
 }
 
-func (c *httpRegistryClient) getWithRetry(ctx context.Context, url string) ([]byte, error) {
-	var lastErr error
-	for attempt := 0; attempt <= c.maxRetries; attempt++ {
-		if attempt > 0 {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(attempt) * time.Second):
-			}
-		}
-		data, err := c.doGet(ctx, url)
-		if err == nil {
-			return data, nil
-		}
-		lastErr = err
+func (c *httpRegistryClient) Ping(ctx context.Context) error {
+	url := c.osvURL + "/PULP_MANIFEST"
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return fmt.Errorf("create ping request: %w", err)
 	}
-	return nil, lastErr
+	if c.username != "" {
+		req.SetBasicAuth(c.username, c.password)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("registry ping: %w", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("registry ping: HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (c *httpRegistryClient) getWithRetry(ctx context.Context, url string) ([]byte, error) {
+	var data []byte
+	err := retryWithBackoff(ctx, c.maxRetries, func() error {
+		var fetchErr error
+		data, fetchErr = c.doGet(ctx, url)
+		return fetchErr
+	})
+	return data, err
 }
 
 func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, error) {
@@ -143,7 +174,7 @@ func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, err
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
 	}
-	return io.ReadAll(resp.Body)
+	return io.ReadAll(io.LimitReader(resp.Body, maxRegistryResponseBytes))
 }
 
 // osvFile extends the shared OSVAdvisory struct to include fields

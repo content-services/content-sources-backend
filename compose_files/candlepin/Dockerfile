@@ -1,4 +1,4 @@
-FROM quay.io/candlepin/candlepin:dev-latest
+FROM quay.io/candlepin/candlepin:dev-4.8.4-1
 
 USER root
 RUN echo "jpa.config.hibernate.dialect=org.hibernate.dialect.PostgreSQL92Dialect" > /etc/candlepin/candlepin.conf; \

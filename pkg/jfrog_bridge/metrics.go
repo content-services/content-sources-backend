@@ -14,6 +14,7 @@ type bridgeMetrics struct {
 	messagesReceived  prometheus.Counter
 	messagesProcessed prometheus.Counter
 	messagesFailed    prometheus.Counter
+	embargoRejections prometheus.Counter
 	pipelineDuration  prometheus.Histogram
 }
 
@@ -54,6 +55,12 @@ func newBridgeMetrics(reg prometheus.Registerer) *bridgeMetrics {
 			Subsystem: metricsSubsystem,
 			Name:      "messages_failed_total",
 			Help:      "Total messages that failed pipeline processing",
+		}),
+		embargoRejections: factory.NewCounter(prometheus.CounterOpts{
+			Namespace: metricsNamespace,
+			Subsystem: metricsSubsystem,
+			Name:      "embargo_rejections_total",
+			Help:      "Total remediations rejected by embargo gate",
 		}),
 		pipelineDuration: factory.NewHistogram(prometheus.HistogramOpts{
 			Namespace: metricsNamespace,

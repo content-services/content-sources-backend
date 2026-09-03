@@ -193,18 +193,11 @@ func (e *evidenceCreator) CreateAndDeploy(ctx context.Context, predicate []byte,
 }
 
 func (e *evidenceCreator) doPost(ctx context.Context, url string, body []byte) ([]byte, error) {
-	var lastErr error
-	for attempt := 0; attempt <= e.maxRetries; attempt++ {
-		if attempt > 0 {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(attempt) * time.Second):
-			}
-		}
+	var result []byte
+	err := retryWithBackoff(ctx, e.maxRetries, func() error {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 		if err != nil {
-			return nil, fmt.Errorf("create request: %w", err)
+			return fmt.Errorf("create request: %w", err)
 		}
 		req.Header.Set("Content-Type", "application/json")
 		if e.token != "" {
@@ -213,22 +206,21 @@ func (e *evidenceCreator) doPost(ctx context.Context, url string, body []byte) (
 
 		resp, err := e.httpClient.Do(req)
 		if err != nil {
-			lastErr = err
-			continue
+			return err
 		}
-		respBody, readErr := io.ReadAll(resp.Body)
+		respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, maxEvidenceResponseBytes))
 		resp.Body.Close()
 		if readErr != nil {
-			lastErr = fmt.Errorf("read response: %w", readErr)
-			continue
+			return fmt.Errorf("read response: %w", readErr)
 		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return respBody, nil
+			result = respBody
+			return nil
 		}
-		lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBody))
-	}
-	return nil, lastErr
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(respBody))
+	})
+	return result, err
 }
 
 func parseECDSAPrivateKey(pemStr string) (*ecdsa.PrivateKey, error) {

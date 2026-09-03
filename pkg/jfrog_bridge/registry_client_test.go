@@ -32,7 +32,7 @@ func skipIfFixturesAbsent(t *testing.T, paths ...string) {
 
 var (
 	fixturePOM    = testdataPath("registry", "org", "springframework", "spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
-	fixtureOSVDir = testdataPath("osv", "PULP_MANIFEST")
+	fixtureOSVDir = testdataPath("osv", "java", "remediated", "PULP_MANIFEST")
 )
 
 func TestRegistryClient_FetchPOM(t *testing.T) {
@@ -88,7 +88,7 @@ func TestRegistryClient_FetchJAR(t *testing.T) {
 
 func TestRegistryClient_FetchOSVRecords(t *testing.T) {
 	skipIfFixturesAbsent(t, fixtureOSVDir)
-	server := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	server := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer server.Close()
 
 	client := &httpRegistryClient{
@@ -111,7 +111,7 @@ func TestRegistryClient_FetchOSVRecords(t *testing.T) {
 
 func TestParseOSVFile(t *testing.T) {
 	skipIfFixturesAbsent(t, fixtureOSVDir)
-	data, err := os.ReadFile(testdataPath("osv", "x_RHLW-CVE-2023-20860-5.3.18.json"))
+	data, err := os.ReadFile(testdataPath("osv", "java", "remediated", "x_RHLW-CVE-2023-20860-5.3.18.json"))
 	require.NoError(t, err)
 
 	rec, err := parseOSVFile(data)
@@ -192,4 +192,28 @@ func TestFetchOSVRecords_VersionFilterPrecision(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, records, 1, "only exact version 5.3.1 should match, not 5.3.18")
 	assert.Equal(t, "CVE-2099-99999", records[0].CVEID)
+}
+
+func TestFetchOSVRecords_AllFilesFail(t *testing.T) {
+	manifest := "x_RHLW-CVE-2023-20860-5.3.18.json,abc123,1234\nx_RHLW-CVE-2025-41249-5.3.18.json,def456,1234\n"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/PULP_MANIFEST" {
+			_, _ = w.Write([]byte(manifest))
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{
+		httpClient: server.Client(),
+		osvURL:     server.URL,
+		maxRetries: 0,
+	}
+
+	_, err := client.FetchOSVRecords(context.Background(), "5.3.18")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to fetch")
+	assert.Contains(t, err.Error(), "5.3.18")
 }
