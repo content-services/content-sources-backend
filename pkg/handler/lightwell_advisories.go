@@ -17,7 +17,6 @@ type LightwellAdvisoryHandler struct {
 func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 	h := LightwellAdvisoryHandler{DaoRegistry: *daoReg}
 	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.list, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/advisories", h.listRepoAdvisories, rbac.RbacVerbRead)
 }
 
 // listLightwellAdvisories godoc
@@ -75,10 +74,4 @@ func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterDa
 		String("cve_id", &filters.CveID).
 		BindError()
 	return filters
-}
-
-func (h *LightwellAdvisoryHandler) listRepoAdvisories(c echo.Context) error {
-	repoName := c.Param("repository_name")
-	c.QueryParams().Set("repository", repoName)
-	return h.list(c)
 }

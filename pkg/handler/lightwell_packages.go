@@ -32,12 +32,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	// Flat cross-repo endpoints
 	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.listPackages, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.listPackageVersions, rbac.RbacVerbRead)
-	// Nested repo-scoped aliases
-	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/packages", h.listRepoPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/package_versions", h.listRepoPackageVersions, rbac.RbacVerbRead)
 }
 
 // listLightwellPackages godoc
@@ -643,20 +639,6 @@ func npmVersionMap(versions []tangy.NpmVersionInfo) map[string]versionCreatedAt 
 		m[v.Version] = versionCreatedAt{CreatedAt: v.CreatedAt}
 	}
 	return m
-}
-
-// --- nested repo-scoped alias handlers ---
-
-func (h *LightwellPackagesHandler) listRepoPackages(c echo.Context) error {
-	repoName := c.Param("repository_name")
-	c.QueryParams().Set("repository", repoName)
-	return h.listPackages(c)
-}
-
-func (h *LightwellPackagesHandler) listRepoPackageVersions(c echo.Context) error {
-	repoName := c.Param("repository_name")
-	c.QueryParams().Set("repository", repoName)
-	return h.listPackageVersions(c)
 }
 
 // --- sort helpers ---
