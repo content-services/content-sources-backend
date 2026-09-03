@@ -2,13 +2,16 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
@@ -16,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -28,6 +32,7 @@ const TemplateErrataIDsPageLimit = 10000
 type rpmDaoImpl struct {
 	db            *gorm.DB
 	roadmapClient roadmap_client.RoadmapClient
+	pulpClient    pulp_client.PulpClient
 }
 
 func GetRpmDao(db *gorm.DB, roadmapClient roadmap_client.RoadmapClient) RpmDao {
@@ -35,6 +40,7 @@ func GetRpmDao(db *gorm.DB, roadmapClient roadmap_client.RoadmapClient) RpmDao {
 	return &rpmDaoImpl{
 		db:            db,
 		roadmapClient: roadmapClient,
+		pulpClient:    pulp_client.GetPulpClientWithDomain(""),
 	}
 }
 
@@ -48,35 +54,58 @@ func (r *rpmDaoImpl) List(
 ) (api.RepositoryRpmCollectionResponse, int64, error) {
 	// Check arguments
 	if orgID == "" {
-		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("orgID can not be an empty string")
-	}
-
-	var totalRpms int64
-	repoRpms := []models.Rpm{}
-
-	if ok, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID); !ok {
-		if err != nil {
-			return api.RepositoryRpmCollectionResponse{},
-				totalRpms,
-				RepositoryDBErrorToApi(err, &repositoryConfigUUID)
-		}
-		return api.RepositoryRpmCollectionResponse{},
-			totalRpms,
-			&ce.DaoError{
-				NotFound: true,
-				Message:  "Could not find repository with UUID " + repositoryConfigUUID,
-			}
+		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("orgID cannot be an empty string")
 	}
 
 	repositoryConfig := models.RepositoryConfiguration{}
 	// Select Repository from RepositoryConfig
-
 	if err := r.db.WithContext(ctx).
 		Preload("Repository").
-		Find(&repositoryConfig, "uuid = ?", repositoryConfigUUID).
+		Find(&repositoryConfig, "uuid = ?", UuidifyString(repositoryConfigUUID)).
 		Error; err != nil {
-		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
+		return api.RepositoryRpmCollectionResponse{}, 0, RepositoryDBErrorToApi(err, &repositoryConfigUUID)
 	}
+
+	notFound := &ce.DaoError{
+		NotFound: true,
+		Message:  "Could not find repository with UUID " + repositoryConfigUUID,
+	}
+
+	if repositoryConfig.UUID == "" {
+		return api.RepositoryRpmCollectionResponse{}, 0, notFound
+	}
+
+	owned, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID)
+	if err != nil {
+		return api.RepositoryRpmCollectionResponse{}, 0, RepositoryDBErrorToApi(err, &repositoryConfigUUID)
+	}
+
+	if owned {
+		return r.listOwnedRpms(ctx, repositoryConfig, limit, offset, search, sortBy)
+	}
+
+	if IsForeignPartnerView(repositoryConfig, orgID) {
+		return r.listForeignRpms(ctx, repositoryConfig, limit, offset, search, sortBy)
+	}
+
+	return api.RepositoryRpmCollectionResponse{}, 0, notFound
+}
+
+func (r *rpmDaoImpl) listOwnedRpms(
+	ctx context.Context,
+	repositoryConfig models.RepositoryConfiguration,
+	limit int, offset int,
+	search string, sortBy string,
+) (api.RepositoryRpmCollectionResponse, int64, error) {
+	if offset < 0 || limit < 0 {
+		return api.RepositoryRpmCollectionResponse{}, 0, &ce.DaoError{
+			BadValidation: true,
+			Message:       "limit and offset must be non-negative",
+		}
+	}
+
+	var totalRpms int64
+	repoRpms := []models.Rpm{}
 
 	filteredDB := r.db.WithContext(ctx).Model(&repoRpms).Joins(strings.Join([]string{"inner join", models.TableNameRpmsRepositories, "on uuid = rpm_uuid"}, " ")).
 		Where("repository_uuid = ?", repositoryConfig.Repository.UUID)
@@ -117,6 +146,87 @@ func (r *rpmDaoImpl) List(
 			Limit:  limit,
 		},
 	}, totalRpms, nil
+}
+
+// listForeignRpms serves the RPM list for a foreign-org view of a partner repository.
+// The data comes from the latest published snapshot in Pulp, which includes checksums but not
+// RPM UUIDs. Search, sort and pagination are applied by Pulp.
+func (r *rpmDaoImpl) listForeignRpms(
+	ctx context.Context,
+	repositoryConfig models.RepositoryConfiguration,
+	limit int, offset int,
+	search string,
+	sortBy string,
+) (api.RepositoryRpmCollectionResponse, int64, error) {
+	if offset < 0 || limit < 0 || offset > math.MaxInt32 || limit > math.MaxInt32 {
+		return api.RepositoryRpmCollectionResponse{}, 0, &ce.DaoError{
+			BadValidation: true,
+			Message:       "limit and offset must be non-negative and less than or equal to " + strconv.Itoa(math.MaxInt32),
+		}
+	}
+
+	// Resolve the latest published snapshot; foreign viewers never see unpublished content.
+	snapshot, err := GetSnapshotDao(r.db).FetchLatestPublishedSnapshotModel(ctx, repositoryConfig.UUID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return api.RepositoryRpmCollectionResponse{}, 0, &ce.DaoError{
+				NotFound: true,
+				Message:  "Could not find repository with UUID " + repositoryConfig.UUID,
+			}
+		}
+		return api.RepositoryRpmCollectionResponse{}, 0, err
+	}
+
+	// Partner content lives in the owning org's Pulp domain.
+	domainName, err := domainDaoImpl{db: r.db}.Fetch(ctx, repositoryConfig.OrgID)
+	if err != nil {
+		return api.RepositoryRpmCollectionResponse{}, 0, err
+	}
+
+	ordering := convertSortByToPulpOrdering(sortBy, map[string]string{
+		"name":    "name",
+		"release": "release",
+		"version": "version",
+		"arch":    "arch",
+	}, []string{"name"})
+
+	pkgs, total, err := r.pulpClient.WithDomain(domainName).
+		ListVersionPackagesWithFilters(ctx, snapshot.VersionHref, int32(offset), int32(limit), search, ordering)
+	if err != nil {
+		return api.RepositoryRpmCollectionResponse{}, 0, fmt.Errorf("error listing packages for partner snapshot: %w", err)
+	}
+
+	data := make([]api.RepositoryRpm, 0, len(pkgs))
+	for _, pkg := range pkgs {
+		data = append(data, pulpPackageToRepositoryRpm(pkg))
+	}
+
+	return api.RepositoryRpmCollectionResponse{
+		Data: data,
+		Meta: api.ResponseMetadata{
+			Count:  int64(total),
+			Offset: offset,
+			Limit:  limit,
+		},
+	}, int64(total), nil
+}
+
+// pulpPackageToRepositoryRpm maps a Pulp package response onto the repository RPM API model.
+// The UUID field is left empty: it is not available from Pulp and is not available to partner repository foreign viewers.
+func pulpPackageToRepositoryRpm(pkg zest.RpmPackageResponse) api.RepositoryRpm {
+	var epoch int32
+	if parsed, err := strconv.ParseInt(pkg.GetEpoch(), 10, 32); err == nil {
+		epoch = int32(parsed)
+	}
+	return api.RepositoryRpm{
+		Name:     pkg.GetName(),
+		Arch:     pkg.GetArch(),
+		Version:  pkg.GetVersion(),
+		Release:  pkg.GetRelease(),
+		Epoch:    epoch,
+		Summary:  pkg.GetSummary(),
+		Checksum: pkg.GetSha256(),
+	}
 }
 
 func (r *rpmDaoImpl) RepositoryRpmListFromModelToResponse(repoRpm []models.Rpm) []api.RepositoryRpm {

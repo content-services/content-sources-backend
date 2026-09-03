@@ -2671,6 +2671,104 @@ func (_c *MockPulpClient_ListVersionAllPackages_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
+// ListVersionPackagesWithFilters provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListVersionPackagesWithFilters(ctx context.Context, versionHref string, offset int32, limit int32, search string, ordering []string) ([]zest.RpmPackageResponse, int, error) {
+	ret := _mock.Called(ctx, versionHref, offset, limit, search, ordering)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListVersionPackagesWithFilters")
+	}
+
+	var r0 []zest.RpmPackageResponse
+	var r1 int
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int32, int32, string, []string) ([]zest.RpmPackageResponse, int, error)); ok {
+		return returnFunc(ctx, versionHref, offset, limit, search, ordering)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int32, int32, string, []string) []zest.RpmPackageResponse); ok {
+		r0 = returnFunc(ctx, versionHref, offset, limit, search, ordering)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]zest.RpmPackageResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int32, int32, string, []string) int); ok {
+		r1 = returnFunc(ctx, versionHref, offset, limit, search, ordering)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, int32, int32, string, []string) error); ok {
+		r2 = returnFunc(ctx, versionHref, offset, limit, search, ordering)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockPulpClient_ListVersionPackagesWithFilters_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListVersionPackagesWithFilters'
+type MockPulpClient_ListVersionPackagesWithFilters_Call struct {
+	*mock.Call
+}
+
+// ListVersionPackagesWithFilters is a helper method to define mock.On call
+//   - ctx context.Context
+//   - versionHref string
+//   - offset int32
+//   - limit int32
+//   - search string
+//   - ordering []string
+func (_e *MockPulpClient_Expecter) ListVersionPackagesWithFilters(ctx any, versionHref any, offset any, limit any, search any, ordering any) *MockPulpClient_ListVersionPackagesWithFilters_Call {
+	return &MockPulpClient_ListVersionPackagesWithFilters_Call{Call: _e.mock.On("ListVersionPackagesWithFilters", ctx, versionHref, offset, limit, search, ordering)}
+}
+
+func (_c *MockPulpClient_ListVersionPackagesWithFilters_Call) Run(run func(ctx context.Context, versionHref string, offset int32, limit int32, search string, ordering []string)) *MockPulpClient_ListVersionPackagesWithFilters_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 int32
+		if args[2] != nil {
+			arg2 = args[2].(int32)
+		}
+		var arg3 int32
+		if args[3] != nil {
+			arg3 = args[3].(int32)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		var arg5 []string
+		if args[5] != nil {
+			arg5 = args[5].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListVersionPackagesWithFilters_Call) Return(pkgs []zest.RpmPackageResponse, total int, err error) *MockPulpClient_ListVersionPackagesWithFilters_Call {
+	_c.Call.Return(pkgs, total, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListVersionPackagesWithFilters_Call) RunAndReturn(run func(ctx context.Context, versionHref string, offset int32, limit int32, search string, ordering []string) ([]zest.RpmPackageResponse, int, error)) *MockPulpClient_ListVersionPackagesWithFilters_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Livez provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) Livez(ctx context.Context) error {
 	ret := _mock.Called(ctx)
