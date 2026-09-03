@@ -1,0 +1,573 @@
+openapi: 3.1.0
+info:
+  title: Lightwell Network API
+  version: 2.0.0
+  description: >
+    API for querying Lightwell repositories, packages, package versions, and
+    security advisories.  Phase 1 covers the catalog read endpoints.  File
+    download (Phase 2) and file metadata / embargo extensions (Phase 3) are
+    marked with x-phase and will be implemented when the upstream data sources
+    are available.
+
+servers:
+  - url: /api/content-sources/v1.0/lightwell
+
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of items to return.
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+    Offset:
+      name: offset
+      in: query
+      description: Number of items to skip before starting to return results.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    SortBy:
+      name: sort_by
+      in: query
+      description: >
+        Sort order.  A field name followed by `asc` or `desc`.
+        Allowed fields are endpoint-specific.
+      schema:
+        type: string
+      example: "name asc"
+    RepositoryNamePath:
+      name: repository_name
+      in: path
+      required: true
+      description: Unique name of the Lightwell repository.
+      schema:
+        type: string
+      example: java-validated
+
+  schemas:
+    ContentType:
+      type: string
+      description: Package ecosystem type.
+      enum:
+        - python
+        - maven
+        - npm
+
+    SecurityLevel:
+      type: string
+      description: "Security level: validated or remediated."
+      enum:
+        - validated
+        - remediated
+
+    ResponseMetadata:
+      type: object
+      required: [count, limit, offset]
+      properties:
+        count:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    Links:
+      type: object
+      properties:
+        first:
+          type: string
+        last:
+          type: string
+        next:
+          type: string
+          nullable: true
+        prev:
+          type: string
+          nullable: true
+
+    Repository:
+      type: object
+      required:
+        - name
+        - security_level
+        - content_type
+        - package_count
+        - version_count
+        - advisory_count
+      properties:
+        name:
+          type: string
+          example: java-validated
+        security_level:
+          $ref: "#/components/schemas/SecurityLevel"
+        content_type:
+          $ref: "#/components/schemas/ContentType"
+        package_count:
+          type: integer
+          example: 456
+        version_count:
+          type: integer
+          example: 1024
+        advisory_count:
+          type: integer
+          example: 200
+
+    ReleaseInfo:
+      type: object
+      properties:
+        version:
+          type: string
+        release:
+          type: string
+        created_at:
+          type: string
+
+    Package:
+      type: object
+      required:
+        - name
+        - content_type
+        - repository
+        - repository_uuid
+        - versions
+        - latest_releases
+      properties:
+        name:
+          type: string
+          example: org.apache.commons:commons-lang3
+        group:
+          type: string
+          description: Maven groupId or npm scope. Omitted when empty.
+        content_type:
+          $ref: "#/components/schemas/ContentType"
+        repository:
+          type: string
+          example: java-validated
+        repository_uuid:
+          type: string
+        versions:
+          type: array
+          items:
+            type: string
+        latest_releases:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReleaseInfo"
+
+    PackageVersion:
+      type: object
+      required:
+        - name
+        - version
+        - content_type
+        - repository
+        - repository_uuid
+      properties:
+        name:
+          type: string
+          example: org.apache.commons:commons-lang3
+        group:
+          type: string
+        version:
+          type: string
+          example: "3.14.0"
+        content_type:
+          $ref: "#/components/schemas/ContentType"
+        repository:
+          type: string
+          example: java-validated
+        repository_uuid:
+          type: string
+        release:
+          type: string
+        created_at:
+          type: string
+
+    LightwellAdvisory:
+      type: object
+      required:
+        - advisory_id
+        - severity
+        - details
+        - reference_urls
+        - package_name
+        - fixed_versions
+        - repository
+      properties:
+        advisory_id:
+          type: string
+          example: rhlw-0005
+        severity:
+          type: string
+          example: important
+        details:
+          type: string
+        reference_urls:
+          type: array
+          items:
+            type: string
+        package_name:
+          type: string
+          example: org.apache.commons:commons-lang3
+        fixed_versions:
+          type: array
+          items:
+            type: string
+        repository:
+          type: string
+          example: java-remediated
+
+    PaginatedRepositories:
+      type: object
+      required: [data, meta, links]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Repository"
+        meta:
+          $ref: "#/components/schemas/ResponseMetadata"
+        links:
+          $ref: "#/components/schemas/Links"
+
+    PaginatedPackages:
+      type: object
+      required: [data, meta, links]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Package"
+        meta:
+          $ref: "#/components/schemas/ResponseMetadata"
+        links:
+          $ref: "#/components/schemas/Links"
+
+    PaginatedPackageVersions:
+      type: object
+      required: [data, meta, links]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageVersion"
+        meta:
+          $ref: "#/components/schemas/ResponseMetadata"
+        links:
+          $ref: "#/components/schemas/Links"
+
+    PaginatedAdvisories:
+      type: object
+      required: [data, meta, links]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/LightwellAdvisory"
+        meta:
+          $ref: "#/components/schemas/ResponseMetadata"
+        links:
+          $ref: "#/components/schemas/Links"
+
+paths:
+  # ===========================================================================
+  # Flat cross-repo endpoints (primary)
+  # ===========================================================================
+
+  /packages:
+    get:
+      operationId: listPackages
+      summary: List packages across all repositories
+      tags: [Packages]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/SortBy"
+        - name: content_type
+          in: query
+          description: Filter by package ecosystem type.
+          schema:
+            $ref: "#/components/schemas/ContentType"
+        - name: name
+          in: query
+          description: >
+            Filter by package name (substring match).
+            When using the flat endpoint, `repository` is required alongside `name`
+            to avoid cross-ecosystem name collisions.
+          schema:
+            type: string
+        - name: repository
+          in: query
+          description: Filter by repository name.
+          schema:
+            type: string
+        - name: security_level
+          in: query
+          description: Filter by security level.
+          schema:
+            $ref: "#/components/schemas/SecurityLevel"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPackages"
+
+  /package_versions:
+    get:
+      operationId: listPackageVersions
+      summary: List package versions across all repositories
+      tags: [Package Versions]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/SortBy"
+        - name: content_type
+          in: query
+          description: Filter by package ecosystem type.
+          schema:
+            $ref: "#/components/schemas/ContentType"
+        - name: name
+          in: query
+          description: Filter by package name (substring match).
+          schema:
+            type: string
+        - name: repository
+          in: query
+          description: Filter by repository name.
+          schema:
+            type: string
+        - name: security_level
+          in: query
+          description: Filter by security level.
+          schema:
+            $ref: "#/components/schemas/SecurityLevel"
+        - name: resolves_cve_id
+          in: query
+          description: >
+            Show only package versions that resolve this CVE
+            (i.e. versions listed in a Lightwell advisory's fixed_versions).
+          schema:
+            type: string
+        - name: vulnerable_to_cve_id
+          in: query
+          description: >
+            Show only package versions of packages affected by this CVE
+            that are NOT in the advisory's fixed_versions list.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPackageVersions"
+
+  /advisories:
+    get:
+      operationId: listAdvisories
+      summary: List advisories across all repositories
+      tags: [Advisories]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/SortBy"
+        - name: repository
+          in: query
+          description: Filter by repository name.
+          schema:
+            type: string
+        - name: package_name
+          in: query
+          description: Filter by package name (substring match).
+          schema:
+            type: string
+        - name: severity_min
+          in: query
+          description: Minimum severity level (low, moderate, important, critical).
+          schema:
+            type: string
+        - name: cve_id
+          in: query
+          description: Filter by CVE ID (exact match).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAdvisories"
+
+  # ===========================================================================
+  # Nested repo-scoped endpoints (aliases)
+  # ===========================================================================
+
+  /repositories/{repository_name}/packages:
+    get:
+      operationId: listRepositoryPackages
+      summary: List packages within a repository
+      description: >
+        Alias for GET /packages?repository={repository_name}.
+      tags: [Repositories]
+      parameters:
+        - $ref: "#/components/parameters/RepositoryNamePath"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/SortBy"
+        - name: name
+          in: query
+          description: Filter packages by name (substring match).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPackages"
+
+  /repositories/{repository_name}/package_versions:
+    get:
+      operationId: listRepositoryPackageVersions
+      summary: List package versions within a repository
+      description: >
+        Alias for GET /package_versions?repository={repository_name}.
+      tags: [Repositories]
+      parameters:
+        - $ref: "#/components/parameters/RepositoryNamePath"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/SortBy"
+        - name: name
+          in: query
+          description: Filter by package name (substring match).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedPackageVersions"
+
+  /repositories/{repository_name}/advisories:
+    get:
+      operationId: listRepositoryAdvisories
+      summary: List advisories within a repository
+      description: >
+        Alias for GET /advisories?repository={repository_name}.
+      tags: [Repositories]
+      parameters:
+        - $ref: "#/components/parameters/RepositoryNamePath"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - $ref: "#/components/parameters/SortBy"
+        - name: package_name
+          in: query
+          description: Filter by package name (substring match).
+          schema:
+            type: string
+        - name: severity_min
+          in: query
+          description: Minimum severity level.
+          schema:
+            type: string
+        - name: cve_id
+          in: query
+          description: Filter by CVE ID (exact match).
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedAdvisories"
+
+  # ===========================================================================
+  # Phase 2 -- File download
+  # ===========================================================================
+
+  /repositories/{repository_name}/packages/{package_name}/{version}/files/{filename}:
+    get:
+      x-phase: 2
+      operationId: downloadPackageVersionFile
+      summary: Download a specific file for a package version
+      tags: [Files]
+      parameters:
+        - $ref: "#/components/parameters/RepositoryNamePath"
+        - name: package_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File content.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: File not found.
+
+  # ===========================================================================
+  # Phase 3 -- File metadata
+  # ===========================================================================
+
+  /repositories/{repository_name}/packages/{package_name}/{version}/files:
+    get:
+      x-phase: 3
+      operationId: listPackageVersionFiles
+      summary: List file metadata for a package version
+      description: >
+        Returns file-level metadata (VEX, OSV, signatures).
+        Data source: Lightwell engineering API.
+      tags: [Files]
+      parameters:
+        - $ref: "#/components/parameters/RepositoryNamePath"
+        - name: package_name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      description: Schema TBD pending Lightwell engineering API design.
