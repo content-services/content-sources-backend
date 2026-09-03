@@ -3,11 +3,11 @@ BEGIN;
 ALTER TABLE lightwell_advisories
     ADD COLUMN IF NOT EXISTS severity_order SMALLINT NOT NULL DEFAULT 0;
 
-UPDATE lightwell_advisories SET severity_order = CASE
-    WHEN severity = 'critical' THEN 4
-    WHEN severity = 'important' THEN 3
-    WHEN severity = 'moderate' THEN 2
-    WHEN severity = 'low' THEN 1
+UPDATE lightwell_advisories SET severity_order = CASE LOWER(severity)
+    WHEN 'critical' THEN 4
+    WHEN 'important' THEN 3
+    WHEN 'moderate' THEN 2
+    WHEN 'low' THEN 1
     ELSE 0
 END;
 

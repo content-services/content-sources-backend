@@ -114,6 +114,7 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				RepoName:                    repoName,
 				AdvisoryID:                  a.AdvisoryID,
 				Severity:                    a.Severity,
+				SeverityOrder:               severityOrder(a.Severity),
 				Details:                     a.Details,
 				ReferenceURLs:               a.ReferenceURLs,
 				PackageName:                 a.PackageName,
@@ -130,8 +131,8 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				{Name: "package_name"},
 			},
 			DoUpdates: clause.AssignmentColumns([]string{
-				"repo_name", "severity", "details", "reference_urls",
-				"fixed_versions", "checksum", "updated_at",
+				"repo_name", "severity", "severity_order", "details",
+				"reference_urls", "fixed_versions", "checksum", "updated_at",
 			}),
 		}).CreateInBatches(&modelAdvisories, 100)
 		if result.Error != nil {
@@ -211,6 +212,13 @@ var severityMap = map[string]int16{
 	"moderate":  2,
 	"important": 3,
 	"critical":  4,
+}
+
+func severityOrder(severity string) int16 {
+	if v, ok := severityMap[strings.ToLower(severity)]; ok {
+		return v
+	}
+	return 0
 }
 
 func parseSeverityMin(s string) (pgtype.Int2, error) {

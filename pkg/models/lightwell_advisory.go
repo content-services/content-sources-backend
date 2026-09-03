@@ -10,6 +10,7 @@ type LightwellAdvisory struct {
 	RepoName                    string         `json:"repo_name" gorm:"not null"`
 	AdvisoryID                  string         `json:"advisory_id" gorm:"not null"`
 	Severity                    string         `json:"severity" gorm:"type:varchar(255)"`
+	SeverityOrder               int16          `json:"severity_order" gorm:"not null;default:0"`
 	Details                     string         `json:"details"`
 	ReferenceURLs               pq.StringArray `json:"reference_urls" gorm:"type:text[]"`
 	PackageName                 string         `json:"package_name"`
