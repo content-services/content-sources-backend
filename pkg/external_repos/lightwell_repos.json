@@ -16,7 +16,8 @@
     "name": "lightwell/java/predisclosure",
     "type": "maven",
     "base_path": "java/predisclosure",
-    "feature_name": "lightwell-network,lightwell-clearinghouse"
+    "feature_name": "lightwell-network,lightwell-clearinghouse",
+    "osv_path": "lightwell/osv/java/predisclosure"
   },
   {
     "name": "lightwell/python/validated",

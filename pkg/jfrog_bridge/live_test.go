@@ -1,3 +1,5 @@
+//go:build integration
+
 package jfrog_bridge
 
 import (
@@ -63,7 +65,7 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv"))))
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
 	defer osvServer.Close()
 
 	cfg := bridgeConfig{

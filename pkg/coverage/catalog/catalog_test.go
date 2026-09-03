@@ -38,26 +38,40 @@ func (s *CatalogSuite) SetupTest() {
 
 func (s *CatalogSuite) TestLoadCatalog() {
 	domainName := "test-domain"
-	javaHref := "test-repo-href-1"
-	pythonHref := "test-repo-href-2"
+	javaValidatedHref := "test-java-validated-href"
+	javaRemediatedHref := "test-java-remediated-href"
+	pythonValidatedHref := "test-python-validated-href"
+	pythonRemediatedHref := "test-python-remediated-href"
 
 	repos := []api.RepositoryResponse{
 		{
 			UUID:                  "repo-1",
 			Name:                  "test-repo-1",
-			PublishedDistBasePath: "java/validated",
-			ContentType:           config.ContentTypeMaven,
-		},
-		{
-			UUID:                  "repo-skip",
-			Name:                  "test-repo-skip",
-			PublishedDistBasePath: "java/remediated",
+			PublishedDistBasePath: javaValidatedBasePath,
 			ContentType:           config.ContentTypeMaven,
 		},
 		{
 			UUID:                  "repo-2",
 			Name:                  "test-repo-2",
-			PublishedDistBasePath: "python/validated",
+			PublishedDistBasePath: javaRemediatedBasePath,
+			ContentType:           config.ContentTypeMaven,
+		},
+		{
+			UUID:                  "repo-skip",
+			Name:                  "test-repo-skip",
+			PublishedDistBasePath: "java/other",
+			ContentType:           config.ContentTypeMaven,
+		},
+		{
+			UUID:                  "repo-3",
+			Name:                  "test-repo-3",
+			PublishedDistBasePath: pythonValidatedBasePath,
+			ContentType:           config.ContentTypePython,
+		},
+		{
+			UUID:                  "repo-4",
+			Name:                  "test-repo-4",
+			PublishedDistBasePath: pythonRemediatedBasePath,
 			ContentType:           config.ContentTypePython,
 		},
 	}
@@ -66,8 +80,8 @@ func (s *CatalogSuite) TestLoadCatalog() {
 	s.mockPulp.On("WithDomain", domainName).Return(s.mockPulp)
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
 
-	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, "java/validated").Return(utils.Ptr(javaHref), nil)
-	s.mockTang.On("MavenPackageList", s.ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr(javaValidatedHref), nil)
+	s.mockTang.On("MavenPackageList", s.ctx, javaValidatedHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
 		Return(tangy.MavenPackageListResponse{
 			Results: []tangy.MavenPackageListItem{
 				{
@@ -81,8 +95,23 @@ func (s *CatalogSuite) TestLoadCatalog() {
 			Offset: 0,
 		}, nil)
 
-	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, "python/validated").Return(utils.Ptr(pythonHref), nil)
-	s.mockTang.On("PythonPackageList", s.ctx, pythonHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaRemediatedBasePath).Return(utils.Ptr(javaRemediatedHref), nil)
+	s.mockTang.On("MavenPackageList", s.ctx, javaRemediatedHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
+		Return(tangy.MavenPackageListResponse{
+			Results: []tangy.MavenPackageListItem{
+				{
+					GroupID:    "ch.qos.logback",
+					ArtifactID: "logback-access",
+					Versions:   []string{"1.0.0"},
+				},
+			},
+			Total:  1,
+			Limit:  tangy.DefaultLimit,
+			Offset: 0,
+		}, nil)
+
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, pythonValidatedBasePath).Return(utils.Ptr(pythonValidatedHref), nil)
+	s.mockTang.On("PythonPackageList", s.ctx, pythonValidatedHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
 		Return(tangy.PythonPackageListResponse{
 			Results: []tangy.PythonPackageListItem{
 				{
@@ -96,14 +125,31 @@ func (s *CatalogSuite) TestLoadCatalog() {
 			Offset: 0,
 		}, nil)
 
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, pythonRemediatedBasePath).Return(utils.Ptr(pythonRemediatedHref), nil)
+	s.mockTang.On("PythonPackageList", s.ctx, pythonRemediatedHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
+		Return(tangy.PythonPackageListResponse{
+			Results: []tangy.PythonPackageListItem{
+				{
+					Name:           "Requests",
+					NameNormalized: "requests",
+					Versions:       []string{"2.31.0"},
+				},
+			},
+			Total:  1,
+			Limit:  tangy.DefaultLimit,
+			Offset: 0,
+		}, nil)
+
 	catalog, snapshotAt, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
 	require.NoError(s.T(), err)
 	assert.False(s.T(), snapshotAt.IsZero())
 	assert.ElementsMatch(s.T(), []matcher.Package{
 		{Ecosystem: matcher.EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"},
 		{Ecosystem: matcher.EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.0.0"},
+		{Ecosystem: matcher.EcosystemJava, Namespace: "ch.qos.logback", Name: "logback-access", Version: "1.0.0"},
 		{Ecosystem: matcher.EcosystemPython, Name: "flask", Version: "3.0.3"},
 		{Ecosystem: matcher.EcosystemPython, Name: "flask", Version: "2.3.0"},
+		{Ecosystem: matcher.EcosystemPython, Name: "requests", Version: "2.31.0"},
 	}, catalog)
 }
 
@@ -115,7 +161,7 @@ func (s *CatalogSuite) TestLoadCatalogPagination() {
 		{
 			UUID:                  "repo-1",
 			Name:                  "test-repo-1",
-			PublishedDistBasePath: "java/validated",
+			PublishedDistBasePath: javaValidatedBasePath,
 			ContentType:           config.ContentTypeMaven,
 		},
 	}
@@ -123,7 +169,7 @@ func (s *CatalogSuite) TestLoadCatalogPagination() {
 	s.mockDao.Domain.On("FetchOrCreateDomain", s.ctx, config.LightwellOrg).Return(domainName, nil)
 	s.mockPulp.On("WithDomain", domainName).Return(s.mockPulp)
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
-	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, "java/validated").Return(utils.Ptr(javaHref), nil)
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr(javaHref), nil)
 
 	s.mockTang.On("MavenPackageList", s.ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
 		Return(tangy.MavenPackageListResponse{
@@ -152,13 +198,13 @@ func (s *CatalogSuite) TestLoadCatalogPagination() {
 	}, catalog)
 }
 
-func (s *CatalogSuite) TestLoadCatalogNoValidatedRepos() {
+func (s *CatalogSuite) TestLoadCatalogNoMatchingRepos() {
 	domainName := "test-domain"
 	repos := []api.RepositoryResponse{
 		{
 			UUID:                  "repo-skip",
 			Name:                  "test-repo-skip",
-			PublishedDistBasePath: "java/remediated",
+			PublishedDistBasePath: "java/other",
 			ContentType:           config.ContentTypeMaven,
 		},
 	}
@@ -169,7 +215,7 @@ func (s *CatalogSuite) TestLoadCatalogNoValidatedRepos() {
 
 	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
 	require.Error(s.T(), err)
-	assert.Contains(s.T(), err.Error(), "no validated")
+	assert.Contains(s.T(), err.Error(), "no validated or remediated")
 }
 
 func (s *CatalogSuite) TestLoadCatalogTangError() {
@@ -179,13 +225,13 @@ func (s *CatalogSuite) TestLoadCatalogTangError() {
 		{
 			UUID:                  "repo-1",
 			Name:                  "test-repo-1",
-			PublishedDistBasePath: "java/validated",
+			PublishedDistBasePath: javaValidatedBasePath,
 			ContentType:           config.ContentTypeMaven,
 		},
 		{
 			UUID:                  "repo-2",
 			Name:                  "test-repo-2",
-			PublishedDistBasePath: "python/validated",
+			PublishedDistBasePath: pythonValidatedBasePath,
 			ContentType:           config.ContentTypePython,
 		},
 	}
@@ -193,7 +239,7 @@ func (s *CatalogSuite) TestLoadCatalogTangError() {
 	s.mockDao.Domain.On("FetchOrCreateDomain", s.ctx, config.LightwellOrg).Return(domainName, nil)
 	s.mockPulp.On("WithDomain", domainName).Return(s.mockPulp)
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
-	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, "java/validated").Return(utils.Ptr(javaHref), nil)
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr(javaHref), nil)
 	s.mockTang.On("MavenPackageList", s.ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
 		Return(tangy.MavenPackageListResponse{}, errors.New("tang unavailable"))
 
@@ -208,7 +254,7 @@ func (s *CatalogSuite) TestLoadCatalogPulpError() {
 		{
 			UUID:                  "repo-1",
 			Name:                  "test-repo-1",
-			PublishedDistBasePath: "java/validated",
+			PublishedDistBasePath: javaValidatedBasePath,
 			ContentType:           config.ContentTypeMaven,
 		},
 	}
@@ -216,7 +262,7 @@ func (s *CatalogSuite) TestLoadCatalogPulpError() {
 	s.mockDao.Domain.On("FetchOrCreateDomain", s.ctx, config.LightwellOrg).Return(domainName, nil)
 	s.mockPulp.On("WithDomain", domainName).Return(s.mockPulp)
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
-	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, "java/validated").Return((*string)(nil), errors.New("pulp unavailable"))
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return((*string)(nil), errors.New("pulp unavailable"))
 
 	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
 	require.Error(s.T(), err)
