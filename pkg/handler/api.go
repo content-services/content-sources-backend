@@ -110,7 +110,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
 		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client)
-		RegisterLightwellAdvisoryRoutes(group, daoReg)
+		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
 
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
 		if config.Tang == nil {

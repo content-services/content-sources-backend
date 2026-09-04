@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
@@ -26,8 +27,9 @@ import (
 
 type LightwellAdvisorySuite struct {
 	suite.Suite
-	echo *echo.Echo
-	reg  *dao.MockDaoRegistry
+	echo   *echo.Echo
+	reg    *dao.MockDaoRegistry
+	fsMock *feature_service_client.MockFeatureServiceClient
 }
 
 func TestLightwellAdvisorySuite(t *testing.T) {
@@ -41,6 +43,7 @@ func (s *LightwellAdvisorySuite) SetupTest() {
 	}))
 	s.echo.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	s.reg = dao.GetMockDaoRegistry(s.T())
+	s.fsMock = feature_service_client.NewMockFeatureServiceClient(s.T())
 }
 
 func (s *LightwellAdvisorySuite) TearDownTest() {
@@ -52,7 +55,8 @@ func (s *LightwellAdvisorySuite) serveRouter(req *http.Request) (int, []byte, er
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
-	RegisterLightwellAdvisoryRoutes(pathPrefix, s.reg.ToDaoRegistry())
+	var fsClient feature_service_client.FeatureServiceClient = s.fsMock
+	RegisterLightwellAdvisoryRoutes(pathPrefix, s.reg.ToDaoRegistry(), &fsClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -64,8 +68,14 @@ func (s *LightwellAdvisorySuite) serveRouter(req *http.Request) (int, []byte, er
 	return response.StatusCode, body, err
 }
 
+func (s *LightwellAdvisorySuite) stubLightwellAccess() {
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil).Maybe()
+}
+
 func (s *LightwellAdvisorySuite) TestListAdvisories() {
 	t := s.T()
+	s.stubLightwellAccess()
 
 	data := []api.LightwellAdvisoryResponse{
 		{
@@ -106,6 +116,7 @@ func (s *LightwellAdvisorySuite) TestListAdvisories() {
 
 func (s *LightwellAdvisorySuite) TestListAdvisoriesWithFilters() {
 	t := s.T()
+	s.stubLightwellAccess()
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
 		return opts.PackageName != nil && *opts.PackageName == "spring" &&
@@ -131,6 +142,7 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesWithFilters() {
 
 func (s *LightwellAdvisorySuite) TestListAdvisoriesInvalidSeverity() {
 	t := s.T()
+	s.stubLightwellAccess()
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
 		return opts.SeverityMin == "bogus"
@@ -147,6 +159,7 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesInvalidSeverity() {
 
 func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByRepoName() {
 	t := s.T()
+	s.stubLightwellAccess()
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
 		return opts.RepoName != nil && *opts.RepoName == "java-remediated"
@@ -161,8 +174,32 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByRepoName() {
 	assert.Equal(t, http.StatusOK, code)
 }
 
+func (s *LightwellAdvisorySuite) TestListAdvisoriesNoFeatureAccess() {
+	t := s.T()
+
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"RHEL-OS-x86_64"}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/advisories", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellAdvisoryCollectionResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(0), resp.Meta.Count)
+	assert.NotNil(t, resp.Data)
+	assert.Empty(t, resp.Data)
+}
+
 func (s *LightwellAdvisorySuite) TestListAdvisoriesEmptyResult() {
 	t := s.T()
+	s.stubLightwellAccess()
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.Anything).
 		Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)

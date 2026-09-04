@@ -2,20 +2,27 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 type LightwellAdvisoryHandler struct {
-	DaoRegistry dao.DaoRegistry
+	DaoRegistry          dao.DaoRegistry
+	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
-	h := LightwellAdvisoryHandler{DaoRegistry: *daoReg}
+func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
+	h := LightwellAdvisoryHandler{
+		DaoRegistry:          *daoReg,
+		FeatureServiceClient: *fsClient,
+	}
 	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.list, rbac.RbacVerbRead)
 }
 
@@ -37,6 +44,13 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/advisories [get]
 func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+	if !h.hasLightwellAccess(c, orgID) {
+		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
+		collResp := setCollectionResponseMetadata(&resp, c, 0)
+		return c.JSON(http.StatusOK, collResp)
+	}
+
 	page := ParsePagination(c)
 	filters := parseLightwellAdvisoryFilters(c)
 
@@ -63,6 +77,20 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	resp := api.LightwellAdvisoryCollectionResponse{Data: data}
 	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
+}
+
+func (h *LightwellAdvisoryHandler) hasLightwellAccess(c echo.Context, orgID string) bool {
+	features, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
+	if err != nil {
+		log.Error().Err(err).Msg("error checking entitled features")
+		return false
+	}
+	for _, f := range features {
+		if strings.HasPrefix(f, "lightwell-") {
+			return true
+		}
+	}
+	return false
 }
 
 func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterData {
