@@ -386,8 +386,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated stages to filter on.",
-                        "name": "stage",
+                        "description": "Comma-separated statuses to filter on.",
+                        "name": "status",
                         "in": "query"
                     },
                     {
@@ -404,7 +404,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Comma-separated flags to filter on (embargo, duplicate, blocked).",
+                        "description": "Comma-separated flags to filter on (embargo, duplicate).",
                         "name": "flag",
                         "in": "query"
                     },
@@ -5500,10 +5500,6 @@ const docTemplate = `{
         "api.LightwellVulnerabilityCollectionMeta": {
             "type": "object",
             "properties": {
-                "blocked_count": {
-                    "description": "Count of blocked rows matching filters",
-                    "type": "integer"
-                },
                 "count": {
                     "description": "Total count of results",
                     "type": "integer"
@@ -5524,8 +5520,8 @@ const docTemplate = `{
                     "description": "Offset into results used for the request",
                     "type": "integer"
                 },
-                "stage_counts": {
-                    "description": "Per-stage counts matching filters",
+                "status_counts": {
+                    "description": "Per-status counts matching filters",
                     "type": "object",
                     "additionalProperties": {
                         "type": "integer",
@@ -5569,10 +5565,6 @@ const docTemplate = `{
                     "description": "UTC calendar days since submitted_date",
                     "type": "integer"
                 },
-                "blocked": {
-                    "description": "True when stage is not Lightwell Network and age_days \u003e 30",
-                    "type": "boolean"
-                },
                 "complexity": {
                     "description": "Standard, Complex, or Extensive",
                     "type": "string"
@@ -5613,6 +5605,10 @@ const docTemplate = `{
                     "description": "Canonical vulnerability_id when duplicate",
                     "type": "string"
                 },
+                "ecosystem": {
+                    "description": "Derived ecosystem (java, python, javascript, csharp)",
+                    "type": "string"
+                },
                 "embargo": {
                     "description": "Embargo flag",
                     "type": "boolean"
@@ -5620,10 +5616,6 @@ const docTemplate = `{
                 "exploit_tested": {
                     "description": "Whether an exploit was tested",
                     "type": "boolean"
-                },
-                "language": {
-                    "description": "Derived language (java, python, javascript, csharp)",
-                    "type": "string"
                 },
                 "last_updated": {
                     "description": "Last update timestamp",
@@ -5652,8 +5644,8 @@ const docTemplate = `{
                     "description": "Severity (Critical, Important, Moderate, Low)",
                     "type": "string"
                 },
-                "stage": {
-                    "description": "Workflow stage",
+                "status": {
+                    "description": "Workflow status",
                     "type": "string"
                 },
                 "submitted_date": {

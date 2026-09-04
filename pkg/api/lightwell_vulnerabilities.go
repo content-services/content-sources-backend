@@ -19,13 +19,12 @@ type LightwellVulnerabilityResponse struct {
 	ExploitTested      bool      `json:"exploit_tested"`              // Whether an exploit was tested
 	ReproducerIncluded bool      `json:"reproducer_included"`         // Whether a reproducer is included
 	CustomerPriority   *string   `json:"customer_priority,omitempty"` // Customer priority
-	Stage              string    `json:"stage"`                       // Workflow stage
-	Language           *string   `json:"language,omitempty"`          // Derived language (java, python, javascript, csharp)
+	Status             string    `json:"status"`                      // Workflow status
+	Ecosystem          *string   `json:"ecosystem,omitempty"`         // Derived ecosystem (java, python, javascript, csharp)
 	Complexity         string    `json:"complexity"`                  // Standard, Complex, or Extensive
 	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
 	LastUpdated        time.Time `json:"last_updated"`                // Last update timestamp
 	AgeDays            int       `json:"age_days"`                    // UTC calendar days since submitted_date
-	Blocked            bool      `json:"blocked"`                     // True when stage is not Lightwell Network and age_days > 30
 	Embargo            bool      `json:"embargo"`                     // Embargo flag
 	Duplicate          bool      `json:"duplicate"`                   // Duplicate flag
 	DuplicateOf        *string   `json:"duplicate_of,omitempty"`      // Canonical vulnerability_id when duplicate
@@ -37,8 +36,7 @@ type LightwellVulnerabilityCollectionMeta struct {
 	ResponseMetadata
 	CriticalCount int64            `json:"critical_count"` // Count of Critical severity rows matching filters
 	EmbargoCount  int64            `json:"embargo_count"`  // Count of embargoed rows matching filters
-	BlockedCount  int64            `json:"blocked_count"`  // Count of blocked rows matching filters
-	StageCounts   map[string]int64 `json:"stage_counts"`   // Per-stage counts matching filters
+	StatusCounts  map[string]int64 `json:"status_counts"`  // Per-status counts matching filters
 }
 
 // LightwellVulnerabilityCollectionResponse is a paginated list of vulnerabilities.

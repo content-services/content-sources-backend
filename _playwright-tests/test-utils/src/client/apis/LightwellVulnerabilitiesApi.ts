@@ -41,7 +41,7 @@ export interface ListLightwellLtwlsuptTicketIdsRequest {
 export interface ListLightwellVulnerabilitiesRequest {
     customerId: string;
     severity?: string;
-    stage?: string;
+    status?: string;
     complexity?: string;
     ltwlsuptTicketId?: string;
     flag?: string;
@@ -165,8 +165,8 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
             queryParameters['severity'] = requestParameters['severity'];
         }
 
-        if (requestParameters['stage'] != null) {
-            queryParameters['stage'] = requestParameters['stage'];
+        if (requestParameters['status'] != null) {
+            queryParameters['status'] = requestParameters['status'];
         }
 
         if (requestParameters['complexity'] != null) {

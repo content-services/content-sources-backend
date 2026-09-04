@@ -330,17 +330,11 @@ func TestStore_CustomerScopingAndFilters(t *testing.T) {
 	require.NotNil(t, duplicates[0].DuplicateOf)
 	assert.Equal(t, "LWL-TEST-CRIT-STANDARD", *duplicates[0].DuplicateOf)
 
-	blockedParams := listParams(customerA)
-	blockedParams.Flags = []string{"blocked"}
-	blocked, err := q.ListVulnerabilities(ctx, blockedParams)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"LWL-TEST-CRIT-EXTENSIVE"}, vulnIDs(blocked))
-
 	flagOrParams := listParams(customerA)
-	flagOrParams.Flags = []string{"embargo", "blocked"}
+	flagOrParams.Flags = []string{"embargo", "duplicate"}
 	flagOr, err := q.ListVulnerabilities(ctx, flagOrParams)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"LWL-TEST-CRIT-STANDARD", "LWL-TEST-CRIT-EXTENSIVE"}, vulnIDs(flagOr))
+	assert.ElementsMatch(t, []string{"LWL-TEST-CRIT-STANDARD", "LWL-TEST-DUP"}, vulnIDs(flagOr))
 
 	for _, row := range allForA {
 		if row.VulnerabilityID != "LWL-TEST-DUP" {
@@ -477,7 +471,6 @@ func TestStore_CountAggregates(t *testing.T) {
 	assert.Equal(t, int64(5), agg.TotalCount)
 	assert.Equal(t, int64(2), agg.CriticalCount)
 	assert.Equal(t, int64(1), agg.EmbargoCount)
-	assert.Equal(t, int64(1), agg.BlockedCount)
 
 	criticalOnly := filterParams(customerID)
 	criticalOnly.Severities = []string{"Critical"}
@@ -486,7 +479,6 @@ func TestStore_CountAggregates(t *testing.T) {
 	assert.Equal(t, int64(2), filteredAgg.TotalCount)
 	assert.Equal(t, int64(2), filteredAgg.CriticalCount)
 	assert.Equal(t, int64(1), filteredAgg.EmbargoCount)
-	assert.Equal(t, int64(1), filteredAgg.BlockedCount)
 }
 
 func TestStore_CountByStage(t *testing.T) {

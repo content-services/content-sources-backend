@@ -16,11 +16,7 @@ const countAggregates = `-- name: CountAggregates :one
 SELECT
     COUNT(*)::bigint AS total_count,
     COUNT(*) FILTER (WHERE v.severity = 'Critical')::bigint AS critical_count,
-    COUNT(*) FILTER (WHERE v.embargo = true)::bigint AS embargo_count,
-    COUNT(*) FILTER (
-        WHERE v.stage <> 'Lightwell Network'
-            AND (CURRENT_DATE - v.submitted_date) > 30
-    )::bigint AS blocked_count
+    COUNT(*) FILTER (WHERE v.embargo = true)::bigint AS embargo_count
 FROM lightwell_filtered_vulnerabilities(
     $1,
     $2::text[],
@@ -46,7 +42,6 @@ type CountAggregatesRow struct {
 	TotalCount    int64 `json:"total_count"`
 	CriticalCount int64 `json:"critical_count"`
 	EmbargoCount  int64 `json:"embargo_count"`
-	BlockedCount  int64 `json:"blocked_count"`
 }
 
 func (q *Queries) CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error) {
@@ -60,12 +55,7 @@ func (q *Queries) CountAggregates(ctx context.Context, arg CountAggregatesParams
 		arg.Search,
 	)
 	var i CountAggregatesRow
-	err := row.Scan(
-		&i.TotalCount,
-		&i.CriticalCount,
-		&i.EmbargoCount,
-		&i.BlockedCount,
-	)
+	err := row.Scan(&i.TotalCount, &i.CriticalCount, &i.EmbargoCount)
 	return i, err
 }
 

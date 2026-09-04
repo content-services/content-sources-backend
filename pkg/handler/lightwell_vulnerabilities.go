@@ -100,10 +100,10 @@ func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) er
 // @Produce      json
 // @Param        customer_id query string true "Customer ID (required)."
 // @Param        severity query string false "Comma-separated severities to filter on."
-// @Param        stage query string false "Comma-separated stages to filter on."
+// @Param        status query string false "Comma-separated statuses to filter on."
 // @Param        complexity query string false "Comma-separated complexities to filter on (Standard, Complex, Extensive)."
 // @Param        ltwlsupt_ticket_id query string false "Comma-separated Lightwell support ticket IDs to filter on."
-// @Param        flag query string false "Comma-separated flags to filter on (embargo, duplicate, blocked)."
+// @Param        flag query string false "Comma-separated flags to filter on (embargo, duplicate)."
 // @Param        search query string false "Search vulnerability_id, component_name, and title. Minimum 2 characters."
 // @Param        offset query int false "Starting point for retrieving a subset of results. Default value:`0`."
 // @Param        limit query int false "Number of items to include in response. Default value: `100`. Maximum: `200`."
@@ -131,8 +131,7 @@ func (h *LightwellVulnerabilityHandler) listVulnerabilities(c echo.Context) erro
 		Meta: api.LightwellVulnerabilityCollectionMeta{
 			CriticalCount: aggregates.CriticalCount,
 			EmbargoCount:  aggregates.EmbargoCount,
-			BlockedCount:  aggregates.BlockedCount,
-			StageCounts:   stageCountsToMap(stageCounts),
+			StatusCounts:  stageCountsToMap(stageCounts),
 		},
 	}
 	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&resp, c, total))
@@ -153,7 +152,7 @@ func parseLightwellVulnerabilityListOptions(c echo.Context) (dao.ListLightwellVu
 	opts := dao.ListLightwellVulnerabilitiesOptions{
 		CustomerID:        customerID,
 		Severities:        splitCSVQueryParam(c, "severity"),
-		Stages:            splitCSVQueryParam(c, "stage"),
+		Stages:            splitCSVQueryParam(c, "status"),
 		Complexities:      splitCSVQueryParam(c, "complexity"),
 		LtwlsuptTicketIDs: splitCSVQueryParam(c, "ltwlsupt_ticket_id"),
 		Flags:             splitCSVQueryParam(c, "flag"),
