@@ -110,8 +110,8 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
 		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client)
+		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
 
-		// Register package and build routes if tang client is available
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
 		if config.Tang == nil {
 			err = config.ConfigureTang()
@@ -121,6 +121,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		}
 		if config.Tang != nil {
 			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
+			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient)
 		}
 	}
 

@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -29,8 +33,25 @@ type LightwellNotificationData struct {
 	ReferenceURLs []string
 }
 
+type ListLightwellAdvisoriesOptions struct {
+	RepoName    *string
+	PackageName *string
+	SeverityMin string
+	CveID       *string
+	Limit       int32
+	Offset      int32
+}
+
+type LightwellAdvisoryCveMatch struct {
+	PackageName   string
+	FixedVersions []string
+	RepoName      string
+	Severity      string
+}
+
 type lightwellAdvisoryDaoImpl struct {
-	db *gorm.DB
+	db      *gorm.DB
+	querier store.Querier
 }
 
 func GetLightwellAdvisoryDao(db *gorm.DB) LightwellAdvisoryDao {
@@ -93,6 +114,7 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				RepoName:                    repoName,
 				AdvisoryID:                  a.AdvisoryID,
 				Severity:                    a.Severity,
+				SeverityOrder:               severityOrder(a.Severity),
 				Details:                     a.Details,
 				ReferenceURLs:               a.ReferenceURLs,
 				PackageName:                 a.PackageName,
@@ -109,8 +131,8 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				{Name: "package_name"},
 			},
 			DoUpdates: clause.AssignmentColumns([]string{
-				"repo_name", "severity", "details", "reference_urls",
-				"fixed_versions", "checksum", "updated_at",
+				"repo_name", "severity", "severity_order", "details",
+				"reference_urls", "fixed_versions", "checksum", "updated_at",
 			}),
 		}).CreateInBatches(&modelAdvisories, 100)
 		if result.Error != nil {
@@ -183,4 +205,100 @@ func (d lightwellAdvisoryDaoImpl) MarkAsNotified(ctx context.Context, repoConfig
 		return fmt.Errorf("failed to mark advisories as notified: %w", result.Error)
 	}
 	return nil
+}
+
+var severityMap = map[string]int16{
+	"low":       1,
+	"moderate":  2,
+	"important": 3,
+	"critical":  4,
+}
+
+func severityOrder(severity string) int16 {
+	if v, ok := severityMap[strings.ToLower(severity)]; ok {
+		return v
+	}
+	return 0
+}
+
+func parseSeverityMin(s string) (pgtype.Int2, error) {
+	if s == "" {
+		return pgtype.Int2{}, nil
+	}
+	val, ok := severityMap[s]
+	if !ok {
+		return pgtype.Int2{}, fmt.Errorf("invalid severity: %s (must be one of: low, moderate, important, critical)", s)
+	}
+	return pgtype.Int2{Int16: val, Valid: true}, nil
+}
+
+func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error) {
+	severityMin, err := parseSeverityMin(opts.SeverityMin)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := d.querier.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		RepoName:    opts.RepoName,
+		PackageName: opts.PackageName,
+		SeverityMin: severityMin,
+		CveID:       opts.CveID,
+		PageOffset:  opts.Offset,
+		PageLimit:   opts.Limit,
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list advisories: %w", err)
+	}
+
+	var totalCount int64
+	if len(rows) > 0 {
+		totalCount = rows[0].TotalCount
+	}
+
+	data := make([]api.LightwellAdvisoryResponse, 0, len(rows))
+	for _, row := range rows {
+		refURLs := row.ReferenceUrls
+		if refURLs == nil {
+			refURLs = []string{}
+		}
+		fixedVersions := row.FixedVersions
+		if fixedVersions == nil {
+			fixedVersions = []string{}
+		}
+		data = append(data, api.LightwellAdvisoryResponse{
+			AdvisoryID:    row.AdvisoryID,
+			Severity:      row.Severity,
+			Details:       row.Details,
+			ReferenceURLs: refURLs,
+			PackageName:   row.PackageName,
+			FixedVersions: fixedVersions,
+			Repository:    row.RepoName,
+		})
+	}
+	return data, totalCount, nil
+}
+
+func (d lightwellAdvisoryDaoImpl) ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]LightwellAdvisoryCveMatch, error) {
+	rows, err := d.querier.ListAdvisoriesByCveID(ctx, cveID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list advisories by CVE ID: %w", err)
+	}
+	matches := make([]LightwellAdvisoryCveMatch, 0, len(rows))
+	for _, row := range rows {
+		matches = append(matches, LightwellAdvisoryCveMatch{
+			PackageName:   row.PackageName,
+			FixedVersions: row.FixedVersions,
+			RepoName:      row.RepoName,
+			Severity:      row.Severity,
+		})
+	}
+	return matches, nil
+}
+
+func (d lightwellAdvisoryDaoImpl) CountAdvisoriesByRepo(ctx context.Context, repoConfigUUID uuid.UUID) (int64, error) {
+	count, err := d.querier.CountAdvisoriesByRepo(ctx, repoConfigUUID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count advisories for repo %s: %w", repoConfigUUID, err)
+	}
+	return count, nil
 }

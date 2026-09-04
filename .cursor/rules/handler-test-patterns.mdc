@@ -1,0 +1,29 @@
+---
+description: Handler implementation and test patterns
+globs: pkg/handler/**,pkg/api/**
+alwaysApply: false
+---
+
+# Handler and Test Patterns
+
+## Handler Structure
+
+- Each handler domain has a struct storing **value copies** (not pointers) of dependencies, plus a `Register<Entity>Routes` function with panic-on-nil guards.
+- Route registration uses `addRepoRoute` / `addTemplateRoute` helpers that simultaneously register the Echo route and the RBAC permission.
+- Feature-check middleware is passed per-route as variadic `...echo.MiddlewareFunc`, not applied globally.
+
+## Request / Response
+
+- Bind with `c.Bind(&req)`, return 400 on error.
+- **Pointer fields** in request structs signal optionality (partial updates use `*string`, `*bool`).
+- **Nil-slice guard**: convert `nil` slices to `[]T{}` before returning JSON.
+- Collections use `setCollectionResponseMetadata` for pagination links.
+- Errors return `ce.NewErrorResponse(code, title, detail)` — `ce` is the canonical import alias for `pkg/errors`.
+
+## Testing
+
+- **MockDaoRegistry** (`pkg/dao/registry_mock.go`) is **hand-maintained**. When adding a new DAO, update this file, `DaoRegistry` in `interfaces.go`, and `.mockery_v3.yml`.
+- Each handler test suite has a `serveRouter` helper that creates a **fresh `echo.New()`** per test method — suites do not share router state.
+- Mock expectations use `test.MockCtx()` (matches `*context.valueCtx`).
+- Identity injection: `req.WithContext(identity.WithIdentity(...))` — do not use the `EnforceIdentity` HTTP middleware in unit tests.
+- `config.LoadedConfig.Loaded = true` is required for any test that calls `config.Get()`.

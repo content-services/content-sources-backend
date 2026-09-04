@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -751,56 +752,171 @@ func TestStore_ListCustomerIds(t *testing.T) {
 	assert.Contains(t, ids, customerB)
 }
 
-func TestStore_ListLtwlsuptTicketIds(t *testing.T) {
+// --- Advisory query integration tests ---
+
+func insertTestAdvisories(t *testing.T, ctx context.Context, tx pgx.Tx) uuid.UUID {
+	repoConfigUUID := uuid.New()
+	repoUUID := uuid.New()
+	now := time.Now()
+
+	_, err := tx.Exec(ctx,
+		`INSERT INTO repositories (uuid, url) VALUES ($1, $2)`,
+		repoUUID, "https://test.example.com/repo/"+repoConfigUUID.String())
+	require.NoError(t, err)
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, arch, org_id, repository_uuid)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		repoConfigUUID, now, now, "test-advisory-repo", "x86_64", "test-org-"+repoConfigUUID.String(), repoUUID)
+	require.NoError(t, err)
+
+	advisories := []struct {
+		id            string
+		severity      string
+		severityOrder int
+		packageName   string
+		fixedVersions []string
+		repoName      string
+	}{
+		{"CVE-2024-1001", "critical", 4, "spring-core", []string{"5.3.18.rhlw-00003"}, "lightwell/java/remediated"},
+		{"CVE-2024-1002", "important", 3, "jackson-databind", []string{"2.15.3.rhlw-00001"}, "lightwell/java/remediated"},
+		{"CVE-2024-1003", "moderate", 2, "requests", []string{"2.31.0.rhlw-00001"}, "lightwell/python/remediated"},
+		{"CVE-2024-1001", "critical", 4, "jackson-databind", []string{"2.14.2.rhlw-00001", "2.15.3.rhlw-00001"}, "lightwell/java/remediated"},
+	}
+
+	for _, adv := range advisories {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO lightwell_advisories (
+				uuid, advisory_id, severity, severity_order, details,
+				reference_urls, package_name, fixed_versions,
+				repo_name, repository_configuration_uuid, checksum
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			uuid.New(), adv.id, adv.severity, adv.severityOrder,
+			"test advisory details for "+adv.packageName,
+			[]string{"https://access.redhat.com/security/cve/" + adv.id},
+			adv.packageName, adv.fixedVersions,
+			adv.repoName, repoConfigUUID, fmt.Sprintf("checksum-%s-%s", adv.id, adv.packageName),
+		)
+		require.NoError(t, err)
+	}
+	return repoConfigUUID
+}
+
+func TestStore_ListAdvisories(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)
 
-	customerA := fmt.Sprintf("lw-tickets-a-%d", time.Now().UnixNano())
-	customerB := fmt.Sprintf("lw-tickets-b-%d", time.Now().UnixNano())
-	insertTestVulnerabilities(t, ctx, tx, []testVulnSpec{
-		{
-			vulnID:      "LWL-TICKETS-1",
-			severity:    "Moderate",
-			stage:       "Submitted",
-			language:    "java",
-			complexity:  "Standard",
-			ticketIDs:   []string{"ticket-c", "ticket-a"},
-			daysAgo:     1,
-			customerIDs: []string{customerA},
-		},
-		{
-			vulnID:      "LWL-TICKETS-2",
-			severity:    "Low",
-			stage:       "Submitted",
-			language:    "java",
-			complexity:  "Standard",
-			ticketID:    "ticket-a",
-			daysAgo:     1,
-			customerIDs: []string{customerA},
-		},
-		{
-			vulnID:      "LWL-TICKETS-3",
-			severity:    "Low",
-			stage:       "Submitted",
-			language:    "python",
-			complexity:  "Standard",
-			ticketID:    "ticket-b",
-			daysAgo:     1,
-			customerIDs: []string{customerB},
-		},
+	repoConfigUUID := insertTestAdvisories(t, ctx, tx)
+
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		RepositoryConfigUuid: pgtype.UUID{Bytes: repoConfigUUID, Valid: true},
+		PageLimit:            100,
+		PageOffset:           0,
 	})
-
-	ids, err := q.ListLtwlsuptTicketIds(ctx, customerA)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"ticket-a", "ticket-c"}, ids)
+	assert.Len(t, rows, 4)
+	assert.Equal(t, int64(4), rows[0].TotalCount)
+	assert.Equal(t, int16(4), rows[0].SeverityOrder)
+}
 
-	ids, err = q.ListLtwlsuptTicketIds(ctx, customerB)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"ticket-b"}, ids)
+func TestStore_ListAdvisoriesFilterByPackageName(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
 
-	ids, err = q.ListLtwlsuptTicketIds(ctx, "no-such-customer")
+	insertTestAdvisories(t, ctx, tx)
+
+	name := "jackson"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		PackageName: &name,
+		PageLimit:   100,
+		PageOffset:  0,
+	})
 	require.NoError(t, err)
-	assert.Empty(t, ids)
+	assert.Len(t, rows, 2)
+	for _, r := range rows {
+		assert.Contains(t, r.PackageName, "jackson")
+	}
+}
+
+func TestStore_ListAdvisoriesFilterBySeverityMin(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	repoConfigUUID := insertTestAdvisories(t, ctx, tx)
+
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		RepositoryConfigUuid: pgtype.UUID{Bytes: repoConfigUUID, Valid: true},
+		SeverityMin:          pgtype.Int2{Int16: 3, Valid: true},
+		PageLimit:            100,
+		PageOffset:           0,
+	})
+	require.NoError(t, err)
+	assert.Len(t, rows, 3)
+	for _, r := range rows {
+		assert.GreaterOrEqual(t, r.SeverityOrder, int16(3))
+	}
+}
+
+func TestStore_ListAdvisoriesFilterByRepoName(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	repoName := "lightwell/python/remediated"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		RepoName:   &repoName,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, "requests", rows[0].PackageName)
+}
+
+func TestStore_CountAdvisoriesByRepo(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	repoUUID := insertTestAdvisories(t, ctx, tx)
+
+	count, err := q.CountAdvisoriesByRepo(ctx, repoUUID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(4), count)
+}
+
+func TestStore_ListAdvisoriesByCveID(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	rows, err := q.ListAdvisoriesByCveID(ctx, "CVE-2024-1001")
+	require.NoError(t, err)
+	assert.Len(t, rows, 2)
+
+	packageNames := map[string]bool{}
+	for _, r := range rows {
+		packageNames[r.PackageName] = true
+		assert.Equal(t, "critical", r.Severity)
+	}
+	assert.True(t, packageNames["spring-core"])
+	assert.True(t, packageNames["jackson-databind"])
+}
+
+func TestStore_ListAdvisoriesByPackage(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	rows, err := q.ListAdvisoriesByPackage(ctx, "jackson-databind")
+	require.NoError(t, err)
+	assert.Len(t, rows, 2)
+	for _, r := range rows {
+		assert.NotEmpty(t, r.AdvisoryID)
+		assert.NotEmpty(t, r.FixedVersions)
+	}
 }
 
 func TestStore_UpsertAllowsDuplicateVulnerabilityIDs(t *testing.T) {
