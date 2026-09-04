@@ -4,7 +4,7 @@ package api
 type LightwellPackageResponse struct {
 	Name           string        `json:"name"`
 	Group          string        `json:"group,omitempty"`
-	ContentType    string        `json:"content_type"`
+	Ecosystem      string        `json:"ecosystem"`
 	Repository     string        `json:"repository"`
 	RepositoryUUID string        `json:"repository_uuid"`
 	Versions       []string      `json:"versions"`
@@ -28,7 +28,7 @@ type LightwellPackageVersionResponse struct {
 	Name           string `json:"name"`
 	Group          string `json:"group,omitempty"`
 	Version        string `json:"version"`
-	ContentType    string `json:"content_type"`
+	Ecosystem      string `json:"ecosystem"`
 	Repository     string `json:"repository"`
 	RepositoryUUID string `json:"repository_uuid"`
 	Release        string `json:"release,omitempty"`
@@ -49,7 +49,7 @@ func (r *LightwellPackageVersionCollectionResponse) SetMetadata(meta ResponseMet
 
 // LightwellPackageFilterData holds query-parameter filters for the cross-repo packages endpoint.
 type LightwellPackageFilterData struct {
-	ContentType   string `query:"content_type"`
+	Ecosystem     string `query:"ecosystem"`
 	Name          string `query:"name"`
 	Repository    string `query:"repository"`
 	SecurityLevel string `query:"security_level"`
@@ -57,7 +57,7 @@ type LightwellPackageFilterData struct {
 
 // LightwellPackageVersionFilterData holds query-parameter filters for the cross-repo package_versions endpoint.
 type LightwellPackageVersionFilterData struct {
-	ContentType       string `query:"content_type"`
+	Ecosystem         string `query:"ecosystem"`
 	Name              string `query:"name"`
 	SecurityLevel     string `query:"security_level"`
 	Repository        string `query:"repository"`

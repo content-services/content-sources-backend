@@ -421,7 +421,7 @@
             },
             "api.LightwellPackageResponse": {
                 "properties": {
-                    "content_type": {
+                    "ecosystem": {
                         "type": "string"
                     },
                     "group": {
@@ -470,10 +470,10 @@
             },
             "api.LightwellPackageVersionResponse": {
                 "properties": {
-                    "content_type": {
+                    "created_at": {
                         "type": "string"
                     },
-                    "created_at": {
+                    "ecosystem": {
                         "type": "string"
                     },
                     "group": {
@@ -3672,9 +3672,9 @@
                 "operationId": "listLightwellPackageVersions",
                 "parameters": [
                     {
-                        "description": "Filter by content type (maven, python, npm)",
+                        "description": "Filter by ecosystem (maven, python, npm)",
                         "in": "query",
-                        "name": "content_type",
+                        "name": "ecosystem",
                         "schema": {
                             "type": "string"
                         }
@@ -3776,13 +3776,13 @@
         },
         "/lightwell/packages": {
             "get": {
-                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by content type, name, and security level.",
+                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by ecosystem, name, and security level.",
                 "operationId": "listLightwellPackages",
                 "parameters": [
                     {
-                        "description": "Filter by content type (maven, python, npm)",
+                        "description": "Filter by ecosystem (maven, python, npm)",
                         "in": "query",
-                        "name": "content_type",
+                        "name": "ecosystem",
                         "schema": {
                             "type": "string"
                         }

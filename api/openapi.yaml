@@ -130,7 +130,7 @@ components:
       type: object
       required:
         - name
-        - content_type
+        - ecosystem
         - repository
         - repository_uuid
         - versions
@@ -142,7 +142,7 @@ components:
         group:
           type: string
           description: Maven groupId or npm scope. Omitted when empty.
-        content_type:
+        ecosystem:
           $ref: "#/components/schemas/ContentType"
         repository:
           type: string
@@ -163,7 +163,7 @@ components:
       required:
         - name
         - version
-        - content_type
+        - ecosystem
         - repository
         - repository_uuid
       properties:
@@ -175,7 +175,7 @@ components:
         version:
           type: string
           example: "3.14.0"
-        content_type:
+        ecosystem:
           $ref: "#/components/schemas/ContentType"
         repository:
           type: string
@@ -287,9 +287,9 @@ paths:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/SortBy"
-        - name: content_type
+        - name: ecosystem
           in: query
-          description: Filter by package ecosystem type.
+          description: Filter by package ecosystem (maven, python, npm).
           schema:
             $ref: "#/components/schemas/ContentType"
         - name: name
@@ -327,9 +327,9 @@ paths:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Offset"
         - $ref: "#/components/parameters/SortBy"
-        - name: content_type
+        - name: ecosystem
           in: query
-          description: Filter by package ecosystem type.
+          description: Filter by package ecosystem (maven, python, npm).
           schema:
             $ref: "#/components/schemas/ContentType"
         - name: name

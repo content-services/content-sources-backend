@@ -565,8 +565,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by content type (maven, python, npm)",
-                        "name": "content_type",
+                        "description": "Filter by ecosystem (maven, python, npm)",
+                        "name": "ecosystem",
                         "in": "query"
                     },
                     {
@@ -636,7 +636,7 @@ const docTemplate = `{
         },
         "/lightwell/packages": {
             "get": {
-                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by content type, name, and security level.",
+                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by ecosystem, name, and security level.",
                 "consumes": [
                     "application/json"
                 ],
@@ -651,8 +651,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Filter by content type (maven, python, npm)",
-                        "name": "content_type",
+                        "description": "Filter by ecosystem (maven, python, npm)",
+                        "name": "ecosystem",
                         "in": "query"
                     },
                     {
@@ -5422,7 +5422,7 @@ const docTemplate = `{
         "api.LightwellPackageResponse": {
             "type": "object",
             "properties": {
-                "content_type": {
+                "ecosystem": {
                     "type": "string"
                 },
                 "group": {
@@ -5471,10 +5471,10 @@ const docTemplate = `{
         "api.LightwellPackageVersionResponse": {
             "type": "object",
             "properties": {
-                "content_type": {
+                "created_at": {
                     "type": "string"
                 },
-                "created_at": {
+                "ecosystem": {
                     "type": "string"
                 },
                 "group": {
