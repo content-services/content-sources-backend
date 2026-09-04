@@ -41,6 +41,10 @@ See [docs/architecture.md](docs/architecture.md) for a description of the servic
 - PRs should come with good tests.
 - SQL migrations must be non-destructive (see [CONTRIBUTING.md](CONTRIBUTING.md) for the two-stage migration approach).
 
+## Feature entitlement
+
+Lightwell endpoints must verify the caller's org has access to Lightwell features. The `RepositoryConfig.List` DAO method calls `GetEntitledFeatures` internally and filters repos by `feature_name`, so handlers that query through it (packages, package_versions) get entitlement checking implicitly. Handlers that query other tables directly (advisories, vulnerabilities) must add their own guard — either by checking `GetEntitledFeatures` or by confirming the org has visible Lightwell repos via `RepositoryConfig.List`. When adding a new Lightwell endpoint, verify it is guarded.
+
 ## Lint before push
 
 After making Go code changes, run the project linter before committing:
