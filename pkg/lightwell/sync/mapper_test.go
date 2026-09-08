@@ -20,7 +20,7 @@ func TestMapVulnerability(t *testing.T) {
 			{"type":"paragraph","content":[{"type":"text","text":"version: 1.2.3"}]},
 			{"type":"paragraph","content":[{"type":"text","text":"Details"},{"type":"hardBreak"},{"type":"text","text":"second line"}]}
 		]}`)
-	issue.Fields[fieldPURL] = json.RawMessage(`"pkg:maven/example@example"`)
+	issue.Fields[fieldPURL] = json.RawMessage(`"pkg:maven/com.example/purl-component@9.9.9"`)
 	issue.Fields[fieldCWE] = json.RawMessage(`["CWE-79",{"value":"CWE-89"},"CWE-79"]`)
 	issue.Fields[fieldSeverity] = json.RawMessage(`{"id":"19917"}`)
 	issue.Fields[fieldCVSS] = json.RawMessage(`"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"`)
@@ -32,9 +32,9 @@ func TestMapVulnerability(t *testing.T) {
 	assert.Equal(t, "LTWL-1", vulnerability.VulnerabilityKey)
 	assert.Equal(t, "LW-0000-0001", vulnerability.VulnerabilityID)
 	assert.Equal(t, "Example vulnerability", *vulnerability.Title)
-	assert.Equal(t, "example-component", vulnerability.ComponentName)
-	assert.Equal(t, "1.2.3", vulnerability.ComponentVersion)
-	assert.Equal(t, "pkg:maven/example@example", *vulnerability.PURL)
+	assert.Equal(t, "com.example:purl-component", vulnerability.ComponentName)
+	assert.Equal(t, "9.9.9", vulnerability.ComponentVersion)
+	assert.Equal(t, "pkg:maven/com.example/purl-component@9.9.9", *vulnerability.PURL)
 	assert.Equal(t, "CWE-79,CWE-89", *vulnerability.CWE)
 	assert.Equal(t, "Critical", vulnerability.Severity)
 	assert.Equal(t, 9.8, *vulnerability.CVSS)
@@ -120,10 +120,18 @@ func TestLanguageFromPURL(t *testing.T) {
 	assert.Nil(t, language(json.RawMessage(`["backend"]`), nil))
 }
 
-func TestComponentPrefersDescriptionOverPURL(t *testing.T) {
+func TestComponentPrefersPURLOverDescription(t *testing.T) {
 	purl := utils.ParsePURL("pkg:pypi/flask@3.0.3")
-	assert.Equal(t, "from-description", componentName("from-description", purl))
-	assert.Equal(t, "9.9.9", componentVersion("9.9.9", purl))
+	assert.Equal(t, "flask", componentName("from-description", purl))
+	assert.Equal(t, "3.0.3", componentVersion("9.9.9", purl))
+}
+
+func TestComponentFallsBackToDescription(t *testing.T) {
+	assert.Equal(t, "from-description", componentName("from-description", nil))
+	assert.Equal(t, "9.9.9", componentVersion("9.9.9", nil))
+
+	purlWithoutVersion := utils.ParsePURL("pkg:maven/com.example/component")
+	assert.Equal(t, "9.9.9", componentVersion("9.9.9", purlWithoutVersion))
 }
 
 func TestComponentFromPURL(t *testing.T) {

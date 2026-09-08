@@ -392,23 +392,17 @@ func language(raw json.RawMessage, purl *utils.PURL) *string {
 }
 
 func componentName(value string, purl *utils.PURL) string {
-	if value != "" {
-		return value
+	if purl != nil && purl.FullName() != "" {
+		return purl.FullName()
 	}
-	if purl == nil {
-		return ""
-	}
-	return purl.FullName()
+	return value
 }
 
 func componentVersion(value string, purl *utils.PURL) string {
-	if value != "" {
-		return value
+	if purl != nil && purl.Version != "" {
+		return purl.Version
 	}
-	if purl == nil {
-		return ""
-	}
-	return purl.Version
+	return value
 }
 
 func parseCVSS(raw json.RawMessage) (*float64, *string) {
