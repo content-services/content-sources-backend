@@ -739,6 +739,8 @@ func (suite *SnapshotSuite) TestPublishSnapshot() {
 	publishTaskID := uuid.New()
 	updateLatestTaskID := uuid.New()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: true}, nil)
 	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, true).
@@ -782,6 +784,8 @@ func (suite *SnapshotSuite) TestPublishSnapshotWithForeignTemplates() {
 	publishTaskID := uuid.New()
 	updateLatestTaskID := uuid.New()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: true}, nil)
 	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, true).
@@ -822,6 +826,8 @@ func (suite *SnapshotSuite) TestUnpublishSnapshotEnqueuesForeignFixedTemplateFro
 	templateUUID := uuid.NewString()
 	publishTaskID := uuid.New()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, false, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: false}, nil)
 	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, false).
@@ -854,6 +860,8 @@ func (suite *SnapshotSuite) TestPublishSnapshotNotPartner() {
 	repoUUID := uuid.NewString()
 	snapshotUUID := uuid.NewString()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{}, &ce.DaoError{
 			BadValidation: true,
@@ -880,6 +888,8 @@ func (suite *SnapshotSuite) TestPublishSnapshotForbidden() {
 	repoUUID := uuid.NewString()
 	snapshotUUID := uuid.NewString()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{}, &ce.DaoError{
 			Forbidden: true,
@@ -906,6 +916,8 @@ func (suite *SnapshotSuite) TestPublishSnapshotUpdateFails() {
 	repoUUID := uuid.NewString()
 	snapshotUUID := uuid.NewString()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{}, errors.New("update failed"))
 
@@ -961,7 +973,11 @@ func (suite *SnapshotSuite) TestPublishSnapshotAlreadyRunning() {
 	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
 		Return(api.SnapshotResponse{
 			UUID: snapshotUUID,
+<<<<<<< HEAD
 			LastPublishTask: &api.TaskInfoResponse{
+=======
+			PublishTask: &api.TaskInfoResponse{
+>>>>>>> 153a3a83 (prevent duplicate task)
 				UUID:   uuid.NewString(),
 				Status: config.TaskStatusRunning,
 			},
