@@ -52,6 +52,11 @@ func (suite *SnapshotSuite) SetupTest() {
 	suite.tcMock = client.NewMockTaskClient(suite.T())
 }
 
+func (suite *SnapshotSuite) enableAdminPartnerFeature() {
+	config.Get().Features.AdminPartnerRepositories.Enabled = true
+	config.Get().Features.AdminPartnerRepositories.Accounts = &[]string{test_handler.MockAccountNumber}
+}
+
 func (suite *SnapshotSuite) serveSnapshotsRouter(req *http.Request) (int, []byte, error) {
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
@@ -732,6 +737,7 @@ func (suite *SnapshotSuite) TestBulkDeletePublishedSnapshotForbidden() {
 
 func (suite *SnapshotSuite) TestPublishSnapshot() {
 	t := suite.T()
+	suite.enableAdminPartnerFeature()
 	orgID := test_handler.MockOrgId
 	requestID := uuid.NewString()
 	repoUUID := uuid.NewString()
@@ -739,10 +745,14 @@ func (suite *SnapshotSuite) TestPublishSnapshot() {
 	publishTaskID := uuid.New()
 	updateLatestTaskID := uuid.New()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: true}, nil)
 	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, true).
 		Return(publishTaskID, nil)
+	suite.reg.Snapshot.On("UpdatePublishTaskUUID", test.MockCtx(), snapshotUUID, publishTaskID.String()).
+		Return(nil)
 	mockUpdateLatestSnapshotEnqueue(suite.tcMock, repoUUID, requestID, publishTaskID).
 		Return(updateLatestTaskID, nil)
 	suite.reg.Template.On("InternalOnlyGetTemplatesForRepoConfig", test.MockCtx(), repoUUID, false).
@@ -765,10 +775,14 @@ func (suite *SnapshotSuite) TestPublishSnapshot() {
 	err = json.Unmarshal(respBody, &resp)
 	assert.NoError(t, err)
 	assert.True(t, resp.Published)
+	assert.Equal(t, publishTaskID.String(), resp.LastPublishTaskUUID)
+	assert.NotNil(t, resp.LastPublishTask)
+	assert.Equal(t, config.TaskStatusPending, resp.LastPublishTask.Status)
 }
 
 func (suite *SnapshotSuite) TestPublishSnapshotWithForeignTemplates() {
 	t := suite.T()
+	suite.enableAdminPartnerFeature()
 	orgID := test_handler.MockOrgId
 	requestID := uuid.NewString()
 	repoUUID := uuid.NewString()
@@ -777,10 +791,14 @@ func (suite *SnapshotSuite) TestPublishSnapshotWithForeignTemplates() {
 	publishTaskID := uuid.New()
 	updateLatestTaskID := uuid.New()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: true}, nil)
 	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, true).
 		Return(publishTaskID, nil)
+	suite.reg.Snapshot.On("UpdatePublishTaskUUID", test.MockCtx(), snapshotUUID, publishTaskID.String()).
+		Return(nil)
 	mockUpdateLatestSnapshotEnqueue(suite.tcMock, repoUUID, requestID, publishTaskID).
 		Return(updateLatestTaskID, nil)
 	suite.reg.Template.On("InternalOnlyGetTemplatesForRepoConfig", test.MockCtx(), repoUUID, false).
@@ -808,6 +826,7 @@ func (suite *SnapshotSuite) TestPublishSnapshotWithForeignTemplates() {
 
 func (suite *SnapshotSuite) TestUnpublishSnapshotEnqueuesForeignFixedTemplateFromPublicationTask() {
 	t := suite.T()
+	suite.enableAdminPartnerFeature()
 	orgID := test_handler.MockOrgId
 	requestID := uuid.NewString()
 	repoUUID := uuid.NewString()
@@ -815,10 +834,14 @@ func (suite *SnapshotSuite) TestUnpublishSnapshotEnqueuesForeignFixedTemplateFro
 	templateUUID := uuid.NewString()
 	publishTaskID := uuid.New()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, false, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{UUID: snapshotUUID, Published: false}, nil)
 	mockUpdateSnapshotPublishedEnqueue(suite.tcMock, repoUUID, snapshotUUID, requestID, false).
 		Return(publishTaskID, nil)
+	suite.reg.Snapshot.On("UpdatePublishTaskUUID", test.MockCtx(), snapshotUUID, publishTaskID.String()).
+		Return(nil)
 	mockUpdateLatestSnapshotEnqueue(suite.tcMock, repoUUID, requestID, publishTaskID).
 		Return(uuid.New(), nil)
 	suite.reg.Template.On("InternalOnlyGetTemplatesForRepoConfig", test.MockCtx(), repoUUID, false).
@@ -841,10 +864,13 @@ func (suite *SnapshotSuite) TestUnpublishSnapshotEnqueuesForeignFixedTemplateFro
 
 func (suite *SnapshotSuite) TestPublishSnapshotNotPartner() {
 	t := suite.T()
+	suite.enableAdminPartnerFeature()
 	orgID := test_handler.MockOrgId
 	repoUUID := uuid.NewString()
 	snapshotUUID := uuid.NewString()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{}, &ce.DaoError{
 			BadValidation: true,
@@ -867,10 +893,13 @@ func (suite *SnapshotSuite) TestPublishSnapshotNotPartner() {
 
 func (suite *SnapshotSuite) TestPublishSnapshotForbidden() {
 	t := suite.T()
+	suite.enableAdminPartnerFeature()
 	orgID := test_handler.MockOrgId
 	repoUUID := uuid.NewString()
 	snapshotUUID := uuid.NewString()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{}, &ce.DaoError{
 			Forbidden: true,
@@ -893,10 +922,13 @@ func (suite *SnapshotSuite) TestPublishSnapshotForbidden() {
 
 func (suite *SnapshotSuite) TestPublishSnapshotUpdateFails() {
 	t := suite.T()
+	suite.enableAdminPartnerFeature()
 	orgID := test_handler.MockOrgId
 	repoUUID := uuid.NewString()
 	snapshotUUID := uuid.NewString()
 
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{UUID: snapshotUUID}, nil)
 	suite.reg.Snapshot.On("UpdatePublishedStatus", test.MockCtx(), orgID, true, repoUUID, snapshotUUID).
 		Return(api.SnapshotResponse{}, errors.New("update failed"))
 
@@ -911,6 +943,111 @@ func (suite *SnapshotSuite) TestPublishSnapshotUpdateFails() {
 	code, _, err := suite.serveSnapshotsRouter(req)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, code)
+}
+
+func (suite *SnapshotSuite) TestPublishSnapshotAlreadyInProgress() {
+	t := suite.T()
+	suite.enableAdminPartnerFeature()
+	orgID := test_handler.MockOrgId
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{
+			UUID: snapshotUUID,
+			LastPublishTask: &api.TaskInfoResponse{
+				UUID:   uuid.NewString(),
+				Status: config.TaskStatusPending,
+			},
+		}, nil)
+
+	body, err := json.Marshal(api.SnapshotPublishedUpdateRequest{Published: utils.Ptr(true)})
+	assert.NoError(t, err)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/published", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, respBody, err := suite.serveSnapshotsRouter(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusConflict, code)
+	assert.Contains(t, string(respBody), "already in progress")
+	suite.reg.Snapshot.AssertNotCalled(t, "UpdatePublishedStatus", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (suite *SnapshotSuite) TestPublishSnapshotAlreadyRunning() {
+	t := suite.T()
+	suite.enableAdminPartnerFeature()
+	orgID := test_handler.MockOrgId
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+
+	suite.reg.Snapshot.On("Fetch", test.MockCtx(), orgID, snapshotUUID).
+		Return(api.SnapshotResponse{
+			UUID: snapshotUUID,
+			LastPublishTask: &api.TaskInfoResponse{
+				UUID:   uuid.NewString(),
+				Status: config.TaskStatusRunning,
+			},
+		}, nil)
+
+	body, err := json.Marshal(api.SnapshotPublishedUpdateRequest{Published: utils.Ptr(true)})
+	assert.NoError(t, err)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/published", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, respBody, err := suite.serveSnapshotsRouter(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusConflict, code)
+	assert.Contains(t, string(respBody), "already in progress")
+	suite.reg.Snapshot.AssertNotCalled(t, "UpdatePublishedStatus", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (suite *SnapshotSuite) TestPublishSnapshotFeatureDisabled() {
+	t := suite.T()
+	config.Get().Features.AdminPartnerRepositories.Enabled = false
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+
+	body, err := json.Marshal(api.SnapshotPublishedUpdateRequest{Published: utils.Ptr(true)})
+	assert.NoError(t, err)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/published", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, respBody, err := suite.serveSnapshotsRouter(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(respBody), "Partner repositories feature is disabled")
+}
+
+func (suite *SnapshotSuite) TestPublishSnapshotFeatureNotAccessible() {
+	t := suite.T()
+	config.Get().Features.AdminPartnerRepositories.Enabled = true
+	config.Get().Features.AdminPartnerRepositories.Accounts = &[]string{seeds.RandomAccountId()}
+
+	repoUUID := uuid.NewString()
+	snapshotUUID := uuid.NewString()
+
+	body, err := json.Marshal(api.SnapshotPublishedUpdateRequest{Published: utils.Ptr(true)})
+	assert.NoError(t, err)
+
+	path := fmt.Sprintf("%s/repositories/%s/snapshots/%s/published", api.FullRootPath(), repoUUID, snapshotUUID)
+	req := httptest.NewRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, respBody, err := suite.serveSnapshotsRouter(req)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(respBody), "Neither the user nor account is allowed")
 }
 
 func createSnapshotModels(size int, repoUUID string) []models.Snapshot {

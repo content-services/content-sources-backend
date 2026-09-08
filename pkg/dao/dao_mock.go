@@ -5271,6 +5271,69 @@ func (_c *MockSnapshotDao_UpdatePublishedStatus_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
+// UpdatePublishTaskUUID provides a mock function for the type MockSnapshotDao
+func (_mock *MockSnapshotDao) UpdatePublishTaskUUID(ctx context.Context, snapshotUUID string, taskUUID string) error {
+	ret := _mock.Called(ctx, snapshotUUID, taskUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdatePublishTaskUUID")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, snapshotUUID, taskUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockSnapshotDao_UpdatePublishTaskUUID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdatePublishTaskUUID'
+type MockSnapshotDao_UpdatePublishTaskUUID_Call struct {
+	*mock.Call
+}
+
+// UpdatePublishTaskUUID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - snapshotUUID string
+//   - taskUUID string
+func (_e *MockSnapshotDao_Expecter) UpdatePublishTaskUUID(ctx interface{}, snapshotUUID interface{}, taskUUID interface{}) *MockSnapshotDao_UpdatePublishTaskUUID_Call {
+	return &MockSnapshotDao_UpdatePublishTaskUUID_Call{Call: _e.mock.On("UpdatePublishTaskUUID", ctx, snapshotUUID, taskUUID)}
+}
+
+func (_c *MockSnapshotDao_UpdatePublishTaskUUID_Call) Run(run func(ctx context.Context, snapshotUUID string, taskUUID string)) *MockSnapshotDao_UpdatePublishTaskUUID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockSnapshotDao_UpdatePublishTaskUUID_Call) Return(err error) *MockSnapshotDao_UpdatePublishTaskUUID_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockSnapshotDao_UpdatePublishTaskUUID_Call) RunAndReturn(run func(ctx context.Context, snapshotUUID string, taskUUID string) error) *MockSnapshotDao_UpdatePublishTaskUUID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockMetricsDao creates a new instance of MockMetricsDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockMetricsDao(t interface {

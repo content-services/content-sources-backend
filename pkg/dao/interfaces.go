@@ -176,6 +176,7 @@ type SnapshotDao interface {
 	Fetch(ctx context.Context, orgID string, uuid string) (api.SnapshotResponse, error)
 	FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 	SetDetectedOSVersion(ctx context.Context, uuid string) (string, error)
+	UpdatePublishTaskUUID(ctx context.Context, snapshotUUID string, taskUUID string) error
 }
 
 type MetricsDao interface {
