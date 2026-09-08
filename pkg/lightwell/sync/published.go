@@ -3,6 +3,8 @@ package sync
 import (
 	"slices"
 	"strings"
+
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 type PublishedAdvisory struct {
@@ -42,7 +44,9 @@ func packageMatches(advisoryPackage string, vulnerability Vulnerability) bool {
 		return true
 	}
 	if vulnerability.PURL != nil {
-		if packageName := parsePURL(*vulnerability.PURL).Name; packageName != "" {
+		parsed := utils.ParsePURL(strings.TrimSpace(*vulnerability.PURL))
+		if parsed != nil && parsed.FullName() != "" {
+			packageName := parsed.FullName()
 			return strings.EqualFold(advisoryPackage, packageName)
 		}
 	}

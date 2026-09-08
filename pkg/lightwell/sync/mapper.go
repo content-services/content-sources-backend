@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	cvss20 "github.com/pandatix/go-cvss/20"
 	cvss30 "github.com/pandatix/go-cvss/30"
 	cvss31 "github.com/pandatix/go-cvss/31"
@@ -98,13 +98,17 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 	customerPriority := descriptionValue(description, "customer priority")
 	cvss, vector := parseCVSS(issue.Fields[fieldCVSS])
 	purl := packageURL(issue.Fields[fieldPURL], description)
+	var parsedPURL *utils.PURL
+	if purl != nil {
+		parsedPURL = utils.ParsePURL(*purl)
+	}
 
 	return Vulnerability{
 		VulnerabilityKey: issue.Key,
 		VulnerabilityID:  vulnerabilityID,
 		PURL:             purl,
-		ComponentName:    componentName(descriptionValue(description, "component"), purl),
-		ComponentVersion: componentVersion(descriptionValue(description, "version"), purl),
+		ComponentName:    componentName(descriptionValue(description, "component"), parsedPURL),
+		ComponentVersion: componentVersion(descriptionValue(description, "version"), parsedPURL),
 		Title:            optionalString(title(description, summary)),
 		CWE:              joinedValues(issue.Fields[fieldCWE]),
 		Description:      optionalString(description),
@@ -113,7 +117,7 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		CVSSVector:       vector,
 		CustomerPriority: optionalString(customerPriority),
 		Stage:            stage(issue.Fields["status"]),
-		Language:         language(issue.Fields["labels"], purl),
+		Language:         language(issue.Fields["labels"], parsedPURL),
 		Complexity:       "",
 		SubmittedDate:    created.UTC(),
 		LastUpdated:      updated.UTC(),
@@ -370,7 +374,7 @@ func packageURL(raw json.RawMessage, description string) *string {
 	return optionalString(descriptionValue(description, "purl"))
 }
 
-func language(raw json.RawMessage, purl *string) *string {
+func language(raw json.RawMessage, purl *utils.PURL) *string {
 	var labels []string
 	if json.Unmarshal(raw, &labels) == nil {
 		for _, label := range labels {
@@ -384,91 +388,27 @@ func language(raw json.RawMessage, purl *string) *string {
 	if purl == nil {
 		return nil
 	}
-	return languageFromPURL(*purl)
+	return purl.Language()
 }
 
-func languageFromPURL(purl string) *string {
-	mapped := map[string]string{
-		"npm":   "javascript",
-		"maven": "java",
-		"pypi":  "python",
-	}[parsePURL(purl).Type]
-	if mapped == "" {
-		return nil
-	}
-	return &mapped
-}
-
-func componentName(value string, purl *string) string {
+func componentName(value string, purl *utils.PURL) string {
 	if value != "" {
 		return value
 	}
 	if purl == nil {
 		return ""
 	}
-	return parsePURL(*purl).Name
+	return purl.FullName()
 }
 
-func componentVersion(value string, purl *string) string {
+func componentVersion(value string, purl *utils.PURL) string {
 	if value != "" {
 		return value
 	}
 	if purl == nil {
 		return ""
 	}
-	return parsePURL(*purl).Version
-}
-
-type parsedPURL struct {
-	Type    string
-	Name    string
-	Version string
-}
-
-func parsePURL(raw string) parsedPURL {
-	rest, ok := strings.CutPrefix(strings.TrimSpace(raw), "pkg:")
-	if !ok {
-		return parsedPURL{}
-	}
-	typePart, remainder, ok := strings.Cut(rest, "/")
-	if !ok || typePart == "" || remainder == "" {
-		return parsedPURL{}
-	}
-
-	if idx := strings.IndexAny(remainder, "?#"); idx >= 0 {
-		remainder = remainder[:idx]
-	}
-
-	nameBlock, version := remainder, ""
-	if idx := strings.LastIndex(remainder, "@"); idx >= 0 {
-		nameBlock = remainder[:idx]
-		version = remainder[idx+1:]
-	}
-	nameBlock, _ = url.PathUnescape(nameBlock)
-	version, _ = url.PathUnescape(version)
-
-	namespace, name := "", nameBlock
-	if idx := strings.LastIndex(nameBlock, "/"); idx >= 0 {
-		namespace = nameBlock[:idx]
-		name = nameBlock[idx+1:]
-	}
-	if name == "" {
-		return parsedPURL{}
-	}
-
-	typ := strings.ToLower(typePart)
-	switch typ {
-	case "maven":
-		if namespace != "" {
-			name = strings.ReplaceAll(namespace, "/", ".") + ":" + name
-		}
-	case "npm":
-		if namespace != "" {
-			name = namespace + "/" + name
-		}
-	}
-
-	return parsedPURL{Type: typ, Name: name, Version: version}
+	return purl.Version
 }
 
 func parseCVSS(raw json.RawMessage) (*float64, *string) {
