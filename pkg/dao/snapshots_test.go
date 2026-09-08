@@ -1634,3 +1634,33 @@ func (s *SnapshotsSuite) TestUpdatePublishedStatusForbidden() {
 	assert.True(t, daoError.Forbidden)
 	assert.Contains(t, daoError.Message, "outside your organization")
 }
+
+func (s *SnapshotsSuite) TestUpdatePublishTaskUUID() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "publish task uuid repo", true)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	taskUUID := uuid2.New()
+	err := tx.Create(utils.Ptr(models.TaskInfo{
+		Id:         taskUUID,
+		OrgId:      repoConfig.OrgID,
+		Typename:   config.UpdateSnapshotPublishedTask,
+		Status:     config.TaskStatusPending,
+		ObjectUUID: uuid2.MustParse(repoConfig.UUID),
+		ObjectType: utils.Ptr(config.ObjectTypeRepository),
+		Token:      uuid2.New(),
+	})).Error
+	assert.NoError(t, err)
+
+	err = sDao.UpdatePublishTaskUUID(ctx, snap.UUID, taskUUID.String())
+	assert.NoError(t, err)
+
+	var updated models.Snapshot
+	err = tx.Where("uuid = ?", snap.UUID).First(&updated).Error
+	assert.NoError(t, err)
+	assert.Equal(t, taskUUID.String(), updated.PublishTaskUUID)
+}
