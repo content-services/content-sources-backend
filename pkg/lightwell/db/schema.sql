@@ -3,7 +3,8 @@
 -- sqlc uses this for code generation; it is not executed directly.
 
 CREATE TABLE repository_configurations (
-    uuid UUID PRIMARY KEY
+    uuid UUID PRIMARY KEY,
+    feature_name VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE lightwell_advisories (
@@ -13,7 +14,7 @@ CREATE TABLE lightwell_advisories (
     repo_name VARCHAR(255) NOT NULL,
     advisory_id VARCHAR(255) NOT NULL,
     severity VARCHAR(255) NOT NULL DEFAULT '',
-    severity_order SMALLINT NOT NULL DEFAULT 0,
+    severity_score REAL NOT NULL DEFAULT 0,
     details TEXT NOT NULL DEFAULT '',
     reference_urls TEXT[],
     package_name VARCHAR(255) NOT NULL DEFAULT '',
@@ -25,8 +26,8 @@ CREATE TABLE lightwell_advisories (
 
 CREATE UNIQUE INDEX idx_lightwell_advisories_repo_config_advisory
     ON lightwell_advisories (repository_configuration_uuid, advisory_id, package_name);
-CREATE INDEX idx_lightwell_advisories_severity_order
-    ON lightwell_advisories (severity_order);
+CREATE INDEX idx_lightwell_advisories_severity_score
+    ON lightwell_advisories (severity_score);
 CREATE INDEX idx_lightwell_advisories_package_name
     ON lightwell_advisories (package_name);
 

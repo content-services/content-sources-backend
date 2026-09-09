@@ -31,7 +31,7 @@ SELECT
     la.uuid,
     la.advisory_id,
     la.severity,
-    la.severity_order,
+    la.severity_score,
     la.details,
     la.reference_urls,
     la.package_name,
@@ -41,6 +41,8 @@ SELECT
     la.created_at,
     COUNT(*) OVER() AS total_count
 FROM lightwell_advisories la
+JOIN repository_configurations rc
+  ON rc.uuid = la.repository_configuration_uuid
 WHERE 1=1
     AND (
         $1::uuid IS NULL
@@ -55,32 +57,41 @@ WHERE 1=1
         OR la.package_name ILIKE '%' || $3::text || '%'
     )
     AND (
-        $4::smallint IS NULL
-        OR la.severity_order >= $4::smallint
+        $4::real IS NULL
+        OR la.severity_score >= $4::real
     )
     AND (
         $5::text IS NULL
         OR la.advisory_id = $5::text
     )
-ORDER BY la.severity_order DESC, la.created_at DESC
-LIMIT $7 OFFSET $6
+    AND (
+        $6::text[] IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
+            WHERE btrim(t.token) = ANY($6::text[])
+        )
+    )
+ORDER BY la.severity_score DESC, la.created_at DESC
+LIMIT $8 OFFSET $7
 `
 
 type ListAdvisoriesParams struct {
-	RepositoryConfigUuid pgtype.UUID `json:"repository_config_uuid"`
-	RepoName             *string     `json:"repo_name"`
-	PackageName          *string     `json:"package_name"`
-	SeverityMin          pgtype.Int2 `json:"severity_min"`
-	CveID                *string     `json:"cve_id"`
-	PageOffset           int32       `json:"page_offset"`
-	PageLimit            int32       `json:"page_limit"`
+	RepositoryConfigUuid pgtype.UUID   `json:"repository_config_uuid"`
+	RepoName             *string       `json:"repo_name"`
+	PackageName          *string       `json:"package_name"`
+	SeverityMin          pgtype.Float4 `json:"severity_min"`
+	CveID                *string       `json:"cve_id"`
+	EntitledFeatures     []string      `json:"entitled_features"`
+	PageOffset           int32         `json:"page_offset"`
+	PageLimit            int32         `json:"page_limit"`
 }
 
 type ListAdvisoriesRow struct {
 	Uuid                        uuid.UUID `json:"uuid"`
 	AdvisoryID                  string    `json:"advisory_id"`
 	Severity                    string    `json:"severity"`
-	SeverityOrder               int16     `json:"severity_order"`
+	SeverityScore               float32   `json:"severity_score"`
 	Details                     string    `json:"details"`
 	ReferenceUrls               []string  `json:"reference_urls"`
 	PackageName                 string    `json:"package_name"`
@@ -98,6 +109,7 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 		arg.PackageName,
 		arg.SeverityMin,
 		arg.CveID,
+		arg.EntitledFeatures,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
@@ -112,7 +124,7 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 			&i.Uuid,
 			&i.AdvisoryID,
 			&i.Severity,
-			&i.SeverityOrder,
+			&i.SeverityScore,
 			&i.Details,
 			&i.ReferenceUrls,
 			&i.PackageName,
@@ -178,19 +190,19 @@ const listAdvisoriesByPackage = `-- name: ListAdvisoriesByPackage :many
 SELECT
     la.advisory_id,
     la.severity,
-    la.severity_order,
+    la.severity_score,
     la.details,
     la.fixed_versions,
     la.repo_name
 FROM lightwell_advisories la
 WHERE la.package_name = $1::text
-ORDER BY la.severity_order DESC, la.created_at DESC
+ORDER BY la.severity_score DESC, la.created_at DESC
 `
 
 type ListAdvisoriesByPackageRow struct {
 	AdvisoryID    string   `json:"advisory_id"`
 	Severity      string   `json:"severity"`
-	SeverityOrder int16    `json:"severity_order"`
+	SeverityScore float32  `json:"severity_score"`
 	Details       string   `json:"details"`
 	FixedVersions []string `json:"fixed_versions"`
 	RepoName      string   `json:"repo_name"`
@@ -208,7 +220,7 @@ func (q *Queries) ListAdvisoriesByPackage(ctx context.Context, packageName strin
 		if err := rows.Scan(
 			&i.AdvisoryID,
 			&i.Severity,
-			&i.SeverityOrder,
+			&i.SeverityScore,
 			&i.Details,
 			&i.FixedVersions,
 			&i.RepoName,

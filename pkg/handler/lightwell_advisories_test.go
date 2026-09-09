@@ -90,7 +90,8 @@ func (s *LightwellAdvisorySuite) TestListAdvisories() {
 	}
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
-		return opts.Limit == int32(DefaultLimit) && opts.Offset == 0
+		return opts.Limit == int32(DefaultLimit) && opts.Offset == 0 &&
+			len(opts.EntitledFeatures) == 1 && opts.EntitledFeatures[0] == "lightwell-network"
 	})).Return(data, int64(1), nil)
 
 	path := fmt.Sprintf("%s/lightwell/advisories", api.FullRootPath())
@@ -121,7 +122,8 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesWithFilters() {
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
 		return opts.PackageName != nil && *opts.PackageName == "spring" &&
 			opts.SeverityMin == "important" &&
-			opts.Limit == 10 && opts.Offset == 5
+			opts.Limit == 10 && opts.Offset == 5 &&
+			len(opts.EntitledFeatures) == 1 && opts.EntitledFeatures[0] == "lightwell-network"
 	})).Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)
 
 	path := fmt.Sprintf("%s/lightwell/advisories?package_name=spring&severity_min=important&limit=10&offset=5", api.FullRootPath())
@@ -145,8 +147,9 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesInvalidSeverity() {
 	s.stubLightwellAccess()
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
-		return opts.SeverityMin == "bogus"
-	})).Return(nil, int64(0), fmt.Errorf("invalid severity: bogus (must be one of: low, moderate, important, critical)"))
+		return opts.SeverityMin == "bogus" &&
+			len(opts.EntitledFeatures) == 1 && opts.EntitledFeatures[0] == "lightwell-network"
+	})).Return(nil, int64(0), fmt.Errorf("invalid severity_min: bogus (must be a label like critical/important/moderate/low or a numeric score)"))
 
 	path := fmt.Sprintf("%s/lightwell/advisories?severity_min=bogus", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -162,7 +165,8 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByRepoName() {
 	s.stubLightwellAccess()
 
 	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
-		return opts.RepoName != nil && *opts.RepoName == "java-remediated"
+		return opts.RepoName != nil && *opts.RepoName == "java-remediated" &&
+			len(opts.EntitledFeatures) == 1 && opts.EntitledFeatures[0] == "lightwell-network"
 	})).Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)
 
 	path := fmt.Sprintf("%s/lightwell/advisories?repository=java-remediated", api.FullRootPath())

@@ -45,7 +45,22 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Router       /lightwell/advisories [get]
 func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	_, orgID := getAccountIdOrgId(c)
-	if !h.hasLightwellAccess(c, orgID) {
+
+	features, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
+	if err != nil {
+		log.Error().Err(err).Msg("error checking entitled features")
+		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
+		collResp := setCollectionResponseMetadata(&resp, c, 0)
+		return c.JSON(http.StatusOK, collResp)
+	}
+
+	var lightwellFeatures []string
+	for _, f := range features {
+		if strings.HasPrefix(f, "lightwell-") {
+			lightwellFeatures = append(lightwellFeatures, f)
+		}
+	}
+	if len(lightwellFeatures) == 0 {
 		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
 		collResp := setCollectionResponseMetadata(&resp, c, 0)
 		return c.JSON(http.StatusOK, collResp)
@@ -55,9 +70,10 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	filters := parseLightwellAdvisoryFilters(c)
 
 	opts := dao.ListLightwellAdvisoriesOptions{
-		SeverityMin: filters.SeverityMin,
-		Limit:       int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
-		Offset:      int32(page.Offset), //nolint:gosec // bounded by ParsePagination
+		SeverityMin:      filters.SeverityMin,
+		EntitledFeatures: lightwellFeatures,
+		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
+		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
 	}
 	if filters.Repository != "" {
 		opts.RepoName = &filters.Repository
@@ -77,20 +93,6 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	resp := api.LightwellAdvisoryCollectionResponse{Data: data}
 	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
-}
-
-func (h *LightwellAdvisoryHandler) hasLightwellAccess(c echo.Context, orgID string) bool {
-	features, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
-	if err != nil {
-		log.Error().Err(err).Msg("error checking entitled features")
-		return false
-	}
-	for _, f := range features {
-		if strings.HasPrefix(f, "lightwell-") {
-			return true
-		}
-	}
-	return false
 }
 
 func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterData {
