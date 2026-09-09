@@ -6635,10 +6635,38 @@ objects:
                 value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_BEACON_ENABLED
+                value: ${FEATURES_LIGHTWELL_BEACON_ENABLED}
+              - name: FEATURES_LIGHTWELL_BEACON_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_BEACON_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_BEACON_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_BEACON_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_BEACON_USERS
+                value: ${FEATURES_LIGHTWELL_BEACON_USERS}
+              - name: FEATURES_LIGHTWELL_LENS_ENABLED
+                value: ${FEATURES_LIGHTWELL_LENS_ENABLED}
+              - name: FEATURES_LIGHTWELL_LENS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_LENS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_LENS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_LENS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED
+                value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED}
+              - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
                 value: ${OPTIONS_ENABLE_NOTIFICATIONS}
+              - name: OPTIONS_LIGHTWELL_BRIDGE_TOPIC
+                value: ${OPTIONS_LIGHTWELL_BRIDGE_TOPIC}
               - name: SENTRY_DSN
                 valueFrom:
                   secretKeyRef:
@@ -6650,7 +6678,7 @@ objects:
                   secretKeyRef:
                     name: pulp-content-sources-password
                     key: password
-                    optional: true
+                    optional: false
               - name: OPTIONS_REPOSITORY_IMPORT_FILTER
                 value: ${OPTIONS_REPOSITORY_IMPORT_FILTER}
               - name: OPTIONS_FEATURE_FILTER
@@ -6782,6 +6810,30 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: JFROG_BRIDGE_ENABLED
+                value: ${JFROG_BRIDGE_ENABLED}
+              - name: JFROG_BRIDGE_CATALOG_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jfrog-bridge-catalog-token
+                    key: token
+                    optional: true
+              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
+                valueFrom:
+                  secretKeyRef:
+                    name: jfrog-bridge-signing-key
+                    key: pem
+                    optional: true
+              - name: CLIENTS_JIRA_URL
+                value: ${{CLIENTS_JIRA_URL}}
+              - name: CLIENTS_JIRA_USER
+                value: ${{CLIENTS_JIRA_USER}}
+              - name: CLIENTS_JIRA_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: jira-ltwl-ui-bot-token
+                    key: token
                     optional: true
               - name: EPEL_ORG_ID_SKIP
                 value: ${EPEL_ORG_ID_SKIP}
