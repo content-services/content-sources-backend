@@ -77,7 +77,12 @@ func processOSVForEntry(
 ) error {
 	logger := log.With().Str("entry", entry.Name).Str("osv_path", entry.OsvPath).Logger()
 
-	baseURL, err := url.JoinPath(config.Get().Clients.Pulp.ContentOrigin, config.Get().Clients.Pulp.ContentPathPrefix, entry.OsvPath)
+	hostname := config.Get().Clients.Pulp.LightwellContentOrigin
+	if hostname == "" {
+		hostname = config.Get().Clients.Pulp.ContentOrigin
+	}
+
+	baseURL, err := url.JoinPath(hostname, config.Get().Clients.Pulp.ContentPathPrefix, entry.OsvPath)
 	if err != nil {
 		return fmt.Errorf("error constructing base URL: %w", err)
 	}
@@ -284,10 +289,7 @@ func httpGet(ctx context.Context, client *http.Client, reqURL string) ([]byte, e
 	}
 
 	if config.Get().Clients.Lightwell.Username != "" {
-		log.Error().Msgf("LIGHTWELL_SYNC: Username %v provided, password with length %v", config.Get().Clients.Lightwell.Username, len(config.Get().Clients.Lightwell.Password))
 		req.SetBasicAuth(config.Get().Clients.Lightwell.Username, config.Get().Clients.Lightwell.Password)
-	} else {
-		log.Error().Msg("LIGHTWELL_SYNC: No username provided")
 	}
 
 	resp, err := client.Do(req)
