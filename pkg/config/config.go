@@ -110,6 +110,7 @@ type FeatureSet struct {
 	LightwellBeacon          Feature `mapstructure:"lightwell_beacon"`
 	LightwellLens            Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads    Feature `mapstructure:"lightwell_store_uploads"`
+	LightwellOsvDemo         Feature `mapstructure:"lightwell_osv_demo"`
 	AdminJfrogUpload         Feature `mapstructure:"admin_jfrog_upload"`
 }
 

@@ -124,6 +124,10 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		}
 	}
 
+	// osv.dev-compatible demo feed is public (no identity/RBAC) and rooted at
+	// /demo/osvdev, so register it on the raw engine rather than the API group.
+	RegisterOsvDevRoutes(engine, dao.GetDaoRegistry(db.DB))
+
 	data, err := json.MarshalIndent(engine.Routes(), "", "  ")
 	if err == nil {
 		log.Debug().Msg(string(data))

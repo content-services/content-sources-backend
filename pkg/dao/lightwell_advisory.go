@@ -60,6 +60,18 @@ func (d lightwellAdvisoryDaoImpl) List(ctx context.Context, offset int, limit in
 	return advisoryInputs(advisories), total, nil
 }
 
+// ListForOsv returns all advisories (with timestamps) for serving the osv.dev-compatible
+// demo feed. Unlike List, it returns full models so callers can build OSV records that
+// require modified/published timestamps.
+func (d lightwellAdvisoryDaoImpl) ListForOsv(ctx context.Context) ([]models.LightwellAdvisory, error) {
+	var advisories []models.LightwellAdvisory
+	result := d.db.WithContext(ctx).Order("advisory_id ASC").Find(&advisories)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to list advisories for osv feed: %w", result.Error)
+	}
+	return advisories, nil
+}
+
 func advisoryInputs(advisories []models.LightwellAdvisory) []LightwellAdvisoryInput {
 	inputs := make([]LightwellAdvisoryInput, len(advisories))
 	for i, a := range advisories {

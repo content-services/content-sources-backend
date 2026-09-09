@@ -88,6 +88,12 @@ func getPath(c echo.Context) (path string) {
 }
 
 func SkipMiddleware(c echo.Context) bool {
+	// The osv.dev demo feed is public. Its routes are rooted at /demo/osvdev
+	// (outside the API group), so match the raw route before getPath, which
+	// strips the API prefix and would mangle these paths.
+	if strings.HasPrefix(MatchedRoute(c), "/demo/osvdev") {
+		return true
+	}
 	p := getPath(c)
 	if SkipRbac(c, p) || SkipAuth(p) {
 		return true
