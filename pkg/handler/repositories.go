@@ -122,7 +122,34 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}
 
+	rh.enrichLightwellRepoCounts(c, &repos)
+
 	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
+}
+
+// enrichLightwellRepoCounts populates advisory_count on Lightwell-origin
+// repositories. package_count and version_count are already populated by the
+// DAO layer; only advisory_count requires a separate query.
+func (rh *RepositoryHandler) enrichLightwellRepoCounts(c echo.Context, repos *api.RepositoryCollectionResponse) {
+	for i := range repos.Data {
+		repo := &repos.Data[i]
+		if repo.Origin != config.OriginLightwell {
+			continue
+		}
+
+		repoUUID, err := uuid.Parse(repo.UUID)
+		if err != nil {
+			log.Ctx(c.Request().Context()).Warn().Err(err).Str("uuid", repo.UUID).Msg("invalid UUID for advisory count")
+			continue
+		}
+		count, err := rh.DaoRegistry.LightwellAdvisory.CountAdvisoriesByRepo(c.Request().Context(), repoUUID)
+		if err != nil {
+			log.Ctx(c.Request().Context()).Warn().Err(err).Str("uuid", repo.UUID).Msg("failed to count advisories")
+			continue
+		}
+		advCount := int(count)
+		repo.AdvisoryCount = &advCount
+	}
 }
 
 // CreateRepository godoc

@@ -64,7 +64,7 @@ type MockTaskClient_Cancel_Call struct {
 // Cancel is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskId string
-func (_e *MockTaskClient_Expecter) Cancel(ctx interface{}, taskId interface{}) *MockTaskClient_Cancel_Call {
+func (_e *MockTaskClient_Expecter) Cancel(ctx any, taskId any) *MockTaskClient_Cancel_Call {
 	return &MockTaskClient_Cancel_Call{Call: _e.mock.On("Cancel", ctx, taskId)}
 }
 
@@ -131,7 +131,7 @@ type MockTaskClient_Enqueue_Call struct {
 
 // Enqueue is a helper method to define mock.On call
 //   - task queue.Task
-func (_e *MockTaskClient_Expecter) Enqueue(task interface{}) *MockTaskClient_Enqueue_Call {
+func (_e *MockTaskClient_Expecter) Enqueue(task any) *MockTaskClient_Enqueue_Call {
 	return &MockTaskClient_Enqueue_Call{Call: _e.mock.On("Enqueue", task)}
 }
 

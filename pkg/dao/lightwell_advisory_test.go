@@ -19,6 +19,10 @@ func TestLightwellAdvisorySuite(t *testing.T) {
 }
 
 func (s *LightwellAdvisorySuite) createLightwellRepoConfig(name string) string {
+	return s.createLightwellRepoConfigWithFeature(name, "lightwell-network")
+}
+
+func (s *LightwellAdvisorySuite) createLightwellRepoConfigWithFeature(name string, featureName string) string {
 	var repoConfig models.RepositoryConfiguration
 	s.tx.Where("name = ? AND org_id = ?", name, config.LightwellOrg).First(&repoConfig)
 	if repoConfig.UUID != "" {
@@ -37,6 +41,7 @@ func (s *LightwellAdvisorySuite) createLightwellRepoConfig(name string) string {
 		Name:           name,
 		OrgID:          config.LightwellOrg,
 		RepositoryUUID: repo.UUID,
+		FeatureName:    featureName,
 	}
 	err = s.tx.Create(&repoConfig).Error
 	s.Require().NoError(err)

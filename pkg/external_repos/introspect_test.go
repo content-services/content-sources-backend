@@ -3,14 +3,13 @@ package external_repos
 //nolint:gci
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"html"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	_ "embed"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"

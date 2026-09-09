@@ -6,9 +6,12 @@ package store
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	CountAdvisoriesByRepo(ctx context.Context, repositoryConfigUuid uuid.UUID) (int64, error)
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
 	DeleteVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (int64, error)
@@ -16,6 +19,9 @@ type Querier interface {
 	DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg DeleteVulnerabilityTicketsNotInParams) error
 	GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (LightwellVulnerability, error)
 	InsertVulnerabilityCustomer(ctx context.Context, arg InsertVulnerabilityCustomerParams) error
+	ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) ([]ListAdvisoriesRow, error)
+	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]ListAdvisoriesByCveIDRow, error)
+	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)

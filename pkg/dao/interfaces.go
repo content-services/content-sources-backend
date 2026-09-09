@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -80,7 +81,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Uploads:                uploadDaoImpl{db: db, pulpClient: pulp_client.GetPulpClientWithDomain("")},
 		Memo:                   memoDaoImpl{db: db},
 		MavenPackages:          mavenPackagesDaoImpl{db: db},
-		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db},
+		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db, querier: csdb.LightwellQueries},
 		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
 		UserPreference:         userPreferenceDaoImpl{db: db},
 		CoverageReport:         coverageReportDaoImpl{db: db},
@@ -278,6 +279,9 @@ type LightwellAdvisoryDao interface {
 	List(ctx context.Context, offset int, limit int) ([]LightwellAdvisoryInput, int64, error)
 	ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error)
 	MarkAsNotified(ctx context.Context, repoConfigUUID string, orgID string, data []LightwellNotificationData) error
+	ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error)
+	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]LightwellAdvisoryCveMatch, error)
+	CountAdvisoriesByRepo(ctx context.Context, repoConfigUUID uuid.UUID) (int64, error)
 }
 
 type LightwellVulnerabilityDao interface {
