@@ -81,15 +81,19 @@ var environmentTest1 = Environment{
 }
 
 func (suite *ModelsSuite) SetupTest() {
-	if err := db.Connect(); err != nil {
-		return
+	if db.DB == nil {
+		if err := db.Connect(); err != nil {
+			suite.FailNow(err.Error())
+		}
 	}
 	suite.db = db.DB
 	suite.tx = suite.db.Begin()
 }
 
 func (s *ModelsSuite) TearDownTest() {
-	s.tx.Rollback()
+	if s.tx != nil {
+		s.NoError(s.tx.Rollback().Error)
+	}
 }
 
 func TestModelsSuite(t *testing.T) {

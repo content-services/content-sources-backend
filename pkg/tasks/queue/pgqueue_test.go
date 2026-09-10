@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -22,20 +23,31 @@ type QueueSuite struct {
 	suite.Suite
 	queue PgQueue
 	tx    *pgx.Tx
+	pool  *pgxpool.Pool
+	conn  *pgxpool.Conn
 }
 
 func (s *QueueSuite) TearDownTest() {
-	err := (*s.tx).Rollback(context.Background())
-	if err != nil {
-		require.NoError(s.T(), err)
+	if s.tx != nil {
+		assert.NoError(s.T(), (*s.tx).Rollback(context.Background()))
+	}
+	if s.conn != nil {
+		s.conn.Release()
+		s.conn = nil
+	}
+	if s.pool != nil {
+		s.pool.Close()
+		s.pool = nil
 	}
 }
 
 func (s *QueueSuite) SetupTest() {
 	pgxQueue, err := NewPgxPool(context.Background(), db.GetUrl())
 	require.NoError(s.T(), err)
+	s.pool = pgxQueue
 	pgxConn, err := pgxQueue.Acquire(context.Background())
 	require.NoError(s.T(), err)
+	s.conn = pgxConn
 	tx, err := pgxConn.Begin(context.Background())
 	require.NoError(s.T(), err)
 
