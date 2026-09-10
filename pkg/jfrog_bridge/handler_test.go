@@ -218,6 +218,37 @@ func TestFilterAndParse_NonJavaRemediated(t *testing.T) {
 	assert.Contains(t, err.Error(), "java-remediated")
 }
 
+func TestFilterAndParse_CloudEventEventTypeAccepted(t *testing.T) {
+	// The production bridge topic carries the ecosystem gate as the
+	// CloudEvents "eventtype" extension. java-remediated must be accepted.
+	reg := prometheus.NewRegistry()
+	metrics := newBridgeMetrics(reg)
+	handler := NewBridgeHandler(nil, nil, nil, metrics)
+
+	payload := []byte(`{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
+
+	remediations, shouldCommit, err := handler.filterAndParse(payload)
+	require.NoError(t, err)
+	assert.False(t, shouldCommit)
+	require.Len(t, remediations, 1)
+	assert.Equal(t, "org.test", remediations[0].GroupID)
+}
+
+func TestFilterAndParse_CloudEventEventTypeRejected(t *testing.T) {
+	// A CloudEvents message for a non-remediated ecosystem must be rejected
+	// (and committed so the consumer moves on).
+	reg := prometheus.NewRegistry()
+	metrics := newBridgeMetrics(reg)
+	handler := NewBridgeHandler(nil, nil, nil, metrics)
+
+	payload := []byte(`{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-predisclosure","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
+
+	_, shouldCommit, err := handler.filterAndParse(payload)
+	assert.Error(t, err)
+	assert.True(t, shouldCommit)
+	assert.Contains(t, err.Error(), "java-remediated")
+}
+
 func TestFilterAndParse_ValidFullEnvelope(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	metrics := newBridgeMetrics(reg)

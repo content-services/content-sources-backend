@@ -52,7 +52,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 		}
-		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, events)
+		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, event.LightwellEventTypeJavaRemediated, events)
 		log.Error().Msg("Sent lightwell advisory created event")
 		return c.NoContent(http.StatusOK)
 	} else { // assume notification
