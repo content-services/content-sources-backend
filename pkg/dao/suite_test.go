@@ -173,7 +173,12 @@ func (s *DaoSuite) SetupTest() {
 	})
 
 	s.tx = s.db.Begin()
-	// s.tx = s.db
+
+	// Soft-delete committed lightwell repos so they do not leak into test
+	// assertions. The Rollback in TearDownTest restores them.
+	s.tx.Where("org_id IN ?", []string{config.LightwellOrg, config.LightwellDemoOrg}).
+		Delete(&models.RepositoryConfiguration{})
+
 	s.SeedPreexistingRHRepo()
 	s.SeedPreexistingCommunityRepo()
 	s.SeedPreexistingPartnerRepo()
