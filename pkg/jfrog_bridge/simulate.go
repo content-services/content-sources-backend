@@ -10,6 +10,33 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// simulate runs the full remediation pipeline for a posted CloudEvents body,
+// without consuming from Kafka. The body must be the same CloudEvents envelope
+// the bridge receives on platform.lightwell.advisory-created (see
+// ParseRemediations). Unlike the Kafka path it does not apply the eventtype
+// gate, so any ecosystem can be exercised.
+//
+// Example:
+//
+//	curl -X POST https://<host>/api/content-sources/v1/admin/jfrog_bridge/simulate/ \
+//	  -H 'Content-Type: application/json' \
+//	  -H "x-rh-identity: $(echo -n '{"identity":{"type":"Associate","account_number":"11111"}}' | base64 -w0)" \
+//	  -d '{
+//	    "specversion": "1.0",
+//	    "type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+//	    "source": "urn:redhat:source:console:app:lightwell",
+//	    "eventtype": "java-remediated",
+//	    "data": [{
+//	      "metadata": {},
+//	      "payload": {
+//	        "package_name": "org.springframework:spring-core",
+//	        "releases": [{
+//	          "release_names": [{"name": "5.3.18.rhlw-00003"}],
+//	          "related_cve": [{"cve": "CVE-2025-41249", "severity": "important"}]
+//	        }]
+//	      }
+//	    }]
+//	  }'
 func (h *adminHandler) simulate(c echo.Context) error {
 	defer c.Request().Body.Close()
 	body, err := io.ReadAll(c.Request().Body)

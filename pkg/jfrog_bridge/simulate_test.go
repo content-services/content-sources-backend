@@ -118,7 +118,7 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 	bh := NewBridgeHandler(registry, jfrog, evidence, metrics)
 	h := &adminHandler{bridgeHandler: bh}
 
-	payload := `{"package_name":"org.springframework:spring-core","releases":[{"name":"5.3.18.rhlw-00003","cves_fixed":["CVE-2025-41249"]}]}`
+	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.springframework:spring-core","releases":[{"release_names":[{"name":"5.3.18.rhlw-00003"}],"related_cve":[{"cve":"CVE-2025-41249","severity":"important"}]}]}}]}`
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
 		strings.NewReader(payload))
@@ -137,7 +137,7 @@ func TestSimulateHandler_EmbargoRejection(t *testing.T) {
 	bh := NewBridgeHandler(nil, nil, nil, metrics)
 	h := &adminHandler{bridgeHandler: bh}
 
-	payload := `{"package_name":"org.test:test","releases":[{"name":"1.0.rhlw-00001","cves_fixed":["LTWL-0001"]}]}`
+	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"LTWL-0001","severity":"important"}]}]}}]}`
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
 		strings.NewReader(payload))
