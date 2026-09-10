@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +20,7 @@ func TestMapVulnerability(t *testing.T) {
 			{"type":"paragraph","content":[{"type":"text","text":"version: 1.2.3"}]},
 			{"type":"paragraph","content":[{"type":"text","text":"Details"},{"type":"hardBreak"},{"type":"text","text":"second line"}]}
 		]}`)
-	issue.Fields[fieldPURL] = json.RawMessage(`"pkg:maven/example@example"`)
+	issue.Fields[fieldPURL] = json.RawMessage(`"pkg:maven/com.example/purl-component@9.9.9"`)
 	issue.Fields[fieldCWE] = json.RawMessage(`["CWE-79",{"value":"CWE-89"},"CWE-79"]`)
 	issue.Fields[fieldSeverity] = json.RawMessage(`{"id":"19917"}`)
 	issue.Fields[fieldCVSS] = json.RawMessage(`"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"`)
@@ -31,9 +32,9 @@ func TestMapVulnerability(t *testing.T) {
 	assert.Equal(t, "LTWL-1", vulnerability.VulnerabilityKey)
 	assert.Equal(t, "LW-0000-0001", vulnerability.VulnerabilityID)
 	assert.Equal(t, "Example vulnerability", *vulnerability.Title)
-	assert.Equal(t, "example-component", vulnerability.ComponentName)
-	assert.Equal(t, "1.2.3", vulnerability.ComponentVersion)
-	assert.Equal(t, "pkg:maven/example@example", *vulnerability.PURL)
+	assert.Equal(t, "com.example:purl-component", vulnerability.ComponentName)
+	assert.Equal(t, "9.9.9", vulnerability.ComponentVersion)
+	assert.Equal(t, "pkg:maven/com.example/purl-component@9.9.9", *vulnerability.PURL)
 	assert.Equal(t, "CWE-79,CWE-89", *vulnerability.CWE)
 	assert.Equal(t, "Critical", vulnerability.Severity)
 	assert.Equal(t, 9.8, *vulnerability.CVSS)
@@ -103,49 +104,53 @@ func TestDiscardedResolution(t *testing.T) {
 }
 
 func TestLanguagePrefersLabelOverPURL(t *testing.T) {
-	purl := "pkg:pypi/flask@3.0.3"
-	got := language(json.RawMessage(`["backend","javascript"]`), &purl)
+	purl := utils.ParsePURL("pkg:pypi/flask@3.0.3")
+	got := language(json.RawMessage(`["backend","javascript"]`), purl)
 	require.NotNil(t, got)
 	assert.Equal(t, "javascript", *got)
 }
 
 func TestLanguageFromPURL(t *testing.T) {
-	npm := "pkg:npm/react@18.2.0"
-	maven := "pkg:maven/org.springframework/spring-core@5.3.20"
-	pypi := "pkg:PYPI/flask@3.0.3"
-	unsupported := "pkg:golang/github.com/gin-gonic/gin@1.9.1"
+	npm := utils.ParsePURL("pkg:npm/react@18.2.0")
+	maven := utils.ParsePURL("pkg:maven/org.springframework/spring-core@5.3.20")
 
-	assert.Equal(t, "javascript", *language(json.RawMessage(`["backend"]`), &npm))
-	assert.Equal(t, "java", *language(nil, &maven))
-	assert.Equal(t, "python", *languageFromPURL(pypi))
-	assert.Nil(t, languageFromPURL(unsupported))
-	assert.Nil(t, languageFromPURL("not-a-purl"))
+	assert.Equal(t, "javascript", *language(json.RawMessage(`["backend"]`), npm))
+	assert.Equal(t, "java", *language(nil, maven))
+	assert.Nil(t, language(nil, utils.ParsePURL("not-a-purl")))
 	assert.Nil(t, language(json.RawMessage(`["backend"]`), nil))
 }
 
-func TestComponentPrefersDescriptionOverPURL(t *testing.T) {
-	purl := "pkg:pypi/flask@3.0.3"
-	assert.Equal(t, "from-description", componentName("from-description", &purl))
-	assert.Equal(t, "9.9.9", componentVersion("9.9.9", &purl))
+func TestComponentPrefersPURLOverDescription(t *testing.T) {
+	purl := utils.ParsePURL("pkg:pypi/flask@3.0.3")
+	assert.Equal(t, "flask", componentName("from-description", purl))
+	assert.Equal(t, "3.0.3", componentVersion("9.9.9", purl))
+}
+
+func TestComponentFallsBackToDescription(t *testing.T) {
+	assert.Equal(t, "from-description", componentName("from-description", nil))
+	assert.Equal(t, "9.9.9", componentVersion("9.9.9", nil))
+
+	purlWithoutVersion := utils.ParsePURL("pkg:maven/com.example/component")
+	assert.Equal(t, "9.9.9", componentVersion("9.9.9", purlWithoutVersion))
 }
 
 func TestComponentFromPURL(t *testing.T) {
-	npm := "pkg:npm/react@18.2.0"
-	scoped := "pkg:npm/%40angular/core@15.0.0"
-	maven := "pkg:maven/org.springframework/spring-core@5.3.20?type=jar"
-	pypi := "pkg:pypi/flask@3.0.3"
+	npm := utils.ParsePURL("pkg:npm/react@18.2.0")
+	scoped := utils.ParsePURL("pkg:npm/%40angular/core@15.0.0")
+	maven := utils.ParsePURL("pkg:maven/org.springframework/spring-core@5.3.20?type=jar")
+	pypi := utils.ParsePURL("pkg:pypi/flask@3.0.3")
 
-	assert.Equal(t, "react", componentName("", &npm))
-	assert.Equal(t, "18.2.0", componentVersion("", &npm))
-	assert.Equal(t, "@angular/core", componentName("", &scoped))
-	assert.Equal(t, "org.springframework:spring-core", componentName("", &maven))
-	assert.Equal(t, "5.3.20", componentVersion("", &maven))
-	assert.Equal(t, "flask", componentName("", &pypi))
-	assert.Equal(t, "3.0.3", componentVersion("", &pypi))
+	assert.Equal(t, "react", componentName("", npm))
+	assert.Equal(t, "18.2.0", componentVersion("", npm))
+	assert.Equal(t, "@angular/core", componentName("", scoped))
+	assert.Equal(t, "org.springframework:spring-core", componentName("", maven))
+	assert.Equal(t, "5.3.20", componentVersion("", maven))
+	assert.Equal(t, "flask", componentName("", pypi))
+	assert.Equal(t, "3.0.3", componentVersion("", pypi))
 	assert.Empty(t, componentName("", nil))
 	assert.Empty(t, componentVersion("", nil))
-	assert.Empty(t, componentName("", optionalString("not-a-purl")))
-	assert.Empty(t, componentVersion("", optionalString("not-a-purl")))
+	assert.Empty(t, componentName("", utils.ParsePURL("not-a-purl")))
+	assert.Empty(t, componentVersion("", utils.ParsePURL("not-a-purl")))
 }
 
 func TestPackageURLPrefersCustomFieldOverDescription(t *testing.T) {

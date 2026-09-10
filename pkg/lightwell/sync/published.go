@@ -3,6 +3,8 @@ package sync
 import (
 	"slices"
 	"strings"
+
+	"github.com/content-services/content-sources-backend/pkg/utils"
 )
 
 type PublishedAdvisory struct {
@@ -14,18 +16,38 @@ type PublishedAdvisory struct {
 
 // publishedOnNetwork reports whether an advisory publishes this vulnerability for its package, language, and version.
 func publishedOnNetwork(v Vulnerability, advisories []PublishedAdvisory) bool {
-	if v.ComponentName == "" || v.ComponentVersion == "" || v.VulnerabilityID == "" || v.Language == nil {
+	componentName := strings.TrimSpace(v.ComponentName)
+	componentVersion := strings.TrimSpace(v.ComponentVersion)
+	if componentName == "" || componentVersion == "" || strings.TrimSpace(v.VulnerabilityID) == "" || v.Language == nil {
 		return false
 	}
 	for _, advisory := range advisories {
-		if !strings.EqualFold(strings.TrimSpace(advisory.PackageName), strings.TrimSpace(v.ComponentName)) {
+		if !packageMatches(advisory.PackageName, v) {
 			continue
 		}
 		if !repoMatchesLanguage(advisory.RepoName, *v.Language) {
 			continue
 		}
-		if versionPresent(advisory, v.VulnerabilityID, v.ComponentVersion) {
+		if versionPresent(advisory, v.VulnerabilityID, componentVersion) {
 			return true
+		}
+	}
+	return false
+}
+
+func packageMatches(advisoryPackage string, vulnerability Vulnerability) bool {
+	advisoryPackage = strings.TrimSpace(advisoryPackage)
+	if advisoryPackage == "" {
+		return false
+	}
+	if strings.EqualFold(advisoryPackage, strings.TrimSpace(vulnerability.ComponentName)) {
+		return true
+	}
+	if vulnerability.PURL != nil {
+		parsed := utils.ParsePURL(strings.TrimSpace(*vulnerability.PURL))
+		if parsed != nil && parsed.FullName() != "" {
+			packageName := parsed.FullName()
+			return strings.EqualFold(advisoryPackage, packageName)
 		}
 	}
 	return false

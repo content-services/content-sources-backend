@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type LightwellAdvisory struct {
@@ -17,7 +18,7 @@ type LightwellAdvisory struct {
 	RepoName                    string    `json:"repo_name"`
 	AdvisoryID                  string    `json:"advisory_id"`
 	Severity                    string    `json:"severity"`
-	SeverityOrder               int16     `json:"severity_order"`
+	SeverityScore               float32   `json:"severity_score"`
 	Details                     string    `json:"details"`
 	ReferenceUrls               []string  `json:"reference_urls"`
 	PackageName                 string    `json:"package_name"`
@@ -69,5 +70,6 @@ type LightwellVulnerabilitySupportTicket struct {
 }
 
 type RepositoryConfiguration struct {
-	Uuid uuid.UUID `json:"uuid"`
+	Uuid        uuid.UUID   `json:"uuid"`
+	FeatureName pgtype.Text `json:"feature_name"`
 }

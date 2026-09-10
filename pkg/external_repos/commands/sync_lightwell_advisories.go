@@ -77,7 +77,12 @@ func processOSVForEntry(
 ) error {
 	logger := log.With().Str("entry", entry.Name).Str("osv_path", entry.OsvPath).Logger()
 
-	baseURL, err := url.JoinPath(config.Get().Clients.Pulp.ContentOrigin, config.Get().Clients.Pulp.ContentPathPrefix, entry.OsvPath)
+	hostname := config.Get().Clients.Pulp.LightwellContentOrigin
+	if hostname == "" {
+		hostname = config.Get().Clients.Pulp.ContentOrigin
+	}
+
+	baseURL, err := url.JoinPath(hostname, config.Get().Clients.Pulp.ContentPathPrefix, entry.OsvPath)
 	if err != nil {
 		return fmt.Errorf("error constructing base URL: %w", err)
 	}

@@ -2,20 +2,27 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 type LightwellAdvisoryHandler struct {
-	DaoRegistry dao.DaoRegistry
+	DaoRegistry          dao.DaoRegistry
+	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
-	h := LightwellAdvisoryHandler{DaoRegistry: *daoReg}
+func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
+	h := LightwellAdvisoryHandler{
+		DaoRegistry:          *daoReg,
+		FeatureServiceClient: *fsClient,
+	}
 	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.list, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/advisories", h.listRepoAdvisories, rbac.RbacVerbRead)
 }
@@ -38,13 +45,36 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/advisories [get]
 func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
+	_, orgID := getAccountIdOrgId(c)
+
+	features, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
+	if err != nil {
+		log.Error().Err(err).Msg("error checking entitled features")
+		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
+		collResp := setCollectionResponseMetadata(&resp, c, 0)
+		return c.JSON(http.StatusOK, collResp)
+	}
+
+	var lightwellFeatures []string
+	for _, f := range features {
+		if strings.HasPrefix(f, "lightwell-") {
+			lightwellFeatures = append(lightwellFeatures, f)
+		}
+	}
+	if len(lightwellFeatures) == 0 {
+		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
+		collResp := setCollectionResponseMetadata(&resp, c, 0)
+		return c.JSON(http.StatusOK, collResp)
+	}
+
 	page := ParsePagination(c)
 	filters := parseLightwellAdvisoryFilters(c)
 
 	opts := dao.ListLightwellAdvisoriesOptions{
-		SeverityMin: filters.SeverityMin,
-		Limit:       int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
-		Offset:      int32(page.Offset), //nolint:gosec // bounded by ParsePagination
+		SeverityMin:      filters.SeverityMin,
+		EntitledFeatures: lightwellFeatures,
+		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
+		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
 	}
 	if filters.Repository != "" {
 		opts.RepoName = &filters.Repository

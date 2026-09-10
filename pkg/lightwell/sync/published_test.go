@@ -106,3 +106,93 @@ func TestApplyPublishedStageOnlyPromotesValidation(t *testing.T) {
 	applyPublishedStage(&closedUnpublished, advisories)
 	assert.Equal(t, "Validation", closedUnpublished.Stage)
 }
+
+func TestPublishedOnNetworkMatchesCaseInsensitiveMavenArtifactName(t *testing.T) {
+	java := "java"
+	purl := "pkg:maven/com.example/demo-cli@1.2.3"
+	vulnerability := Vulnerability{
+		VulnerabilityID:  "LW-0000-0101",
+		PURL:             &purl,
+		ComponentName:    "DEMO-CLI",
+		ComponentVersion: "1.2.3",
+		Language:         &java,
+	}
+	advisory := PublishedAdvisory{
+		RepoName:      "demo/java/predisclosure",
+		AdvisoryID:    "x_DEMO-LW-0000-0101-1.2.3",
+		PackageName:   "COM.EXAMPLE:DEMO-CLI",
+		FixedVersions: []string{"1.2.3.demo-00001"},
+	}
+
+	assert.True(t, publishedOnNetwork(vulnerability, []PublishedAdvisory{advisory}))
+}
+
+func TestPublishedOnNetworkDoesNotMatchPackagePrefix(t *testing.T) {
+	java := "java"
+	purl := "pkg:maven/com.example/demo-web@2.3.4"
+	vulnerability := Vulnerability{
+		VulnerabilityID:  "CVE-0000-0102",
+		PURL:             &purl,
+		ComponentName:    "com.example:demo-web",
+		ComponentVersion: "2.3.4",
+		Language:         &java,
+	}
+	advisory := PublishedAdvisory{
+		RepoName:      "demo/java/remediated",
+		AdvisoryID:    "x_DEMO-CVE-0000-0102-2.3.4",
+		PackageName:   "com.example:demo-webmvc",
+		FixedVersions: []string{"2.3.4.demo-00001"},
+	}
+
+	assert.False(t, publishedOnNetwork(vulnerability, []PublishedAdvisory{advisory}))
+}
+
+func TestPublishedOnNetworkUsesPURLIdentityForNonMavenPackages(t *testing.T) {
+	tests := []struct {
+		name          string
+		language      string
+		purl          string
+		componentName string
+		packageName   string
+		repoName      string
+	}{
+		{
+			name:          "PyPI",
+			language:      "python",
+			purl:          "pkg:pypi/demo-requests@2.31.0",
+			componentName: "Demo Requests",
+			packageName:   "demo-requests",
+			repoName:      "demo/python/validated",
+		},
+		{
+			name:          "npm scoped package",
+			language:      "javascript",
+			purl:          "pkg:npm/%40demo/core@15.0.0",
+			componentName: "core",
+			packageName:   "@demo/core",
+			repoName:      "demo/javascript/validated",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			purl := test.purl
+			language := test.language
+			vulnerability := Vulnerability{
+				VulnerabilityID:  "CVE-0000-0103",
+				PURL:             &purl,
+				ComponentName:    test.componentName,
+				ComponentVersion: "1.0.0",
+				Language:         &language,
+			}
+			advisory := PublishedAdvisory{
+				RepoName:      test.repoName,
+				AdvisoryID:    "x_DEMO-CVE-0000-0103-1.0.0",
+				PackageName:   test.packageName,
+				FixedVersions: []string{"1.0.0.demo-00001"},
+			}
+
+			assert.True(t, publishedOnNetwork(vulnerability, []PublishedAdvisory{advisory}))
+		})
+	}
+}

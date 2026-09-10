@@ -330,17 +330,11 @@ func TestStore_CustomerScopingAndFilters(t *testing.T) {
 	require.NotNil(t, duplicates[0].DuplicateOf)
 	assert.Equal(t, "LWL-TEST-CRIT-STANDARD", *duplicates[0].DuplicateOf)
 
-	blockedParams := listParams(customerA)
-	blockedParams.Flags = []string{"blocked"}
-	blocked, err := q.ListVulnerabilities(ctx, blockedParams)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"LWL-TEST-CRIT-EXTENSIVE"}, vulnIDs(blocked))
-
 	flagOrParams := listParams(customerA)
-	flagOrParams.Flags = []string{"embargo", "blocked"}
+	flagOrParams.Flags = []string{"embargo", "duplicate"}
 	flagOr, err := q.ListVulnerabilities(ctx, flagOrParams)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"LWL-TEST-CRIT-STANDARD", "LWL-TEST-CRIT-EXTENSIVE"}, vulnIDs(flagOr))
+	assert.ElementsMatch(t, []string{"LWL-TEST-CRIT-STANDARD", "LWL-TEST-DUP"}, vulnIDs(flagOr))
 
 	for _, row := range allForA {
 		if row.VulnerabilityID != "LWL-TEST-DUP" {
@@ -477,7 +471,6 @@ func TestStore_CountAggregates(t *testing.T) {
 	assert.Equal(t, int64(5), agg.TotalCount)
 	assert.Equal(t, int64(2), agg.CriticalCount)
 	assert.Equal(t, int64(1), agg.EmbargoCount)
-	assert.Equal(t, int64(1), agg.BlockedCount)
 
 	criticalOnly := filterParams(customerID)
 	criticalOnly.Severities = []string{"Critical"}
@@ -486,7 +479,6 @@ func TestStore_CountAggregates(t *testing.T) {
 	assert.Equal(t, int64(2), filteredAgg.TotalCount)
 	assert.Equal(t, int64(2), filteredAgg.CriticalCount)
 	assert.Equal(t, int64(1), filteredAgg.EmbargoCount)
-	assert.Equal(t, int64(1), filteredAgg.BlockedCount)
 }
 
 func TestStore_CountByStage(t *testing.T) {
@@ -773,33 +765,33 @@ func insertTestAdvisories(t *testing.T, ctx context.Context, tx pgx.Tx) uuid.UUI
 	require.NoError(t, err)
 
 	_, err = tx.Exec(ctx,
-		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, arch, org_id, repository_uuid)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		repoConfigUUID, now, now, "test-advisory-repo", "x86_64", "test-org-"+repoConfigUUID.String(), repoUUID)
+		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, arch, org_id, repository_uuid, feature_name)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		repoConfigUUID, now, now, "test-advisory-repo", "x86_64", "test-org-"+repoConfigUUID.String(), repoUUID, "lightwell-network")
 	require.NoError(t, err)
 
 	advisories := []struct {
 		id            string
 		severity      string
-		severityOrder int
+		severityScore float32
 		packageName   string
 		fixedVersions []string
 		repoName      string
 	}{
-		{"CVE-2024-1001", "critical", 4, "spring-core", []string{"5.3.18.rhlw-00003"}, "lightwell/java/remediated"},
-		{"CVE-2024-1002", "important", 3, "jackson-databind", []string{"2.15.3.rhlw-00001"}, "lightwell/java/remediated"},
-		{"CVE-2024-1003", "moderate", 2, "requests", []string{"2.31.0.rhlw-00001"}, "lightwell/python/remediated"},
-		{"CVE-2024-1001", "critical", 4, "jackson-databind", []string{"2.14.2.rhlw-00001", "2.15.3.rhlw-00001"}, "lightwell/java/remediated"},
+		{"CVE-2024-1001", "9.8", 9.8, "spring-core", []string{"5.3.18.rhlw-00003"}, "lightwell/java/remediated"},
+		{"CVE-2024-1002", "7.5", 7.5, "jackson-databind", []string{"2.15.3.rhlw-00001"}, "lightwell/java/remediated"},
+		{"CVE-2024-1003", "4.0", 4.0, "requests", []string{"2.31.0.rhlw-00001"}, "lightwell/python/remediated"},
+		{"CVE-2024-1001", "9.8", 9.8, "jackson-databind", []string{"2.14.2.rhlw-00001", "2.15.3.rhlw-00001"}, "lightwell/java/remediated"},
 	}
 
 	for _, adv := range advisories {
 		_, err := tx.Exec(ctx, `
 			INSERT INTO lightwell_advisories (
-				uuid, advisory_id, severity, severity_order, details,
+				uuid, advisory_id, severity, severity_score, details,
 				reference_urls, package_name, fixed_versions,
 				repo_name, repository_configuration_uuid, checksum
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-			uuid.New(), adv.id, adv.severity, adv.severityOrder,
+			uuid.New(), adv.id, adv.severity, adv.severityScore,
 			"test advisory details for "+adv.packageName,
 			[]string{"https://access.redhat.com/security/cve/" + adv.id},
 			adv.packageName, adv.fixedVersions,
@@ -824,7 +816,7 @@ func TestStore_ListAdvisories(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, rows, 4)
 	assert.Equal(t, int64(4), rows[0].TotalCount)
-	assert.Equal(t, int16(4), rows[0].SeverityOrder)
+	assert.Equal(t, float32(9.8), rows[0].SeverityScore)
 }
 
 func TestStore_ListAdvisoriesFilterByPackageName(t *testing.T) {
@@ -854,14 +846,14 @@ func TestStore_ListAdvisoriesFilterBySeverityMin(t *testing.T) {
 
 	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
 		RepositoryConfigUuid: pgtype.UUID{Bytes: repoConfigUUID, Valid: true},
-		SeverityMin:          pgtype.Int2{Int16: 3, Valid: true},
+		SeverityMin:          pgtype.Float4{Float32: 7.0, Valid: true},
 		PageLimit:            100,
 		PageOffset:           0,
 	})
 	require.NoError(t, err)
 	assert.Len(t, rows, 3)
 	for _, r := range rows {
-		assert.GreaterOrEqual(t, r.SeverityOrder, int16(3))
+		assert.GreaterOrEqual(t, r.SeverityScore, float32(7.0))
 	}
 }
 
@@ -906,7 +898,7 @@ func TestStore_ListAdvisoriesByCveID(t *testing.T) {
 	packageNames := map[string]bool{}
 	for _, r := range rows {
 		packageNames[r.PackageName] = true
-		assert.Equal(t, "critical", r.Severity)
+		assert.Equal(t, "9.8", r.Severity)
 	}
 	assert.True(t, packageNames["spring-core"])
 	assert.True(t, packageNames["jackson-databind"])
@@ -924,6 +916,90 @@ func TestStore_ListAdvisoriesByPackage(t *testing.T) {
 	for _, r := range rows {
 		assert.NotEmpty(t, r.AdvisoryID)
 		assert.NotEmpty(t, r.FixedVersions)
+	}
+}
+
+func TestStore_ListAdvisoriesEntitledFeaturesFilter(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	orgID := fmt.Sprintf("test-org-entitled-%d", time.Now().UnixNano())
+
+	repoUUID := uuid.New()
+	now := time.Now()
+
+	_, err := tx.Exec(ctx,
+		`INSERT INTO repositories (uuid, url) VALUES ($1, $2)`,
+		repoUUID, "https://test.example.com/repo/entitled-test-"+orgID)
+	require.NoError(t, err)
+
+	entitledRC := uuid.New()
+	_, err = tx.Exec(ctx,
+		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, label, arch, org_id, repository_uuid, feature_name)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		entitledRC, now, now, "entitled-repo-"+orgID, "entitled-repo-"+orgID, "x86_64", orgID, repoUUID, "lightwell-network")
+	require.NoError(t, err)
+
+	repoUUID2 := uuid.New()
+	_, err = tx.Exec(ctx,
+		`INSERT INTO repositories (uuid, url) VALUES ($1, $2)`,
+		repoUUID2, "https://test.example.com/repo/unentitled-test-"+orgID)
+	require.NoError(t, err)
+
+	unentitledRC := uuid.New()
+	_, err = tx.Exec(ctx,
+		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, label, arch, org_id, repository_uuid, feature_name)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		unentitledRC, now, now, "unentitled-repo-"+orgID, "unentitled-repo-"+orgID, "x86_64", orgID, repoUUID2, "lightwell-predisclosure")
+	require.NoError(t, err)
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO lightwell_advisories (uuid, advisory_id, severity, severity_score, details,
+			reference_urls, package_name, fixed_versions, repo_name, repository_configuration_uuid, checksum)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		uuid.New(), "CVE-ENTITLED-001", "9.8", 9.8, "entitled advisory",
+		[]string{}, "spring-core", []string{"1.0.0"}, "entitled-repo", entitledRC, "ck-entitled")
+	require.NoError(t, err)
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO lightwell_advisories (uuid, advisory_id, severity, severity_score, details,
+			reference_urls, package_name, fixed_versions, repo_name, repository_configuration_uuid, checksum)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		uuid.New(), "CVE-UNENTITLED-001", "7.5", 7.5, "unentitled advisory",
+		[]string{}, "jackson-databind", []string{"2.0.0"}, "unentitled-repo", unentitledRC, "ck-unentitled")
+	require.NoError(t, err)
+
+	allRows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		PageLimit: 100,
+	})
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(allRows), 2)
+
+	entitledRows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		EntitledFeatures: []string{"lightwell-network"},
+		PageLimit:        100,
+	})
+	require.NoError(t, err)
+	for _, r := range entitledRows {
+		assert.NotEqual(t, "CVE-UNENTITLED-001", r.AdvisoryID)
+	}
+	found := false
+	for _, r := range entitledRows {
+		if r.AdvisoryID == "CVE-ENTITLED-001" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "entitled advisory should appear")
+
+	noMatchRows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		EntitledFeatures: []string{"lightwell-nonexistent"},
+		PageLimit:        100,
+	})
+	require.NoError(t, err)
+	for _, r := range noMatchRows {
+		assert.NotEqual(t, "CVE-ENTITLED-001", r.AdvisoryID)
+		assert.NotEqual(t, "CVE-UNENTITLED-001", r.AdvisoryID)
 	}
 }
 

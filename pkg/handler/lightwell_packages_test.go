@@ -203,7 +203,7 @@ func (s *LightwellPackagesSuite) TestListPackagesSingleRepo() {
 	assert.Len(t, resp.Data, 1)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
 	assert.Equal(t, "com.fasterxml.jackson.core", resp.Data[0].Group)
-	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].ContentType)
+	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].Ecosystem)
 	assert.Equal(t, "lightwell/java/remediated", resp.Data[0].Repository)
 	assert.Equal(t, 2, len(resp.Data[0].Versions))
 }
@@ -241,19 +241,18 @@ func (s *LightwellPackagesSuite) TestListPackagesMultiRepo() {
 	assert.Equal(t, int64(2), resp.Meta.Count)
 	assert.Len(t, resp.Data, 2)
 
-	contentTypes := map[string]bool{}
+	ecosystems := map[string]bool{}
 	for _, p := range resp.Data {
-		contentTypes[p.ContentType] = true
+		ecosystems[p.Ecosystem] = true
 	}
-	assert.True(t, contentTypes[config.ContentTypeMaven])
-	assert.True(t, contentTypes[config.ContentTypePython])
+	assert.True(t, ecosystems[config.ContentTypeMaven])
+	assert.True(t, ecosystems[config.ContentTypePython])
 }
 
 func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 	t := s.T()
 
 	mavenRepo := newMavenRepo()
-	// Only maven repo should be returned when filtering by content_type=maven
 	s.reg.RepositoryConfig.On(
 		"List", test.MockCtx(), test_handler.MockOrgId,
 		mock.MatchedBy(func(p api.PaginationData) bool { return p.Limit == MaxLimit }),
@@ -268,7 +267,7 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	path := fmt.Sprintf("%s/lightwell/packages?content_type=maven", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/packages?ecosystem=maven", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -280,13 +279,13 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 	require.NoError(t, json.Unmarshal(body, &resp))
 
 	assert.Len(t, resp.Data, 1)
-	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].ContentType)
+	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].Ecosystem)
 }
 
 func (s *LightwellPackagesSuite) TestListPackagesInvalidType() {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/lightwell/packages?content_type=invalid", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/packages?ecosystem=invalid", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -343,7 +342,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsSingleRepo() {
 	assert.Equal(t, int64(2), resp.Meta.Count) // 2 versions for jackson-databind
 	assert.Len(t, resp.Data, 2)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
-	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].ContentType)
+	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].Ecosystem)
 	assert.Equal(t, "pkg:maven/com.fasterxml.jackson.core/jackson-databind@"+resp.Data[0].Version, resp.Data[0].Purl)
 	assert.Equal(t, "com.fasterxml.jackson.core:jackson-databind", resp.Data[0].Coordinates)
 }
@@ -384,7 +383,6 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsPagination() {
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	// Request with limit=1&offset=0 — should get 1 of 2 versions
 	path := fmt.Sprintf("%s/lightwell/package_versions?limit=1&offset=0", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -404,7 +402,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsPagination() {
 func (s *LightwellPackagesSuite) TestListPackageVersionsInvalidType() {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/lightwell/package_versions?content_type=bogus", api.FullRootPath())
+	path := fmt.Sprintf("%s/lightwell/package_versions?ecosystem=bogus", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -485,8 +483,6 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() 
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	// Advisory says jackson-databind is fixed at 2.15.3.rhlw-00001, so
-	// the older version 2.14.2.rhlw-00001 should be returned as vulnerable.
 	s.reg.LightwellAdvisory.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-8888").Return([]dao.LightwellAdvisoryCveMatch{
 		{
 			PackageName:   "jackson-databind",

@@ -421,7 +421,7 @@
             },
             "api.LightwellPackageResponse": {
                 "properties": {
-                    "content_type": {
+                    "ecosystem": {
                         "type": "string"
                     },
                     "group": {
@@ -470,22 +470,16 @@
             },
             "api.LightwellPackageVersionResponse": {
                 "properties": {
-                    "content_type": {
-                        "type": "string"
-                    },
-                    "coordinates": {
-                        "type": "string"
-                    },
                     "created_at": {
+                        "type": "string"
+                    },
+                    "ecosystem": {
                         "type": "string"
                     },
                     "group": {
                         "type": "string"
                     },
                     "name": {
-                        "type": "string"
-                    },
-                    "purl": {
                         "type": "string"
                     },
                     "release": {
@@ -505,10 +499,6 @@
             },
             "api.LightwellVulnerabilityCollectionMeta": {
                 "properties": {
-                    "blocked_count": {
-                        "description": "Count of blocked rows matching filters",
-                        "type": "integer"
-                    },
                     "count": {
                         "description": "Total count of results",
                         "type": "integer"
@@ -529,12 +519,12 @@
                         "description": "Offset into results used for the request",
                         "type": "integer"
                     },
-                    "stage_counts": {
+                    "status_counts": {
                         "additionalProperties": {
                             "format": "int64",
                             "type": "integer"
                         },
-                        "description": "Per-stage counts matching filters",
+                        "description": "Per-status counts matching filters",
                         "type": "object"
                     }
                 },
@@ -573,10 +563,6 @@
                     "age_days": {
                         "description": "UTC calendar days since submitted_date",
                         "type": "integer"
-                    },
-                    "blocked": {
-                        "description": "True when stage is not Lightwell Network and age_days \u003e 30",
-                        "type": "boolean"
                     },
                     "complexity": {
                         "description": "Standard, Complex, or Extensive",
@@ -618,6 +604,10 @@
                         "description": "Canonical vulnerability_id when duplicate",
                         "type": "string"
                     },
+                    "ecosystem": {
+                        "description": "Derived ecosystem (java, python, javascript, csharp)",
+                        "type": "string"
+                    },
                     "embargo": {
                         "description": "Embargo flag",
                         "type": "boolean"
@@ -625,10 +615,6 @@
                     "exploit_tested": {
                         "description": "Whether an exploit was tested",
                         "type": "boolean"
-                    },
-                    "language": {
-                        "description": "Derived language (java, python, javascript, csharp)",
-                        "type": "string"
                     },
                     "last_updated": {
                         "description": "Last update timestamp",
@@ -657,8 +643,8 @@
                         "description": "Severity (Critical, Important, Moderate, Low)",
                         "type": "string"
                     },
-                    "stage": {
-                        "description": "Workflow stage",
+                    "status": {
+                        "description": "Workflow status",
                         "type": "string"
                     },
                     "submitted_date": {
@@ -3453,9 +3439,9 @@
                         }
                     },
                     {
-                        "description": "Comma-separated stages to filter on.",
+                        "description": "Comma-separated statuses to filter on.",
                         "in": "query",
-                        "name": "stage",
+                        "name": "status",
                         "schema": {
                             "type": "string"
                         }
@@ -3477,7 +3463,7 @@
                         }
                     },
                     {
-                        "description": "Comma-separated flags to filter on (embargo, duplicate, blocked).",
+                        "description": "Comma-separated flags to filter on (embargo, duplicate).",
                         "in": "query",
                         "name": "flag",
                         "schema": {
@@ -3678,9 +3664,9 @@
                 "operationId": "listLightwellPackageVersions",
                 "parameters": [
                     {
-                        "description": "Filter by content type (maven, python, npm)",
+                        "description": "Filter by ecosystem (maven, python, npm)",
                         "in": "query",
-                        "name": "content_type",
+                        "name": "ecosystem",
                         "schema": {
                             "type": "string"
                         }
@@ -3782,13 +3768,13 @@
         },
         "/lightwell/packages": {
             "get": {
-                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by content type, name, and security level.",
+                "description": "List packages aggregated across all Lightwell repositories, with optional filtering by ecosystem, name, and security level.",
                 "operationId": "listLightwellPackages",
                 "parameters": [
                     {
-                        "description": "Filter by content type (maven, python, npm)",
+                        "description": "Filter by ecosystem (maven, python, npm)",
                         "in": "query",
-                        "name": "content_type",
+                        "name": "ecosystem",
                         "schema": {
                             "type": "string"
                         }

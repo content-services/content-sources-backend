@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -34,12 +35,13 @@ type LightwellNotificationData struct {
 }
 
 type ListLightwellAdvisoriesOptions struct {
-	RepoName    *string
-	PackageName *string
-	SeverityMin string
-	CveID       *string
-	Limit       int32
-	Offset      int32
+	RepoName         *string
+	PackageName      *string
+	SeverityMin      string
+	CveID            *string
+	EntitledFeatures []string
+	Limit            int32
+	Offset           int32
 }
 
 type LightwellAdvisoryCveMatch struct {
@@ -98,6 +100,35 @@ func advisoryInputs(advisories []models.LightwellAdvisory) []LightwellAdvisoryIn
 	return inputs
 }
 
+func parseSeverityScore(severity string) float32 {
+	f, err := strconv.ParseFloat(severity, 32)
+	if err != nil {
+		return 0
+	}
+	return float32(f)
+}
+
+var severityLabelThresholds = map[string]float32{
+	"critical":  9.0,
+	"important": 7.0,
+	"moderate":  4.0,
+	"low":       0.1,
+}
+
+func parseSeverityMin(s string) (pgtype.Float4, error) {
+	if s == "" {
+		return pgtype.Float4{}, nil
+	}
+	if threshold, ok := severityLabelThresholds[strings.ToLower(s)]; ok {
+		return pgtype.Float4{Float32: threshold, Valid: true}, nil
+	}
+	f, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return pgtype.Float4{}, fmt.Errorf("invalid severity_min: %s (must be a label like critical/important/moderate/low or a numeric score)", s)
+	}
+	return pgtype.Float4{Float32: float32(f), Valid: true}, nil
+}
+
 func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoConfigUUID string, repoName string, advisories []LightwellAdvisoryInput) error {
 	if len(advisories) == 0 {
 		return nil
@@ -114,6 +145,7 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				RepoName:                    repoName,
 				AdvisoryID:                  a.AdvisoryID,
 				Severity:                    a.Severity,
+				SeverityScore:               parseSeverityScore(a.Severity),
 				Details:                     a.Details,
 				ReferenceURLs:               a.ReferenceURLs,
 				PackageName:                 a.PackageName,
@@ -130,8 +162,8 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				{Name: "package_name"},
 			},
 			DoUpdates: clause.AssignmentColumns([]string{
-				"repo_name", "severity", "details", "reference_urls",
-				"fixed_versions", "checksum", "updated_at",
+				"repo_name", "severity", "severity_score", "details",
+				"reference_urls", "fixed_versions", "checksum", "updated_at",
 			}),
 		}).CreateInBatches(&modelAdvisories, 100)
 		if result.Error != nil {
@@ -206,38 +238,25 @@ func (d lightwellAdvisoryDaoImpl) MarkAsNotified(ctx context.Context, repoConfig
 	return nil
 }
 
-var severityMap = map[string]int16{
-	"low":       1,
-	"moderate":  2,
-	"important": 3,
-	"critical":  4,
-}
-
-func parseSeverityMin(s string) (pgtype.Int2, error) {
-	if s == "" {
-		return pgtype.Int2{}, nil
-	}
-	val, ok := severityMap[s]
-	if !ok {
-		return pgtype.Int2{}, fmt.Errorf("invalid severity: %s (must be one of: low, moderate, important, critical)", s)
-	}
-	return pgtype.Int2{Int16: val, Valid: true}, nil
-}
-
 func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error) {
 	severityMin, err := parseSeverityMin(opts.SeverityMin)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	rows, err := d.querier.ListAdvisories(ctx, store.ListAdvisoriesParams{
+	params := store.ListAdvisoriesParams{
 		RepoName:    opts.RepoName,
 		PackageName: opts.PackageName,
 		SeverityMin: severityMin,
 		CveID:       opts.CveID,
 		PageOffset:  opts.Offset,
 		PageLimit:   opts.Limit,
-	})
+	}
+	if len(opts.EntitledFeatures) > 0 {
+		params.EntitledFeatures = opts.EntitledFeatures
+	}
+
+	rows, err := d.querier.ListAdvisories(ctx, params)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list advisories: %w", err)
 	}

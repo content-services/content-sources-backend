@@ -3,7 +3,7 @@ SELECT
     la.uuid,
     la.advisory_id,
     la.severity,
-    la.severity_order,
+    la.severity_score,
     la.details,
     la.reference_urls,
     la.package_name,
@@ -13,6 +13,8 @@ SELECT
     la.created_at,
     COUNT(*) OVER() AS total_count
 FROM lightwell_advisories la
+JOIN repository_configurations rc
+  ON rc.uuid = la.repository_configuration_uuid
 WHERE 1=1
     AND (
         sqlc.narg(repository_config_uuid)::uuid IS NULL
@@ -27,14 +29,22 @@ WHERE 1=1
         OR la.package_name ILIKE '%' || sqlc.narg(package_name)::text || '%'
     )
     AND (
-        sqlc.narg(severity_min)::smallint IS NULL
-        OR la.severity_order >= sqlc.narg(severity_min)::smallint
+        sqlc.narg(severity_min)::real IS NULL
+        OR la.severity_score >= sqlc.narg(severity_min)::real
     )
     AND (
         sqlc.narg(cve_id)::text IS NULL
         OR la.advisory_id = sqlc.narg(cve_id)::text
     )
-ORDER BY la.severity_order DESC, la.created_at DESC
+    AND (
+        sqlc.narg(entitled_features)::text[] IS NULL
+        OR EXISTS (
+            SELECT 1
+            FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
+            WHERE btrim(t.token) = ANY(sqlc.narg(entitled_features)::text[])
+        )
+    )
+ORDER BY la.severity_score DESC, la.created_at DESC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
 -- name: CountAdvisoriesByRepo :one
@@ -46,13 +56,13 @@ WHERE la.repository_configuration_uuid = sqlc.arg(repository_config_uuid)::uuid;
 SELECT
     la.advisory_id,
     la.severity,
-    la.severity_order,
+    la.severity_score,
     la.details,
     la.fixed_versions,
     la.repo_name
 FROM lightwell_advisories la
 WHERE la.package_name = sqlc.arg(package_name)::text
-ORDER BY la.severity_order DESC, la.created_at DESC;
+ORDER BY la.severity_score DESC, la.created_at DESC;
 
 -- name: ListAdvisoriesByCveID :many
 SELECT

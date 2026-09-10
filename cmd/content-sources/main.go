@@ -92,7 +92,7 @@ func main() {
 		}
 	}
 
-	if argsContain(args, "jfrog-bridge") {
+	if argsContain(args, "jfrog-bridge") && config.Get().JFrogBridge.Enabled {
 		jfrog_bridge.Start(ctx, &wg)
 	}
 

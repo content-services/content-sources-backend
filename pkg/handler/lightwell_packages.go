@@ -32,10 +32,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	// Flat cross-repo endpoints
 	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.listPackages, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.listPackageVersions, rbac.RbacVerbRead)
-	// Nested repo-scoped aliases
 	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/packages", h.listRepoPackages, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/package_versions", h.listRepoPackageVersions, rbac.RbacVerbRead)
 }
@@ -43,11 +41,11 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // listLightwellPackages godoc
 // @Summary      List Lightwell Packages (cross-repo)
 // @ID           listLightwellPackages
-// @Description  List packages aggregated across all Lightwell repositories, with optional filtering by content type, name, and security level.
+// @Description  List packages aggregated across all Lightwell repositories, with optional filtering by ecosystem, name, and security level.
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
-// @Param        content_type    query  string  false  "Filter by content type (maven, python, npm)"
+// @Param        ecosystem       query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
 // @Param        limit           query  int     false  "Limit of results to return"
@@ -60,11 +58,11 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 	page := ParsePagination(c)
 	filters := parseLightwellPackageFilters(c)
 
-	if err := validateContentType(filters.ContentType); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid content_type filter", err.Error())
+	if err := validateContentType(filters.Ecosystem); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid ecosystem filter", err.Error())
 	}
 
-	repos, err := h.fetchLightwellRepos(c, filters.ContentType, filters.SecurityLevel)
+	repos, err := h.fetchLightwellRepos(c, filters.Ecosystem, filters.SecurityLevel)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing Lightwell repositories", err.Error())
 	}
@@ -92,7 +90,7 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
-// @Param        content_type         query  string  false  "Filter by content type (maven, python, npm)"
+// @Param        ecosystem            query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name                 query  string  false  "Filter by package name (substring match)"
 // @Param        security_level       query  string  false  "Filter by security level (validated, remediated)"
 // @Param        repository           query  string  false  "Filter by repository name"
@@ -108,11 +106,11 @@ func (h *LightwellPackagesHandler) listPackageVersions(c echo.Context) error {
 	page := ParsePagination(c)
 	filters := parseLightwellPackageVersionFilters(c)
 
-	if err := validateContentType(filters.ContentType); err != nil {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid content_type filter", err.Error())
+	if err := validateContentType(filters.Ecosystem); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid ecosystem filter", err.Error())
 	}
 
-	repos, err := h.fetchLightwellRepos(c, filters.ContentType, filters.SecurityLevel)
+	repos, err := h.fetchLightwellRepos(c, filters.Ecosystem, filters.SecurityLevel)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing Lightwell repositories", err.Error())
 	}
@@ -225,7 +223,6 @@ func (h *LightwellPackagesHandler) fetchPackagesFromRepo(ctx context.Context, re
 		return nil, err
 	}
 
-	// Fetch all packages from this repo (no server-side pagination — small datasets)
 	pageOpts := tangy.PageOptions{Offset: 0, Limit: MaxLimit}
 
 	switch repo.ContentType {
@@ -460,7 +457,7 @@ func mapMavenToLightwellPackages(resp tangy.MavenPackageListResponse, repo api.R
 		out = append(out, api.LightwellPackageResponse{
 			Name:           item.ArtifactID,
 			Group:          item.GroupID,
-			ContentType:    config.ContentTypeMaven,
+			Ecosystem:      config.ContentTypeMaven,
 			Repository:     repo.Name,
 			RepositoryUUID: repo.UUID,
 			Versions:       item.Versions,
@@ -479,7 +476,7 @@ func mapPythonToLightwellPackages(resp tangy.PythonPackageListResponse, repo api
 		}
 		out = append(out, api.LightwellPackageResponse{
 			Name:           item.NameNormalized,
-			ContentType:    config.ContentTypePython,
+			Ecosystem:      config.ContentTypePython,
 			Repository:     repo.Name,
 			RepositoryUUID: repo.UUID,
 			Versions:       item.Versions,
@@ -500,7 +497,7 @@ func mapNpmToLightwellPackages(resp tangy.NpmPackageListResponse, repo api.Repos
 		out = append(out, api.LightwellPackageResponse{
 			Name:           name,
 			Group:          scope,
-			ContentType:    config.ContentTypeNpm,
+			Ecosystem:      config.ContentTypeNpm,
 			Repository:     repo.Name,
 			RepositoryUUID: repo.UUID,
 			Versions:       item.Versions,
@@ -519,7 +516,7 @@ func expandMavenVersions(resp tangy.MavenPackageListResponse, repo api.Repositor
 				Name:           item.ArtifactID,
 				Group:          item.GroupID,
 				Version:        v,
-				ContentType:    config.ContentTypeMaven,
+				Ecosystem:      config.ContentTypeMaven,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
 				Purl:           buildPURL(config.ContentTypeMaven, item.GroupID, item.ArtifactID, v),
@@ -543,7 +540,7 @@ func expandPythonVersions(resp tangy.PythonPackageListResponse, repo api.Reposit
 			ver := api.LightwellPackageVersionResponse{
 				Name:           item.NameNormalized,
 				Version:        v,
-				ContentType:    config.ContentTypePython,
+				Ecosystem:      config.ContentTypePython,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
 				Purl:           buildPURL(config.ContentTypePython, "", item.NameNormalized, v),
@@ -568,7 +565,7 @@ func expandNpmVersions(resp tangy.NpmPackageListResponse, repo api.RepositoryRes
 				Name:           name,
 				Group:          scope,
 				Version:        v,
-				ContentType:    config.ContentTypeNpm,
+				Ecosystem:      config.ContentTypeNpm,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
 				Purl:           buildPURL(config.ContentTypeNpm, scope, name, v),
@@ -588,7 +585,7 @@ func expandNpmVersions(resp tangy.NpmPackageListResponse, repo api.RepositoryRes
 func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData {
 	var f api.LightwellPackageFilterData
 	_ = echo.QueryParamsBinder(c).
-		String("content_type", &f.ContentType).
+		String("ecosystem", &f.Ecosystem).
 		String("name", &f.Name).
 		String("repository", &f.Repository).
 		String("security_level", &f.SecurityLevel).
@@ -599,7 +596,7 @@ func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData
 func parseLightwellPackageVersionFilters(c echo.Context) api.LightwellPackageVersionFilterData {
 	var f api.LightwellPackageVersionFilterData
 	_ = echo.QueryParamsBinder(c).
-		String("content_type", &f.ContentType).
+		String("ecosystem", &f.Ecosystem).
 		String("name", &f.Name).
 		String("security_level", &f.SecurityLevel).
 		String("repository", &f.Repository).
@@ -718,8 +715,8 @@ func sortLightwellPackages(items []api.LightwellPackageResponse, sortBy string) 
 		switch field {
 		case "name":
 			less = items[i].Name < items[j].Name
-		case "content_type":
-			less = items[i].ContentType < items[j].ContentType
+		case "ecosystem":
+			less = items[i].Ecosystem < items[j].Ecosystem
 		case "repository":
 			less = items[i].Repository < items[j].Repository
 		default:
@@ -744,8 +741,8 @@ func sortLightwellVersions(items []api.LightwellPackageVersionResponse, sortBy s
 			less = items[i].Name < items[j].Name
 		case "version":
 			less = items[i].Version < items[j].Version
-		case "content_type":
-			less = items[i].ContentType < items[j].ContentType
+		case "ecosystem":
+			less = items[i].Ecosystem < items[j].Ecosystem
 		case "repository":
 			less = items[i].Repository < items[j].Repository
 		default:

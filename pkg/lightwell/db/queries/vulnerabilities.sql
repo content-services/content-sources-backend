@@ -58,11 +58,7 @@ LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 SELECT
     COUNT(*)::bigint AS total_count,
     COUNT(*) FILTER (WHERE v.severity = 'Critical')::bigint AS critical_count,
-    COUNT(*) FILTER (WHERE v.embargo = true)::bigint AS embargo_count,
-    COUNT(*) FILTER (
-        WHERE v.stage <> 'Lightwell Network'
-            AND (CURRENT_DATE - v.submitted_date) > 30
-    )::bigint AS blocked_count
+    COUNT(*) FILTER (WHERE v.embargo = true)::bigint AS embargo_count
 FROM lightwell_filtered_vulnerabilities(
     sqlc.arg(customer_id),
     sqlc.narg(severities)::text[],

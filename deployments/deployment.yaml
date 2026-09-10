@@ -97,6 +97,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -413,6 +415,7 @@ objects:
               - api
               - instrumentation
               - pulp-data-importer
+              - jfrog-bridge
             livenessProbe:
               failureThreshold: 3
               httpGet:
@@ -445,6 +448,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -760,6 +765,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -1063,6 +1070,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -1369,6 +1378,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -1676,6 +1687,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -1985,6 +1998,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -2292,6 +2307,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -2596,6 +2613,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -2900,6 +2919,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -3204,6 +3225,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -3531,6 +3554,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -3836,6 +3861,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -4158,6 +4185,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -4459,6 +4488,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -4760,6 +4791,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -5061,6 +5094,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -5362,6 +5397,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -5663,6 +5700,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -5964,6 +6003,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -6265,6 +6306,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -6697,6 +6740,8 @@ parameters:
   - name: CLIENTS_PULP_CONTENT_ORIGIN
     description: Pulp Content hostname
     value: https://cert.console.redhat.com
+  - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+    description: Pulp content hostname used to fetch lightwell content
   - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
     description: Pulp content path prefix
     value: /api/pulp-content/
