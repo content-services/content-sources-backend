@@ -98,18 +98,19 @@ type MockKessel struct {
 	UserNoPermissions []string `mapstructure:"user_no_permissions"`
 }
 type FeatureSet struct {
-	Snapshots                Feature
-	AdminTasks               Feature `mapstructure:"admin_tasks"`
-	Kessel                   Feature `mapstructure:"kessel"`
-	ExtendedReleaseRepos     Feature `mapstructure:"extended_release_repos"`
-	Lightwell                Feature `mapstructure:"lightwell"`
-	LightwellNotifications   Feature `mapstructure:"lightwell_notifications"`
-	AdminPartnerRepositories Feature `mapstructure:"admin_partner_repositories"`
-	AdminNotifications       Feature `mapstructure:"admin_notifications"`
-	LightwellBeacon          Feature `mapstructure:"lightwell_beacon"`
-	LightwellLens            Feature `mapstructure:"lightwell_lens"`
-	LightwellStoreUploads    Feature `mapstructure:"lightwell_store_uploads"`
-	AdminJfrogUpload         Feature `mapstructure:"admin_jfrog_upload"`
+	LightwellLensInternalEntitledFeatures *[]string `mapstructure:"lightwell_lens_internal_entitled_features"` // Internal Lens entitlements; values must be in options.feature_filter
+	Snapshots                             Feature
+	AdminTasks                            Feature `mapstructure:"admin_tasks"`
+	Kessel                                Feature `mapstructure:"kessel"`
+	ExtendedReleaseRepos                  Feature `mapstructure:"extended_release_repos"`
+	Lightwell                             Feature `mapstructure:"lightwell"`
+	LightwellNotifications                Feature `mapstructure:"lightwell_notifications"`
+	AdminPartnerRepositories              Feature `mapstructure:"admin_partner_repositories"`
+	AdminNotifications                    Feature `mapstructure:"admin_notifications"`
+	LightwellBeacon                       Feature `mapstructure:"lightwell_beacon"`
+	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
+	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
+	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
 }
 
 type Feature struct {
@@ -524,6 +525,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_jfrog_upload.accounts", nil)
 	v.SetDefault("features.admin_jfrog_upload.organizations", nil)
 	v.SetDefault("features.admin_jfrog_upload.users", nil)
+	v.SetDefault("features.lightwell_lens_internal_entitled_features", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
 	v.SetDefault("mocks.kessel.user_read", []string{"read-user"})

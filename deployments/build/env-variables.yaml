@@ -89,6 +89,8 @@ env:
     value: ${FEATURES_LIGHTWELL_LENS_ACCOUNTS}
   - name: FEATURES_LIGHTWELL_LENS_ORGANIZATIONS
     value: ${FEATURES_LIGHTWELL_LENS_ORGANIZATIONS}
+  - name: FEATURES_LIGHTWELL_LENS_INTERNAL_ENTITLED_FEATURES
+    value: ${FEATURES_LIGHTWELL_LENS_INTERNAL_ENTITLED_FEATURES}
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED
     value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED}
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS
@@ -459,6 +461,8 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_LIGHTWELL_LENS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_LENS_INTERNAL_ENTITLED_FEATURES
+    description: Comma separated list of feature-service entitlements that grant Lens and coverage upload access to internal users
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED
     description: Whether this Lightwell feature should be turned on
     value: 'false'

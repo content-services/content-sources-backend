@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -35,6 +36,7 @@ type CoverageReportSuite struct {
 	reg    *dao.MockDaoRegistry
 	s3Mock *s3_client.MockS3Client
 	tcMock *client.MockTaskClient
+	fsMock *feature_service_client.MockFeatureServiceClient
 }
 
 func TestCoverageReportSuite(t *testing.T) {
@@ -45,6 +47,7 @@ func (suite *CoverageReportSuite) SetupTest() {
 	suite.reg = dao.GetMockDaoRegistry(suite.T())
 	suite.s3Mock = s3_client.NewMockS3Client(suite.T())
 	suite.tcMock = client.NewMockTaskClient(suite.T())
+	suite.fsMock = feature_service_client.NewMockFeatureServiceClient(suite.T())
 	config.Get().Options.SeedLightwellCoverageReports = false
 }
 
@@ -67,12 +70,13 @@ func (suite *CoverageReportSuite) serveCoverageReportRouter(req *http.Request, e
 	}
 
 	ch := CoverageReportHandler{
-		DaoRegistry: *suite.reg.ToDaoRegistry(),
-		TaskClient:  suite.tcMock,
-		S3:          suite.s3Mock,
+		DaoRegistry:          *suite.reg.ToDaoRegistry(),
+		TaskClient:           suite.tcMock,
+		S3:                   suite.s3Mock,
+		FeatureServiceClient: suite.fsMock,
 	}
 
-	RegisterCoverageReportRoutes(pathPrefix, &ch.DaoRegistry, &ch.TaskClient, ch.S3)
+	RegisterCoverageReportRoutes(pathPrefix, &ch.DaoRegistry, &ch.TaskClient, ch.S3, &ch.FeatureServiceClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -267,6 +271,98 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	assert.Equal(t, http.StatusCreated, code)
 	assert.Equal(t, expectedReport.Status, response.Status)
 	assert.Equal(t, expectedReport.UUID, response.UUID)
+}
+
+func (suite *CoverageReportSuite) TestCreateCoverageReportWithInternalEntitlement() {
+	t := suite.T()
+	oldLensFeature := config.Get().Features.LightwellLens
+	oldStoreUploadsFeature := config.Get().Features.LightwellStoreUploads
+	oldLightwellEntitledFeatures := config.Get().Features.LightwellLensInternalEntitledFeatures
+	defer func() {
+		config.Get().Features.LightwellLens = oldLensFeature
+		config.Get().Features.LightwellStoreUploads = oldStoreUploadsFeature
+		config.Get().Features.LightwellLensInternalEntitledFeatures = oldLightwellEntitledFeatures
+	}()
+
+	entitledFeature := "lightwell-lens"
+	config.Get().Features.LightwellLens = config.Feature{
+		Enabled: true,
+	}
+	config.Get().Features.LightwellStoreUploads = config.Feature{
+		Enabled:  true,
+		Accounts: &[]string{},
+	}
+	config.Get().Features.LightwellLensInternalEntitledFeatures = &[]string{entitledFeature}
+
+	suite.fsMock.On("GetEntitledFeatures", mock.Anything, "entitlement-org").Return([]string{entitledFeature}, nil).Twice()
+
+	reqBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(reqBody)
+	part, err := writer.CreateFormFile("file", "sbom.json")
+	require.NoError(t, err)
+	_, err = part.Write([]byte(`{"bomFormat":"CycloneDX"}`))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	expectedReport := api.CoverageReportResponse{
+		UUID:      uuid.NewString(),
+		Status:    config.TaskStatusPending,
+		CreatedAt: time.Now(),
+	}
+	suite.reg.CoverageReport.On("Create", mock.Anything, mock.Anything, mock.Anything).
+		Return(expectedReport, nil)
+	suite.s3Mock.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	suite.tcMock.On("Enqueue", mock.Anything).Return(uuid.New(), nil)
+	suite.reg.CoverageReport.On("SetAnalysisTaskUUID", mock.Anything, expectedReport.UUID, mock.Anything).
+		Return(nil)
+
+	identityHeader := test_handler.EncodedCustomIdentity(t, identity.XRHID{
+		Identity: identity.Identity{
+			AccountNumber: test_handler.MockAccountNumber,
+			OrgID:         "entitlement-org",
+			Internal:      identity.Internal{OrgID: "target-org"},
+			User:          &identity.User{Username: "employee", Internal: true},
+			Type:          "User",
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set(api.IdentityHeader, identityHeader)
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, false)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, code)
+
+	var response api.CoverageReportResponse
+	assert.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, expectedReport.UUID, response.UUID)
+}
+
+func (suite *CoverageReportSuite) TestCreateCoverageReportWithoutStoreUploads() {
+	t := suite.T()
+	oldStoreUploadsFeature := config.Get().Features.LightwellStoreUploads
+	defer func() {
+		config.Get().Features.LightwellStoreUploads = oldStoreUploadsFeature
+	}()
+
+	config.Get().Features.LightwellStoreUploads = config.Feature{}
+
+	reqBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(reqBody)
+	part, err := writer.CreateFormFile("file", "sbom.json")
+	require.NoError(t, err)
+	_, err = part.Write([]byte(`{"bomFormat":"CycloneDX"}`))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "Coverage uploads are disabled")
 }
 
 func (suite *CoverageReportSuite) TestCreateCoverageReportNotAccessible() {

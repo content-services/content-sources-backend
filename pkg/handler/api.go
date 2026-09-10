@@ -26,21 +26,23 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const DefaultOffset = 0
-const DefaultLimit = 100
-const DefaultSortBy = ""
-const DefaultSearch = ""
-const DefaultArch = ""
-const DefaultVersion = ""
-const DefaultAvailableForArch = ""
-const DefaultAvailableForVersion = ""
-const DefaultStatus = ""
-const MaxLimit = 200
-const DefaultAdminTaskStatus = ""
-const DefaultOrgId = ""
-const DefaultAccountId = ""
-const DefaultURL = ""
-const DefaultUUID = ""
+const (
+	DefaultOffset              = 0
+	DefaultLimit               = 100
+	DefaultSortBy              = ""
+	DefaultSearch              = ""
+	DefaultArch                = ""
+	DefaultVersion             = ""
+	DefaultAvailableForArch    = ""
+	DefaultAvailableForVersion = ""
+	DefaultStatus              = ""
+	MaxLimit                   = 200
+	DefaultAdminTaskStatus     = ""
+	DefaultOrgId               = ""
+	DefaultAccountId           = ""
+	DefaultURL                 = ""
+	DefaultUUID                = ""
+)
 
 // nolint: lll
 // @title ContentSourcesBackend
@@ -99,7 +101,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterAdminRepositoriesRoutes(group, daoReg)
 		RegisterAdminNotificationsRoutes(group)
 		jfrog_bridge.RegisterJFrogBridgeRoutes(group)
-		RegisterFeaturesRoutes(group)
+		RegisterFeaturesRoutes(group, &fsClient)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)
 		RegisterEnvironmentRoutes(group, daoReg)
@@ -109,7 +111,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
-		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client)
+		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client, &fsClient)
 		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
 
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
