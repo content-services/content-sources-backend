@@ -189,35 +189,6 @@ func TestGAVDedup(t *testing.T) {
 	assert.True(t, handler.processed.Contains(gav))
 }
 
-func TestFilterAndParse_IgnoresApplicationField(t *testing.T) {
-	// On the dedicated topic, application field is not checked.
-	// A message with any application value is accepted if event_type matches.
-	reg := prometheus.NewRegistry()
-	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(nil, nil, nil, metrics)
-
-	payload := []byte(`{"version":"2.0.0","bundle":"other","application":"other","event_type":"java-remediated","events":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
-
-	remediations, shouldCommit, err := handler.filterAndParse(payload)
-	require.NoError(t, err)
-	assert.False(t, shouldCommit)
-	require.Len(t, remediations, 1)
-	assert.Equal(t, "org.test", remediations[0].GroupID)
-}
-
-func TestFilterAndParse_NonJavaRemediated(t *testing.T) {
-	reg := prometheus.NewRegistry()
-	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(nil, nil, nil, metrics)
-
-	payload := []byte(`{"version":"2.0.0","bundle":"lightwell","application":"lightwell","event_type":"python-remediated","events":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
-
-	_, shouldCommit, err := handler.filterAndParse(payload)
-	assert.Error(t, err)
-	assert.True(t, shouldCommit)
-	assert.Contains(t, err.Error(), "java-remediated")
-}
-
 func TestFilterAndParse_CloudEventEventTypeAccepted(t *testing.T) {
 	// The production bridge topic carries the ecosystem gate as the
 	// CloudEvents "eventtype" extension. java-remediated must be accepted.
@@ -232,6 +203,10 @@ func TestFilterAndParse_CloudEventEventTypeAccepted(t *testing.T) {
 	assert.False(t, shouldCommit)
 	require.Len(t, remediations, 1)
 	assert.Equal(t, "org.test", remediations[0].GroupID)
+	assert.Equal(t, "test", remediations[0].ArtifactID)
+	assert.Equal(t, "1.0.rhlw-00001", remediations[0].Version)
+	assert.Equal(t, "1.0", remediations[0].BaseVersion)
+	assert.Contains(t, remediations[0].CVEsFixed, "CVE-2024-00001")
 }
 
 func TestFilterAndParse_CloudEventEventTypeRejected(t *testing.T) {
@@ -247,24 +222,6 @@ func TestFilterAndParse_CloudEventEventTypeRejected(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, shouldCommit)
 	assert.Contains(t, err.Error(), "java-remediated")
-}
-
-func TestFilterAndParse_ValidFullEnvelope(t *testing.T) {
-	reg := prometheus.NewRegistry()
-	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(nil, nil, nil, metrics)
-
-	payload := []byte(`{"version":"2.0.0","bundle":"lightwell","application":"lightwell","event_type":"java-remediated","events":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
-
-	remediations, shouldCommit, err := handler.filterAndParse(payload)
-	require.NoError(t, err)
-	assert.False(t, shouldCommit)
-	require.Len(t, remediations, 1)
-	assert.Equal(t, "org.test", remediations[0].GroupID)
-	assert.Equal(t, "test", remediations[0].ArtifactID)
-	assert.Equal(t, "1.0.rhlw-00001", remediations[0].Version)
-	assert.Equal(t, "1.0", remediations[0].BaseVersion)
-	assert.Contains(t, remediations[0].CVEsFixed, "CVE-2024-00001")
 }
 
 func TestProcessRemediation_EvidenceFailure(t *testing.T) {
