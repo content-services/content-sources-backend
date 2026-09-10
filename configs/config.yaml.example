@@ -222,6 +222,8 @@ jfrog_bridge:
   request_timeout: 60
 
 features:
+  # Internal Lens and coverage-upload access. Values must also be in options.feature_filter.
+  lightwell_lens_internal_entitled_features: #["lightwellFeature"]
   snapshots:
     enabled: true
     accounts: #["snapAccount"]

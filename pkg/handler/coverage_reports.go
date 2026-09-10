@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -28,29 +29,37 @@ import (
 const maxCoverageUploadSizeBytes = 15 * 1024 * 1024 // 15 MiB
 
 type CoverageReportHandler struct {
-	DaoRegistry dao.DaoRegistry
-	TaskClient  client.TaskClient
-	S3          s3_client.S3Client
+	DaoRegistry          dao.DaoRegistry
+	TaskClient           client.TaskClient
+	S3                   s3_client.S3Client
+	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func checkLightwellLensAccessible(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		if err := CheckLightwellLensAccessible(c.Request().Context()); err != nil {
-			return err
+func checkLightwellLensAccessible(fsClient feature_service_client.FeatureServiceClient) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if err := CheckLightwellLensAccessible(c.Request().Context(), fsClient); err != nil {
+				return err
+			}
+			return next(c)
 		}
-		return next(c)
 	}
 }
 
-func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient, s3Client s3_client.S3Client) {
-	ch := CoverageReportHandler{
-		DaoRegistry: *daoReg,
-		TaskClient:  *taskClient,
-		S3:          s3Client,
+func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient, s3Client s3_client.S3Client, fsClient *feature_service_client.FeatureServiceClient) {
+	if fsClient == nil {
+		panic("fsClient is nil")
 	}
-	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbRead, checkLightwellLensAccessible)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, checkLightwellLensAccessible)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, checkLightwellLensAccessible)
+	ch := CoverageReportHandler{
+		DaoRegistry:          *daoReg,
+		TaskClient:           *taskClient,
+		S3:                   s3Client,
+		FeatureServiceClient: *fsClient,
+	}
+	lensAccessMiddleware := checkLightwellLensAccessible(ch.FeatureServiceClient)
+	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbRead, lensAccessMiddleware)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, lensAccessMiddleware)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, lensAccessMiddleware)
 }
 
 // CreateCoverageReport godoc
@@ -99,7 +108,11 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error reading upload", "File exceeds maximum upload size")
 	}
 
-	if config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
+	storeUploadsAccessible := lightwellLensFeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads, ch.FeatureServiceClient)
+	if !storeUploadsAccessible && !config.Get().Options.SeedLightwellCoverageReports {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot create coverage report", "Coverage uploads are disabled.")
+	}
+	if storeUploadsAccessible {
 		if _, err := file.Seek(0, io.SeekStart); err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading coverage report", err.Error())
 		}
@@ -131,7 +144,7 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 	}
 
 	// TODO: remove once we don't need seeded data
-	if config.Get().Options.SeedLightwellCoverageReports && !config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
+	if config.Get().Options.SeedLightwellCoverageReports && !storeUploadsAccessible {
 		go func(reportUUID string) {
 			time.Sleep(3 * time.Second)
 			if _, err := seeds.SeedCoverageReport(db.DB, seeds.CoverageReportSeedOptions{UUID: reportUUID}); err != nil {
@@ -140,7 +153,7 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 		}(report.UUID)
 	}
 
-	if config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellStoreUploads) {
+	if storeUploadsAccessible {
 		ch.enqueueCoverageAnalysisEvent(c, report, uploadUUID, fileHeader.Filename)
 	}
 
