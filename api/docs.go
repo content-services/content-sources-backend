@@ -5471,6 +5471,9 @@ const docTemplate = `{
         "api.LightwellPackageVersionResponse": {
             "type": "object",
             "properties": {
+                "coordinates": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -5481,6 +5484,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "purl": {
                     "type": "string"
                 },
                 "release": {
