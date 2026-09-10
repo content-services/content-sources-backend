@@ -153,7 +153,7 @@ func sendAdvisoryNotifications(
 			}
 		}
 		bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs)
-		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, bridgeEvents)
+		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, eventType, bridgeEvents)
 	}
 
 	orgs, err := daoReg.UserPreference.ListDistinctOrgsByPreference(ctx,

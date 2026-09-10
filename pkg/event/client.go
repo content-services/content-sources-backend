@@ -161,7 +161,7 @@ func SendTemplateEvent(orgID string, eventName EventName, templates []TemplateEv
 	}
 }
 
-func SendLightwellAdvisoryCreatedEvent(eventName EventName, events []NotificationEvent) {
+func SendLightwellAdvisoryCreatedEvent(eventName EventName, eventType string, events []NotificationEvent) {
 	if config.Get().LightwellAdvisoryCreatedClient != nil && len(events) > 0 {
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
@@ -171,6 +171,12 @@ func SendLightwellAdvisoryCreatedEvent(eventName EventName, events []Notificatio
 		e.SetType("com.redhat.console.lightwelll." + eventNameStr)
 		e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
 		e.SetTime(time.Now())
+		// Stamp the ecosystem event type (e.g. "java-remediated") as a
+		// CloudEvents extension so the jfrog-bridge consumer can gate on it.
+		// Extension names must be lowercase alphanumeric, so no underscore.
+		if eventType != "" {
+			e.SetExtension("eventtype", eventType)
+		}
 
 		data := events
 		err := e.SetData(cloudevents.ApplicationJSON, data)
@@ -186,5 +192,6 @@ func SendLightwellAdvisoryCreatedEvent(eventName EventName, events []Notificatio
 			log.Error().Msgf("LightwellAdvisoryCreatedClient message failed to send: %v", result)
 			return
 		}
+		log.Info().Msg("Lightwell advisory created event sent")
 	}
 }

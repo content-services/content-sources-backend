@@ -14,6 +14,7 @@ func main() {
 	config.Load()
 	config.ConfigureLogging()
 	config.SetupNotifications()
+	config.SetupLightwellAdvisoryCreatedEvent()
 
 	err := db.Connect()
 	if err != nil {

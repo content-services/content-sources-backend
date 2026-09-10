@@ -105,14 +105,22 @@ func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error)
 	// The bridge consumes a dedicated topic (platform.lightwell.advisory-created)
 	// so every message is a lightwell advisory. Only filter by event_type to
 	// gate ecosystems (java-remediated only until embargoes clear).
+	// The ecosystem gate is carried as the CloudEvents "eventtype" extension
+	// on the dedicated bridge topic, or as top-level "event_type" on the
+	// legacy NotificationAction envelope. Prefer whichever is present.
 	var env struct {
-		EventType string `json:"event_type"`
+		EventType      string `json:"event_type"`
+		CloudEventType string `json:"eventtype"`
 	}
 	if err := json.Unmarshal(data, &env); err != nil {
 		return nil, true, fmt.Errorf("invalid message: %w", err)
 	}
-	if env.EventType != "" && env.EventType != allowedEventType {
-		return nil, true, fmt.Errorf("event_type %q is not %q", env.EventType, allowedEventType)
+	eventType := env.EventType
+	if eventType == "" {
+		eventType = env.CloudEventType
+	}
+	if eventType != "" && eventType != allowedEventType {
+		return nil, true, fmt.Errorf("event_type %q is not %q", eventType, allowedEventType)
 	}
 
 	remediations, err := ParseRemediations(data)
