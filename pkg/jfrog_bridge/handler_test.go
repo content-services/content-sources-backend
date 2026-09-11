@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -60,6 +61,7 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	jfrogPuts := make(map[string]int)
 	var jfrogPosts []string
 	var capturedProperties string
+	var capturedCDXBody []byte
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
@@ -71,6 +73,10 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 		case http.MethodPut:
 			if strings.Contains(r.URL.RawQuery, "properties=") {
 				capturedProperties = r.URL.RawQuery
+			}
+			if strings.HasSuffix(r.URL.Path, ".cdx.vex.json") {
+				body, _ := io.ReadAll(r.Body)
+				capturedCDXBody = body
 			}
 			jfrogPuts[r.URL.Path]++
 			w.WriteHeader(http.StatusCreated)
@@ -167,6 +173,16 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	// Assert: Evidence prepared and deployed
 	assert.Contains(t, jfrogPosts, "/evidence/api/v1/evidence/prepare")
 	assert.Contains(t, jfrogPosts, "/evidence/api/v1/evidence/deploy")
+
+	// Assert: CycloneDX body contains pedigree
+	require.NotEmpty(t, capturedCDXBody, "CycloneDX VEX body must be captured")
+	var cdxDoc cdxBOM
+	require.NoError(t, json.Unmarshal(capturedCDXBody, &cdxDoc))
+	require.Len(t, cdxDoc.Components, 1, "components array must have one entry")
+	require.NotNil(t, cdxDoc.Components[0].Pedigree, "pedigree must be present")
+	require.Len(t, cdxDoc.Components[0].Pedigree.Ancestors, 1)
+	assert.Equal(t, "5.3.18", cdxDoc.Components[0].Pedigree.Ancestors[0].Version)
+	assert.Contains(t, cdxDoc.Components[0].Pedigree.Ancestors[0].PackageURL, "?type=jar")
 }
 
 func TestGAVDedup(t *testing.T) {
