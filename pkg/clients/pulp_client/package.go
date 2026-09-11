@@ -78,6 +78,35 @@ func (r *pulpDaoImpl) ListVersionPackages(ctx context.Context, versionHref strin
 	return resp.Results, int(resp.Count), err
 }
 
+// ListVersionPackagesWithFilters lists packages for a repository version, applying an optional
+// name-contains search filter and Pulp ordering. It is used to serve RPM listings from a published
+// snapshot (e.g. for foreign-org views of partner repositories).
+func (r *pulpDaoImpl) ListVersionPackagesWithFilters(ctx context.Context, versionHref string, offset, limit int32, search string, ordering []string) (pkgs []zest.RpmPackageResponse, total int, err error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return pkgs, 0, err
+	}
+	req := client.ContentPackagesAPI.ContentRpmPackagesList(ctx, r.domainName).
+		RepositoryVersion(versionHref).
+		Limit(limit).
+		Offset(offset).
+		Fields(RpmFields)
+	if search != "" {
+		req = req.NameContains(search)
+	}
+	if len(ordering) > 0 {
+		req = req.Ordering(ordering)
+	}
+	resp, httpResp, err := req.Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return pkgs, 0, errorWithResponseBody("error listing packages for version", httpResp, err)
+	}
+	return resp.Results, int(resp.Count), nil
+}
+
 func (r *pulpDaoImpl) ListVersionAllPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error) {
 	initial := int32(0)
 	limit := int32(300)

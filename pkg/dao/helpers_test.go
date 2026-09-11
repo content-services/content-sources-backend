@@ -9,6 +9,27 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func (s *RepositorySuite) TestConvertSortByToPulpOrdering() {
+	t := s.T()
+
+	sortMap := map[string]string{
+		"name":    "name",
+		"version": "version",
+		"release": "release",
+		"arch":    "arch",
+	}
+	defaultOrdering := []string{"name"}
+
+	assert.Equal(t, []string{"name"}, convertSortByToPulpOrdering("", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"name"}, convertSortByToPulpOrdering("unknown:asc", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"name"}, convertSortByToPulpOrdering("name", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"name"}, convertSortByToPulpOrdering("name:asc", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"-name"}, convertSortByToPulpOrdering("name:desc", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"-name", "version", "arch"}, convertSortByToPulpOrdering(" name:desc , version:asc , arch ", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"-release"}, convertSortByToPulpOrdering("unknown:asc,release:desc", sortMap, defaultOrdering))
+	assert.Equal(t, []string{"-release", "arch"}, convertSortByToPulpOrdering("release:desc,invalid,arch:other", sortMap, defaultOrdering))
+}
+
 func (s *RepositorySuite) TestConvertSortByToSQL() {
 	t := s.T()
 
