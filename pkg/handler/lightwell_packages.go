@@ -34,6 +34,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	}
 	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.listPackages, rbac.RbacVerbRead)
 	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.listPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/packages", h.listRepoPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/repositories/:repository_name/package_versions", h.listRepoPackageVersions, rbac.RbacVerbRead)
 }
 
 // listLightwellPackages godoc
@@ -221,7 +223,6 @@ func (h *LightwellPackagesHandler) fetchPackagesFromRepo(ctx context.Context, re
 		return nil, err
 	}
 
-	// Fetch all packages from this repo (no server-side pagination — small datasets)
 	pageOpts := tangy.PageOptions{Offset: 0, Limit: MaxLimit}
 
 	switch repo.ContentType {
@@ -355,19 +356,22 @@ func (h *LightwellPackagesHandler) filterVersionsByResolvingCve(ctx context.Cont
 		return nil, err
 	}
 
-	fixedSet := make(map[string]map[string]bool)
+	type repoPackage struct{ repo, name string }
+	fixedSet := make(map[repoPackage]map[string]bool)
 	for _, m := range matches {
-		if fixedSet[m.PackageName] == nil {
-			fixedSet[m.PackageName] = make(map[string]bool)
+		key := repoPackage{repo: m.RepoName, name: m.PackageName}
+		if fixedSet[key] == nil {
+			fixedSet[key] = make(map[string]bool)
 		}
 		for _, v := range m.FixedVersions {
-			fixedSet[m.PackageName][v] = true
+			fixedSet[key][v] = true
 		}
 	}
 
 	var result []api.LightwellPackageVersionResponse
 	for _, item := range items {
-		if versions, ok := fixedSet[item.Name]; ok && versions[item.Version] {
+		key := repoPackage{repo: item.Repository, name: item.Name}
+		if versions, ok := fixedSet[key]; ok && versions[item.Version] {
 			result = append(result, item)
 		}
 	}
@@ -382,25 +386,63 @@ func (h *LightwellPackagesHandler) filterVersionsByVulnerableCve(ctx context.Con
 		return nil, err
 	}
 
-	affectedPackages := make(map[string]bool)
-	fixedSet := make(map[string]map[string]bool)
+	type repoPackage struct{ repo, name string }
+	affectedPackages := make(map[repoPackage]bool)
+	fixedSet := make(map[repoPackage]map[string]bool)
 	for _, m := range matches {
-		affectedPackages[m.PackageName] = true
-		if fixedSet[m.PackageName] == nil {
-			fixedSet[m.PackageName] = make(map[string]bool)
+		key := repoPackage{repo: m.RepoName, name: m.PackageName}
+		affectedPackages[key] = true
+		if fixedSet[key] == nil {
+			fixedSet[key] = make(map[string]bool)
 		}
 		for _, v := range m.FixedVersions {
-			fixedSet[m.PackageName][v] = true
+			fixedSet[key][v] = true
 		}
 	}
 
 	var result []api.LightwellPackageVersionResponse
 	for _, item := range items {
-		if affectedPackages[item.Name] && !fixedSet[item.Name][item.Version] {
+		key := repoPackage{repo: item.Repository, name: item.Name}
+		if affectedPackages[key] && !fixedSet[key][item.Version] {
 			result = append(result, item)
 		}
 	}
 	return result, nil
+}
+
+// --- PURL / coordinate builders ---
+
+func buildPURL(contentType, group, name, version string) string {
+	switch contentType {
+	case config.ContentTypeMaven:
+		return fmt.Sprintf("pkg:maven/%s/%s@%s", group, name, version)
+	case config.ContentTypePython:
+		return fmt.Sprintf("pkg:pypi/%s@%s", name, version)
+	case config.ContentTypeNpm:
+		if group == "-" || group == "" {
+			return fmt.Sprintf("pkg:npm/%s@%s", name, version)
+		}
+		scope := strings.TrimPrefix(group, "@")
+		return fmt.Sprintf("pkg:npm/%%40%s/%s@%s", scope, name, version)
+	default:
+		return ""
+	}
+}
+
+func buildCoordinates(contentType, group, name string) string {
+	switch contentType {
+	case config.ContentTypeMaven:
+		return fmt.Sprintf("%s:%s", group, name)
+	case config.ContentTypePython:
+		return name
+	case config.ContentTypeNpm:
+		if group == "-" || group == "" {
+			return name
+		}
+		return fmt.Sprintf("%s/%s", group, name)
+	default:
+		return ""
+	}
 }
 
 // --- mapping helpers ---
@@ -477,6 +519,8 @@ func expandMavenVersions(resp tangy.MavenPackageListResponse, repo api.Repositor
 				Ecosystem:      config.ContentTypeMaven,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
+				Purl:           buildPURL(config.ContentTypeMaven, item.GroupID, item.ArtifactID, v),
+				Coordinates:    buildCoordinates(config.ContentTypeMaven, item.GroupID, item.ArtifactID),
 			}
 			if rel, ok := relMap[v]; ok {
 				ver.Release = rel.Release
@@ -499,6 +543,8 @@ func expandPythonVersions(resp tangy.PythonPackageListResponse, repo api.Reposit
 				Ecosystem:      config.ContentTypePython,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
+				Purl:           buildPURL(config.ContentTypePython, "", item.NameNormalized, v),
+				Coordinates:    buildCoordinates(config.ContentTypePython, "", item.NameNormalized),
 			}
 			if info, ok := verMap[v]; ok {
 				ver.CreatedAt = info.CreatedAt
@@ -522,6 +568,8 @@ func expandNpmVersions(resp tangy.NpmPackageListResponse, repo api.RepositoryRes
 				Ecosystem:      config.ContentTypeNpm,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
+				Purl:           buildPURL(config.ContentTypeNpm, scope, name, v),
+				Coordinates:    buildCoordinates(config.ContentTypeNpm, scope, name),
 			}
 			if info, ok := verMap[v]; ok {
 				ver.CreatedAt = info.CreatedAt
@@ -639,6 +687,20 @@ func npmVersionMap(versions []tangy.NpmVersionInfo) map[string]versionCreatedAt 
 		m[v.Version] = versionCreatedAt{CreatedAt: v.CreatedAt}
 	}
 	return m
+}
+
+// --- nested repo-scoped alias handlers ---
+
+func (h *LightwellPackagesHandler) listRepoPackages(c echo.Context) error {
+	repoName := c.Param("repository_name")
+	c.QueryParams().Set("repository", repoName)
+	return h.listPackages(c)
+}
+
+func (h *LightwellPackagesHandler) listRepoPackageVersions(c echo.Context) error {
+	repoName := c.Param("repository_name")
+	c.QueryParams().Set("repository", repoName)
+	return h.listPackageVersions(c)
 }
 
 // --- sort helpers ---
