@@ -27,6 +27,12 @@ import (
 const maxResponseBytes = 100 * 1024 * 1024 // 100 MB
 const maxConcurrentFetches = 10
 
+// bridgeNotificationOrgID is a sentinel org_id used to track which advisories
+// have already been published to the org-independent jfrog-bridge topic. It
+// reuses the per-org notification tracking table so each advisory is sent to
+// the bridge exactly once, instead of re-publishing the full list every sync.
+const bridgeNotificationOrgID = "advisory-created"
+
 func SyncLightwellAdvisoriesAction(c *cli.Context) error {
 	ctx := c.Context
 	force := c.Bool("force")
@@ -139,21 +145,31 @@ func sendAdvisoryNotifications(
 		return nil
 	}
 
-	// Send bridge event to the dedicated topic (org-independent, all advisories)
-	allAdvisories, err := daoReg.LightwellAdvisory.ListByRepository(ctx, repoConfigUUID)
-	if err == nil && len(allAdvisories) > 0 {
-		bridgeInputs := make([]event.LightwellNotificationInput, len(allAdvisories))
-		for i, a := range allAdvisories {
-			bridgeInputs[i] = event.LightwellNotificationInput{
-				PackageName:   a.PackageName,
-				AdvisoryID:    a.AdvisoryID,
-				Severity:      a.Severity,
-				FixedVersions: a.FixedVersions,
-				ReferenceURLs: a.ReferenceURLs,
+	// Send bridge event to the dedicated topic (org-independent). Reuse the
+	// per-org notification tracking under a sentinel org_id so each advisory is
+	// published to the bridge only once, rather than re-sending the full list
+	// on every sync.
+	if config.Get().LightwellAdvisoryCreatedClient != nil {
+		bridgeUnnotified, err := daoReg.LightwellAdvisory.ListUnnotifiedAdvisories(ctx, repoConfigUUID, bridgeNotificationOrgID)
+		if err != nil {
+			logger.Error().Err(err).Msg("Error listing unnotified bridge advisories")
+		} else if len(bridgeUnnotified) > 0 {
+			bridgeInputs := make([]event.LightwellNotificationInput, len(bridgeUnnotified))
+			for i, a := range bridgeUnnotified {
+				bridgeInputs[i] = event.LightwellNotificationInput{
+					PackageName:   a.PackageName,
+					AdvisoryID:    a.AdvisoryID,
+					Severity:      a.Severity,
+					FixedVersions: a.FixedVersions,
+					ReferenceURLs: a.ReferenceURLs,
+				}
+			}
+			bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs)
+			event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, eventType, bridgeEvents)
+			if err := daoReg.LightwellAdvisory.MarkAsNotified(ctx, repoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified); err != nil {
+				logger.Error().Err(err).Msg("Error marking bridge advisories as notified")
 			}
 		}
-		bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs)
-		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, eventType, bridgeEvents)
 	}
 
 	orgs, err := daoReg.UserPreference.ListDistinctOrgsByPreference(ctx,
