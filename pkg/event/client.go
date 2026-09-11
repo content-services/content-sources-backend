@@ -161,7 +161,7 @@ func SendTemplateEvent(orgID string, eventName EventName, templates []TemplateEv
 	}
 }
 
-func SendLightwellAdvisoryCreatedEvent(eventName EventName, eventType string, events []NotificationEvent) {
+func SendLightwellAdvisoryCreatedEvent(eventName EventName, eventType string, events []NotificationEvent) error {
 	if config.Get().LightwellAdvisoryCreatedClient != nil && len(events) > 0 {
 		eventNameStr := eventName.String()
 		newUUID, _ := uuid.NewRandom()
@@ -183,15 +183,16 @@ func SendLightwellAdvisoryCreatedEvent(eventName EventName, eventType string, ev
 
 		if err != nil {
 			log.Error().Err(err).Msg("failed to create cloudevents client")
-			return
+			return err
 		}
 
 		ctx := cloudevents.WithEncodingStructured(context.Background())
 		// Send the event
 		if result := config.Get().LightwellAdvisoryCreatedClient.Send(ctx, e); cloudevents.IsUndelivered(result) {
 			log.Error().Msgf("LightwellAdvisoryCreatedClient message failed to send: %v", result)
-			return
+			return err
 		}
 		log.Info().Msg("Lightwell advisory created event sent")
 	}
+	return nil
 }

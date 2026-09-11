@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/IBM/sarama/mocks"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -16,6 +18,36 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// fakeCloudEventsClient is a minimal cloudevents.Client stub that records how
+// many events were sent so tests can assert the bridge topic was published to.
+type fakeCloudEventsClient struct {
+	sent int
+}
+
+func (f *fakeCloudEventsClient) Send(_ context.Context, _ cloudevents.Event) protocol.Result {
+	f.sent++
+	return nil // nil result is treated as ACK/delivered
+}
+
+func (f *fakeCloudEventsClient) Request(_ context.Context, _ cloudevents.Event) (*cloudevents.Event, protocol.Result) {
+	return nil, nil
+}
+
+func (f *fakeCloudEventsClient) StartReceiver(_ context.Context, _ any) error {
+	return nil
+}
+
+func setupFakeBridgeClient(t *testing.T) *fakeCloudEventsClient {
+	t.Helper()
+	fake := &fakeCloudEventsClient{}
+	orig := config.Get().LightwellAdvisoryCreatedClient
+	config.Get().LightwellAdvisoryCreatedClient = fake
+	t.Cleanup(func() {
+		config.Get().LightwellAdvisoryCreatedClient = orig
+	})
+	return fake
+}
 
 func setupMockProducer(t *testing.T, expectedMessages int) *mocks.SyncProducer {
 	t.Helper()
@@ -143,6 +175,89 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-2")
 	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified)
 	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-2", unnotified)
+}
+
+func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = true
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
+
+	fakeClient := setupFakeBridgeClient(t)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testManifest)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory1)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory2)
+	})
+
+	server := setupTestServer(t, mux)
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.Anything).Return(nil)
+
+	// The bridge path reuses the per-org notification tracking under a sentinel
+	// org_id, so only advisories not yet sent to the bridge are published.
+	bridgeUnnotified := []dao.LightwellNotificationData{
+		{PackageName: "com.example:lib-a", AdvisoryID: "ADV-001", Severity: "9.8", FixedVersions: []string{"1.0.1"}},
+	}
+	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID).Return(bridgeUnnotified, nil)
+	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified).Return(nil)
+
+	// No orgs opted in, so the per-org path is a no-op and we isolate the bridge path.
+	mockDao.UserPreference.On("ListDistinctOrgsByPreference", mock.Anything,
+		models.UserPreferenceLightwellNotificationEnabled, "true",
+	).Return([]string{}, nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, fakeClient.sent, "bridge event should be sent exactly once")
+	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID)
+	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified)
+}
+
+func TestProcessOsvForEntry_BridgeSkippedWhenAllNotified(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = true
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
+
+	fakeClient := setupFakeBridgeClient(t)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testManifest)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory1)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory2)
+	})
+
+	server := setupTestServer(t, mux)
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.Anything).Return(nil)
+
+	// Everything already sent to the bridge: no new events, nothing to mark.
+	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID).Return([]dao.LightwellNotificationData{}, nil)
+
+	mockDao.UserPreference.On("ListDistinctOrgsByPreference", mock.Anything,
+		models.UserPreferenceLightwellNotificationEnabled, "true",
+	).Return([]string{}, nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 0, fakeClient.sent, "no bridge event should be sent when nothing is unnotified")
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID, mock.Anything)
 }
 
 func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) {
