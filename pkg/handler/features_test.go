@@ -10,11 +10,14 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	fsc "github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,22 +29,24 @@ type FeaturesSuite struct {
 func TestFeaturesSuite(t *testing.T) {
 	suite.Run(t, new(FeaturesSuite))
 }
+
 func (s *FeaturesSuite) SetupTest() {
 	// Backup previous config
 	s.oldFeatureSet = config.Get().Features
 }
+
 func (s *FeaturesSuite) TearDownTest() {
 	// Restore previous config
 	config.Get().Features = s.oldFeatureSet
 }
 
-func serveFeaturesRouter(req *http.Request) (int, []byte, error) {
+func serveFeaturesRouter(req *http.Request, fsClient *fsc.FeatureServiceClient) (int, []byte, error) {
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	pathPrefix := router.Group(api.FullRootPath())
 
-	RegisterFeaturesRoutes(pathPrefix)
+	RegisterFeaturesRoutes(pathPrefix, fsClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -63,9 +68,17 @@ type FeatureTestCase struct {
 }
 
 func TestFeatures(t *testing.T) {
+	oldLensFeature := config.Get().Features.LightwellLens
 	config.Get().Features.Snapshots.Enabled = true
 	config.Get().Features.AdminTasks.Enabled = true
-	defer resetFeatures()
+	config.Get().Features.LightwellLens.Enabled = false
+	defer func() {
+		config.Get().Features.LightwellLens = oldLensFeature
+		resetFeatures()
+	}()
+
+	fsClientMock := fsc.NewMockFeatureServiceClient(t)
+	var fsClient fsc.FeatureServiceClient = fsClientMock
 
 	path := fmt.Sprintf("%s/features/", api.FullRootPath())
 	req, _ := http.NewRequest("GET", path, nil)
@@ -76,7 +89,8 @@ func TestFeatures(t *testing.T) {
 		Internal: identity.Internal{
 			OrgID: "orgId",
 		},
-		User: &identity.User{Username: "foo"}}
+		User: &identity.User{Username: "foo"},
+	}
 
 	testCases := []FeatureTestCase{
 		{
@@ -91,7 +105,8 @@ func TestFeatures(t *testing.T) {
 				"admintasks": {
 					Enabled:    true,
 					Accessible: true,
-				}},
+				},
+			},
 		},
 		{
 			name:           "Allowed with Account",
@@ -105,7 +120,8 @@ func TestFeatures(t *testing.T) {
 				"admintasks": {
 					Enabled:    true,
 					Accessible: true,
-				}},
+				},
+			},
 		},
 		{
 			name:       "Allowed with OrgId",
@@ -119,7 +135,8 @@ func TestFeatures(t *testing.T) {
 				"admintasks": {
 					Enabled:    true,
 					Accessible: true,
-				}},
+				},
+			},
 		},
 		{
 			name: "Not allowed ",
@@ -132,7 +149,8 @@ func TestFeatures(t *testing.T) {
 				"admintasks": {
 					Enabled:    true,
 					Accessible: false,
-				}},
+				},
+			},
 		},
 	}
 
@@ -166,7 +184,7 @@ func TestFeatures(t *testing.T) {
 		}
 
 		newReq := wrapReqWithIdentity(t, req, testcase.id)
-		code, body, err := serveFeaturesRouter(newReq)
+		code, body, err := serveFeaturesRouter(newReq, &fsClient)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, code)
 		var featureResponse api.FeatureSet
@@ -176,6 +194,134 @@ func TestFeatures(t *testing.T) {
 		for k, v := range testcase.expected {
 			assert.Equal(t, v, featureResponse[k], "Expected response for %v does not match key %v", testcase.name, k)
 		}
+	}
+}
+
+func TestLightwellLensFeatureAccess(t *testing.T) {
+	oldLensFeature := config.Get().Features.LightwellLens
+	oldLightwellEntitledFeatures := config.Get().Features.LightwellLensInternalEntitledFeatures
+	defer func() {
+		config.Get().Features.LightwellLens = oldLensFeature
+		config.Get().Features.LightwellLensInternalEntitledFeatures = oldLightwellEntitledFeatures
+	}()
+
+	config.Get().Features.LightwellLens = config.Feature{
+		Enabled:       true,
+		Organizations: utils.Ptr([]string{"configured-org"}),
+	}
+	config.Get().Features.LightwellLensInternalEntitledFeatures = utils.Ptr([]string{
+		"feature-one", "feature-two", "feature-three",
+	})
+
+	testCases := []struct {
+		name          string
+		id            identity.Identity
+		entitled      []string
+		serviceError  error
+		expectLookup  bool
+		expectedValue bool
+	}{
+		{
+			name: "configured organization remains accessible",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "configured-org",
+				Internal: identity.Internal{
+					OrgID: "configured-org",
+				},
+				User: &identity.User{Username: "user"},
+			},
+			expectedValue: true,
+		},
+		{
+			name: "internal user with configured feature one uses top-level org",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				Internal: identity.Internal{
+					OrgID: "different-org",
+				},
+				User: &identity.User{Username: "employee", Internal: true},
+			},
+			entitled:      []string{"feature-one"},
+			expectLookup:  true,
+			expectedValue: true,
+		},
+		{
+			name: "internal user with configured feature two",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				Internal: identity.Internal{
+					OrgID: "feature-org",
+				},
+				User: &identity.User{Username: "employee", Internal: true},
+			},
+			entitled:      []string{"feature-two"},
+			expectLookup:  true,
+			expectedValue: true,
+		},
+		{
+			name: "internal user without a Lens feature",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				Internal: identity.Internal{
+					OrgID: "feature-org",
+				},
+				User: &identity.User{Username: "employee", Internal: true},
+			},
+			entitled:      []string{"RHEL-OS-x86_64"},
+			expectLookup:  true,
+			expectedValue: false,
+		},
+		{
+			name: "external user with a configured feature",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				Internal: identity.Internal{
+					OrgID: "feature-org",
+				},
+				User: &identity.User{Username: "user"},
+			},
+			entitled:      []string{"feature-one"},
+			expectedValue: false,
+		},
+		{
+			name: "feature service error denies access",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				Internal: identity.Internal{
+					OrgID: "feature-org",
+				},
+				User: &identity.User{Username: "employee", Internal: true},
+			},
+			serviceError:  fmt.Errorf("feature service unavailable"),
+			expectLookup:  true,
+			expectedValue: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			fsClientMock := fsc.NewMockFeatureServiceClient(t)
+			if testCase.expectLookup {
+				fsClientMock.On("GetEntitledFeatures", mock.Anything, "feature-org").Return(testCase.entitled, testCase.serviceError).Once()
+			}
+			var fsClient fsc.FeatureServiceClient = fsClientMock
+
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/features/", api.FullRootPath()), nil)
+			wrapReqWithIdentity(t, req, testCase.id)
+			code, body, err := serveFeaturesRouter(req, &fsClient)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, code)
+
+			var response api.FeatureSet
+			assert.NoError(t, json.Unmarshal(body, &response))
+			assert.Equal(t, testCase.expectedValue, response["lightwelllens"].Accessible)
+		})
 	}
 }
 

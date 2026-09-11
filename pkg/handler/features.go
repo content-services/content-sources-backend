@@ -7,18 +7,25 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog/log"
 )
 
 type FeaturesHandler struct {
+	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func RegisterFeaturesRoutes(engine *echo.Group) {
-	fh := FeaturesHandler{}
+func RegisterFeaturesRoutes(engine *echo.Group, fsClient *feature_service_client.FeatureServiceClient) {
+	if fsClient == nil {
+		panic("fsClient is nil")
+	}
+	fh := FeaturesHandler{FeatureServiceClient: *fsClient}
 	addRepoRoute(engine, http.MethodGet, "/features/", fh.listFeatures, rbac.RbacVerbRead)
 }
 
@@ -40,15 +47,52 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 		value := elem.Field(i).Interface()
 		feature, valid := value.(config.Feature)
 		if !valid {
-			log.Logger.Error().Msgf("Could not load feature %v", feature)
 			continue
+		}
+		accessible := false
+		if supportsLightwellEntitlements(name) {
+			accessible = lightwellLensFeatureAccessible(c.Request().Context(), feature, fh.FeatureServiceClient)
+		} else {
+			accessible = config.FeatureAccessible(c.Request().Context(), feature)
 		}
 		set[name] = api.Feature{
 			Enabled:    feature.Enabled,
-			Accessible: config.FeatureAccessible(c.Request().Context(), feature),
+			Accessible: accessible,
 		}
 	}
 	return c.JSON(http.StatusOK, set)
+}
+
+func supportsLightwellEntitlements(featureName string) bool {
+	return featureName == "lightwelllens" || featureName == "lightwellstoreuploads"
+}
+
+func lightwellLensFeatureAccessible(
+	ctx context.Context, feature config.Feature, fsClient feature_service_client.FeatureServiceClient,
+) bool {
+	if !feature.Enabled {
+		return false
+	}
+	if config.FeatureAccessible(ctx, feature) {
+		return true
+	}
+	entitledFeatures := config.Get().Features.LightwellLensInternalEntitledFeatures
+	if entitledFeatures == nil {
+		return false
+	}
+
+	xrhid := identity.GetIdentity(ctx)
+	if fsClient == nil || xrhid.Identity.User == nil || !xrhid.Identity.User.Internal {
+		return false
+	}
+
+	features, err := fsClient.GetEntitledFeatures(ctx, xrhid.Identity.OrgID)
+	if err != nil {
+		log.Logger.Error().Err(err).Msg("error getting entitled features")
+		return false
+	}
+
+	return utils.ContainsAny(features, *entitledFeatures)
 }
 
 func CheckSnapshotAccessible(ctx context.Context) (err error) {
@@ -122,14 +166,15 @@ func CheckLightwellBeaconAccessible(ctx context.Context) (err error) {
 	}
 }
 
-func CheckLightwellLensAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.LightwellLens.Enabled {
+func CheckLightwellLensAccessible(ctx context.Context, fsClient feature_service_client.FeatureServiceClient) (err error) {
+	feature := config.Get().Features.LightwellLens
+	if !feature.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Lens",
 			"Lightwell Lens is disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellLens) {
-		return nil
-	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Lens",
-			"Neither the user nor account is allowed.")
 	}
+	if lightwellLensFeatureAccessible(ctx, feature, fsClient) {
+		return nil
+	}
+	return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Lens",
+		"Neither the user nor account is allowed.")
 }
