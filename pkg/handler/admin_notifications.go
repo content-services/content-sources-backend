@@ -45,7 +45,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 	}
 
 	_, orgID := getAccountIdOrgId(c)
-	log.Info().Str("topic", req.Topic).Msg("test notification requested")
+	log.Error().Msg(req.Topic)
 	if req.Topic == config.Get().Options.LightwellBridgeTopic {
 		events := []event.NotificationEvent{}
 		err := json.Unmarshal([]byte(req.Notification), &events)
@@ -53,7 +53,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 			return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 		}
 		event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, events)
-		log.Info().Msg("sent lightwell advisory created event")
+		log.Error().Msg("Sent lightwell advisory created event")
 		return c.NoContent(http.StatusOK)
 	} else { // assume notification
 		var body struct {
@@ -71,7 +71,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 			return ce.NewErrorResponse(http.StatusInternalServerError,
 				"Error sending test notification", err.Error())
 		}
-		log.Info().Msg("sent notification event")
+		log.Error().Msg("Sent notification event")
 		return c.JSONBlob(http.StatusOK, sent)
 	}
 }

@@ -168,7 +168,7 @@ func SendLightwellAdvisoryCreatedEvent(eventName EventName, events []Notificatio
 		e := cloudevents.NewEvent()
 		e.SetSource("urn:redhat:source:console:app:lightwell")
 		e.SetID(newUUID.String())
-		e.SetType("com.redhat.console.lightwell." + eventNameStr)
+		e.SetType("com.redhat.console.lightwelll." + eventNameStr)
 		e.SetSubject("urn:redhat:subject:console:rhel:" + eventNameStr)
 		e.SetTime(time.Now())
 

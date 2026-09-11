@@ -247,6 +247,11 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
+  lightwell_beacon_and_lens:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
   lightwell_beacon:
     enabled: false
     accounts: #["lightwellAccount"]
