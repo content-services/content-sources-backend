@@ -17,7 +17,8 @@ const mavenCentralHTTPTimeout = 30 * time.Second
 
 var mavenCentralBaseURL = "https://repo.maven.apache.org/maven2"
 
-var lightwellVersionSuffix = regexp.MustCompile(`\.rhlw-.*$`)
+// Matches both legacy (.rhlw-00003) and new (-rhlw.00003.n00001) formats
+var lightwellVersionSuffix = regexp.MustCompile(`(?:\.rhlw-|-rhlw\.).*$`)
 
 type pomXML struct {
 	XMLName      xml.Name `xml:"project"`

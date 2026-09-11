@@ -26,9 +26,19 @@ func TestMavenCentralPomURL(t *testing.T) {
 }
 
 func TestStripLightwellVersionSuffix(t *testing.T) {
+	// legacy format tests
 	assert.Equal(t, "3.15.0", stripLightwellVersionSuffix("3.15.0.rhlw-3001"))
 	assert.Equal(t, "42.0.8", stripLightwellVersionSuffix("42.0.8.rhlw-00003"))
 	assert.Equal(t, "1.0.0", stripLightwellVersionSuffix("1.0.0"))
+
+	// new format tests
+	assert.Equal(t, "1.2.3", stripLightwellVersionSuffix("1.2.3-rhlw.00003"))
+	assert.Equal(t, "1.2.3", stripLightwellVersionSuffix("1.2.3-rhlw.00003.n00001"))
+	assert.Equal(t, "1.2.3", stripLightwellVersionSuffix("1.2.3-rhlw.00003.hf00001"))
+	assert.Equal(t, "1.2.3", stripLightwellVersionSuffix("1.2.3-rhlw.00003.n00001.hf00002"))
+
+	// Non-Lightwell versions should remain unchanged
+	assert.Equal(t, "1.2.3-SNAPSHOT", stripLightwellVersionSuffix("1.2.3-SNAPSHOT"))
 }
 
 func TestParsePom(t *testing.T) {
