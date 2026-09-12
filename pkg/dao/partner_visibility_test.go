@@ -164,6 +164,318 @@ func (s *PartnerVisibilitySuite) TestHasPublishedSnapshot() {
 	assert.False(t, hasPublished)
 }
 
+func createTestTask(t *testing.T, tx *gorm.DB, status string) models.TaskInfo {
+	t.Helper()
+	task := models.TaskInfo{
+		Id:     uuid.New(),
+		Status: status,
+		OrgId:  seeds.RandomOrgId(),
+	}
+	require.NoError(t, tx.Create(&task).Error)
+	return task
+}
+
+func createTestSnapshotWithPublishTask(t *testing.T, tx *gorm.DB, repoConfigUUID string, published bool, task *models.TaskInfo) models.Snapshot {
+	t.Helper()
+	snap := models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/" + uuid.NewString(),
+		PublicationHref:             "/pulp/publication/" + uuid.NewString(),
+		DistributionPath:            "/content/" + uuid.NewString(),
+		RepositoryPath:              "/content/" + uuid.NewString(),
+		DistributionHref:            "/pulp/distribution/" + uuid.NewString(),
+		RepositoryConfigurationUUID: repoConfigUUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		DetectedOSVersion:           "9",
+		Published:                   published,
+	}
+	if task != nil {
+		snap.PublishTaskUUID = task.Id.String()
+	}
+	require.NoError(t, tx.Create(&snap).Error)
+	return snap
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_Empty() {
+	t := s.T()
+	ctx := context.Background()
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{})
+	require.NoError(t, err)
+	assert.Empty(t, result)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_NoSnapshots() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "no-snapshots", true)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	require.Contains(t, result, repoConfig.UUID)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_Publishing() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "publishing", true)
+
+	// Publishing: snapshot.published=true with pending/running task (handler sets published=true before enqueueing)
+	for _, status := range []string{"pending", "running"} {
+		task := createTestTask(t, s.tx, status)
+		createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &task)
+	}
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.True(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_Unpublishing() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "unpublishing", true)
+
+	// Unpublishing: snapshot.published=false with pending/running task (handler sets published=false before enqueueing)
+	for _, status := range []string{"pending", "running"} {
+		task := createTestTask(t, s.tx, status)
+		createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, false, &task)
+	}
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.True(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_Published() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "published", true)
+
+	task := createTestTask(t, s.tx, "completed")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &task)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.True(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_Stopped() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "stopped", true)
+
+	for _, status := range []string{"failed", "canceled"} {
+		task := createTestTask(t, s.tx, status)
+		createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &task)
+	}
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.True(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_StoppedUnpublish() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "stopped-unpublish", true)
+
+	// Unpublish that failed: published=false with a failed task
+	failedTask := createTestTask(t, s.tx, "failed")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, false, &failedTask)
+
+	// Unpublish that was canceled: published=false with a canceled task
+	canceledTask := createTestTask(t, s.tx, "canceled")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, false, &canceledTask)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.True(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_PublishedAndPublishing() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "pub-and-publishing", true)
+
+	// One snapshot already published (completed task)
+	completedTask := createTestTask(t, s.tx, "completed")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &completedTask)
+
+	// Another snapshot being published (published=true, pending task)
+	pendingTask := createTestTask(t, s.tx, "pending")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &pendingTask)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.True(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.True(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_PublishedAndUnpublishing() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "pub-and-unpublishing", true)
+
+	// One snapshot already published (completed task)
+	completedTask := createTestTask(t, s.tx, "completed")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &completedTask)
+
+	// Another snapshot being unpublished (published=false, pending task)
+	pendingTask := createTestTask(t, s.tx, "pending")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, false, &pendingTask)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.True(t, result[repoConfig.UUID].Unpublishing)
+	assert.True(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_PublishingAndUnpublishing() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "publishing-and-unpublishing", true)
+
+	// One snapshot being published (published=true, running task)
+	publishTask := createTestTask(t, s.tx, "running")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &publishTask)
+
+	// Another snapshot being unpublished (published=false, running task)
+	unpublishTask := createTestTask(t, s.tx, "running")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, false, &unpublishTask)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.True(t, result[repoConfig.UUID].Publishing)
+	assert.True(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_AllFourStates() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "all-states", true)
+
+	// Published: completed task
+	completedTask := createTestTask(t, s.tx, "completed")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &completedTask)
+
+	// Publishing: published=true, running task
+	publishingTask := createTestTask(t, s.tx, "running")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &publishingTask)
+
+	// Unpublishing: published=false, running task
+	unpublishingTask := createTestTask(t, s.tx, "running")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, false, &unpublishingTask)
+
+	// Stopped: failed task
+	failedTask := createTestTask(t, s.tx, "failed")
+	createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &failedTask)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.True(t, result[repoConfig.UUID].Publishing)
+	assert.True(t, result[repoConfig.UUID].Unpublishing)
+	assert.True(t, result[repoConfig.UUID].Published)
+	assert.True(t, result[repoConfig.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_MultipleBatch() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo1 := createTestUploadRepository(t, s.tx)
+	rc1 := createTestPartnerRepoConfig(t, s.tx, repo1, seeds.RandomOrgId(), "batch-1", true)
+	completedTask := createTestTask(t, s.tx, "completed")
+	createTestSnapshotWithPublishTask(t, s.tx, rc1.UUID, true, &completedTask)
+
+	repo2 := createTestUploadRepository(t, s.tx)
+	rc2 := createTestPartnerRepoConfig(t, s.tx, repo2, seeds.RandomOrgId(), "batch-2", true)
+	pendingTask := createTestTask(t, s.tx, "pending")
+	createTestSnapshotWithPublishTask(t, s.tx, rc2.UUID, false, &pendingTask)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{rc1.UUID, rc2.UUID})
+	require.NoError(t, err)
+
+	assert.False(t, result[rc1.UUID].Publishing)
+	assert.False(t, result[rc1.UUID].Unpublishing)
+	assert.True(t, result[rc1.UUID].Published)
+	assert.False(t, result[rc1.UUID].Stopped)
+
+	assert.False(t, result[rc2.UUID].Publishing)
+	assert.True(t, result[rc2.UUID].Unpublishing)
+	assert.False(t, result[rc2.UUID].Published)
+	assert.False(t, result[rc2.UUID].Stopped)
+}
+
+func (s *PartnerVisibilitySuite) TestComputeSnapshotPublishStates_DeletedSnapshotsIgnored() {
+	t := s.T()
+	ctx := context.Background()
+
+	repo := createTestUploadRepository(t, s.tx)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, seeds.RandomOrgId(), "deleted-snap", true)
+
+	completedTask := createTestTask(t, s.tx, "completed")
+	snap := createTestSnapshotWithPublishTask(t, s.tx, repoConfig.UUID, true, &completedTask)
+
+	// Soft-delete the snapshot
+	deletedAt := gorm.DeletedAt{Time: time.Now(), Valid: true}
+	require.NoError(t, s.tx.Model(&snap).Update("deleted_at", deletedAt).Error)
+
+	result, err := computeSnapshotPublishStates(ctx, s.tx, []string{repoConfig.UUID})
+	require.NoError(t, err)
+	assert.False(t, result[repoConfig.UUID].Publishing)
+	assert.False(t, result[repoConfig.UUID].Unpublishing)
+	assert.False(t, result[repoConfig.UUID].Published)
+	assert.False(t, result[repoConfig.UUID].Stopped)
+}
+
 func (s *PartnerVisibilitySuite) TestForeignPartnerVisibleExpr() {
 	t := s.T()
 
