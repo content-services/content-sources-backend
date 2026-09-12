@@ -74,6 +74,7 @@ export * from './ApiSnapshotCollectionResponse';
 export * from './ApiSnapshotErrata';
 export * from './ApiSnapshotErrataCollectionResponse';
 export * from './ApiSnapshotForDate';
+export * from './ApiSnapshotPublishState';
 export * from './ApiSnapshotPublishedUpdateRequest';
 export * from './ApiSnapshotResponse';
 export * from './ApiSnapshotRpm';

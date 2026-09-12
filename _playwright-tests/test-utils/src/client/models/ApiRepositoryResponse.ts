@@ -20,6 +20,13 @@ import {
     ApiTaskInfoResponseToJSON,
     ApiTaskInfoResponseToJSONTyped,
 } from './ApiTaskInfoResponse';
+import type { ApiSnapshotPublishState } from './ApiSnapshotPublishState';
+import {
+    ApiSnapshotPublishStateFromJSON,
+    ApiSnapshotPublishStateFromJSONTyped,
+    ApiSnapshotPublishStateToJSON,
+    ApiSnapshotPublishStateToJSONTyped,
+} from './ApiSnapshotPublishState';
 import type { ApiSnapshotResponse } from './ApiSnapshotResponse';
 import {
     ApiSnapshotResponseFromJSON,
@@ -233,6 +240,12 @@ export interface ApiRepositoryResponse {
      */
     snapshot?: boolean;
     /**
+     * Aggregate publish state across all snapshots (partner repos only)
+     * @type {ApiSnapshotPublishState}
+     * @memberof ApiRepositoryResponse
+     */
+    readonly snapshotPublishState?: ApiSnapshotPublishState;
+    /**
      * Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
      * @type {string}
      * @memberof ApiRepositoryResponse
@@ -308,6 +321,7 @@ export function ApiRepositoryResponseFromJSONTyped(json: any, ignoreDiscriminato
         'publishedDistributionUrl': json['published_distribution_url'] == null ? undefined : json['published_distribution_url'],
         'securityLevel': json['security_level'] == null ? undefined : json['security_level'],
         'snapshot': json['snapshot'] == null ? undefined : json['snapshot'],
+        'snapshotPublishState': json['snapshot_publish_state'] == null ? undefined : ApiSnapshotPublishStateFromJSON(json['snapshot_publish_state']),
         'status': json['status'] == null ? undefined : json['status'],
         'url': json['url'] == null ? undefined : json['url'],
         'uuid': json['uuid'] == null ? undefined : json['uuid'],
@@ -319,7 +333,7 @@ export function ApiRepositoryResponseToJSON(json: any): ApiRepositoryResponse {
     return ApiRepositoryResponseToJSONTyped(json, false);
 }
 
-export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'advisory_count'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
+export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'advisory_count'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'snapshot_publish_state'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
