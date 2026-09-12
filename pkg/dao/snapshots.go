@@ -177,6 +177,7 @@ func (sDao *snapshotDaoImpl) ListByTemplate(
 func readableSnapshots(db *gorm.DB, orgId string) *gorm.DB {
 	return db.Model(&models.Snapshot{}).
 		Preload("RepositoryConfiguration").
+		Preload("PublishTask").
 		Joins("JOIN repository_configurations ON repository_configuration_uuid = repository_configurations.uuid").
 		Where(
 			`(repository_configurations.org_id IN ?)
@@ -217,6 +218,7 @@ func (sDao *snapshotDaoImpl) fetch(ctx context.Context, uuid string) (models.Sna
 	var snapshot models.Snapshot
 	result := sDao.db.WithContext(ctx).
 		Preload("RepositoryConfiguration").
+		Preload("PublishTask").
 		Where("uuid = ?", UuidifyString(uuid)).
 		First(&snapshot)
 	if result.Error != nil {
@@ -366,7 +368,7 @@ func (sDao *snapshotDaoImpl) UpdatePublishedStatus(ctx context.Context, orgID st
 	var snapshot models.Snapshot
 
 	err := sDao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Preload("RepositoryConfiguration").Where("uuid = ?", snapshotUUID).First(&snapshot).Error; err != nil {
+		if err := tx.Preload("RepositoryConfiguration").Preload("PublishTask").Where("uuid = ?", snapshotUUID).First(&snapshot).Error; err != nil {
 			return SnapshotsDBToApiError(err, &snapshotUUID)
 		}
 		if snapshot.RepositoryConfigurationUUID != repoConfigUUID {
@@ -760,9 +762,37 @@ func SnapshotModelToApi(model models.Snapshot, resp *api.SnapshotResponse) {
 	resp.DetectedOSVersion = model.DetectedOSVersion
 	resp.Published = model.Published
 	resp.PublicationHref = model.PublicationHref
+	resp.LastPublishTaskUUID = model.PublishTaskUUID
+	if model.PublishTask != nil {
+		resp.LastPublishTask = &api.TaskInfoResponse{
+			UUID:       model.PublishTaskUUID,
+			Status:     model.PublishTask.Status,
+			Typename:   model.PublishTask.Typename,
+			OrgId:      model.PublishTask.OrgId,
+			ObjectType: config.ObjectTypeRepository,
+			ObjectUUID: model.RepositoryConfiguration.UUID,
+			ObjectName: model.RepositoryConfiguration.Name,
+		}
+		if model.PublishTask.Started != nil {
+			resp.LastPublishTask.CreatedAt = model.PublishTask.Started.Format(time.RFC3339)
+		}
+		if model.PublishTask.Finished != nil {
+			resp.LastPublishTask.EndedAt = model.PublishTask.Finished.Format(time.RFC3339)
+		}
+		if model.PublishTask.Error != nil {
+			resp.LastPublishTask.Error = *model.PublishTask.Error
+		}
+	}
 }
 
 // pulpContentURL combines content path and repository path to get content URL
 func pulpContentURL(pulpContentPath string, repositoryPath string) string {
 	return pulpContentPath + repositoryPath + "/"
+}
+
+func (sDao *snapshotDaoImpl) UpdatePublishTaskUUID(ctx context.Context, snapshotUUID string, taskUUID string) error {
+	return sDao.db.WithContext(ctx).
+		Model(&models.Snapshot{}).
+		Where("uuid = ?", snapshotUUID).
+		UpdateColumn("publish_task_uuid", taskUUID).Error
 }

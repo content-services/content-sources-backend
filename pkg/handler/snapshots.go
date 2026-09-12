@@ -257,6 +257,16 @@ func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error validating parameters", "Request body must include the 'published' field.")
 	}
 
+	// Check for an already-active publish task on this snapshot
+	existingSnap, err := sh.DaoRegistry.Snapshot.Fetch(c.Request().Context(), orgID, snapshotUUID)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching snapshot", err.Error())
+	}
+	if existingSnap.LastPublishTask != nil &&
+		(existingSnap.LastPublishTask.Status == config.TaskStatusPending || existingSnap.LastPublishTask.Status == config.TaskStatusRunning) {
+		return ce.NewErrorResponse(http.StatusConflict, "Error (un)publishing snapshot", "A publish task is already in progress for this snapshot.")
+	}
+
 	snapshot, err := sh.DaoRegistry.Snapshot.UpdatePublishedStatus(c.Request().Context(), orgID, *params.Published, repoUUID, snapshotUUID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error (un)publishing snapshot", err.Error())
@@ -266,6 +276,18 @@ func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())
 	}
+
+	// Store the task UUID on the snapshot so the frontend can track publish progress
+	if err := sh.DaoRegistry.Snapshot.UpdatePublishTaskUUID(c.Request().Context(), snapshotUUID, publishTaskID.String()); err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error updating publish task reference", err.Error())
+	}
+
+	snapshot.LastPublishTaskUUID = publishTaskID.String()
+	snapshot.LastPublishTask = &api.TaskInfoResponse{
+		UUID:   publishTaskID.String(),
+		Status: config.TaskStatusPending,
+	}
+
 	_, err = enqueueUpdateLatestSnapshotTask(c, sh.TaskClient, repoUUID, publishTaskID)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error enqueueing task", err.Error())

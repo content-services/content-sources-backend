@@ -1456,6 +1456,15 @@
                         "description": "Enable snapshotting and hosting of this repository",
                         "type": "boolean"
                     },
+                    "snapshot_publish_state": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/api.SnapshotPublishState"
+                            }
+                        ],
+                        "description": "Aggregate publish state across all snapshots (partner repos only)",
+                        "readOnly": true
+                    },
                     "status": {
                         "description": "Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)",
                         "type": "string"
@@ -1790,6 +1799,15 @@
                     "snapshot": {
                         "description": "Enable snapshotting and hosting of this repository",
                         "type": "boolean"
+                    },
+                    "snapshot_publish_state": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/api.SnapshotPublishState"
+                            }
+                        ],
+                        "description": "Aggregate publish state across all snapshots (partner repos only)",
+                        "readOnly": true
                     },
                     "status": {
                         "description": "Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)",
@@ -2267,6 +2285,27 @@
                 },
                 "type": "object"
             },
+            "api.SnapshotPublishState": {
+                "properties": {
+                    "published": {
+                        "description": "At least one snapshot is published with a completed publish task",
+                        "type": "boolean"
+                    },
+                    "publishing": {
+                        "description": "At least one snapshot with published=true has a pending/running task (publish in progress)",
+                        "type": "boolean"
+                    },
+                    "stopped": {
+                        "description": "At least one snapshot has a failed/canceled publish task",
+                        "type": "boolean"
+                    },
+                    "unpublishing": {
+                        "description": "At least one snapshot with published=false has a pending/running task (unpublish in progress)",
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "api.SnapshotPublishedUpdateRequest": {
                 "properties": {
                     "published": {
@@ -2303,6 +2342,18 @@
                     },
                     "detected_os_version": {
                         "description": "Release version of the repository (BaseOS)",
+                        "type": "string"
+                    },
+                    "publish_task": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/api.TaskInfoResponse"
+                            }
+                        ],
+                        "description": "Status of the publish/unpublish task"
+                    },
+                    "publish_task_uuid": {
+                        "description": "UUID of the publish/unpublish task",
                         "type": "string"
                     },
                     "published": {
