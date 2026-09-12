@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ApiTaskInfoResponse } from './ApiTaskInfoResponse';
+import {
+    ApiTaskInfoResponseFromJSON,
+    ApiTaskInfoResponseFromJSONTyped,
+    ApiTaskInfoResponseToJSON,
+    ApiTaskInfoResponseToJSONTyped,
+} from './ApiTaskInfoResponse';
+
 /**
  * 
  * @export
@@ -43,6 +51,18 @@ export interface ApiSnapshotResponse {
      * @memberof ApiSnapshotResponse
      */
     detectedOsVersion?: string;
+    /**
+     * Status of the publish/unpublish task
+     * @type {ApiTaskInfoResponse}
+     * @memberof ApiSnapshotResponse
+     */
+    publishTask?: ApiTaskInfoResponse;
+    /**
+     * UUID of the publish/unpublish task
+     * @type {string}
+     * @memberof ApiSnapshotResponse
+     */
+    publishTaskUuid?: string;
     /**
      * Whether this snapshot is published for cross-org partner visibility
      * @type {boolean}
@@ -108,6 +128,8 @@ export function ApiSnapshotResponseFromJSONTyped(json: any, ignoreDiscriminator:
         'contentCounts': json['content_counts'] == null ? undefined : json['content_counts'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
         'detectedOsVersion': json['detected_os_version'] == null ? undefined : json['detected_os_version'],
+        'publishTask': json['publish_task'] == null ? undefined : ApiTaskInfoResponseFromJSON(json['publish_task']),
+        'publishTaskUuid': json['publish_task_uuid'] == null ? undefined : json['publish_task_uuid'],
         'published': json['published'] == null ? undefined : json['published'],
         'removedCounts': json['removed_counts'] == null ? undefined : json['removed_counts'],
         'repositoryName': json['repository_name'] == null ? undefined : json['repository_name'],
@@ -133,6 +155,8 @@ export function ApiSnapshotResponseToJSONTyped(value?: ApiSnapshotResponse | nul
         'content_counts': value['contentCounts'],
         'created_at': value['createdAt'],
         'detected_os_version': value['detectedOsVersion'],
+        'publish_task': ApiTaskInfoResponseToJSON(value['publishTask']),
+        'publish_task_uuid': value['publishTaskUuid'],
         'published': value['published'],
         'removed_counts': value['removedCounts'],
         'repository_name': value['repositoryName'],
