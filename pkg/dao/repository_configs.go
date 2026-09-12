@@ -605,6 +605,25 @@ func (r repositoryConfigDaoImpl) List(
 	applyPartnerResponseOverrides(ctx, r.db, repoConfigs, OrgID)
 	repos := convertToResponses(repoConfigs, contentPath)
 
+	// Compute publish states for partner repos in the result set
+	partnerUUIDs := make([]string, 0)
+	for _, rc := range repoConfigs {
+		if rc.Partner {
+			partnerUUIDs = append(partnerUUIDs, rc.UUID)
+		}
+	}
+	if len(partnerUUIDs) > 0 {
+		publishStates, err := computeSnapshotPublishStates(ctx, r.db, partnerUUIDs)
+		if err != nil {
+			return api.RepositoryCollectionResponse{}, totalRepos, err
+		}
+		for i := range repos {
+			if ps, ok := publishStates[repos[i].UUID]; ok {
+				repos[i].SnapshotPublishState = ps
+			}
+		}
+	}
+
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
@@ -886,6 +905,16 @@ func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid s
 	repoConfigs := []models.RepositoryConfiguration{repoConfig}
 	applyPartnerResponseOverrides(ctx, r.db, repoConfigs, orgID)
 	repo = convertToResponses(repoConfigs, contentPath)[0]
+
+	if repoConfig.Partner {
+		publishStates, err := computeSnapshotPublishStates(ctx, r.db, []string{repoConfig.UUID})
+		if err != nil {
+			return api.RepositoryResponse{}, err
+		}
+		if ps, ok := publishStates[repo.UUID]; ok {
+			repo.SnapshotPublishState = ps
+		}
+	}
 
 	return repo, nil
 }
