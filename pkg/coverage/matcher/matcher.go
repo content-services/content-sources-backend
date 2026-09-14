@@ -129,6 +129,7 @@ func normalizeKey(pkg Package) string {
 	case EcosystemJava:
 		return strings.ToLower(pkg.Namespace) + ":" + strings.ToLower(pkg.Name)
 	default:
+		// TODO: include namespace when matching other ecosystems (scoped npm, Go modules).
 		return strings.ToLower(pkg.Ecosystem) + ":" + strings.ToLower(pkg.Name)
 	}
 }

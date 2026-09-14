@@ -43,19 +43,33 @@ CVE-2024-22262,pkg:maven/org.springframework/spring-web@6.1.5,Spring Web,6.1.5
 	assert.Equal(t, "org.springframework", pkgs[0].Namespace)
 }
 
-func TestParseCSV_SkipsUnsupportedEcosystems(t *testing.T) {
+func TestParseCSV_IncludesAllEcosystems(t *testing.T) {
 	data := []byte(`vulnerability_id,packageurl,component_name
 CVE-001,pkg:npm/express@4.18.2,Express
 CVE-002,pkg:pypi/flask@3.0.3,Flask
+CVE-003,pkg:nuget/Newtonsoft.Json@13.0.1,Json.NET
+CVE-004,pkg:golang/github.com/gin-gonic/gin@1.9.1,Gin
 `)
 
 	pkgs, err := parseCSV(bytes.NewReader(data))
 	require.NoError(t, err)
-	assert.Len(t, pkgs, 1)
-	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
-	assert.Equal(t, "flask", pkgs[0].Name)
-	assert.Equal(t, "3.0.3", pkgs[0].Version)
+	require.Len(t, pkgs, 4)
+	assert.Equal(t, EcosystemJavaScript, pkgs[0].Ecosystem)
+	assert.Equal(t, "express", pkgs[0].Name)
+	assert.Equal(t, "4.18.2", pkgs[0].Version)
 	assert.Empty(t, pkgs[0].Namespace)
+	assert.Equal(t, EcosystemPython, pkgs[1].Ecosystem)
+	assert.Equal(t, "flask", pkgs[1].Name)
+	assert.Equal(t, "3.0.3", pkgs[1].Version)
+	assert.Empty(t, pkgs[1].Namespace)
+	assert.Equal(t, EcosystemCSharp, pkgs[2].Ecosystem)
+	assert.Equal(t, "Newtonsoft.Json", pkgs[2].Name)
+	assert.Equal(t, "13.0.1", pkgs[2].Version)
+	assert.Empty(t, pkgs[2].Namespace)
+	assert.Equal(t, EcosystemGo, pkgs[3].Ecosystem)
+	assert.Equal(t, "gin", pkgs[3].Name)
+	assert.Equal(t, "1.9.1", pkgs[3].Version)
+	assert.Equal(t, "github.com/gin-gonic", pkgs[3].Namespace)
 }
 
 func TestParseCSV_SkipsRowsWithoutPURL(t *testing.T) {

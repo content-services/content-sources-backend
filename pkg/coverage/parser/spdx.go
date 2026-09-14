@@ -174,7 +174,7 @@ func decodeSPDXJSONPurls(dec *json.Decoder) ([]Package, error) {
 	return packagesFromSPDXPURLJSON(raw), nil
 }
 
-// packagesFromSPDXPURLJSON extracts maven/pypi purls from a string, object, or array of objects.
+// packagesFromSPDXPURLJSON extracts packages from a string, object, or array of objects.
 func packagesFromSPDXPURLJSON(raw json.RawMessage) []Package {
 	raw = bytes.TrimSpace(raw)
 	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {

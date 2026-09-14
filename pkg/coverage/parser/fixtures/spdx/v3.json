@@ -23,6 +23,12 @@
       ]
     },
     {
+      "type": "software_Package",
+      "name": "express",
+      "software_packageVersion": "4.18.2",
+      "software_packageUrl": "pkg:npm/express@4.18.2"
+    },
+    {
       "type": "software_File",
       "name": "main.py",
       "software_packageUrl": "pkg:pypi/should-skip@1.0.0"

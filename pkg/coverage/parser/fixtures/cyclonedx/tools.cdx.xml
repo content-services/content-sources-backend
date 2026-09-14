@@ -20,5 +20,10 @@
       <version>3.0.3</version>
       <purl>pkg:pypi/flask@3.0.3</purl>
     </component>
+    <component type="library">
+      <name>express</name>
+      <version>4.18.2</version>
+      <purl>pkg:npm/express@4.18.2</purl>
+    </component>
   </components>
 </bom>

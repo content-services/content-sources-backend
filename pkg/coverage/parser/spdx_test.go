@@ -15,6 +15,7 @@ func TestParse_SPDX2JSON(t *testing.T) {
 	assert.ElementsMatch(t, []Package{
 		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
 		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
+		{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
 	}, result.Packages)
 }
 
@@ -24,15 +25,18 @@ func TestParse_SPDX3JSON(t *testing.T) {
 	assert.ElementsMatch(t, []Package{
 		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
 		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-web", Version: "6.1.5"},
+		{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
 	}, result.Packages)
 }
 
 func TestParse_SPDXTagValue(t *testing.T) {
 	result := parseTestdata(t, "bom.spdx", filepath.Join("spdx", "tagvalue.spdx"))
 	assert.Equal(t, FormatSPDX, result.InputFormat)
-	require.Len(t, result.Packages, 2)
-	assert.Equal(t, "flask", result.Packages[0].Name)
-	assert.Equal(t, "spring-core", result.Packages[1].Name)
+	assert.ElementsMatch(t, []Package{
+		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
+		{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
+	}, result.Packages)
 }
 
 func TestParse_SPDXUnsupportedEncodings(t *testing.T) {
