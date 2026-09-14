@@ -9,8 +9,12 @@ import (
 )
 
 const (
-	EcosystemJava   = "Java"
-	EcosystemPython = "Python"
+	EcosystemJava       = "Java"
+	EcosystemPython     = "Python"
+	EcosystemJavaScript = "JavaScript"
+	EcosystemCSharp     = "C#"
+	EcosystemGo         = "Go"
+	EcosystemRust       = "Rust"
 )
 
 const (

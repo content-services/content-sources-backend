@@ -75,6 +75,10 @@ func (s *CoverageReportDaoSuite) TestFetch() {
 	report.PartialMatches = utils.Ptr(1)
 	report.Unmatched = utils.Ptr(1)
 	report.InputFormat = utils.Ptr("CycloneDX")
+	report.EcosystemCoverageSummary = &models.EcosystemCoverageSummary{
+		{Ecosystem: "Java", Total: 9, ExactMatches: 7, PartialMatches: 1, Unmatched: 1},
+		{Ecosystem: "JavaScript", Total: 1, Unmatched: 1},
+	}
 	require.NoError(s.T(), s.tx.Save(&report).Error)
 
 	resp, err := s.dao().Fetch(context.Background(), orgID, report.UUID)
@@ -86,6 +90,15 @@ func (s *CoverageReportDaoSuite) TestFetch() {
 	assert.Equal(s.T(), 1, resp.PartialMatches)
 	assert.Equal(s.T(), 1, resp.Unmatched)
 	assert.Equal(s.T(), "CycloneDX", resp.InputFormat)
+	require.Len(s.T(), resp.EcosystemCoverageSummary, 2)
+	assert.Equal(s.T(), "Java", resp.EcosystemCoverageSummary[0].Ecosystem)
+	assert.Equal(s.T(), 9, resp.EcosystemCoverageSummary[0].Total)
+	assert.Equal(s.T(), 7, resp.EcosystemCoverageSummary[0].ExactMatches)
+	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[0].PartialMatches)
+	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[0].Unmatched)
+	assert.Equal(s.T(), "JavaScript", resp.EcosystemCoverageSummary[1].Ecosystem)
+	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[1].Total)
+	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[1].Unmatched)
 }
 
 func (s *CoverageReportDaoSuite) TestFetchNotFound() {
@@ -112,9 +125,9 @@ func (s *CoverageReportDaoSuite) TestListPackages() {
 	orgID := seeds.RandomOrgId()
 	report := s.createReport(orgID, config.TaskStatusCompleted)
 
-	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
-	s.createPackage(report.UUID, "lodash", "4.17.21", "NPM", models.CoverageMatchStatusPartial)
-	s.createPackage(report.UUID, "unknown-pkg", "1.0.0", "Java", models.CoverageMatchStatusNone)
+	s.createPackage(report.UUID, "spring-core", "6.1.5", "Java", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "idna", "3.7", "Python", models.CoverageMatchStatusPartial)
+	s.createPackage(report.UUID, "lodash", "4.17.21", "JavaScript", models.CoverageMatchStatusNone)
 
 	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
 		api.PaginationData{Limit: 100, Offset: 0}, api.ListCoverageReportPackagesRequest{})
@@ -127,20 +140,23 @@ func (s *CoverageReportDaoSuite) TestListPackages() {
 		byName[p.Name] = p
 	}
 	assert.True(s.T(), byName["spring-core"].Covered)
-	assert.Equal(s.T(), "6.1.0", byName["spring-core"].Version)
-	assert.True(s.T(), byName["lodash"].Covered)
-	assert.False(s.T(), byName["unknown-pkg"].Covered)
+	assert.Equal(s.T(), "6.1.5", byName["spring-core"].Version)
+	assert.Equal(s.T(), "Java", byName["spring-core"].Ecosystem)
+	assert.True(s.T(), byName["idna"].Covered)
+	assert.Equal(s.T(), "Python", byName["idna"].Ecosystem)
+	assert.False(s.T(), byName["lodash"].Covered)
+	assert.Equal(s.T(), "JavaScript", byName["lodash"].Ecosystem)
 	assert.Equal(s.T(), models.CoverageMatchStatusExact, byName["spring-core"].MatchStatus)
-	assert.Equal(s.T(), models.CoverageMatchStatusPartial, byName["lodash"].MatchStatus)
-	assert.Equal(s.T(), models.CoverageMatchStatusNone, byName["unknown-pkg"].MatchStatus)
+	assert.Equal(s.T(), models.CoverageMatchStatusPartial, byName["idna"].MatchStatus)
+	assert.Equal(s.T(), models.CoverageMatchStatusNone, byName["lodash"].MatchStatus)
 }
 
 func (s *CoverageReportDaoSuite) TestListPackagesFilterByEcosystem() {
 	orgID := seeds.RandomOrgId()
 	report := s.createReport(orgID, config.TaskStatusCompleted)
 
-	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
-	s.createPackage(report.UUID, "lodash", "4.17.21", "NPM", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "spring-core", "6.1.5", "Java", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "lodash", "4.17.21", "JavaScript", models.CoverageMatchStatusNone)
 
 	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
 		api.PaginationData{Limit: 100, Offset: 0},
@@ -151,7 +167,7 @@ func (s *CoverageReportDaoSuite) TestListPackagesFilterByEcosystem() {
 
 	resp, total, err = s.dao().ListPackages(context.Background(), orgID, report.UUID,
 		api.PaginationData{Limit: 100, Offset: 0},
-		api.ListCoverageReportPackagesRequest{Ecosystem: "Java,NPM"})
+		api.ListCoverageReportPackagesRequest{Ecosystem: "Java,JavaScript"})
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(2), total)
 }
@@ -160,8 +176,8 @@ func (s *CoverageReportDaoSuite) TestListPackagesFilterBySearch() {
 	orgID := seeds.RandomOrgId()
 	report := s.createReport(orgID, config.TaskStatusCompleted)
 
-	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
-	s.createPackage(report.UUID, "lodash", "4.17.21", "NPM", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "spring-core", "6.1.5", "Java", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "lodash", "4.17.21", "JavaScript", models.CoverageMatchStatusNone)
 
 	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
 		api.PaginationData{Limit: 100, Offset: 0},
@@ -175,8 +191,8 @@ func (s *CoverageReportDaoSuite) TestListPackagesFilterByMatchStatus() {
 	orgID := seeds.RandomOrgId()
 	report := s.createReport(orgID, config.TaskStatusCompleted)
 
-	s.createPackage(report.UUID, "spring-core", "6.1.0", "Java", models.CoverageMatchStatusExact)
-	s.createPackage(report.UUID, "lodash", "4.17.21", "NPM", models.CoverageMatchStatusPartial)
+	s.createPackage(report.UUID, "spring-core", "6.1.5", "Java", models.CoverageMatchStatusExact)
+	s.createPackage(report.UUID, "idna", "3.7", "Python", models.CoverageMatchStatusPartial)
 
 	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
 		api.PaginationData{Limit: 100, Offset: 0},
@@ -190,7 +206,7 @@ func (s *CoverageReportDaoSuite) TestListPackagesFilterByMatchStatus() {
 		api.ListCoverageReportPackagesRequest{MatchStatus: "partial"})
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), int64(1), total)
-	assert.Equal(s.T(), "lodash", resp.Data[0].Name)
+	assert.Equal(s.T(), "idna", resp.Data[0].Name)
 
 	resp, total, err = s.dao().ListPackages(context.Background(), orgID, report.UUID,
 		api.PaginationData{Limit: 100, Offset: 0},
@@ -354,15 +370,17 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 			{Package: matcher.Package{Ecosystem: "Java", Name: "spring-core", Version: "6.1.0", Namespace: "org.springframework"}, MatchStatus: matcher.MatchStatusExact},
 			{Package: matcher.Package{Ecosystem: "Python", Name: "flask", Version: "2.0.0"}, MatchStatus: matcher.MatchStatusPartial},
 			{Package: matcher.Package{Ecosystem: "Python", Name: "custom-lib", Version: "0.1.0"}, MatchStatus: matcher.MatchStatusNone},
+			{Package: matcher.Package{Ecosystem: "JavaScript", Name: "express", Version: "4.18.2"}, MatchStatus: matcher.MatchStatusNone},
 		},
 		Summary: matcher.MatchSummary{
-			Total:          3,
+			Total:          4,
 			ExactMatches:   1,
 			PartialMatches: 1,
-			Unmatched:      1,
+			Unmatched:      2,
 			EcosystemCoverageSummary: []matcher.EcosystemSummary{
 				{Ecosystem: "Java", Total: 1, ExactMatches: 1},
 				{Ecosystem: "Python", Total: 2, PartialMatches: 1, Unmatched: 1},
+				{Ecosystem: "JavaScript", Total: 1, Unmatched: 1},
 			},
 			CatalogSnapshotAt: snapshotAt,
 		},
@@ -376,42 +394,52 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 	require.NotNil(s.T(), readReport.InputFormat)
 	assert.Equal(s.T(), "csv", *readReport.InputFormat)
 	require.NotNil(s.T(), readReport.Total)
-	assert.Equal(s.T(), 3, *readReport.Total)
+	assert.Equal(s.T(), 4, *readReport.Total)
 	require.NotNil(s.T(), readReport.ExactMatches)
 	assert.Equal(s.T(), 1, *readReport.ExactMatches)
 	require.NotNil(s.T(), readReport.PartialMatches)
 	assert.Equal(s.T(), 1, *readReport.PartialMatches)
 	require.NotNil(s.T(), readReport.Unmatched)
-	assert.Equal(s.T(), 1, *readReport.Unmatched)
+	assert.Equal(s.T(), 2, *readReport.Unmatched)
 	assert.NotNil(s.T(), readReport.CompletedAt)
 	require.NotNil(s.T(), readReport.CatalogSnapshotAt)
 	assert.True(s.T(), snapshotAt.Equal(*readReport.CatalogSnapshotAt))
 	require.NotNil(s.T(), readReport.EcosystemCoverageSummary)
-	assert.Len(s.T(), *readReport.EcosystemCoverageSummary, 2)
+	assert.Len(s.T(), *readReport.EcosystemCoverageSummary, 3)
 
 	var packages []models.CoverageReportPackage
 	err = s.tx.Where("coverage_report_uuid = ?", report.UUID).Order("name ASC").Find(&packages).Error
 	require.NoError(s.T(), err)
-	require.Len(s.T(), packages, 3)
+	require.Len(s.T(), packages, 4)
 	assert.Equal(s.T(), "custom-lib", packages[0].Name)
+	assert.Equal(s.T(), "Python", packages[0].Ecosystem)
 	assert.Nil(s.T(), packages[0].Namespace)
 	assert.Equal(s.T(), models.CoverageMatchStatusNone, packages[0].MatchStatus)
-	assert.Equal(s.T(), "flask", packages[1].Name)
-	assert.Equal(s.T(), models.CoverageMatchStatusPartial, packages[1].MatchStatus)
-	assert.Equal(s.T(), "spring-core", packages[2].Name)
-	require.NotNil(s.T(), packages[2].Namespace)
-	assert.Equal(s.T(), "org.springframework", *packages[2].Namespace)
-	assert.Equal(s.T(), models.CoverageMatchStatusExact, packages[2].MatchStatus)
+	assert.Equal(s.T(), "express", packages[1].Name)
+	assert.Equal(s.T(), "JavaScript", packages[1].Ecosystem)
+	assert.Equal(s.T(), models.CoverageMatchStatusNone, packages[1].MatchStatus)
+	assert.Nil(s.T(), packages[1].Namespace)
+	assert.Equal(s.T(), "flask", packages[2].Name)
+	assert.Equal(s.T(), "Python", packages[2].Ecosystem)
+	assert.Equal(s.T(), models.CoverageMatchStatusPartial, packages[2].MatchStatus)
+	assert.Nil(s.T(), packages[2].Namespace)
+	assert.Equal(s.T(), "spring-core", packages[3].Name)
+	assert.Equal(s.T(), "Java", packages[3].Ecosystem)
+	require.NotNil(s.T(), packages[3].Namespace)
+	assert.Equal(s.T(), "org.springframework", *packages[3].Namespace)
+	assert.Equal(s.T(), models.CoverageMatchStatusExact, packages[3].MatchStatus)
 
 	var signals []models.CoverageDemandSignal
 	err = s.tx.Order("name ASC").Find(&signals).Error
 	require.NoError(s.T(), err)
-	require.Len(s.T(), signals, 2)
+	require.Len(s.T(), signals, 3)
 	assert.Equal(s.T(), "custom-lib", signals[0].Name)
 	assert.Equal(s.T(), models.CoverageDemandMatchStatusNone, signals[0].MatchStatus)
 	assert.Equal(s.T(), models.CoverageDemandSourceProspectDriven, signals[0].Source)
-	assert.Equal(s.T(), "flask", signals[1].Name)
-	assert.Equal(s.T(), models.CoverageDemandMatchStatusPartial, signals[1].MatchStatus)
+	assert.Equal(s.T(), "express", signals[1].Name)
+	assert.Equal(s.T(), models.CoverageDemandMatchStatusNone, signals[1].MatchStatus)
+	assert.Equal(s.T(), "flask", signals[2].Name)
+	assert.Equal(s.T(), models.CoverageDemandMatchStatusPartial, signals[2].MatchStatus)
 }
 
 func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisNotFound() {

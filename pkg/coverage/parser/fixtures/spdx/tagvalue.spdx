@@ -13,5 +13,10 @@ SPDXID: SPDXRef-Package-spring-core
 PackageVersion: 5.3.20
 ExternalRef: PACKAGE-MANAGER purl pkg:maven/org.springframework/spring-core@5.3.20
 
+PackageName: express
+SPDXID: SPDXRef-Package-express
+PackageVersion: 4.18.2
+ExternalRef: PACKAGE-MANAGER purl pkg:npm/express@4.18.2
+
 FileName: ./src/main.py
 SPDXID: SPDXRef-File-main

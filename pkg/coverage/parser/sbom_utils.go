@@ -94,7 +94,7 @@ func forEachXMLStart(r io.Reader, handle func(dec *xml.Decoder, se xml.StartElem
 	}
 }
 
-// appendFromPURL adds the package if the purl is a supported maven/pypi identity; otherwise leaves pkgs unchanged.
+// appendFromPURL adds the package when the purl is a valid Package URL.
 func appendFromPURL(pkgs []Package, purl string) []Package {
 	if pkg := parsePURL(strings.TrimSpace(purl)); pkg != nil {
 		return append(pkgs, *pkg)

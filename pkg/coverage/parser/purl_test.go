@@ -25,10 +25,20 @@ func TestParsePURL_PyPI(t *testing.T) {
 	assert.Empty(t, pkg.Namespace)
 }
 
-func TestParsePURL_UnsupportedEcosystem(t *testing.T) {
-	assert.Nil(t, parsePURL("pkg:npm/react@18.2.0"))
-	assert.Nil(t, parsePURL("pkg:golang/github.com/gin-gonic/gin@1.9.1"))
-	assert.Nil(t, parsePURL("pkg:cargo/serde@1.0.0"))
+func TestParsePURL_OtherEcosystems(t *testing.T) {
+	npm := parsePURL("pkg:npm/react@18.2.0")
+	require.NotNil(t, npm)
+	assert.Equal(t, EcosystemJavaScript, npm.Ecosystem)
+	assert.Equal(t, "react", npm.Name)
+	assert.Equal(t, "18.2.0", npm.Version)
+	assert.Empty(t, npm.Namespace)
+
+	generic := parsePURL("pkg:generic/example@1.0.0")
+	require.NotNil(t, generic)
+	assert.Equal(t, "Generic", generic.Ecosystem)
+	assert.Equal(t, "example", generic.Name)
+	assert.Equal(t, "1.0.0", generic.Version)
+	assert.Empty(t, generic.Namespace)
 }
 
 func TestParsePURL_Invalid(t *testing.T) {

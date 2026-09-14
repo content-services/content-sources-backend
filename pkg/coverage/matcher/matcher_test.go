@@ -118,6 +118,56 @@ func TestMatchCatalog_JavaMatch(t *testing.T) {
 	assert.Equal(t, MatchStatusNone, results[2].MatchStatus)
 }
 
+func TestMatchCatalog_IncludesAllEcosystems(t *testing.T) {
+	manifest := []Package{
+		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+		{Ecosystem: "JavaScript", Name: "express", Version: "4.18.2"},
+		{Ecosystem: "Go", Name: "gin", Version: "1.9.1", Namespace: "github.com/gin-gonic"},
+		{Ecosystem: "Generic", Name: "example", Version: "1.0.0"},
+	}
+
+	results, summary := MatchCatalog(pythonCatalog, manifest, snapshotAt)
+
+	assert.Equal(t, MatchStatusExact, results[0].MatchStatus)
+	assert.Equal(t, MatchStatusNone, results[1].MatchStatus)
+	assert.Equal(t, MatchStatusNone, results[2].MatchStatus)
+	assert.Equal(t, MatchStatusNone, results[3].MatchStatus)
+
+	assert.Equal(t, 4, summary.Total)
+	assert.Equal(t, 1, summary.ExactMatches)
+	assert.Equal(t, 0, summary.PartialMatches)
+	assert.Equal(t, 3, summary.Unmatched)
+
+	summaryMap := map[string]EcosystemSummary{}
+	for _, e := range summary.EcosystemCoverageSummary {
+		summaryMap[e.Ecosystem] = e
+	}
+
+	python := summaryMap[EcosystemPython]
+	assert.Equal(t, 1, python.Total)
+	assert.Equal(t, 1, python.ExactMatches)
+	assert.Equal(t, 0, python.PartialMatches)
+	assert.Equal(t, 0, python.Unmatched)
+
+	javascript := summaryMap["JavaScript"]
+	assert.Equal(t, 1, javascript.Total)
+	assert.Equal(t, 0, javascript.ExactMatches)
+	assert.Equal(t, 0, javascript.PartialMatches)
+	assert.Equal(t, 1, javascript.Unmatched)
+
+	golang := summaryMap["Go"]
+	assert.Equal(t, 1, golang.Total)
+	assert.Equal(t, 0, golang.ExactMatches)
+	assert.Equal(t, 0, golang.PartialMatches)
+	assert.Equal(t, 1, golang.Unmatched)
+
+	generic := summaryMap["Generic"]
+	assert.Equal(t, 1, generic.Total)
+	assert.Equal(t, 0, generic.ExactMatches)
+	assert.Equal(t, 0, generic.PartialMatches)
+	assert.Equal(t, 1, generic.Unmatched)
+}
+
 func TestNormalizePythonName(t *testing.T) {
 	assert.Equal(t, "flask", normalizePythonName("Flask"))
 	assert.Equal(t, "ruamel-yaml", normalizePythonName("ruamel.yaml"))
