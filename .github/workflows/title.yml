@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Add "Build:" to PR title
         if: github.event.pull_request.user.login == 'red-hat-konflux' && !startsWith(github.event.pull_request.title, 'Build:')

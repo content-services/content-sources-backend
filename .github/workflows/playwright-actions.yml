@@ -21,7 +21,7 @@ jobs:
     name: lint
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Cache - node_modules
         if: always()
@@ -52,7 +52,7 @@ jobs:
     name: format
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Cache - node_modules
         if: always()
@@ -104,7 +104,7 @@ jobs:
             core.setOutput('sha', pr.head.sha);
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr-ref.outputs.sha || github.event.pull_request.head.sha || github.sha }}
 
@@ -177,7 +177,7 @@ jobs:
           echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "${{ steps.get-go-version.outputs.go-version }}"
 
