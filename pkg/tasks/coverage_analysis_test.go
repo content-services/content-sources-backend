@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -97,14 +98,12 @@ func (s *CoverageAnalysisSuite) mockCatalogRepos(ctx context.Context) {
 func (s *CoverageAnalysisSuite) mockJavaCatalog(ctx context.Context, groupID, artifactID, version string) {
 	javaHref := "test-repo-href-1"
 	s.mockPulp.On("ResolveRepositoryFromBasePath", ctx, "java/validated").Return(utils.Ptr(javaHref), nil)
-	s.mockTang.On("MavenPackageList", ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
-		Return(tangy.MavenPackageListResponse{
-			Results: []tangy.MavenPackageListItem{
-				{GroupID: groupID, ArtifactID: artifactID, Versions: []string{version}},
+	s.mockPulp.On("ListMavenPackages", ctx, javaHref, "", 500, 0).
+		Return(zest.PaginatedMavenRepositoryPackageListResponse{
+			Count: 1,
+			Results: []zest.MavenRepositoryPackageResponse{
+				{GroupId: groupID, ArtifactId: artifactID, Versions: []string{version}},
 			},
-			Total:  1,
-			Limit:  tangy.DefaultLimit,
-			Offset: 0,
 		}, nil)
 }
 

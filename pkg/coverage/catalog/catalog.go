@@ -61,7 +61,7 @@ func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.
 			return nil, time.Time{}, fmt.Errorf("failed to resolve repo %s", repo.PublishedDistBasePath)
 		}
 
-		pkgs, err := listPackages(ctx, tang, *href, repo.ContentType)
+		pkgs, err := listPackages(ctx, pulp, tang, *href, repo.ContentType)
 		if err != nil {
 			return nil, time.Time{}, err
 		}
@@ -75,10 +75,12 @@ func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.
 	return catalog, snapshotAt, nil
 }
 
-func listPackages(ctx context.Context, tang tangy.Tangy, href string, contentType string) ([]matcher.Package, error) {
+const mavenCatalogPageSize = 500
+
+func listPackages(ctx context.Context, pulp pulp_client.PulpClient, tang tangy.Tangy, href string, contentType string) ([]matcher.Package, error) {
 	switch contentType {
 	case config.ContentTypeMaven:
-		return listMavenPackages(ctx, tang, href)
+		return listMavenPackages(ctx, pulp, href)
 	case config.ContentTypePython:
 		return listPythonPackages(ctx, tang, href)
 	default:
@@ -86,26 +88,24 @@ func listPackages(ctx context.Context, tang tangy.Tangy, href string, contentTyp
 	}
 }
 
-func listMavenPackages(ctx context.Context, tang tangy.Tangy, href string) ([]matcher.Package, error) {
+func listMavenPackages(ctx context.Context, pulp pulp_client.PulpClient, href string) ([]matcher.Package, error) {
 	var catalog []matcher.Package
-	pageCount := 0
-	for offset := 0; ; offset += tangy.DefaultLimit {
-		resp, err := tang.MavenPackageList(ctx, href, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: offset, Limit: tangy.DefaultLimit})
+	for offset := 0; ; offset += mavenCatalogPageSize {
+		resp, err := pulp.ListMavenPackages(ctx, href, "", mavenCatalogPageSize, offset)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list maven packages: %w", err)
 		}
-		pageCount++
 		for _, item := range resp.Results {
 			for _, version := range item.Versions {
 				catalog = append(catalog, matcher.Package{
 					Ecosystem: matcher.EcosystemJava,
-					Namespace: item.GroupID,
-					Name:      item.ArtifactID,
+					Namespace: item.GroupId,
+					Name:      item.ArtifactId,
 					Version:   version,
 				})
 			}
 		}
-		if len(resp.Results) == 0 || offset+len(resp.Results) >= resp.Total {
+		if len(resp.Results) == 0 || offset+len(resp.Results) >= int(resp.Count) {
 			break
 		}
 	}

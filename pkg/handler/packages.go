@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -15,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -117,25 +120,17 @@ func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context,
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	pulpClient, repositoryHref, err := ph.resolveRepository(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	tangResp, err := ph.TangClient.MavenPackageList(
-		c.Request().Context(),
-		repositoryHref,
-		tangy.MavenPackageListFilters{Search: filterData},
-		tangy.PageOptions{
-			Offset: pageData.Offset,
-			Limit:  pageData.Limit,
-		},
-	)
+	pulpResp, err := pulpClient.ListMavenPackages(ctx, repositoryHref, filterData, pageData.Limit, pageData.Offset)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, mapMavenPackagesToAPI(tangResp))
+	return c.JSON(http.StatusOK, mapMavenPackagesToAPI(pulpResp, pageData.Limit, pageData.Offset))
 }
 
 func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
@@ -159,22 +154,27 @@ func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context
 	return c.JSON(http.StatusOK, mapPythonPackagesToAPI(tangResp))
 }
 
-func (ph *PackageHandler) resolveRepositoryHref(ctx context.Context, orgID, basePath, repoUUID string) (string, error) {
+func (ph *PackageHandler) resolveRepository(ctx context.Context, orgID, basePath, repoUUID string) (pulp_client.PulpClient, string, error) {
 	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(ctx, orgID)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 
 	pulpClient := ph.PulpClient.WithDomain(domainName)
 	href, err := pulpClient.ResolveRepositoryFromBasePath(ctx, basePath)
 	if err != nil {
-		return "", fmt.Errorf("repository for UUID %v: %w", repoUUID, err)
+		return nil, "", fmt.Errorf("repository for UUID %v: %w", repoUUID, err)
 	}
 	if href == nil {
-		return "", fmt.Errorf("repository for UUID %v: %w", repoUUID, errRepositoryNotFound)
+		return nil, "", fmt.Errorf("repository for UUID %v: %w", repoUUID, errRepositoryNotFound)
 	}
 
-	return *href, nil
+	return pulpClient, *href, nil
+}
+
+func (ph *PackageHandler) resolveRepositoryHref(ctx context.Context, orgID, basePath, repoUUID string) (string, error) {
+	_, href, err := ph.resolveRepository(ctx, orgID, basePath, repoUUID)
+	return href, err
 }
 
 func (ph *PackageHandler) repositoryHrefErrorResponse(err error) error {
@@ -191,32 +191,105 @@ func (ph *PackageHandler) repositoryHrefErrorResponse(err error) error {
 	return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
 }
 
-func mapMavenPackagesToAPI(tangResp tangy.MavenPackageListResponse) api.PackageResponse {
-	results := make([]api.PackageItem, len(tangResp.Results))
-	for i, item := range tangResp.Results {
-		releases := make([]api.ReleaseInfo, len(item.LatestReleases))
-		for j, rel := range item.LatestReleases {
-			releases[j] = api.ReleaseInfo{
-				Version:   rel.Version,
-				Release:   rel.Release,
-				CreatedAt: rel.CreatedAt,
-			}
-		}
-
+func mapMavenPackagesToAPI(pulpResp zest.PaginatedMavenRepositoryPackageListResponse, limit, offset int) api.PackageResponse {
+	results := make([]api.PackageItem, len(pulpResp.Results))
+	for i, item := range pulpResp.Results {
 		results[i] = api.PackageItem{
-			Group:          item.GroupID,
-			Name:           item.ArtifactID,
+			Group:          item.GroupId,
+			Name:           item.ArtifactId,
 			Versions:       item.Versions,
-			LatestReleases: releases,
+			LatestReleases: mapMavenPackageReleases(item.LatestReleases),
 		}
 	}
 
 	return api.PackageResponse{
 		Results: results,
-		Total:   tangResp.Total,
-		Limit:   tangResp.Limit,
-		Offset:  tangResp.Offset,
+		Total:   int(pulpResp.Count),
+		Limit:   limit,
+		Offset:  offset,
 	}
+}
+
+func mapMavenPackageReleases(releases []zest.MavenPackageReleaseResponse) []api.ReleaseInfo {
+	out := make([]api.ReleaseInfo, len(releases))
+	for i, rel := range releases {
+		out[i] = api.ReleaseInfo{
+			Version:   rel.Version,
+			Release:   rel.Release,
+			CreatedAt: rel.CreatedAt.Format(time.RFC3339),
+		}
+	}
+	return out
+}
+
+// Pulp content/maven/package/ returns one MavenPackage unit per rebuild:
+//
+//	version="5.3.18.rhlw-00003"  base_version="5.3.18"  pulp_created=...
+//
+// CS versions/detail JSON wants that nested as:
+//
+//	{ "version": "5.3.18", "builds": [{ "version": "5.3.18", "release": "rhlw-00003", "created_at": "..." }] }
+func toMavenBuild(pkg zest.MavenMavenPackageResponse) api.ReleaseInfo {
+	base := pkg.GetBaseVersion()
+	createdAt := ""
+	if pkg.HasPulpCreated() {
+		createdAt = pkg.GetPulpCreated().Format(time.RFC3339)
+	}
+	return api.ReleaseInfo{
+		Version:   base,
+		Release:   mavenRebuildQualifier(pkg.GetVersion(), base),
+		CreatedAt: createdAt,
+	}
+}
+
+// mavenRebuildQualifier is the rebuild suffix after base_version.
+// "5.3.18.rhlw-00003" / "5.3.18" → "rhlw-00003"; equal versions → "".
+func mavenRebuildQualifier(fullVersion, baseVersion string) string {
+	if baseVersion == "" || fullVersion == baseVersion {
+		return ""
+	}
+	suffix, ok := strings.CutPrefix(fullVersion, baseVersion+".")
+	if !ok {
+		return ""
+	}
+	return suffix
+}
+
+func newestMavenUnitsFirst(pkgs []zest.MavenMavenPackageResponse) []zest.MavenMavenPackageResponse {
+	out := slices.Clone(pkgs)
+	slices.SortStableFunc(out, func(a, b zest.MavenMavenPackageResponse) int {
+		return b.GetPulpCreated().Compare(a.GetPulpCreated())
+	})
+	return out
+}
+
+func toMavenBuilds(pkgs []zest.MavenMavenPackageResponse) []api.ReleaseInfo {
+	pkgs = newestMavenUnitsFirst(pkgs)
+	builds := make([]api.ReleaseInfo, len(pkgs))
+	for i, pkg := range pkgs {
+		builds[i] = toMavenBuild(pkg)
+	}
+	return builds
+}
+
+func toMavenVersions(pkgs []zest.MavenMavenPackageResponse, group, name string) []api.MavenPackageDetailResponse {
+	versions := make([]api.MavenPackageDetailResponse, 0)
+	seen := make(map[string]int)
+	for _, pkg := range newestMavenUnitsFirst(pkgs) {
+		build := toMavenBuild(pkg)
+		if i, ok := seen[build.Version]; ok {
+			versions[i].Builds = append(versions[i].Builds, build)
+			continue
+		}
+		seen[build.Version] = len(versions)
+		versions = append(versions, api.MavenPackageDetailResponse{
+			Group:   group,
+			Name:    name,
+			Version: build.Version,
+			Builds:  []api.ReleaseInfo{build},
+		})
+	}
+	return versions
 }
 
 func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.PackageResponse {
@@ -279,36 +352,20 @@ func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	pulpClient, repositoryHref, err := ph.resolveRepository(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	tangResp, err := ph.TangClient.MavenVersionsList(ctx, repositoryHref, groupID, name, "", tangy.PageOptions{})
+	pkgs, err := pulpClient.ListMavenPackageContent(ctx, repositoryHref, groupID, name, "")
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
 	}
 
-	versions := make([]api.MavenPackageDetailResponse, len(tangResp.Results))
-	for i, item := range tangResp.Results {
-		builds := make([]api.ReleaseInfo, len(item.Builds))
-		for j, b := range item.Builds {
-			builds[j] = api.ReleaseInfo{
-				Version:   b.Version,
-				Release:   b.Release,
-				CreatedAt: b.CreatedAt,
-			}
-		}
-		versions[i] = api.MavenPackageDetailResponse{
-			Group:   groupID,
-			Name:    name,
-			Version: item.Version,
-			Builds:  builds,
-		}
-	}
+	versions := toMavenVersions(pkgs, groupID, name)
 
-	if len(tangResp.Results) > 0 {
-		summary, license, projectURL, author, err := ph.mavenPackageMetadata(ctx, groupID, name, tangResp.Results[0].Version)
+	if len(versions) > 0 {
+		summary, license, projectURL, author, err := ph.mavenPackageMetadata(ctx, groupID, name, versions[0].Version)
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package metadata from maven", err.Error())
 		}
@@ -363,33 +420,17 @@ func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
 	}
 
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	pulpClient, repositoryHref, err := ph.resolveRepository(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
 	if err != nil {
 		return ph.repositoryHrefErrorResponse(err)
 	}
 
-	pageData := ParsePagination(c)
-	tangResp, err := ph.TangClient.MavenVersionsList(ctx, repositoryHref, groupID, name, version, tangy.PageOptions{
-		Offset: pageData.Offset,
-		Limit:  pageData.Limit,
-	})
+	pkgs, err := pulpClient.ListMavenPackageContent(ctx, repositoryHref, groupID, name, version)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package builds", err.Error())
 	}
 
-	var builds []api.ReleaseInfo
-	if len(tangResp.Results) > 0 {
-		for _, b := range tangResp.Results[0].Builds {
-			builds = append(builds, api.ReleaseInfo{
-				Version:   b.Version,
-				Release:   b.Release,
-				CreatedAt: b.CreatedAt,
-			})
-		}
-	}
-	if builds == nil {
-		builds = []api.ReleaseInfo{}
-	}
+	builds := toMavenBuilds(pkgs)
 
 	response := api.MavenPackageDetailResponse{
 		Group:   groupID,
