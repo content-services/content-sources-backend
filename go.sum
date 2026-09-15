@@ -86,8 +86,8 @@ github.com/content-services/tang v0.0.30 h1:t/d6tYTKaq5nU0Qc9v4VW79OrJO2i8oxWSt4
 github.com/content-services/tang v0.0.30/go.mod h1:Z969TdEJaoRHxhpZ89Gi25RFVj1dBjEiFzhsGppyz8g=
 github.com/content-services/yummy v1.0.20 h1:+RI0EeeERuQKpFu+ylYi41ypKZCViyqNwG/mSbRFPTU=
 github.com/content-services/yummy v1.0.20/go.mod h1:8XM71AH0KRrTIXbP6ySTURlsrCs/TbtpPX4uQJfYn/c=
-github.com/content-services/zest/release/v2026 v2026.8.1787838815 h1:/ZD4ibWg3e7ZfZoxgb/cIn7Smw/kkcp4wnj8TmFX8Kk=
-github.com/content-services/zest/release/v2026 v2026.8.1787838815/go.mod h1:EX7CfSY9Fhtvzxpf2WzR0MkYhgmvK2zkXqyQ5N2a6X0=
+github.com/content-services/zest/release/v2026 v2026.9.1789496037 h1:7Iux7LlqIDyrqodZaTRJeCu5VNO8sGwbvhoiPbvjloA=
+github.com/content-services/zest/release/v2026 v2026.9.1789496037/go.mod h1:EX7CfSY9Fhtvzxpf2WzR0MkYhgmvK2zkXqyQ5N2a6X0=
 github.com/cpuguy83/go-md2man/v2 v2.0.7 h1:zbFlGlXEAKlwXpmvle3d8Oe3YnkKIK4xSRTd3sHPnBo=
 github.com/cpuguy83/go-md2man/v2 v2.0.7/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/ctreminiom/go-atlassian/v2 v2.12.0 h1:qMh5QYNMeJEaSWzeLw4IoNh31Behgd2ymUHbOzDQ2/M=
@@ -284,10 +284,10 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
 github.com/opencontainers/image-spec v1.1.0/go.mod h1:W4s4sFTMaBeK1BQLXbG4AdM2szdn85PY75RI83NrTrM=
-github.com/pandatix/go-cvss v0.6.4 h1:9w2RCO/Q4UTiJyEgpCHRiVc6CfrsFEnkoX+OtATqKio=
-github.com/pandatix/go-cvss v0.6.4/go.mod h1:/ukvQnYlrKl3o/DVp7/GO2UZyZheuo/maOK0U1nBEhQ=
 github.com/package-url/packageurl-go v0.1.7 h1:iFWg6tzAjLA6F/qX3M5nZaiMHJgc+p2zxVyr/fY+sZY=
 github.com/package-url/packageurl-go v0.1.7/go.mod h1:nKAWB8E6uk1MHqiS/lQb9pYBGH2+mdJ2PJc2s50dQY0=
+github.com/pandatix/go-cvss v0.6.4 h1:9w2RCO/Q4UTiJyEgpCHRiVc6CfrsFEnkoX+OtATqKio=
+github.com/pandatix/go-cvss v0.6.4/go.mod h1:/ukvQnYlrKl3o/DVp7/GO2UZyZheuo/maOK0U1nBEhQ=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/perimeterx/marshmallow v1.1.5 h1:a2LALqQ1BlHM8PZblsDdidgv1mWi1DgC2UmX50IvK2s=
