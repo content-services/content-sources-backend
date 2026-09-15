@@ -9,14 +9,14 @@ import (
 	"github.com/google/uuid"
 )
 
-// CycloneDX 1.6 VEX document structure
-type cdxVEX struct {
-	BOMFormat    string             `json:"bomFormat"`
-	SpecVersion  string             `json:"specVersion"`
-	Version      int                `json:"version"`
-	SerialNumber string             `json:"serialNumber"`
-	Metadata     cdxMetadata        `json:"metadata"`
-	Vulns        []cdxVulnerability `json:"vulnerabilities"`
+type cdxBOM struct {
+	BOMFormat       string             `json:"bomFormat"`
+	SpecVersion     string             `json:"specVersion"`
+	Version         int                `json:"version"`
+	SerialNumber    string             `json:"serialNumber"`
+	Metadata        cdxMetadata        `json:"metadata"`
+	Components      []cdxComponent     `json:"components,omitempty"`
+	Vulnerabilities []cdxVulnerability `json:"vulnerabilities"`
 }
 
 type cdxMetadata struct {
@@ -48,13 +48,32 @@ type cdxComponent struct {
 	Group      string        `json:"group"`
 	Name       string        `json:"name"`
 	Version    string        `json:"version"`
-	PURL       string        `json:"purl"`
-	Properties []cdxProperty `json:"properties"`
+	PackageURL string        `json:"purl"`
+	Properties []cdxProperty `json:"properties,omitempty"`
+	Pedigree   *cdxPedigree  `json:"pedigree,omitempty"`
 }
 
 type cdxProperty struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+type cdxPedigree struct {
+	Ancestors []cdxComponent `json:"ancestors,omitempty"`
+	Patches   []cdxPatch     `json:"patches,omitempty"`
+	Notes     string         `json:"notes,omitempty"`
+}
+
+type cdxPatch struct {
+	Type     string     `json:"type"`
+	Resolves []cdxIssue `json:"resolves,omitempty"`
+}
+
+type cdxIssue struct {
+	Type        string    `json:"type"`
+	ID          string    `json:"id"`
+	Description string    `json:"description,omitempty"`
+	Source      cdxSource `json:"source,omitempty"`
 }
 
 type cdxVulnerability struct {
@@ -89,12 +108,66 @@ type cdxAffects struct {
 	Ref string `json:"ref"`
 }
 
+// buildPedigree constructs a CycloneDX pedigree with ancestors and patches.
+// Returns nil when version has no .rhlw-* suffix (baseVersion == version).
+func buildPedigree(group, artifact, version, baseVersion string, records []OSVRecord) *cdxPedigree {
+	if baseVersion == version {
+		return nil
+	}
+
+	ancestor := cdxComponent{
+		Type:       "library",
+		Group:      group,
+		Name:       artifact,
+		Version:    baseVersion,
+		PackageURL: fmt.Sprintf("pkg:maven/%s/%s@%s?type=jar", group, artifact, baseVersion),
+	}
+
+	patches := make([]cdxPatch, 0, len(records))
+	for _, rec := range records {
+		issue := cdxIssue{
+			Type:        "security",
+			ID:          rec.CVEID,
+			Description: rec.Description,
+			Source: cdxSource{
+				Name: "NVD",
+				URL:  "https://nvd.nist.gov/vuln/detail/" + rec.CVEID,
+			},
+		}
+		patches = append(patches, cdxPatch{
+			Type:     "backport",
+			Resolves: []cdxIssue{issue},
+		})
+	}
+
+	return &cdxPedigree{
+		Ancestors: []cdxComponent{ancestor},
+		Patches:   patches,
+		Notes:     fmt.Sprintf("Backported security fixes to %s %s. Build %s.", artifact, baseVersion, version),
+	}
+}
+
 // GenerateCycloneDXVEX produces a CycloneDX 1.6 VEX document.
 func GenerateCycloneDXVEX(group, artifact, version, baseVersion string, records []OSVRecord) ([]byte, error) {
 	serialUUID, _ := uuid.NewRandom()
 	bomRef := fmt.Sprintf("%s-rhlw-%s", artifact, strings.ReplaceAll(version, ".", "-"))
 
-	doc := cdxVEX{
+	metaComponent := cdxComponent{
+		Type:       "library",
+		BOMRef:     bomRef,
+		Group:      group,
+		Name:       artifact,
+		Version:    version,
+		PackageURL: fmt.Sprintf("pkg:maven/%s/%s@%s?type=jar", group, artifact, version),
+		Properties: []cdxProperty{
+			{
+				Name:  "compatible-with-1",
+				Value: fmt.Sprintf("pkg:maven/%s/%s@%s", group, artifact, baseVersion),
+			},
+		},
+	}
+
+	doc := cdxBOM{
 		BOMFormat:    "CycloneDX",
 		SpecVersion:  "1.6",
 		Version:      1,
@@ -117,21 +190,15 @@ func GenerateCycloneDXVEX(group, artifact, version, baseVersion string, records 
 				Name: "Red Hat",
 				URL:  []string{"https://www.redhat.com"},
 			},
-			Component: cdxComponent{
-				Type:    "library",
-				BOMRef:  bomRef,
-				Group:   group,
-				Name:    artifact,
-				Version: version,
-				PURL:    fmt.Sprintf("pkg:maven/%s/%s@%s?type=jar", group, artifact, version),
-				Properties: []cdxProperty{
-					{
-						Name:  "compatible-with-1",
-						Value: fmt.Sprintf("pkg:maven/%s/%s@%s", group, artifact, baseVersion),
-					},
-				},
-			},
+			Component: metaComponent,
 		},
+	}
+
+	pedigree := buildPedigree(group, artifact, version, baseVersion, records)
+	if pedigree != nil {
+		comp := metaComponent
+		comp.Pedigree = pedigree
+		doc.Components = []cdxComponent{comp}
 	}
 
 	vulns := make([]cdxVulnerability, 0, len(records))
@@ -166,7 +233,7 @@ func GenerateCycloneDXVEX(group, artifact, version, baseVersion string, records 
 		}
 		vulns = append(vulns, vuln)
 	}
-	doc.Vulns = vulns
+	doc.Vulnerabilities = vulns
 
 	return json.MarshalIndent(doc, "", "  ")
 }
