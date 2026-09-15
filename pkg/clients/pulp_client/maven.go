@@ -2,13 +2,7 @@ package pulp_client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 
 	zest "github.com/content-services/zest/release/v2026"
 )
@@ -16,12 +10,6 @@ import (
 const mavenPackageContentPageSize int32 = 300
 
 // ListMavenPackages lists distinct (group_id, artifact_id) rows for a Maven repository.
-//
-// Zest's generated Packages() builder exposes search and ordering but not limit/offset.
-// Pulp accepts all four query params on GET {repoHref}packages/, so this thin GET uses the
-// same HTTP client, auth, and base URL as getZestClient until zest generates Limit/Offset.
-// TODO: Switch to Zest's generated Packages() builder when
-// https://github.com/pulp/pulp_maven/issues/481 is merged and new Zest version is published.
 func (r *pulpDaoImpl) ListMavenPackages(ctx context.Context, repoHref string, search string, limit, offset int) (zest.PaginatedMavenRepositoryPackageListResponse, error) {
 	var empty zest.PaginatedMavenRepositoryPackageListResponse
 	if repoHref == "" {
@@ -33,91 +21,25 @@ func (r *pulpDaoImpl) ListMavenPackages(ctx context.Context, repoHref string, se
 		return empty, err
 	}
 
-	cfg := client.GetConfig()
-	serverURL, err := cfg.ServerURLWithContext(ctx, "RepositoriesMavenAPIService.RepositoriesMavenMavenPackages")
-	if err != nil {
-		return empty, err
-	}
-
-	reqURL, err := mavenRepoResourceURL(serverURL, repoHref, "packages/")
-	if err != nil {
-		return empty, err
-	}
-
-	httpResp, err := zestGET(ctx, client, reqURL, mavenPackagesQuery(search, limit, offset))
+	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenPackages(ctx, repoHref).
+		Search(search).
+		Limit(int32(limit)).   //nolint:gosec // G115: pagination / catalog page sizes are well below int32 max
+		Offset(int32(offset)). //nolint:gosec // G115: pagination / catalog page sizes are well below int32 max
+		Ordering([]string{"group_id", "artifact_id"}).
+		Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return empty, err
+		return empty, errorWithResponseBody("error listing maven packages", httpResp, err)
 	}
-	if httpResp.StatusCode >= 300 {
-		return empty, errorWithResponseBody("error listing maven packages", httpResp, fmt.Errorf("unexpected http status %s", httpResp.Status))
-	}
-
-	body, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return empty, fmt.Errorf("error reading maven packages response: %w", err)
-	}
-
-	var resp zest.PaginatedMavenRepositoryPackageListResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return empty, fmt.Errorf("error decoding maven packages response: %w", err)
+	if resp == nil {
+		return empty, fmt.Errorf("empty maven packages response")
 	}
 	if resp.Results == nil {
 		resp.Results = []zest.MavenRepositoryPackageResponse{}
 	}
-	return resp, nil
-}
-
-func mavenPackagesQuery(search string, limit, offset int) url.Values {
-	q := url.Values{}
-	q.Set("search", search)
-	q.Set("limit", strconv.Itoa(limit))
-	q.Set("offset", strconv.Itoa(offset))
-	q.Set("ordering", "group_id,artifact_id")
-	return q
-}
-
-func mavenRepoResourceURL(serverURL, repoHref, resource string) (string, error) {
-	path := strings.TrimRight(serverURL, "/") + "/{maven_maven_repository_href}" + resource
-	path = strings.Replace(path, "{maven_maven_repository_href}", url.PathEscape(repoHref), 1)
-	return url.PathUnescape(path)
-}
-
-func zestGET(ctx context.Context, client *zest.APIClient, rawURL string, query url.Values) (*http.Response, error) {
-	parsed, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, err
-	}
-	q := parsed.Query()
-	for key, vals := range query {
-		for _, val := range vals {
-			q.Add(key, val)
-		}
-	}
-	parsed.RawQuery = q.Encode()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-
-	if auth, ok := ctx.Value(zest.ContextBasicAuth).(zest.BasicAuth); ok {
-		req.SetBasicAuth(auth.UserName, auth.Password)
-	}
-
-	cfg := client.GetConfig()
-	for header, value := range cfg.DefaultHeader {
-		req.Header.Add(header, value)
-	}
-
-	httpClient := cfg.HTTPClient
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-	return httpClient.Do(req)
+	return *resp, nil
 }
 
 // GetMavenRepositoryMetrics returns distinct MavenPackage GA / GAV / base-version counts for a repo.

@@ -86,8 +86,8 @@ github.com/content-services/tang v0.0.30 h1:t/d6tYTKaq5nU0Qc9v4VW79OrJO2i8oxWSt4
 github.com/content-services/tang v0.0.30/go.mod h1:Z969TdEJaoRHxhpZ89Gi25RFVj1dBjEiFzhsGppyz8g=
 github.com/content-services/yummy v1.0.20 h1:+RI0EeeERuQKpFu+ylYi41ypKZCViyqNwG/mSbRFPTU=
 github.com/content-services/yummy v1.0.20/go.mod h1:8XM71AH0KRrTIXbP6ySTURlsrCs/TbtpPX4uQJfYn/c=
-github.com/content-services/zest/release/v2026 v2026.9.1789496037 h1:7Iux7LlqIDyrqodZaTRJeCu5VNO8sGwbvhoiPbvjloA=
-github.com/content-services/zest/release/v2026 v2026.9.1789496037/go.mod h1:EX7CfSY9Fhtvzxpf2WzR0MkYhgmvK2zkXqyQ5N2a6X0=
+github.com/content-services/zest/release/v2026 v2026.9.1789511891 h1:ICxrEHyWcEGwDJbHlMKGv9XnwqYqn8eFDiXRkZg8DX0=
+github.com/content-services/zest/release/v2026 v2026.9.1789511891/go.mod h1:EX7CfSY9Fhtvzxpf2WzR0MkYhgmvK2zkXqyQ5N2a6X0=
 github.com/cpuguy83/go-md2man/v2 v2.0.7 h1:zbFlGlXEAKlwXpmvle3d8Oe3YnkKIK4xSRTd3sHPnBo=
 github.com/cpuguy83/go-md2man/v2 v2.0.7/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/ctreminiom/go-atlassian/v2 v2.12.0 h1:qMh5QYNMeJEaSWzeLw4IoNh31Behgd2ymUHbOzDQ2/M=
