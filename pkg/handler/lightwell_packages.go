@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -16,6 +17,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -117,7 +119,7 @@ func (h *LightwellPackagesHandler) fetchPackagesPage(ctx context.Context, repo a
 		return []api.LightwellPackageResponse{}, 0, nil
 	}
 
-	repositoryHref, err := h.resolveRepositoryHref(ctx, repo)
+	pulpClient, repositoryHref, err := h.resolveRepository(ctx, repo)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -126,11 +128,11 @@ func (h *LightwellPackagesHandler) fetchPackagesPage(ctx context.Context, repo a
 
 	switch repo.ContentType {
 	case config.ContentTypeMaven:
-		tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, pageOpts)
+		pulpResp, err := pulpClient.ListMavenPackages(ctx, repositoryHref, nameSearch, limit, offset)
 		if err != nil {
 			return nil, 0, err
 		}
-		return mapMavenToLightwellPackages(tangResp, repo), int64(tangResp.Total), nil
+		return mapMavenToLightwellPackages(pulpResp, repo), int64(pulpResp.Count), nil
 
 	case config.ContentTypePython:
 		tangResp, err := h.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: nameSearch}, pageOpts)
@@ -311,7 +313,7 @@ func (h *LightwellPackagesHandler) fetchPackagesFromRepo(ctx context.Context, re
 		return nil, nil
 	}
 
-	repositoryHref, err := h.resolveRepositoryHref(ctx, repo)
+	pulpClient, repositoryHref, err := h.resolveRepository(ctx, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -319,11 +321,11 @@ func (h *LightwellPackagesHandler) fetchPackagesFromRepo(ctx context.Context, re
 	switch repo.ContentType {
 	case config.ContentTypeMaven:
 		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageResponse, int, int, error) {
-			tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			pulpResp, err := pulpClient.ListMavenPackages(ctx, repositoryHref, nameSearch, limit, offset)
 			if err != nil {
 				return nil, 0, 0, err
 			}
-			return mapMavenToLightwellPackages(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+			return mapMavenToLightwellPackages(pulpResp, repo), len(pulpResp.Results), int(pulpResp.Count), nil
 		})
 
 	case config.ContentTypePython:
@@ -396,7 +398,7 @@ func (h *LightwellPackagesHandler) fetchVersionsFromRepo(ctx context.Context, re
 		return nil, nil
 	}
 
-	repositoryHref, err := h.resolveRepositoryHref(ctx, repo)
+	pulpClient, repositoryHref, err := h.resolveRepository(ctx, repo)
 	if err != nil {
 		return nil, err
 	}
@@ -404,11 +406,11 @@ func (h *LightwellPackagesHandler) fetchVersionsFromRepo(ctx context.Context, re
 	switch repo.ContentType {
 	case config.ContentTypeMaven:
 		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageVersionResponse, int, int, error) {
-			tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			pulpResp, err := pulpClient.ListMavenPackages(ctx, repositoryHref, nameSearch, limit, offset)
 			if err != nil {
 				return nil, 0, 0, err
 			}
-			return expandMavenVersions(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+			return expandMavenVersions(pulpResp, repo), len(pulpResp.Results), int(pulpResp.Count), nil
 		})
 
 	case config.ContentTypePython:
@@ -434,20 +436,20 @@ func (h *LightwellPackagesHandler) fetchVersionsFromRepo(ctx context.Context, re
 	}
 }
 
-func (h *LightwellPackagesHandler) resolveRepositoryHref(ctx context.Context, repo api.RepositoryResponse) (string, error) {
+func (h *LightwellPackagesHandler) resolveRepository(ctx context.Context, repo api.RepositoryResponse) (pulp_client.PulpClient, string, error) {
 	domainName, err := h.DaoRegistry.Domain.FetchOrCreateDomain(ctx, repo.OrgID)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 	pulpClient := h.PulpClient.WithDomain(domainName)
 	href, err := pulpClient.ResolveRepositoryFromBasePath(ctx, repo.PublishedDistBasePath)
 	if err != nil {
-		return "", fmt.Errorf("repo %s: %w", repo.UUID, err)
+		return nil, "", fmt.Errorf("repo %s: %w", repo.UUID, err)
 	}
 	if href == nil {
-		return "", fmt.Errorf("repo %s: distribution not found", repo.UUID)
+		return nil, "", fmt.Errorf("repo %s: distribution not found", repo.UUID)
 	}
-	return *href, nil
+	return pulpClient, *href, nil
 }
 
 // filterVersionsByResolvingCve keeps only versions that fix the given CVE.
@@ -548,21 +550,17 @@ func buildCoordinates(contentType, group, name string) string {
 
 // --- mapping helpers ---
 
-func mapMavenToLightwellPackages(resp tangy.MavenPackageListResponse, repo api.RepositoryResponse) []api.LightwellPackageResponse {
+func mapMavenToLightwellPackages(resp zest.PaginatedMavenRepositoryPackageListResponse, repo api.RepositoryResponse) []api.LightwellPackageResponse {
 	out := make([]api.LightwellPackageResponse, 0, len(resp.Results))
 	for _, item := range resp.Results {
-		releases := make([]api.ReleaseInfo, len(item.LatestReleases))
-		for j, rel := range item.LatestReleases {
-			releases[j] = api.ReleaseInfo{Version: rel.Version, Release: rel.Release, CreatedAt: rel.CreatedAt}
-		}
 		out = append(out, api.LightwellPackageResponse{
-			Name:           item.ArtifactID,
-			Group:          item.GroupID,
+			Name:           item.ArtifactId,
+			Group:          item.GroupId,
 			Ecosystem:      config.ContentTypeMaven,
 			Repository:     repo.Name,
 			RepositoryUUID: repo.UUID,
 			Versions:       item.Versions,
-			LatestReleases: releases,
+			LatestReleases: mapMavenPackageReleases(item.LatestReleases),
 		})
 	}
 	return out
@@ -608,20 +606,20 @@ func mapNpmToLightwellPackages(resp tangy.NpmPackageListResponse, repo api.Repos
 	return out
 }
 
-func expandMavenVersions(resp tangy.MavenPackageListResponse, repo api.RepositoryResponse) []api.LightwellPackageVersionResponse {
+func expandMavenVersions(resp zest.PaginatedMavenRepositoryPackageListResponse, repo api.RepositoryResponse) []api.LightwellPackageVersionResponse {
 	var out []api.LightwellPackageVersionResponse
 	for _, item := range resp.Results {
-		relMap := latestReleaseMap(item.LatestReleases)
+		relMap := mavenLatestReleaseMap(item.LatestReleases)
 		for _, v := range item.Versions {
 			ver := api.LightwellPackageVersionResponse{
-				Name:           item.ArtifactID,
-				Group:          item.GroupID,
+				Name:           item.ArtifactId,
+				Group:          item.GroupId,
 				Version:        v,
 				Ecosystem:      config.ContentTypeMaven,
 				Repository:     repo.Name,
 				RepositoryUUID: repo.UUID,
-				Purl:           buildPURL(config.ContentTypeMaven, item.GroupID, item.ArtifactID, v),
-				Coordinates:    buildCoordinates(config.ContentTypeMaven, item.GroupID, item.ArtifactID),
+				Purl:           buildPURL(config.ContentTypeMaven, item.GroupId, item.ArtifactId, v),
+				Coordinates:    buildCoordinates(config.ContentTypeMaven, item.GroupId, item.ArtifactId),
 			}
 			if rel, ok := relMap[v]; ok {
 				ver.Release = rel.Release
@@ -762,10 +760,10 @@ type mavenRelInfo struct {
 	CreatedAt string
 }
 
-func latestReleaseMap(releases []tangy.MavenReleaseInfo) map[string]mavenRelInfo {
+func mavenLatestReleaseMap(releases []zest.MavenPackageReleaseResponse) map[string]mavenRelInfo {
 	m := make(map[string]mavenRelInfo, len(releases))
 	for _, r := range releases {
-		m[r.Version] = mavenRelInfo{Release: r.Release, CreatedAt: r.CreatedAt}
+		m[r.Version] = mavenRelInfo{Release: r.Release, CreatedAt: r.CreatedAt.Format(time.RFC3339)}
 	}
 	return m
 }
