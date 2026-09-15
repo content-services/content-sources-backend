@@ -2,13 +2,15 @@ package integration
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -130,17 +132,13 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	t := s.T()
 
 	// Create a Maven repository pointing to Maven Central
-	repo := s.createMavenRepository(config.LightwellOrg)
+	mavenRepo := s.createMavenRepository(config.LightwellOrg)
 
-	// Fetch some packages from the Pulp distribution to populate the repository.
-	// Pull-through caching now adds streamed artifacts to the repository automatically.
-	s.fetchPackagesFromDistribution(repo, []string{
-		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom",
-		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
-	})
+	// Pull-through GET skips MavenPackage creation; upload + modify runs finalize with packages.
+	s.seedMavenPackages(mavenRepo)
 
 	// Test the packages API endpoint
-	packages := s.listPackages(repo.UUID)
+	packages := s.listPackages(mavenRepo.repo.UUID)
 	require.NotNil(t, packages.Results)
 	require.NotEmpty(t, packages.Results)
 	firstPackage := packages.Results[0]
@@ -148,7 +146,7 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	assert.NotEmpty(t, firstPackage.Name)
 
 	// Test the package versions endpoint using data from the list
-	versions := s.listPackageVersions(repo.UUID, firstPackage.Group, firstPackage.Name)
+	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name)
 	assert.Equal(t, firstPackage.Group, versions.Group)
 	assert.Equal(t, firstPackage.Name, versions.Name)
 	require.NotEmpty(t, versions.Versions)
@@ -160,13 +158,19 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 
 	// Test the package detail endpoint using data from the list
 	require.NotEmpty(t, firstPackage.Versions)
-	detail := s.getPackageDetail(repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
+	detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
 	assert.Equal(t, firstPackage.Group, detail.Group)
 	assert.Equal(t, firstPackage.Name, detail.Name)
 	assert.Equal(t, firstPackage.Versions[0], detail.Version)
 }
 
-func (s *MavenPackagesSuite) createMavenRepository(orgId string) api.RepositoryResponse {
+type mavenPulpRepository struct {
+	repo           api.RepositoryResponse
+	repositoryHref string
+	remoteHref     string
+}
+
+func (s *MavenPackagesSuite) createMavenRepository(orgId string) mavenPulpRepository {
 	t := s.T()
 
 	// Create the repository directly in the database (API doesn't support Maven content type)
@@ -270,40 +274,95 @@ func (s *MavenPackagesSuite) createMavenRepository(orgId string) api.RepositoryR
 	apiRepoResp := s.dao.RepositoryConfig.InternalOnly_FetchRepoConfigsForRepoUUID(context.Background(), repo.UUID)
 	require.NotEmpty(t, apiRepoResp)
 
-	return apiRepoResp[0]
+	return mavenPulpRepository{
+		repo:           apiRepoResp[0],
+		repositoryHref: *mavenRepoResp.PulpHref,
+		remoteHref:     *remoteResp.PulpHref,
+	}
 }
 
-func (s *MavenPackagesSuite) fetchPackagesFromDistribution(repo api.RepositoryResponse, paths []string) {
+type mavenSeedPOM struct {
+	relativePath string
+	body         string
+}
+
+func mavenSeedPOMs() []mavenSeedPOM {
+	return []mavenSeedPOM{
+		{
+			relativePath: "blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom",
+			body: `<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>blissed</groupId>
+  <artifactId>blissed</artifactId>
+  <version>1.0-beta-3</version>
+</project>
+`,
+		},
+		{
+			relativePath: "avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
+			body: `<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>avalon-util</groupId>
+  <artifactId>avalon-util-exception</artifactId>
+  <version>1.0.0</version>
+</project>
+`,
+		},
+	}
+}
+
+func (s *MavenPackagesSuite) seedMavenPackages(mavenRepo mavenPulpRepository) {
 	t := s.T()
 
-	// Get the distribution URL
-	freshRepo, err := s.dao.RepositoryConfig.Fetch(context.Background(), repo.OrgID, repo.UUID)
+	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, mavenRepo.repo.OrgID)
 	require.NoError(t, err)
-	require.NotEmpty(t, freshRepo.PublishedDistURL, "Repository should have a published distribution URL")
 
-	// Fetch each package through the distribution. The body must be fully read so Pulp's
-	// on-demand download completes and caches the artifact (closing early can abort jars).
-	client := http.Client{Timeout: 60 * time.Second}
-	for _, path := range paths {
-		url := freshRepo.PublishedDistURL + path
+	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+	ctx, zestClient, err := s.getZestClient()
+	require.NoError(t, err)
+
+	contentHrefs := make([]string, 0, len(mavenSeedPOMs()))
+	for _, pom := range mavenSeedPOMs() {
+		file, err := os.CreateTemp(t.TempDir(), filepath.Base(pom.relativePath))
+		require.NoError(t, err)
+		_, err = file.WriteString(pom.body)
+		require.NoError(t, err)
+		_, err = file.Seek(0, 0)
 		require.NoError(t, err)
 
-		// Add identity header for authentication
-		js, err := json.Marshal(identity.XRHID{Identity: s.identity.Identity})
-		require.NoError(t, err)
-		req.Header.Add(api.IdentityHeader, base64.StdEncoding.EncodeToString(js))
-
-		resp, err := client.Do(req)
-		require.NoError(t, err, "Failed to fetch package from distribution: %s", path)
-		_, copyErr := io.Copy(io.Discard, resp.Body)
-		closeErr := resp.Body.Close()
-		require.NoError(t, copyErr, "Failed to read package body from distribution: %s", path)
-		require.NoError(t, closeErr)
-		require.Equal(t, http.StatusOK, resp.StatusCode, "Expected successful fetch from distribution: %s", path)
-		log.Info().Msgf("Fetched package from distribution: %s (status: %d)", path, resp.StatusCode)
+		uploadResp, httpResp, err := zestClient.ContentArtifactAPI.ContentMavenArtifactUpload(ctx, domainName).
+			RelativePath(pom.relativePath).
+			File(file).
+			Execute()
+		_ = file.Close()
+		if httpResp != nil {
+			defer httpResp.Body.Close()
+		}
+		require.NoError(t, err, "upload %s", pom.relativePath)
+		require.NotNil(t, uploadResp.PulpHref)
+		contentHrefs = append(contentHrefs, *uploadResp.PulpHref)
 	}
+
+	modify := zest.NewRepositoryAddRemoveContent()
+	modify.SetAddContentUnits(contentHrefs)
+
+	repositoryHref := strings.TrimPrefix(mavenRepo.repositoryHref, "/")
+	taskResp, httpResp, err := zestClient.RepositoriesMavenAPI.RepositoriesMavenMavenModify(ctx, repositoryHref).
+		RepositoryAddRemoveContent(*modify).
+		Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	require.NoError(t, err)
+	require.NotEmpty(t, taskResp.Task)
+
+	task, err := pulpClient.PollTask(s.ctx, strings.TrimPrefix(taskResp.Task, "/"))
+	require.NoError(t, err)
+	require.NotNil(t, task.State)
+	require.Equal(t, "completed", *task.State)
 }
 
 func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
@@ -382,16 +441,10 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 	t := s.T()
 
 	// Create a Maven repository
-	repo := s.createMavenRepository(config.LightwellOrg)
+	mavenRepo := s.createMavenRepository(config.LightwellOrg)
+	repo := mavenRepo.repo
 
-	// Fetch some packages from the distribution to populate the repository.
-	// Pull-through caching now adds streamed artifacts to the repository automatically.
-	s.fetchPackagesFromDistribution(repo, []string{
-		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom",
-		"/blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.jar",
-		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom",
-		"/avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.jar",
-	})
+	s.seedMavenPackages(mavenRepo)
 
 	// Get domain and pulp client
 	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, config.LightwellOrg)

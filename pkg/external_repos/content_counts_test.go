@@ -11,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -74,8 +75,8 @@ func (s *ContentCountsSuite) TestUpdateContentCountsWithCache_Success() {
 	// First repo - cache miss, fetch from pulp
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID1).Return(nil, cache.ErrNotFound)
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path/1").Return(&repoHref1, nil)
-	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref1).
-		Return(tangy.MavenRepositoryMetrics{PackageCount: 10, BuildCount: 8, VersionCount: 6}, nil)
+	s.mockPulpClient.On("GetMavenRepositoryMetrics", s.ctx, repoHref1).
+		Return(zest.MavenRepositoryMetricsResponse{PackageCount: 10, BuildCount: 8, VersionCount: 6}, nil)
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID1, cache.RepoContentCount{
 		Packages: 10,
 		Builds:   8,
@@ -148,8 +149,8 @@ func (s *ContentCountsSuite) TestGetContentCountsWithCache_CacheMiss() {
 
 	s.mockCache.On("GetContentCounts", s.ctx, domainName, repoUUID).Return(nil, cache.ErrNotFound)
 	s.mockPulpClient.On("ResolveRepositoryFromBasePath", s.ctx, "/base/path").Return(&repoHref, nil)
-	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.MavenRepositoryMetrics{PackageCount: 25, BuildCount: 15, VersionCount: 12}, nil)
+	s.mockPulpClient.On("GetMavenRepositoryMetrics", s.ctx, repoHref).
+		Return(zest.MavenRepositoryMetricsResponse{PackageCount: 25, BuildCount: 15, VersionCount: 12}, nil)
 	s.mockCache.On("SetContentCounts", s.ctx, domainName, repoUUID, cache.RepoContentCount{
 		Packages: 25,
 		Builds:   15,
@@ -215,10 +216,10 @@ func (s *ContentCountsSuite) TestContentCountsForType_Maven() {
 	t := s.T()
 	repoHref := "test-repo-href"
 
-	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.MavenRepositoryMetrics{PackageCount: 30, BuildCount: 20, VersionCount: 18}, nil)
+	s.mockPulpClient.On("GetMavenRepositoryMetrics", s.ctx, repoHref).
+		Return(zest.MavenRepositoryMetricsResponse{PackageCount: 30, BuildCount: 20, VersionCount: 18}, nil)
 
-	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypeMaven)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockPulpClient, s.mockTangy, repoHref, config.ContentTypeMaven)
 	assert.NoError(t, err)
 	assert.Equal(t, 30, pkgCount)
 	assert.Equal(t, 20, buildCount)
@@ -232,7 +233,7 @@ func (s *ContentCountsSuite) TestContentCountsForType_Python() {
 	s.mockTangy.On("PythonRepositoryMetrics", s.ctx, repoHref).
 		Return(tangy.PythonRepositoryMetrics{PackageCount: 42, BuildCount: 2, VersionCount: 2}, nil)
 
-	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockPulpClient, s.mockTangy, repoHref, config.ContentTypePython)
 	assert.NoError(t, err)
 	assert.Equal(t, 42, pkgCount)
 	assert.Equal(t, 2, buildCount)
@@ -243,7 +244,7 @@ func (s *ContentCountsSuite) TestContentCountsForType_UnknownType() {
 	t := s.T()
 	repoHref := "test-repo-href"
 
-	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, "unknown-type")
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockPulpClient, s.mockTangy, repoHref, "unknown-type")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown content type")
 	assert.Equal(t, 0, pkgCount)
@@ -255,10 +256,10 @@ func (s *ContentCountsSuite) TestContentCountsForType_MavenRepositoryMetricsErro
 	t := s.T()
 	repoHref := "test-repo-href"
 
-	s.mockTangy.On("MavenRepositoryMetrics", s.ctx, repoHref).
-		Return(tangy.MavenRepositoryMetrics{}, errors.New("repository metrics error"))
+	s.mockPulpClient.On("GetMavenRepositoryMetrics", s.ctx, repoHref).
+		Return(zest.MavenRepositoryMetricsResponse{}, errors.New("repository metrics error"))
 
-	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypeMaven)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockPulpClient, s.mockTangy, repoHref, config.ContentTypeMaven)
 	assert.Error(t, err)
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)
@@ -272,7 +273,7 @@ func (s *ContentCountsSuite) TestContentCountsForType_PythonRepositoryMetricsErr
 	s.mockTangy.On("PythonRepositoryMetrics", s.ctx, repoHref).
 		Return(tangy.PythonRepositoryMetrics{}, errors.New("repository metrics error"))
 
-	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockTangy, repoHref, config.ContentTypePython)
+	pkgCount, buildCount, versionCount, err := ContentCountsForType(s.ctx, s.mockPulpClient, s.mockTangy, repoHref, config.ContentTypePython)
 	assert.Error(t, err)
 	assert.Equal(t, 0, pkgCount)
 	assert.Equal(t, 0, buildCount)

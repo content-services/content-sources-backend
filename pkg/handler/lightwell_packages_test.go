@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -16,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -101,19 +103,20 @@ func newPythonRepo() api.RepositoryResponse {
 	}
 }
 
-func mavenTangResponse() tangy.MavenPackageListResponse {
-	return tangy.MavenPackageListResponse{
-		Results: []tangy.MavenPackageListItem{
+func mavenPulpResponse() zest.PaginatedMavenRepositoryPackageListResponse {
+	return zest.PaginatedMavenRepositoryPackageListResponse{
+		Count: 1,
+		Results: []zest.MavenRepositoryPackageResponse{
 			{
-				GroupID:    "com.fasterxml.jackson.core",
-				ArtifactID: "jackson-databind",
-				Versions:   []string{"2.15.3.rhlw-00001", "2.14.2.rhlw-00001"},
-				LatestReleases: []tangy.MavenReleaseInfo{
-					{Version: "2.15.3.rhlw-00001", Release: "rhlw-00001", CreatedAt: "2024-06-01T12:00:00Z"},
+				GroupId:    "com.fasterxml.jackson.core",
+				ArtifactId: "jackson-databind",
+				Versions:   []string{"2.15.3", "2.14.2"},
+				LatestReleases: []zest.MavenPackageReleaseResponse{
+					{Version: "2.15.3", Release: "rhlw-00001", CreatedAt: time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)},
+					{Version: "2.14.2", Release: "rhlw-00001", CreatedAt: time.Date(2024, 5, 1, 12, 0, 0, 0, time.UTC)},
 				},
 			},
 		},
-		Total: 1, Limit: 200, Offset: 0,
 	}
 }
 
@@ -175,18 +178,18 @@ func pythonTangResponse() tangy.PythonPackageListResponse {
 	}
 }
 
-// mavenTangResponsePage builds a page of maven results with distinct artifact
+// mavenPulpResponsePage builds a page of maven results with distinct artifact
 // ids, reporting the given overall total so pagination can be exercised.
-func mavenTangResponsePage(offset, pageLen, total int) tangy.MavenPackageListResponse {
-	results := make([]tangy.MavenPackageListItem, pageLen)
+func mavenPulpResponsePage(offset, pageLen, total int) zest.PaginatedMavenRepositoryPackageListResponse {
+	results := make([]zest.MavenRepositoryPackageResponse, pageLen)
 	for i := range pageLen {
-		results[i] = tangy.MavenPackageListItem{
-			GroupID:    "com.example",
-			ArtifactID: fmt.Sprintf("artifact-%d", offset+i),
+		results[i] = zest.MavenRepositoryPackageResponse{
+			GroupId:    "com.example",
+			ArtifactId: fmt.Sprintf("artifact-%d", offset+i),
 			Versions:   []string{"1.0.0"},
 		}
 	}
-	return tangy.MavenPackageListResponse{Results: results, Total: total, Limit: MaxLimit, Offset: offset}
+	return zest.PaginatedMavenRepositoryPackageListResponse{Count: int64(total), Results: results}
 }
 
 // --- /lightwell/packages tests ---
@@ -204,10 +207,9 @@ func (s *LightwellPackagesSuite) TestListPackagesSingleRepoUsesTangTotal() {
 	s.stubRepoHref(mavenRepo, href)
 
 	total := 567 // far more than one page
-	// Exactly one Tang call, using the request's offset/limit (not a full fetch).
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 20},
-	).Return(mavenTangResponsePage(0, 20, total), nil)
+	// Exactly one Pulp call, using the request's offset/limit (not a full fetch).
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", 20, 0).
+		Return(mavenPulpResponsePage(0, 20, total), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages?offset=0&limit=20", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -235,11 +237,10 @@ func (s *LightwellPackagesSuite) TestListPackagesSingleRepoPushesSortWhenTangSup
 	href := "/api/pulp/repos/maven/sorted/"
 	s.stubRepoHref(mavenRepo, href)
 
-	// desc is not Tang-native, but with server-side sort enabled the fast path is
-	// used and the sort is forwarded to Tang.
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: DefaultLimit, SortBy: "name desc"},
-	).Return(mavenTangResponsePage(0, 5, 42), nil)
+	// Maven catalog reads go to Pulp, which does not take SortBy. The single-repo
+	// fast path still uses one ListMavenPackages call with the request's page.
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", DefaultLimit, 0).
+		Return(mavenPulpResponsePage(0, 5, 42), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages?sort_by=name+desc", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -274,15 +275,12 @@ func (s *LightwellPackagesSuite) TestListPackagesMultiRepoPaginatesBeyondMaxLimi
 	s.stubRepoHref(repoB, hrefB)
 
 	totalA := MaxLimit + 4 // requires two pages
-	s.tangClient.On("MavenPackageList", test.MockCtx(), hrefA,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponsePage(0, MaxLimit, totalA), nil)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), hrefA,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: MaxLimit, Limit: MaxLimit},
-	).Return(mavenTangResponsePage(MaxLimit, 4, totalA), nil)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), hrefB,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponsePage(0, 3, 3), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), hrefA, "", MaxLimit, 0).
+		Return(mavenPulpResponsePage(0, MaxLimit, totalA), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), hrefA, "", MaxLimit, MaxLimit).
+		Return(mavenPulpResponsePage(MaxLimit, 4, totalA), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), hrefB, "", MaxLimit, 0).
+		Return(mavenPulpResponsePage(0, 3, 3), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages?limit=1000", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -298,19 +296,19 @@ func (s *LightwellPackagesSuite) TestListPackagesMultiRepoPaginatesBeyondMaxLimi
 	assert.Equal(t, int64(totalA+3), resp.Meta.Count)
 }
 
-// mavenVersionsTangResponsePage builds a page where every package has two
+// mavenVersionsPulpResponsePage builds a page where every package has two
 // versions, so the number of expanded version items differs from the package
 // count used to advance the pagination offset.
-func mavenVersionsTangResponsePage(offset, pageLen, total int) tangy.MavenPackageListResponse {
-	results := make([]tangy.MavenPackageListItem, pageLen)
+func mavenVersionsPulpResponsePage(offset, pageLen, total int) zest.PaginatedMavenRepositoryPackageListResponse {
+	results := make([]zest.MavenRepositoryPackageResponse, pageLen)
 	for i := range pageLen {
-		results[i] = tangy.MavenPackageListItem{
-			GroupID:    "com.example",
-			ArtifactID: fmt.Sprintf("artifact-%d", offset+i),
+		results[i] = zest.MavenRepositoryPackageResponse{
+			GroupId:    "com.example",
+			ArtifactId: fmt.Sprintf("artifact-%d", offset+i),
 			Versions:   []string{"1.0.0", "2.0.0"},
 		}
 	}
-	return tangy.MavenPackageListResponse{Results: results, Total: total, Limit: MaxLimit, Offset: offset}
+	return zest.PaginatedMavenRepositoryPackageListResponse{Count: int64(total), Results: results}
 }
 
 func (s *LightwellPackagesSuite) TestListPackageVersionsPaginatesByPackageCount() {
@@ -324,12 +322,10 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsPaginatesByPackageCount(
 	totalPackages := MaxLimit + 2
 	// Offset must advance by the package count (MaxLimit), not by the number of
 	// expanded version items, so the second page is requested at Offset=MaxLimit.
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenVersionsTangResponsePage(0, MaxLimit, totalPackages), nil)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: MaxLimit, Limit: MaxLimit},
-	).Return(mavenVersionsTangResponsePage(MaxLimit, 2, totalPackages), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", MaxLimit, 0).
+		Return(mavenVersionsPulpResponsePage(0, MaxLimit, totalPackages), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", MaxLimit, MaxLimit).
+		Return(mavenVersionsPulpResponsePage(MaxLimit, 2, totalPackages), nil)
 
 	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -353,10 +349,8 @@ func (s *LightwellPackagesSuite) TestListPackagesSingleRepo() {
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/default/api/v3/repositories/maven/maven/some-uuid/"
 	s.stubRepoHref(mavenRepo, href)
-	// Single repo takes the fast path: one Tang call using the request's page.
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: DefaultLimit},
-	).Return(mavenTangResponse(), nil)
+	// Single repo takes the fast path: one Pulp call using the request's page.
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", DefaultLimit, 0).Return(mavenPulpResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -390,9 +384,7 @@ func (s *LightwellPackagesSuite) TestListPackagesMultiRepo() {
 	s.stubRepoHref(mavenRepo, mavenHref)
 	s.stubRepoHref(pythonRepo, pythonHref)
 
-	s.tangClient.On("MavenPackageList", test.MockCtx(), mavenHref,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponse(), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), mavenHref, "", MaxLimit, 0).Return(mavenPulpResponse(), nil)
 	s.tangClient.On("PythonPackageList", test.MockCtx(), pythonHref,
 		tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(pythonTangResponse(), nil)
@@ -433,10 +425,8 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
-	// Single repo takes the fast path: one Tang call using the request's page.
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: DefaultLimit},
-	).Return(mavenTangResponse(), nil)
+	// Single repo takes the fast path: one Pulp call using the request's page.
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", DefaultLimit, 0).Return(mavenPulpResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages?ecosystem=maven", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -495,9 +485,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsSingleRepo() {
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponse(), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", MaxLimit, 0).Return(mavenPulpResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -525,10 +513,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsWithNameFilter() {
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{Search: "jackson"},
-		tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponse(), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "jackson", MaxLimit, 0).Return(mavenPulpResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/package_versions?name=jackson", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -550,9 +535,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsPagination() {
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponse(), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", MaxLimit, 0).Return(mavenPulpResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/package_versions?limit=1&offset=0", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -611,14 +594,12 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsResolvesCveFilter() {
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponse(), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", MaxLimit, 0).Return(mavenPulpResponse(), nil)
 
 	s.reg.LightwellAdvisory.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-9999").Return([]dao.LightwellAdvisoryCveMatch{
 		{
 			PackageName:   "jackson-databind",
-			FixedVersions: []string{"2.15.3.rhlw-00001"},
+			FixedVersions: []string{"2.15.3"},
 			RepoName:      "lightwell/java/remediated",
 			Severity:      "critical",
 		},
@@ -638,8 +619,8 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsResolvesCveFilter() {
 	assert.Equal(t, int64(1), resp.Meta.Count)
 	assert.Len(t, resp.Data, 1)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
-	assert.Equal(t, "2.15.3.rhlw-00001", resp.Data[0].Version)
-	assert.Equal(t, "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.3.rhlw-00001", resp.Data[0].Purl)
+	assert.Equal(t, "2.15.3", resp.Data[0].Version)
+	assert.Equal(t, "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.3", resp.Data[0].Purl)
 	assert.Equal(t, "com.fasterxml.jackson.core:jackson-databind", resp.Data[0].Coordinates)
 }
 
@@ -650,14 +631,14 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() 
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
-	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
-	).Return(mavenTangResponse(), nil)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", MaxLimit, 0).Return(mavenPulpResponse(), nil)
 
+	// Advisory says jackson-databind is fixed at 2.15.3, so
+	// the older version 2.14.2 should be returned as vulnerable.
 	s.reg.LightwellAdvisory.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-8888").Return([]dao.LightwellAdvisoryCveMatch{
 		{
 			PackageName:   "jackson-databind",
-			FixedVersions: []string{"2.15.3.rhlw-00001"},
+			FixedVersions: []string{"2.15.3"},
 			RepoName:      "lightwell/java/remediated",
 			Severity:      "important",
 		},
@@ -677,7 +658,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() 
 	assert.Equal(t, int64(1), resp.Meta.Count)
 	assert.Len(t, resp.Data, 1)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
-	assert.Equal(t, "2.14.2.rhlw-00001", resp.Data[0].Version)
+	assert.Equal(t, "2.14.2", resp.Data[0].Version)
 }
 
 // --- npm PURL / coordinates tests ---

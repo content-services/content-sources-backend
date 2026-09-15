@@ -76,7 +76,7 @@ func GetContentCountsWithCache(ctx context.Context, pulpClient pulp_client.PulpC
 		return 0, 0, 0, updated, fmt.Errorf("failed to resolve repo %s", repo.Name)
 	}
 
-	pkgCount, buildCount, versionCount, err = ContentCountsForType(ctx, tang, *repoHref, repo.ContentType)
+	pkgCount, buildCount, versionCount, err = ContentCountsForType(ctx, pulpClient, tang, *repoHref, repo.ContentType)
 	if err != nil {
 		return 0, 0, 0, updated, err
 	}
@@ -93,14 +93,17 @@ func GetContentCountsWithCache(ctx context.Context, pulpClient pulp_client.PulpC
 }
 
 // ContentCountsForType retrieves package, build, and version counts for a repository based on its content type
-func ContentCountsForType(ctx context.Context, tang tangy.Tangy, repoHref string, contentType string) (int, int, int, error) {
+func ContentCountsForType(ctx context.Context, pulp pulp_client.PulpClient, tang tangy.Tangy, repoHref string, contentType string) (int, int, int, error) {
 	switch contentType {
 	case config.ContentTypePython:
 		m, err := tang.PythonRepositoryMetrics(ctx, repoHref)
 		return m.PackageCount, m.BuildCount, m.VersionCount, err
 	case config.ContentTypeMaven:
-		m, err := tang.MavenRepositoryMetrics(ctx, repoHref)
-		return m.PackageCount, m.BuildCount, m.VersionCount, err
+		m, err := pulp.GetMavenRepositoryMetrics(ctx, repoHref)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+		return int(m.PackageCount), int(m.BuildCount), int(m.VersionCount), nil
 	default:
 		return 0, 0, 0, fmt.Errorf("unknown content type: %s", contentType)
 	}
