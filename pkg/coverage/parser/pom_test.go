@@ -198,6 +198,104 @@ func TestParse_POMRejectsBadInput(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestParse_POMProjects(t *testing.T) {
+	data := `<projects>
+  <metadata><name>ignored</name></metadata>
+  <!-- comments between projects are ignored -->
+  <project>
+    <modelVersion>4.0.0</modelVersion>
+    <dependencies>
+      <dependency><groupId>org.example</groupId><artifactId>shared</artifactId><version>1.0.0</version></dependency>
+      <dependency><groupId>org.example</groupId><artifactId>first</artifactId><version>1.0.0</version></dependency>
+    </dependencies>
+  </project>
+  <project>
+    <modelVersion>4.0.0</modelVersion>
+    <dependencies>
+      <dependency><groupId>org.example</groupId><artifactId>shared</artifactId><version>1.0.0</version></dependency>
+      <dependency><groupId>org.example</groupId><artifactId>shared</artifactId><version>2.0.0</version></dependency>
+      <dependency><groupId>org.example</groupId><artifactId>second</artifactId><version>1.0.0</version></dependency>
+    </dependencies>
+  </project>
+</projects>`
+
+	result, err := Parse("projects.xml", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Equal(t, FormatPOM, result.InputFormat)
+	assert.Equal(t, []Package{
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "shared", Version: "1.0.0"},
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "first", Version: "1.0.0"},
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "shared", Version: "2.0.0"},
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "second", Version: "1.0.0"},
+	}, result.Packages)
+}
+
+func TestParse_POMProjectsKeepsPartialResults(t *testing.T) {
+	originalMax := gitpom.MaxPOMBytes
+	gitpom.MaxPOMBytes = 512
+	t.Cleanup(func() { gitpom.MaxPOMBytes = originalMax })
+
+	data := `<projects>
+  <project>
+    <modelVersion>4.0.0</modelVersion>
+    <description>` + strings.Repeat("x", 600) + `</description>
+  </project>
+  <project>
+    <modelVersion>4.0.0</modelVersion>
+    <dependencies>
+      <dependency><groupId>org.example</groupId><artifactId>valid</artifactId><version>1.0.0</version></dependency>
+    </dependencies>
+  </project>
+</projects>`
+
+	result, err := Parse("pom.xml", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Equal(t, []Package{
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "valid", Version: "1.0.0"},
+	}, result.Packages)
+}
+
+func TestParse_POMProjectsReturnsErrorWhenAllProjectsFail(t *testing.T) {
+	originalMax := gitpom.MaxPOMBytes
+	gitpom.MaxPOMBytes = 128
+	t.Cleanup(func() { gitpom.MaxPOMBytes = originalMax })
+
+	data := `<projects>
+  <project><modelVersion>4.0.0</modelVersion><description>` + strings.Repeat("x", 128) + `</description></project>
+  <project><modelVersion>4.0.0</modelVersion><description>` + strings.Repeat("y", 128) + `</description></project>
+</projects>`
+
+	_, err := Parse("pom.xml", strings.NewReader(data))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "project 1")
+	assert.Contains(t, err.Error(), "project 2")
+}
+
+func TestSplitPOMsRejectsInvalidWrappers(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+	}{
+		{name: "no Maven projects", data: `<projects><project><name>unrelated</name></project></projects>`},
+		{name: "malformed", data: `<projects><project><modelVersion>4.0.0</modelVersion></project><project>`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := splitPOMs(strings.NewReader(tt.data))
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestSplitPOMsPreservesSinglePOM(t *testing.T) {
+	data := "<?xml version=\"1.0\"?>\n<project><artifactId>app</artifactId></project>\n"
+
+	projects, err := splitPOMs(strings.NewReader(data))
+	require.NoError(t, err)
+	require.Len(t, projects, 1)
+	assert.Equal(t, data, string(projects[0]))
+}
+
 func TestPackagesFromEffective(t *testing.T) {
 	parsed := &gitpom.POM{
 		DependencyManagement: gitpom.DepMgmt{Dependencies: []gitpom.Dep{

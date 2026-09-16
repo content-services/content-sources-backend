@@ -1,7 +1,11 @@
 package parser
 
 import (
+	"bytes"
 	"context"
+	"encoding/xml"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -20,6 +24,129 @@ func newHTTPPOMFetcher() gitpom.Fetcher {
 	f := gitpom.NewHTTPFetcher("")
 	f.Client = &http.Client{Timeout: 30 * time.Second}
 	return gitpom.NewCachingFetcher(f)
+}
+
+// splitPOMs returns a single POM unchanged or the Maven project children of a projects wrapper.
+func splitPOMs(r io.Reader) ([][]byte, error) {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return nil, wrapParse("POM", err)
+	}
+
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.CharsetReader = func(_ string, input io.Reader) (io.Reader, error) {
+		return input, nil
+	}
+	root, err := pomRoot(dec)
+	if err != nil {
+		return nil, wrapParse("POM", err)
+	}
+
+	switch root.Name.Local {
+	case "project":
+		if err := dec.Skip(); err != nil {
+			return nil, wrapParse("POM", err)
+		}
+		if err := requireXMLEnd(dec); err != nil {
+			return nil, wrapParse("POM", err)
+		}
+		return [][]byte{data}, nil
+	case "projects":
+		var projects [][]byte
+		for {
+			start := dec.InputOffset()
+			tok, err := dec.Token()
+			if err != nil {
+				return nil, wrapParse("POM", err)
+			}
+			switch element := tok.(type) {
+			case xml.StartElement:
+				if err := dec.Skip(); err != nil {
+					return nil, wrapParse("POM", err)
+				}
+				if element.Name.Local != "project" {
+					continue
+				}
+				project := data[start:dec.InputOffset()]
+				if element.Name.Space == mavenPOMNamespace || isPOM(string(project)) {
+					projects = append(projects, project)
+				}
+			case xml.EndElement:
+				if err := requireXMLEnd(dec); err != nil {
+					return nil, wrapParse("POM", err)
+				}
+				if len(projects) == 0 {
+					return nil, wrapParse("POM", errors.New("projects wrapper contains no Maven projects"))
+				}
+				return projects, nil
+			}
+		}
+	default:
+		return nil, wrapParse("POM", fmt.Errorf("unexpected root element %q", root.Name.Local))
+	}
+}
+
+func pomRoot(dec *xml.Decoder) (xml.StartElement, error) {
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			if err == io.EOF {
+				return xml.StartElement{}, errors.New("XML document has no root element")
+			}
+			return xml.StartElement{}, err
+		}
+		switch token := tok.(type) {
+		case xml.StartElement:
+			return token, nil
+		case xml.CharData:
+			if strings.TrimSpace(string(token)) != "" {
+				return xml.StartElement{}, errors.New("unexpected text before root element")
+			}
+		}
+	}
+}
+
+func requireXMLEnd(dec *xml.Decoder) error {
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		switch token := tok.(type) {
+		case xml.StartElement, xml.EndElement:
+			return errors.New("XML document contains multiple root elements")
+		case xml.CharData:
+			if strings.TrimSpace(string(token)) != "" {
+				return errors.New("unexpected text after root element")
+			}
+		}
+	}
+}
+
+// parsePOMs parses every project in a POM document and keeps results from successful projects.
+func parsePOMs(r io.Reader) ([]Package, error) {
+	projects, err := splitPOMs(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var packages []Package
+	parseErrors := make([]error, 0, len(projects))
+	for i, project := range projects {
+		parsed, err := parsePOM(bytes.NewReader(project))
+		if err != nil {
+			parseErrors = append(parseErrors, fmt.Errorf("project %d: %w", i+1, err))
+			continue
+		}
+		packages = append(packages, parsed...)
+	}
+	if len(parseErrors) == len(projects) {
+		return nil, errors.Join(parseErrors...)
+	}
+	return packages, nil
 }
 
 // parsePOM uses git-pkgs/pom to parse the file, then resolve parents and BOM imports.
