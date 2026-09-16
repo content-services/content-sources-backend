@@ -631,6 +631,13 @@
                         "description": "Alias of component_name",
                         "type": "string"
                     },
+                    "published_versions": {
+                        "description": "Published package versions that fix this vulnerability",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
                     "purl": {
                         "description": "Package URL",
                         "type": "string"
