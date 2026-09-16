@@ -70,8 +70,22 @@ func TestSniffFormat_POM(t *testing.T) {
 			want: FormatPOM,
 		},
 		{
+			name: "projects wrapper",
+			data: `<projects><project><modelVersion>4.0.0</modelVersion></project></projects>`,
+			want: FormatPOM,
+		},
+		{
+			name: "projects wrapper with Maven namespace",
+			data: `<projects xmlns="http://maven.apache.org/POM/4.0.0"><project/></projects>`,
+			want: FormatPOM,
+		},
+		{
 			name: "unrelated project XML",
 			data: `<project><name>not a Maven POM</name></project>`,
+		},
+		{
+			name: "unrelated projects XML",
+			data: `<projects><project><name>not a Maven POM</name></project></projects>`,
 		},
 	}
 	for _, tt := range tests {

@@ -10,6 +10,8 @@ import (
 	"unicode"
 )
 
+const mavenPOMNamespace = "http://maven.apache.org/POM/4.0.0"
+
 // skipWhitespace consumes leading spaces so the next Peek sees '{', '<', or a tag-value start.
 func skipWhitespace(r *bufio.Reader) error {
 	for {
@@ -76,9 +78,8 @@ func sniffFormat(r *bufio.Reader) (string, error) {
 }
 
 func isPOM(s string) bool {
-	const pomNamespace = "http://maven.apache.org/POM/4.0.0"
-
 	dec := xml.NewDecoder(strings.NewReader(s))
+	var wrapper bool
 	for {
 		tok, err := dec.Token()
 		if err != nil {
@@ -88,15 +89,53 @@ func isPOM(s string) bool {
 		if !ok {
 			continue
 		}
+		if root.Name.Local == "projects" {
+			wrapper = true
+			break
+		}
 		if root.Name.Local != "project" {
 			return false
 		}
-		if root.Name.Space == pomNamespace {
+		if root.Name.Space == mavenPOMNamespace {
 			return true
 		}
 		break
 	}
 
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return false
+		}
+		switch element := tok.(type) {
+		case xml.StartElement:
+			if wrapper && element.Name.Local == "project" {
+				if element.Name.Space == mavenPOMNamespace {
+					return true
+				}
+				if isMavenProject(dec) {
+					return true
+				}
+				continue
+			}
+			if element.Name.Local != "modelVersion" {
+				if err := dec.Skip(); err != nil {
+					return false
+				}
+				continue
+			}
+			var version string
+			if err := dec.DecodeElement(&version, &element); err != nil {
+				return false
+			}
+			return strings.TrimSpace(version) == "4.0.0"
+		case xml.EndElement:
+			return false
+		}
+	}
+}
+
+func isMavenProject(dec *xml.Decoder) bool {
 	for {
 		tok, err := dec.Token()
 		if err != nil {

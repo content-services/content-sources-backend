@@ -50,7 +50,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	case FormatRequirements:
 		packages, err = parseRequirements(br)
 	case FormatPOM:
-		packages, err = parsePOM(br)
+		packages, err = parsePOMs(br)
 	case FormatCycloneDX:
 		packages, err = parseCycloneDX(br)
 	case FormatSPDX:
