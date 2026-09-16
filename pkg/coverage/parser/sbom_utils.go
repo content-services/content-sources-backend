@@ -49,8 +49,8 @@ func peekSBOMStart(r *bufio.Reader) (byte, error) {
 	return b[0], nil
 }
 
-// sniffSBOMFormat peeks at the start of the file (without consuming it) to tell CycloneDX from SPDX.
-func sniffSBOMFormat(r *bufio.Reader) (string, error) {
+// sniffFormat peeks at the start of the file without consuming it to identify its format.
+func sniffFormat(r *bufio.Reader) (string, error) {
 	peek, err := r.Peek(8192)
 	if err != nil && err != io.EOF && len(peek) == 0 {
 		return "", err
@@ -69,8 +69,56 @@ func sniffSBOMFormat(r *bufio.Reader) (string, error) {
 		strings.Contains(lower, "spdxid") ||
 		strings.Contains(lower, `"@graph"`):
 		return FormatSPDX, nil
+	case isPOM(s):
+		return FormatPOM, nil
 	}
 	return "", nil
+}
+
+func isPOM(s string) bool {
+	const pomNamespace = "http://maven.apache.org/POM/4.0.0"
+
+	dec := xml.NewDecoder(strings.NewReader(s))
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return false
+		}
+		root, ok := tok.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		if root.Name.Local != "project" {
+			return false
+		}
+		if root.Name.Space == pomNamespace {
+			return true
+		}
+		break
+	}
+
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return false
+		}
+		switch element := tok.(type) {
+		case xml.StartElement:
+			if element.Name.Local != "modelVersion" {
+				if err := dec.Skip(); err != nil {
+					return false
+				}
+				continue
+			}
+			var version string
+			if err := dec.DecodeElement(&version, &element); err != nil {
+				return false
+			}
+			return strings.TrimSpace(version) == "4.0.0"
+		case xml.EndElement:
+			return false
+		}
+	}
 }
 
 // forEachXMLStart walks XML start elements and lets the caller DecodeElement or Skip each one.

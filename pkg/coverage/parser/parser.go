@@ -68,7 +68,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	}, nil
 }
 
-// detectFormat uses the filename when it is unambiguous, otherwise peeks at the stream to sniff CycloneDX vs SPDX.
+// detectFormat uses the filename when it is unambiguous, otherwise peeks at the stream to sniff its format.
 func detectFormat(filename string, r *bufio.Reader) (string, error) {
 	lower := strings.ToLower(filename)
 	switch {
@@ -85,7 +85,7 @@ func detectFormat(filename string, r *bufio.Reader) (string, error) {
 		return FormatSPDX, nil
 	}
 
-	if sniffed, err := sniffSBOMFormat(r); err != nil {
+	if sniffed, err := sniffFormat(r); err != nil {
 		return "", err
 	} else if sniffed != "" {
 		return sniffed, nil
