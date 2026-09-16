@@ -216,6 +216,7 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 		PURL:               vulnerability.PURL,
 		ComponentName:      vulnerability.ComponentName,
 		ComponentVersion:   vulnerability.ComponentVersion,
+		PublishedVersions:  vulnerability.PublishedVersions,
 		Title:              vulnerability.Title,
 		CWE:                vulnerability.CWE,
 		Description:        vulnerability.Description,
@@ -246,9 +247,7 @@ func applyPublishedStage(vulnerability *Vulnerability, advisories []PublishedAdv
 	if vulnerability.Stage != "Validation" {
 		return
 	}
-	if publishedOnNetwork(*vulnerability, advisories) {
-		vulnerability.Stage = "Lightwell Network"
-	}
+	updateIfPublishedOnNetwork(vulnerability, advisories)
 }
 
 // issueRelationships resolves the support-ticket links for a vulnerability. A

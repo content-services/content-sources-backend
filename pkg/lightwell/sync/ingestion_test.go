@@ -336,6 +336,7 @@ func TestIngestorPromotesClosedIssueWhenPublished(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+	assert.Equal(t, []string{"1.2.3.build-00001"}, store.saved[0].PublishedVersions)
 }
 
 func TestIngestorKeepsValidationWhenNotPublished(t *testing.T) {
@@ -348,6 +349,7 @@ func TestIngestorKeepsValidationWhenNotPublished(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, "Validation", store.saved[0].Stage)
+	assert.Empty(t, store.saved[0].PublishedVersions)
 }
 
 func TestIngestorPromotesEveryValidationStatusWhenPublished(t *testing.T) {
@@ -362,6 +364,7 @@ func TestIngestorPromotesEveryValidationStatusWhenPublished(t *testing.T) {
 			require.NoError(t, err)
 			require.Len(t, store.saved, 1)
 			assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+			assert.Equal(t, []string{"1.2.3.build-00001"}, store.saved[0].PublishedVersions)
 		})
 	}
 }
@@ -389,14 +392,18 @@ func TestIngestorDoesNotMissMatchingClosedIssues(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 4)
 
-	byKey := map[string]string{}
+	byKey := map[string]dao.LightwellVulnerabilityInput{}
 	for _, saved := range store.saved {
-		byKey[saved.VulnerabilityKey] = saved.Stage
+		byKey[saved.VulnerabilityKey] = saved
 	}
-	assert.Equal(t, "Lightwell Network", byKey["LTWL-1"])
-	assert.Equal(t, "Lightwell Network", byKey["LTWL-2"])
-	assert.Equal(t, "Validation", byKey["LTWL-3"])
-	assert.Equal(t, "Fix in Progress", byKey["LTWL-4"])
+	assert.Equal(t, "Lightwell Network", byKey["LTWL-1"].Stage)
+	assert.Equal(t, []string{"1.2.3.build-00001"}, byKey["LTWL-1"].PublishedVersions)
+	assert.Equal(t, "Lightwell Network", byKey["LTWL-2"].Stage)
+	assert.Equal(t, []string{"4.0.0"}, byKey["LTWL-2"].PublishedVersions)
+	assert.Equal(t, "Validation", byKey["LTWL-3"].Stage)
+	assert.Empty(t, byKey["LTWL-3"].PublishedVersions)
+	assert.Equal(t, "Fix in Progress", byKey["LTWL-4"].Stage)
+	assert.Empty(t, byKey["LTWL-4"].PublishedVersions)
 }
 
 func publishedJiraIssue(key, summary, status, lang, component, version string) jira_client.JiraIssue {

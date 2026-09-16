@@ -14,13 +14,28 @@ type PublishedAdvisory struct {
 	FixedVersions []string
 }
 
-// publishedOnNetwork reports whether an advisory publishes this vulnerability for its package, language, and version.
-func publishedOnNetwork(v Vulnerability, advisories []PublishedAdvisory) bool {
+// updateIfPublishedOnNetwork sets v.PublishedVersions (unique, descending) and v.Stage
+// to Lightwell Network when matching fixed versions exist. Otherwise it leaves v unchanged.
+func updateIfPublishedOnNetwork(v *Vulnerability, advisories []PublishedAdvisory) {
+	if v == nil {
+		return
+	}
+	versions := matchingPublishedVersions(*v, advisories)
+	if len(versions) == 0 {
+		return
+	}
+	v.PublishedVersions = versions
+	v.Stage = "Lightwell Network"
+}
+
+func matchingPublishedVersions(v Vulnerability, advisories []PublishedAdvisory) []string {
+	versions := make([]string, 0)
 	componentName := strings.TrimSpace(v.ComponentName)
 	componentVersion := strings.TrimSpace(v.ComponentVersion)
 	if componentName == "" || componentVersion == "" || strings.TrimSpace(v.VulnerabilityID) == "" || v.Language == nil {
-		return false
+		return versions
 	}
+	seen := make(map[string]struct{})
 	for _, advisory := range advisories {
 		if !packageMatches(advisory.PackageName, v) {
 			continue
@@ -28,11 +43,24 @@ func publishedOnNetwork(v Vulnerability, advisories []PublishedAdvisory) bool {
 		if !repoMatchesLanguage(advisory.RepoName, *v.Language) {
 			continue
 		}
-		if versionPresent(advisory, v.VulnerabilityID, componentVersion) {
-			return true
+		if !versionPresent(advisory, v.VulnerabilityID, componentVersion) {
+			continue
+		}
+		for _, fixed := range advisory.FixedVersions {
+			fixed = strings.TrimSpace(fixed)
+			if fixed == "" || !versionAt(fixed, componentVersion) {
+				continue
+			}
+			if _, exists := seen[fixed]; exists {
+				continue
+			}
+			seen[fixed] = struct{}{}
+			versions = append(versions, fixed)
 		}
 	}
-	return false
+	slices.Sort(versions)
+	slices.Reverse(versions)
+	return versions
 }
 
 func packageMatches(advisoryPackage string, vulnerability Vulnerability) bool {

@@ -35,6 +35,7 @@ type LightwellVulnerability struct {
 	Purl               *string   `json:"purl"`
 	ComponentName      string    `json:"component_name"`
 	ComponentVersion   string    `json:"component_version"`
+	PublishedVersions  []string  `json:"published_versions"`
 	Title              *string   `json:"title"`
 	Cwe                *string   `json:"cwe"`
 	Description        *string   `json:"description"`
