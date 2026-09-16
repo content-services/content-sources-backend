@@ -38,6 +38,7 @@ CREATE TABLE lightwell_vulnerabilities (
     purl TEXT,
     component_name TEXT NOT NULL,
     component_version TEXT NOT NULL,
+    published_versions TEXT[] NOT NULL DEFAULT '{}',
     title TEXT,
     cwe TEXT,
     description TEXT,

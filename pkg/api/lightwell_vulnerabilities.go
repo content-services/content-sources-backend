@@ -10,6 +10,7 @@ type LightwellVulnerabilityResponse struct {
 	ComponentName      string    `json:"component_name"`              // Component / package name
 	Package            string    `json:"package"`                     // Alias of component_name
 	ComponentVersion   string    `json:"component_version"`           // Component version
+	PublishedVersions  []string  `json:"published_versions"`          // Published package versions that fix this vulnerability
 	Title              *string   `json:"title,omitempty"`             // Vulnerability title
 	Cwe                *string   `json:"cwe,omitempty"`               // CWE identifier
 	Description        *string   `json:"description,omitempty"`       // Vulnerability description

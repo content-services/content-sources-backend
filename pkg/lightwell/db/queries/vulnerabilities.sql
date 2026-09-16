@@ -16,6 +16,7 @@ SELECT
     v.purl,
     v.component_name,
     v.component_version,
+    v.published_versions,
     v.title,
     v.cwe,
     v.description,
@@ -96,12 +97,12 @@ WHERE vulnerability_key = sqlc.arg(vulnerability_key);
 
 -- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
-    uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description,
+    uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,
     severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage,
     language, complexity, submitted_date, last_updated, embargo, duplicate
 ) VALUES (
     sqlc.arg(uuid), sqlc.arg(vulnerability_key), sqlc.arg(vulnerability_id), sqlc.narg(purl), sqlc.arg(component_name),
-    sqlc.arg(component_version), sqlc.narg(title), sqlc.narg(cwe), sqlc.narg(description),
+    sqlc.arg(component_version), COALESCE(sqlc.arg(published_versions)::text[], '{}'::text[]), sqlc.narg(title), sqlc.narg(cwe), sqlc.narg(description),
     sqlc.arg(severity), sqlc.narg(cvss), sqlc.narg(cvss_vector), sqlc.arg(exploit_tested),
     sqlc.arg(reproducer_included), sqlc.narg(customer_priority), sqlc.arg(stage),
     sqlc.narg(language), sqlc.arg(complexity), sqlc.arg(submitted_date), sqlc.arg(last_updated),
@@ -112,6 +113,7 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
     purl = EXCLUDED.purl,
     component_name = EXCLUDED.component_name,
     component_version = EXCLUDED.component_version,
+    published_versions = EXCLUDED.published_versions,
     title = EXCLUDED.title,
     cwe = EXCLUDED.cwe,
     description = EXCLUDED.description,
@@ -136,6 +138,7 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
 WHERE (
     lightwell_vulnerabilities.vulnerability_id, lightwell_vulnerabilities.purl,
     lightwell_vulnerabilities.component_name, lightwell_vulnerabilities.component_version,
+    lightwell_vulnerabilities.published_versions,
     lightwell_vulnerabilities.title, lightwell_vulnerabilities.cwe,
     lightwell_vulnerabilities.description, lightwell_vulnerabilities.severity,
     lightwell_vulnerabilities.cvss, lightwell_vulnerabilities.cvss_vector,
@@ -146,7 +149,7 @@ WHERE (
     lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate
 ) IS DISTINCT FROM (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
-    EXCLUDED.component_version, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
+    EXCLUDED.component_version, EXCLUDED.published_versions, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
     EXCLUDED.severity, EXCLUDED.cvss, EXCLUDED.cvss_vector, EXCLUDED.exploit_tested,
     EXCLUDED.reproducer_included, EXCLUDED.customer_priority,
     CASE

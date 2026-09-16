@@ -31,6 +31,7 @@ type Vulnerability struct {
 	PURL               *string
 	ComponentName      string
 	ComponentVersion   string
+	PublishedVersions  []string
 	Title              *string
 	CWE                *string
 	Description        *string

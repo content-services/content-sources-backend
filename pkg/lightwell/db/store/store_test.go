@@ -1128,3 +1128,49 @@ func TestStore_UpsertDoesNotDowngradeLightwellNetworkToValidation(t *testing.T) 
 	require.NoError(t, err)
 	assert.Equal(t, "Lightwell Network", after.Stage)
 }
+
+func TestStore_UpsertAndListPublishedVersions(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	customerID := fmt.Sprintf("lw-pub-%d", time.Now().UnixNano())
+	params := store.UpsertVulnerabilityParams{
+		Uuid:              uuid.New(),
+		VulnerabilityKey:  fmt.Sprintf("LTWL-%d-PUB", time.Now().UnixNano()),
+		VulnerabilityID:   fmt.Sprintf("LWL-PUB-%d", time.Now().UnixNano()),
+		ComponentName:     "component",
+		ComponentVersion:  "1.2.3",
+		PublishedVersions: []string{"1.2.3.build-00002", "1.2.3.build-00001"},
+		Severity:          "Important",
+		Stage:             "Lightwell Network",
+		Complexity:        "",
+		SubmittedDate:     time.Now().UTC(),
+		LastUpdated:       time.Now().UTC().Truncate(time.Second),
+	}
+	inserted, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	require.True(t, inserted.Inserted)
+
+	got, err := q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"1.2.3.build-00002", "1.2.3.build-00001"}, got.PublishedVersions)
+
+	require.NoError(t, q.InsertVulnerabilityCustomer(ctx, store.InsertVulnerabilityCustomerParams{
+		CustomerID:        customerID,
+		VulnerabilityUuid: inserted.Uuid,
+	}))
+
+	rows, err := q.ListVulnerabilities(ctx, listParams(customerID))
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, []string{"1.2.3.build-00002", "1.2.3.build-00001"}, rows[0].PublishedVersions)
+
+	params.PublishedVersions = []string{"1.2.3.build-00003"}
+	updated, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	assert.False(t, updated.Inserted)
+
+	got, err = q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"1.2.3.build-00003"}, got.PublishedVersions)
+}

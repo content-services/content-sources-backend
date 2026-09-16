@@ -165,7 +165,7 @@ func (q *Queries) DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg Delet
 }
 
 const getVulnerabilityByKey = `-- name: GetVulnerabilityByKey :one
-SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, created_at, updated_at
+SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, created_at, updated_at
 FROM lightwell_vulnerabilities
 WHERE vulnerability_key = $1
 `
@@ -180,6 +180,7 @@ func (q *Queries) GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey st
 		&i.Purl,
 		&i.ComponentName,
 		&i.ComponentVersion,
+		&i.PublishedVersions,
 		&i.Title,
 		&i.Cwe,
 		&i.Description,
@@ -279,6 +280,7 @@ SELECT
     v.purl,
     v.component_name,
     v.component_version,
+    v.published_versions,
     v.title,
     v.cwe,
     v.description,
@@ -336,6 +338,7 @@ type ListVulnerabilitiesRow struct {
 	Purl               *string   `json:"purl"`
 	ComponentName      string    `json:"component_name"`
 	ComponentVersion   string    `json:"component_version"`
+	PublishedVersions  []string  `json:"published_versions"`
 	Title              *string   `json:"title"`
 	Cwe                *string   `json:"cwe"`
 	Description        *string   `json:"description"`
@@ -383,6 +386,7 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 			&i.Purl,
 			&i.ComponentName,
 			&i.ComponentVersion,
+			&i.PublishedVersions,
 			&i.Title,
 			&i.Cwe,
 			&i.Description,
@@ -416,22 +420,23 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 
 const upsertVulnerability = `-- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
-    uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description,
+    uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,
     severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage,
     language, complexity, submitted_date, last_updated, embargo, duplicate
 ) VALUES (
     $1, $2, $3, $4, $5,
-    $6, $7, $8, $9,
-    $10, $11, $12, $13,
-    $14, $15, $16,
-    $17, $18, $19, $20,
-    $21, $22
+    $6, COALESCE($7::text[], '{}'::text[]), $8, $9, $10,
+    $11, $12, $13, $14,
+    $15, $16, $17,
+    $18, $19, $20, $21,
+    $22, $23
 )
 ON CONFLICT (vulnerability_key) DO UPDATE SET
     vulnerability_id = EXCLUDED.vulnerability_id,
     purl = EXCLUDED.purl,
     component_name = EXCLUDED.component_name,
     component_version = EXCLUDED.component_version,
+    published_versions = EXCLUDED.published_versions,
     title = EXCLUDED.title,
     cwe = EXCLUDED.cwe,
     description = EXCLUDED.description,
@@ -456,6 +461,7 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
 WHERE (
     lightwell_vulnerabilities.vulnerability_id, lightwell_vulnerabilities.purl,
     lightwell_vulnerabilities.component_name, lightwell_vulnerabilities.component_version,
+    lightwell_vulnerabilities.published_versions,
     lightwell_vulnerabilities.title, lightwell_vulnerabilities.cwe,
     lightwell_vulnerabilities.description, lightwell_vulnerabilities.severity,
     lightwell_vulnerabilities.cvss, lightwell_vulnerabilities.cvss_vector,
@@ -466,7 +472,7 @@ WHERE (
     lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate
 ) IS DISTINCT FROM (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
-    EXCLUDED.component_version, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
+    EXCLUDED.component_version, EXCLUDED.published_versions, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
     EXCLUDED.severity, EXCLUDED.cvss, EXCLUDED.cvss_vector, EXCLUDED.exploit_tested,
     EXCLUDED.reproducer_included, EXCLUDED.customer_priority,
     CASE
@@ -487,6 +493,7 @@ type UpsertVulnerabilityParams struct {
 	Purl               *string   `json:"purl"`
 	ComponentName      string    `json:"component_name"`
 	ComponentVersion   string    `json:"component_version"`
+	PublishedVersions  []string  `json:"published_versions"`
 	Title              *string   `json:"title"`
 	Cwe                *string   `json:"cwe"`
 	Description        *string   `json:"description"`
@@ -518,6 +525,7 @@ func (q *Queries) UpsertVulnerability(ctx context.Context, arg UpsertVulnerabili
 		arg.Purl,
 		arg.ComponentName,
 		arg.ComponentVersion,
+		arg.PublishedVersions,
 		arg.Title,
 		arg.Cwe,
 		arg.Description,

@@ -159,4 +159,9 @@ INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, custome
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000032', 'demo-customer-2', 'demo-tk-3');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000033', 'demo-customer-1', 'demo-tk-1');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000034', 'demo-customer-2', 'demo-tk-1');
+
+UPDATE lightwell_vulnerabilities
+SET published_versions = ARRAY[component_version || '.rhlw-00001']
+WHERE stage = 'Lightwell Network';
+
 COMMIT;
