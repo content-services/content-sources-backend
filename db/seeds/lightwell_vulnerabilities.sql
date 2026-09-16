@@ -164,4 +164,19 @@ UPDATE lightwell_vulnerabilities
 SET published_versions = ARRAY[component_version || '.rhlw-00001']
 WHERE stage = 'Lightwell Network';
 
+UPDATE lightwell_vulnerabilities
+SET published_versions = ARRAY[
+    component_version || '.rhlw-00002',
+    component_version || '.rhlw-00001'
+]
+WHERE vulnerability_id = 'LWL-2026-4001';
+
+UPDATE lightwell_vulnerabilities
+SET published_versions = ARRAY[
+    component_version || '.rhlw-00003',
+    component_version || '.rhlw-00002',
+    component_version || '.rhlw-00001'
+]
+WHERE vulnerability_id = 'LWL-2026-4003';
+
 COMMIT;

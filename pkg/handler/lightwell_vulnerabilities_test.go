@@ -190,6 +190,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 		Duplicate:         true,
 		DuplicateOf:       &dupOf,
 		LtwlsuptTicketIDs: []string{"demo-tk-3"},
+		PublishedVersions: []string{"0.7.33.build-00001"},
 	}}
 	aggregates := dao.LightwellVulnerabilityAggregates{
 		TotalCount:    1,
@@ -234,6 +235,8 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.NotContains(suite.T(), string(body), `"id":`)
 	assert.Equal(suite.T(), []string{"demo-tk-3"}, resp.Data[0].LtwlsuptTicketIDs)
 	assert.Contains(suite.T(), string(body), `"ltwlsupt_ticket_ids":["demo-tk-3"]`)
+	assert.Equal(suite.T(), []string{"0.7.33.build-00001"}, resp.Data[0].PublishedVersions)
+	assert.Contains(suite.T(), string(body), `"published_versions":["0.7.33.build-00001"]`)
 	assert.NotContains(suite.T(), string(body), `"blocked"`)
 	assert.NotContains(suite.T(), string(body), `"stage"`)
 	assert.Contains(suite.T(), string(body), `"status":"Validation"`)
@@ -245,6 +248,36 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.Equal(suite.T(), int64(1), resp.Meta.Count)
 	assert.Equal(suite.T(), int64(0), resp.Meta.CriticalCount)
 	assert.Equal(suite.T(), int64(1), resp.Meta.StatusCounts["Validation"])
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListEmptyPublishedVersionsSerializesAsArray() {
+	opts := dao.ListLightwellVulnerabilitiesOptions{
+		CustomerID: "demo-customer-1",
+		Limit:      100,
+		Offset:     0,
+	}
+	suite.reg.LightwellVulnerability.On("List", test.MockCtx(), opts).Return(
+		[]api.LightwellVulnerabilityResponse{{
+			VulnerabilityID:   "LWL-2026-4401",
+			PublishedVersions: []string{},
+		}},
+		dao.LightwellVulnerabilityAggregates{TotalCount: 1},
+		[]dao.LightwellVulnerabilityStageCount{{Stage: "Submitted", Count: 1}},
+		int64(1),
+		nil,
+	)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellVulnerabilityCollectionResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	assert.Len(suite.T(), resp.Data, 1)
+	assert.Equal(suite.T(), []string{}, resp.Data[0].PublishedVersions)
+	assert.Contains(suite.T(), string(body), `"published_versions":[]`)
+	assert.NotContains(suite.T(), string(body), `"published_versions":null`)
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListUnknownFiltersEmpty() {

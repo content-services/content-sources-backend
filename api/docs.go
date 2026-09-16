@@ -5632,6 +5632,13 @@ const docTemplate = `{
                     "description": "Alias of component_name",
                     "type": "string"
                 },
+                "published_versions": {
+                    "description": "Published package versions that fix this vulnerability",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "purl": {
                     "description": "Package URL",
                     "type": "string"
