@@ -1,65 +1,21 @@
 package api
 
-// OSV (Open Source Vulnerabilities) API/schema types.
-//
-// These mirror the osv.dev REST API (https://google.github.io/osv.dev/api/) and the
-// OSV schema (https://ossf.github.io/osv-schema/) so that OSV tooling such as
-// osv-scanner can consume our Lightwell advisories by pointing at /demo/osvdev
-// instead of api.osv.dev. Field names use snake_case to match the real service.
+import "encoding/json"
 
-// OsvPackage identifies an affected package.
+// OSV (Open Source Vulnerabilities) API types.
+//
+// These mirror the osv.dev REST API (https://google.github.io/osv.dev/api/) so
+// that OSV tooling such as osv-scanner can consume our Lightwell content by
+// pointing at /demo/osvdev instead of api.osv.dev. Field names use snake_case to
+// match the real service. The full vulnerability records themselves are served
+// verbatim from curated OSV JSON (see pkg/lightwell/osv), so only the request
+// types and thin response envelopes are modeled here.
+
+// OsvPackage identifies a package in a query.
 type OsvPackage struct {
 	Ecosystem string `json:"ecosystem,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Purl      string `json:"purl,omitempty"`
-}
-
-// OsvEvent is a single point in an affected range. Exactly one field is set.
-type OsvEvent struct {
-	Introduced   string `json:"introduced,omitempty"`
-	Fixed        string `json:"fixed,omitempty"`
-	LastAffected string `json:"last_affected,omitempty"`
-	Limit        string `json:"limit,omitempty"`
-}
-
-// OsvRange is an ordered set of version events for an ecosystem.
-type OsvRange struct {
-	Type   string     `json:"type"`
-	Repo   string     `json:"repo,omitempty"`
-	Events []OsvEvent `json:"events"`
-}
-
-// OsvAffected describes a package and the versions it is affected in.
-type OsvAffected struct {
-	Package  OsvPackage `json:"package"`
-	Ranges   []OsvRange `json:"ranges,omitempty"`
-	Versions []string   `json:"versions,omitempty"`
-}
-
-// OsvReference is a URL reference for a vulnerability.
-type OsvReference struct {
-	Type string `json:"type"`
-	URL  string `json:"url"`
-}
-
-// OsvSeverity is a severity score for a vulnerability.
-type OsvSeverity struct {
-	Type  string `json:"type"`
-	Score string `json:"score"`
-}
-
-// OsvVulnerability is a full OSV record.
-type OsvVulnerability struct {
-	SchemaVersion string         `json:"schema_version,omitempty"`
-	ID            string         `json:"id"`
-	Modified      string         `json:"modified"`
-	Published     string         `json:"published,omitempty"`
-	Aliases       []string       `json:"aliases,omitempty"`
-	Summary       string         `json:"summary,omitempty"`
-	Details       string         `json:"details,omitempty"`
-	Severity      []OsvSeverity  `json:"severity,omitempty"`
-	Affected      []OsvAffected  `json:"affected,omitempty"`
-	References    []OsvReference `json:"references,omitempty"`
 }
 
 // OsvQuery is the body of POST /v1/query and each entry of a batch query.
@@ -75,10 +31,11 @@ type OsvBatchQuery struct {
 	Queries []OsvQuery `json:"queries"`
 }
 
-// OsvVulnerabilityList is the response of POST /v1/query.
+// OsvVulnerabilityList is the response of POST /v1/query. Each vuln is a full OSV
+// record served verbatim as raw JSON.
 type OsvVulnerabilityList struct {
-	Vulns         []OsvVulnerability `json:"vulns,omitempty"`
-	NextPageToken string             `json:"next_page_token,omitempty"`
+	Vulns         []json.RawMessage `json:"vulns,omitempty"`
+	NextPageToken string            `json:"next_page_token,omitempty"`
 }
 
 // OsvVulnStub is the lightweight vulnerability reference returned by querybatch.

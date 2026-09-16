@@ -9,31 +9,26 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/osv"
 	"github.com/labstack/echo/v4"
 )
 
-// OsvDevHandler serves an osv.dev-compatible mock of our Lightwell advisories under
-// /demo/osvdev. It is public (no identity required) and gated by the
-// LightwellOsvDemo feature flag. See pkg/lightwell/osv for the data mapping.
-type OsvDevHandler struct {
-	DaoRegistry dao.DaoRegistry
-}
+// OsvDevHandler serves an osv.dev-compatible mock of curated Lightwell OSV records
+// under /demo/osvdev. It is public (no identity required) and gated by the
+// LightwellOsvDemo feature flag. The records are static, embedded JSON served
+// verbatim; see pkg/lightwell/osv for the data and matching logic.
+type OsvDevHandler struct{}
 
 // RegisterOsvDevRoutes registers the osv.dev mock on the raw Echo engine (not the
 // versioned API group), so paths are literally rooted at /demo/osvdev with no
 // identity/RBAC. SkipMiddleware skips auth for the /demo/osvdev prefix.
-func RegisterOsvDevRoutes(engine *echo.Echo, daoReg *dao.DaoRegistry) {
+func RegisterOsvDevRoutes(engine *echo.Echo) {
 	if engine == nil {
 		panic("engine is nil")
 	}
-	if daoReg == nil {
-		panic("daoReg is nil")
-	}
 
-	h := OsvDevHandler{DaoRegistry: *daoReg}
+	h := OsvDevHandler{}
 	engine.POST("/demo/osvdev/v1/query", h.query, requireOsvDemo)
 	engine.POST("/demo/osvdev/v1/querybatch", h.queryBatch, requireOsvDemo)
 	engine.GET("/demo/osvdev/v1/vulns/:id", h.getVuln, requireOsvDemo)
@@ -55,16 +50,6 @@ func requireOsvDemo(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func (h *OsvDevHandler) records(c echo.Context) ([]api.OsvVulnerability, error) {
-	advisories, err := h.DaoRegistry.LightwellAdvisory.ListForOsv(c.Request().Context())
-	if err != nil {
-		return nil, ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error loading advisories", err.Error())
-	}
-	recs := osv.BuildRecords(advisories)
-	osv.SortRecords(recs)
-	return recs, nil
-}
-
 // query implements POST /demo/osvdev/v1/query.
 func (h *OsvDevHandler) query(c echo.Context) error {
 	var q api.OsvQuery
@@ -72,15 +57,10 @@ func (h *OsvDevHandler) query(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid query", err.Error())
 	}
 
-	recs, err := h.records(c)
-	if err != nil {
-		return err
-	}
-
-	var vulns []api.OsvVulnerability
-	for _, rec := range recs {
+	var vulns []json.RawMessage
+	for _, rec := range osv.Records() {
 		if osv.Matches(rec, q) {
-			vulns = append(vulns, rec)
+			vulns = append(vulns, rec.Raw)
 		}
 	}
 	return c.JSON(http.StatusOK, api.OsvVulnerabilityList{Vulns: vulns})
@@ -94,15 +74,10 @@ func (h *OsvDevHandler) queryBatch(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid query", err.Error())
 	}
 
-	recs, err := h.records(c)
-	if err != nil {
-		return err
-	}
-
 	results := make([]api.OsvBatchResult, len(batch.Queries))
 	for i, q := range batch.Queries {
 		var stubs []api.OsvVulnStub
-		for _, rec := range recs {
+		for _, rec := range osv.Records() {
 			if osv.Matches(rec, q) {
 				stubs = append(stubs, api.OsvVulnStub{ID: rec.ID, Modified: rec.Modified})
 			}
@@ -115,14 +90,8 @@ func (h *OsvDevHandler) queryBatch(c echo.Context) error {
 // getVuln implements GET /demo/osvdev/v1/vulns/:id.
 func (h *OsvDevHandler) getVuln(c echo.Context) error {
 	id := c.Param("id")
-	recs, err := h.records(c)
-	if err != nil {
-		return err
-	}
-	for _, rec := range recs {
-		if rec.ID == id {
-			return c.JSON(http.StatusOK, rec)
-		}
+	if rec, ok := osv.RecordByID(id); ok {
+		return c.JSONBlob(http.StatusOK, rec.Raw)
 	}
 	return ce.NewErrorResponse(http.StatusNotFound, "Not found", "no vulnerability with id "+id)
 }
@@ -131,58 +100,36 @@ func (h *OsvDevHandler) getVuln(c echo.Context) error {
 // emulate the GCS export layout.
 func (h *OsvDevHandler) getRecordFile(c echo.Context) error {
 	id := strings.TrimSuffix(c.Param("id"), ".json")
-	recs, err := h.records(c)
-	if err != nil {
-		return err
-	}
-	for _, rec := range recs {
-		if rec.ID == id {
-			return c.JSON(http.StatusOK, rec)
-		}
+	ecosystem := c.Param("ecosystem")
+	if rec, ok := osv.RecordByID(id); ok && rec.InEcosystem(ecosystem) {
+		return c.JSONBlob(http.StatusOK, rec.Raw)
 	}
 	return ce.NewErrorResponse(http.StatusNotFound, "Not found", "no vulnerability with id "+id)
 }
 
 // ecosystems implements GET /demo/osvdev/ecosystems.txt.
 func (h *OsvDevHandler) ecosystems(c echo.Context) error {
-	return c.String(http.StatusOK, osv.DefaultEcosystem+"\n")
+	return c.String(http.StatusOK, strings.Join(osv.Ecosystems(), "\n")+"\n")
 }
 
 // exportAll implements GET /demo/osvdev/all.zip.
 func (h *OsvDevHandler) exportAll(c echo.Context) error {
-	recs, err := h.records(c)
-	if err != nil {
-		return err
-	}
-	return h.writeZip(c, recs)
+	return h.writeZip(c, osv.Records())
 }
 
 // exportEcosystem implements GET /demo/osvdev/:ecosystem/all.zip.
 func (h *OsvDevHandler) exportEcosystem(c echo.Context) error {
 	ecosystem := c.Param("ecosystem")
-	recs, err := h.records(c)
-	if err != nil {
-		return err
-	}
-	filtered := make([]api.OsvVulnerability, 0, len(recs))
-	for _, rec := range recs {
-		if recordInEcosystem(rec, ecosystem) {
+	filtered := make([]osv.Record, 0)
+	for _, rec := range osv.Records() {
+		if rec.InEcosystem(ecosystem) {
 			filtered = append(filtered, rec)
 		}
 	}
 	return h.writeZip(c, filtered)
 }
 
-func recordInEcosystem(rec api.OsvVulnerability, ecosystem string) bool {
-	for _, aff := range rec.Affected {
-		if strings.EqualFold(aff.Package.Ecosystem, ecosystem) {
-			return true
-		}
-	}
-	return false
-}
-
-func (h *OsvDevHandler) writeZip(c echo.Context, recs []api.OsvVulnerability) error {
+func (h *OsvDevHandler) writeZip(c echo.Context, recs []osv.Record) error {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	for _, rec := range recs {
@@ -190,11 +137,7 @@ func (h *OsvDevHandler) writeZip(c echo.Context, recs []api.OsvVulnerability) er
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error building zip", err.Error())
 		}
-		body, err := json.MarshalIndent(rec, "", "  ")
-		if err != nil {
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error building zip", err.Error())
-		}
-		if _, err := w.Write(body); err != nil {
+		if _, err := w.Write(rec.Raw); err != nil {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error building zip", err.Error())
 		}
 	}

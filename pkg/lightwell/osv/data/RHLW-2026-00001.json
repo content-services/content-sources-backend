@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.9.0",
+  "id": "RHLW-2026-00001",
+  "modified": "2026-08-06T16:00:00Z",
+  "published": "2026-08-06T16:00:00Z",
+  "summary": "Lightwell Security Advisory: spring-core 5.3.18.rhlw-00010",
+  "details": "Red Hat Lightwell has released spring-core 5.3.18.rhlw-00010 with a backported security fix.\n\nCVE-2025-41249: The Spring Framework annotation detection mechanism may not correctly resolve annotations on methods within type hierarchies with a parameterized super type with unbounded generics, potentially leading to improper authorization when using @EnableMethodSecurity.\n\nThis patched artifact is a drop-in replacement for spring-core 5.3.18 from Maven Central.",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    }
+  ],
+  "upstream": [
+    "CVE-2025-41249",
+    "GHSA-jmp9-x22r-554x"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.springframework:spring-core",
+        "purl": "pkg:maven/org.springframework/spring-core"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "5.3.18.rhlw-00010"
+            }
+          ]
+        }
+      ],
+      "versions": [
+        "5.3.18"
+      ],
+      "database_specific": {
+        "lightwell": {
+          "source": "lightwell-pipeline",
+          "backport_base_version": "5.3.18",
+          "remediated_version": "5.3.18.rhlw-00010",
+          "repository_url": "https://packages.redhat.com/lightwell/java/remediated/"
+        }
+      }
+    }
+  ],
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://packages.redhat.com/lightwell/advisories/RHLW-2026-00001.json"
+    },
+    {
+      "type": "WEB",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-41249"
+    },
+    {
+      "type": "WEB",
+      "url": "https://spring.io/security/cve-2025-41249"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/spring-projects/spring-framework/commit/6d710d482a6785b069e35022e81758953afc21ff"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Red Hat Lightwell",
+      "type": "REMEDIATION_DEVELOPER"
+    }
+  ],
+  "database_specific": {
+    "lightwell": {
+      "csaf_advisory": "https://packages.redhat.com/lightwell/advisories/RHLW-2026-00001.json"
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.9.0",
+  "id": "RHLW-2026-00005",
+  "modified": "2026-08-06T16:00:00Z",
+  "published": "2026-08-06T16:00:00Z",
+  "summary": "Lightwell Security Advisory: json 20220320.0.0.rhlw-00003",
+  "details": "Red Hat Lightwell has released org.json:json 20220320.0.0.rhlw-00003 with backported fixes for CVE-2022-45688 and CVE-2023-5072.\n\nCVE-2022-45688: A stack overflow in the XML.toJSONObject component of org.json:json before version 20230227 allows attackers to cause a Denial of Service (DoS) via crafted JSON or XML data.\n\nCVE-2023-5072: A bug in the parser means that an input string of modest size can lead to indefinite amounts of memory being used, causing a Denial of Service (DoS).\n\nThis patched artifact is a drop-in replacement for org.json:json 20220320 from Maven Central.",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+    }
+  ],
+  "upstream": [
+    "CVE-2022-45688",
+    "CVE-2023-5072",
+    "GHSA-3vqj-43w4-2q58",
+    "GHSA-4jq9-2xhw-jpx7"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "Maven",
+        "name": "org.json:json",
+        "purl": "pkg:maven/org.json/json"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "0"
+            },
+            {
+              "fixed": "20220320.0.0.rhlw-00003"
+            }
+          ]
+        }
+      ],
+      "versions": [
+        "20220320"
+      ],
+      "database_specific": {
+        "lightwell": {
+          "source": "lightwell-pipeline",
+          "backport_base_version": "20220320",
+          "remediated_version": "20220320.0.0.rhlw-00003",
+          "repository_url": "https://packages.redhat.com/lightwell/java/remediated/"
+        }
+      }
+    }
+  ],
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://packages.redhat.com/lightwell/advisories/RHLW-2026-00005.json"
+    },
+    {
+      "type": "WEB",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-45688"
+    },
+    {
+      "type": "WEB",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-5072"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://github.com/stleary/JSON-java/issues/708"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/stleary/JSON-java/commit/a6e412bded7a0ad605adfeca029318f184c32102"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://github.com/stleary/JSON-java/issues/758"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/stleary/JSON-java/commit/60662e2f8384d3449822a3a1179bfe8de67b55bb"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Red Hat Lightwell",
+      "type": "REMEDIATION_DEVELOPER"
+    }
+  ],
+  "database_specific": {
+    "lightwell": {
+      "csaf_advisory": "https://packages.redhat.com/lightwell/advisories/RHLW-2026-00005.json"
+    }
+  }
+}

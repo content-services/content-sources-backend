@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.9.0",
+  "id": "RHLW-2026-00003",
+  "modified": "2026-08-06T16:00:00Z",
+  "published": "2026-08-06T16:00:00Z",
+  "summary": "Lightwell Security Advisory: woodstox-core 6.0.3.rhlw-00001",
+  "details": "Red Hat Lightwell has released woodstox-core 6.0.3.rhlw-00001 with a backported security fix.\n\nCVE-2022-40152: Woodstox is vulnerable to a Denial of Service (DoS) attack when DTD support is enabled. If the parser is running on user supplied input, an attacker may supply content that causes the parser to crash via stack overflow.\n\nThis patched artifact is a drop-in replacement for woodstox-core 6.0.3 from Maven Central.",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H"
+    }
+  ],
+  "upstream": [
+    "CVE-2022-40152",
+    "GHSA-3f7h-mf4q-vrm4"
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "Maven",
+        "name": "com.fasterxml.woodstox:woodstox-core",
+        "purl": "pkg:maven/com.fasterxml.woodstox/woodstox-core"
+      },
+      "ranges": [
+        {
+          "type": "ECOSYSTEM",
+          "events": [
+            {
+              "introduced": "6.0.0"
+            },
+            {
+              "fixed": "6.0.3.rhlw-00001"
+            }
+          ]
+        }
+      ],
+      "versions": [
+        "6.0.0",
+        "6.0.1",
+        "6.0.2",
+        "6.0.3"
+      ],
+      "database_specific": {
+        "lightwell": {
+          "source": "lightwell-pipeline",
+          "backport_base_version": "6.0.3",
+          "remediated_version": "6.0.3.rhlw-00001",
+          "repository_url": "https://packages.redhat.com/lightwell/java/remediated/"
+        }
+      }
+    }
+  ],
+  "references": [
+    {
+      "type": "ADVISORY",
+      "url": "https://packages.redhat.com/lightwell/advisories/RHLW-2026-00003.json"
+    },
+    {
+      "type": "WEB",
+      "url": "https://nvd.nist.gov/vuln/detail/CVE-2022-40152"
+    },
+    {
+      "type": "REPORT",
+      "url": "https://github.com/FasterXML/woodstox/issues/160"
+    },
+    {
+      "type": "FIX",
+      "url": "https://github.com/FasterXML/woodstox/commit/e8f00401bebd103f62d51383ef53da2cd58bd89e"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Red Hat Lightwell",
+      "type": "REMEDIATION_DEVELOPER"
+    }
+  ],
+  "database_specific": {
+    "lightwell": {
+      "csaf_advisory": "https://packages.redhat.com/lightwell/advisories/RHLW-2026-00003.json"
+    }
+  }
+}
