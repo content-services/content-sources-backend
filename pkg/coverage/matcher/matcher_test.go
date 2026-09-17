@@ -49,12 +49,14 @@ func TestMatchCatalog_EcosystemSummary(t *testing.T) {
 	assert.Equal(t, 1, python.ExactMatches)
 	assert.Equal(t, 1, python.PartialMatches)
 	assert.Equal(t, 1, python.Unmatched)
+	assert.True(t, python.Supported)
 
 	java := summaryMap[EcosystemJava]
 	assert.Equal(t, 2, java.Total)
 	assert.Equal(t, 1, java.ExactMatches)
 	assert.Equal(t, 0, java.PartialMatches)
 	assert.Equal(t, 1, java.Unmatched)
+	assert.True(t, java.Supported)
 }
 
 func TestMatchCatalog_ExactMatch(t *testing.T) {
@@ -148,24 +150,28 @@ func TestMatchCatalog_IncludesAllEcosystems(t *testing.T) {
 	assert.Equal(t, 1, python.ExactMatches)
 	assert.Equal(t, 0, python.PartialMatches)
 	assert.Equal(t, 0, python.Unmatched)
+	assert.True(t, python.Supported)
 
 	javascript := summaryMap["JavaScript"]
 	assert.Equal(t, 1, javascript.Total)
 	assert.Equal(t, 0, javascript.ExactMatches)
 	assert.Equal(t, 0, javascript.PartialMatches)
 	assert.Equal(t, 1, javascript.Unmatched)
+	assert.False(t, javascript.Supported)
 
 	golang := summaryMap["Go"]
 	assert.Equal(t, 1, golang.Total)
 	assert.Equal(t, 0, golang.ExactMatches)
 	assert.Equal(t, 0, golang.PartialMatches)
 	assert.Equal(t, 1, golang.Unmatched)
+	assert.False(t, golang.Supported)
 
 	generic := summaryMap["Generic"]
 	assert.Equal(t, 1, generic.Total)
 	assert.Equal(t, 0, generic.ExactMatches)
 	assert.Equal(t, 0, generic.PartialMatches)
 	assert.Equal(t, 1, generic.Unmatched)
+	assert.False(t, generic.Supported)
 }
 
 func TestNormalizePythonName(t *testing.T) {

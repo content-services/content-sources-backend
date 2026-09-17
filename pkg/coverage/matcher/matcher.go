@@ -39,10 +39,21 @@ type MatchSummary struct {
 
 type EcosystemSummary struct {
 	Ecosystem      string
+	Supported      bool
 	Total          int
 	ExactMatches   int
 	PartialMatches int
 	Unmatched      int
+}
+
+// IsSupportedEcosystem reports whether the Lightwell catalog can match packages for the given ecosystem.
+func IsSupportedEcosystem(ecosystem string) bool {
+	switch ecosystem {
+	case EcosystemJava, EcosystemPython:
+		return true
+	default:
+		return false
+	}
 }
 
 // MatchCatalog compares manifest packages against a catalog and returns per-package match results and an aggregate summary.
@@ -61,7 +72,10 @@ func MatchCatalog(catalog, parsedPackages []Package, snapshotAt time.Time) ([]Ma
 
 		entry, exists := ecosystemSummaries[pkg.Ecosystem]
 		if !exists {
-			entry = &EcosystemSummary{Ecosystem: pkg.Ecosystem}
+			entry = &EcosystemSummary{
+				Ecosystem: pkg.Ecosystem,
+				Supported: IsSupportedEcosystem(pkg.Ecosystem),
+			}
 			ecosystemSummaries[pkg.Ecosystem] = entry
 		}
 		entry.Total++
