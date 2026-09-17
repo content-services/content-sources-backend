@@ -21,6 +21,7 @@ type CoverageReportResponse struct {
 // EcosystemCoverageSummary represents the ecosystem breakdown in a coverage report
 type EcosystemCoverageSummary struct {
 	Ecosystem      string `json:"ecosystem"`
+	Supported      bool   `json:"supported"` // Whether the ecosystem is present in the Lightwell catalog.
 	Total          int    `json:"total"`
 	ExactMatches   int    `json:"exact_matches"`
 	PartialMatches int    `json:"partial_matches"`

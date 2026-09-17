@@ -15,6 +15,7 @@ const TableNameCoverageReports = "coverage_reports"
 
 type EcosystemCoverageSummaryEntry struct {
 	Ecosystem      string `json:"ecosystem"`
+	Supported      bool   `json:"supported"`
 	Total          int    `json:"total"`
 	ExactMatches   int    `json:"exact_matches"`
 	PartialMatches int    `json:"partial_matches"`

@@ -40,8 +40,8 @@ func (s *CoverageReportSuite) TestCoverageReportCreate() {
 		PartialMatches: utils.Ptr(3),
 		Unmatched:      utils.Ptr(4),
 		EcosystemCoverageSummary: &EcosystemCoverageSummary{
-			{Ecosystem: "Java", Total: 9, ExactMatches: 4, PartialMatches: 2, Unmatched: 3},
-			{Ecosystem: "Python", Total: 6, ExactMatches: 4, PartialMatches: 1, Unmatched: 1},
+			{Ecosystem: "Java", Supported: true, Total: 9, ExactMatches: 4, PartialMatches: 2, Unmatched: 3},
+			{Ecosystem: "Python", Supported: true, Total: 6, ExactMatches: 4, PartialMatches: 1, Unmatched: 1},
 		},
 		CatalogSnapshotAt: utils.Ptr(catalogSnapshotAt),
 		AnalysisTaskUUID:  utils.Ptr(taskUUID),
@@ -67,8 +67,10 @@ func (s *CoverageReportSuite) TestCoverageReportCreate() {
 	summary := *readReport.EcosystemCoverageSummary
 	assert.Len(s.T(), summary, 2)
 	assert.Equal(s.T(), "Java", summary[0].Ecosystem)
+	assert.True(s.T(), summary[0].Supported)
 	assert.Equal(s.T(), 9, summary[0].Total)
 	assert.Equal(s.T(), "Python", summary[1].Ecosystem)
+	assert.True(s.T(), summary[1].Supported)
 	assert.Equal(s.T(), 6, summary[1].Total)
 	assert.Equal(s.T(), report.CatalogSnapshotAt, readReport.CatalogSnapshotAt)
 	assert.Equal(s.T(), *report.AnalysisTaskUUID, *readReport.AnalysisTaskUUID)

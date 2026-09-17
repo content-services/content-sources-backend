@@ -5233,6 +5233,10 @@ const docTemplate = `{
                 "partial_matches": {
                     "type": "integer"
                 },
+                "supported": {
+                    "description": "Whether the ecosystem is present in the Lightwell catalog.",
+                    "type": "boolean"
+                },
                 "total": {
                     "type": "integer"
                 },

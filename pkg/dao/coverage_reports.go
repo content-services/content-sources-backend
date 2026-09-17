@@ -188,6 +188,7 @@ func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportU
 	for _, entry := range params.Summary.EcosystemCoverageSummary {
 		ecosystemSummary = append(ecosystemSummary, models.EcosystemCoverageSummaryEntry{
 			Ecosystem:      entry.Ecosystem,
+			Supported:      entry.Supported,
 			Total:          entry.Total,
 			ExactMatches:   entry.ExactMatches,
 			PartialMatches: entry.PartialMatches,
@@ -276,6 +277,7 @@ func (d coverageReportDaoImpl) modelToResponse(r models.CoverageReport) api.Cove
 		for i, s := range *r.EcosystemCoverageSummary {
 			summary[i] = api.EcosystemCoverageSummary{
 				Ecosystem:      s.Ecosystem,
+				Supported:      s.Supported,
 				Total:          s.Total,
 				ExactMatches:   s.ExactMatches,
 				PartialMatches: s.PartialMatches,

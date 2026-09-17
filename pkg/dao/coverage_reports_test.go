@@ -76,8 +76,8 @@ func (s *CoverageReportDaoSuite) TestFetch() {
 	report.Unmatched = utils.Ptr(1)
 	report.InputFormat = utils.Ptr("CycloneDX")
 	report.EcosystemCoverageSummary = &models.EcosystemCoverageSummary{
-		{Ecosystem: "Java", Total: 9, ExactMatches: 7, PartialMatches: 1, Unmatched: 1},
-		{Ecosystem: "JavaScript", Total: 1, Unmatched: 1},
+		{Ecosystem: "Java", Supported: true, Total: 9, ExactMatches: 7, PartialMatches: 1, Unmatched: 1},
+		{Ecosystem: "JavaScript", Supported: false, Total: 1, Unmatched: 1},
 	}
 	require.NoError(s.T(), s.tx.Save(&report).Error)
 
@@ -92,11 +92,13 @@ func (s *CoverageReportDaoSuite) TestFetch() {
 	assert.Equal(s.T(), "CycloneDX", resp.InputFormat)
 	require.Len(s.T(), resp.EcosystemCoverageSummary, 2)
 	assert.Equal(s.T(), "Java", resp.EcosystemCoverageSummary[0].Ecosystem)
+	assert.True(s.T(), resp.EcosystemCoverageSummary[0].Supported)
 	assert.Equal(s.T(), 9, resp.EcosystemCoverageSummary[0].Total)
 	assert.Equal(s.T(), 7, resp.EcosystemCoverageSummary[0].ExactMatches)
 	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[0].PartialMatches)
 	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[0].Unmatched)
 	assert.Equal(s.T(), "JavaScript", resp.EcosystemCoverageSummary[1].Ecosystem)
+	assert.False(s.T(), resp.EcosystemCoverageSummary[1].Supported)
 	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[1].Total)
 	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[1].Unmatched)
 }
@@ -378,9 +380,9 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 			PartialMatches: 1,
 			Unmatched:      2,
 			EcosystemCoverageSummary: []matcher.EcosystemSummary{
-				{Ecosystem: "Java", Total: 1, ExactMatches: 1},
-				{Ecosystem: "Python", Total: 2, PartialMatches: 1, Unmatched: 1},
-				{Ecosystem: "JavaScript", Total: 1, Unmatched: 1},
+				{Ecosystem: "Java", Supported: true, Total: 1, ExactMatches: 1},
+				{Ecosystem: "Python", Supported: true, Total: 2, PartialMatches: 1, Unmatched: 1},
+				{Ecosystem: "JavaScript", Supported: false, Total: 1, Unmatched: 1},
 			},
 			CatalogSnapshotAt: snapshotAt,
 		},
@@ -406,6 +408,13 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 	assert.True(s.T(), snapshotAt.Equal(*readReport.CatalogSnapshotAt))
 	require.NotNil(s.T(), readReport.EcosystemCoverageSummary)
 	assert.Len(s.T(), *readReport.EcosystemCoverageSummary, 3)
+	byEcosystem := map[string]models.EcosystemCoverageSummaryEntry{}
+	for _, entry := range *readReport.EcosystemCoverageSummary {
+		byEcosystem[entry.Ecosystem] = entry
+	}
+	assert.True(s.T(), byEcosystem["Java"].Supported)
+	assert.True(s.T(), byEcosystem["Python"].Supported)
+	assert.False(s.T(), byEcosystem["JavaScript"].Supported)
 
 	var packages []models.CoverageReportPackage
 	err = s.tx.Where("coverage_report_uuid = ?", report.UUID).Order("name ASC").Find(&packages).Error
