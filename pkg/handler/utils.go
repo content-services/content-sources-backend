@@ -112,7 +112,7 @@ func enqueueTask(tc client.TaskClient, task queue.Task) (uuid.UUID, error) {
 }
 
 func enqueueUpdateSnapshotPublishedTask(c echo.Context, tc client.TaskClient, repoUUID, snapshotUUID string, published bool, dependencies ...uuid.UUID) (uuid.UUID, error) {
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 
 	task := queue.Task{
 		Typename:     config.UpdateSnapshotPublishedTask,
@@ -129,7 +129,7 @@ func enqueueUpdateSnapshotPublishedTask(c echo.Context, tc client.TaskClient, re
 }
 
 func enqueueUpdateLatestSnapshotTask(c echo.Context, tc client.TaskClient, repoUUID string, dependencies ...uuid.UUID) (uuid.UUID, error) {
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 
 	task := queue.Task{
 		Typename:     config.UpdateLatestSnapshotTask,
@@ -146,7 +146,7 @@ func enqueueUpdateLatestSnapshotTask(c echo.Context, tc client.TaskClient, repoU
 }
 
 func enqueueUpdateTemplateContentTask(c echo.Context, tc client.TaskClient, repoUUID, templateUUID, templateOrg string, dependencies ...uuid.UUID) (uuid.UUID, error) {
-	accountID, _ := getAccountIdOrgId(c)
+	accountID, _ := GetAccountIdOrgId(c)
 
 	task := queue.Task{
 		Typename:     config.UpdateTemplateContentTask,

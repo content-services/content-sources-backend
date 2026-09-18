@@ -44,7 +44,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "notification is required", "")
 	}
 
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	log.Error().Msg(req.Topic)
 	if req.Topic == config.Get().Options.LightwellBridgeTopic {
 		events := []event.NotificationEvent{}

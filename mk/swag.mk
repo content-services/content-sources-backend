@@ -27,15 +27,22 @@ $(SWAG):
 
 .PHONY: openapi-doc
 openapi-doc: install-swag ## Regenerate openapi json document and lint
-	$(SWAG) init --generalInfo api.go --o ./api --dir pkg/handler/ --pd pkg/api
+	$(SWAG) init --generalInfo api.go --output ./api --dir pkg/handler/ --exclude pkg/handler/lightwell --pd pkg/api
 	# Convert from swagger to openapi
 	go run ./cmd/swagger2openapi/main.go api/swagger.json api/openapi.json
 	rm ./api/swagger.json ./api/swagger.yaml
 	go run ./cmd/lint_openapi/main.go
+
+.PHONY: openapi-lightwell
+openapi-lightwell: install-swag ## Regenerate lightwell openapi spec
+	$(SWAG) init --output api/lightwell --instanceName lightwell --generalInfo api.go --dir pkg/handler/lightwell/ --pd pkg/api,pkg/errors --packageName lightwell
+	# Convert from swagger to openapi
+	go run ./cmd/swagger2openapi/main.go api/lightwell/lightwell_swagger.json api/lightwell/openapi.json
+	rm ./api/lightwell/lightwell_swagger.json ./api/lightwell/lightwell_swagger.yaml
 
 .PHONY: openapi-js
 openapi-js: 
 	$(DOCKER) run -v .:/backend:z $(OPENAPI_GENERATOR_IMAGE) generate -i backend/api/openapi.json  -g typescript-fetch -o backend/_playwright-tests/test-utils/src/client
 
 .PHONY: openapi
-openapi: openapi-doc openapi-js
+openapi: openapi-doc openapi-js openapi-lightwell

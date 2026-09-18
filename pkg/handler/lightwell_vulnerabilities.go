@@ -134,7 +134,7 @@ func (h *LightwellVulnerabilityHandler) listVulnerabilities(c echo.Context) erro
 			StatusCounts:  stageCountsToMap(stageCounts),
 		},
 	}
-	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&resp, c, total))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&resp, c, total))
 }
 
 func parseLightwellVulnerabilityListOptions(c echo.Context) (dao.ListLightwellVulnerabilitiesOptions, error) {

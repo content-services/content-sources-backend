@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/content-services/content-sources-backend/pkg/handler/lightwell"
 	"github.com/content-services/content-sources-backend/pkg/instrumentation"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -41,6 +42,7 @@ func ConfigureEcho(ctx context.Context, allRoutes bool) *echo.Echo {
 	handler.RegisterPing(e)
 	if allRoutes {
 		handler.RegisterRoutes(ctx, e)
+		lightwell.RegisterRoutes(ctx, e)
 	}
 
 	// Set error handler

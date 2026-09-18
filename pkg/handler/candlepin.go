@@ -40,7 +40,7 @@ func RegisterCandlepinRoutes(engine *echo.Group, cpClient *candlepin_client.Cand
 
 func (h *CandlepinHandler) subscriptionCheck(c echo.Context) error {
 	var resp api.SubscriptionCheckResponse
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	check, err := h.cache.GetSubscriptionCheck(c.Request().Context())
 	if err != nil && !errors.Is(err, cache.ErrNotFound) {

@@ -33,7 +33,7 @@ func RegisterUserPreferencesRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) 
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /user_preferences/ [get]
 func (h *UserPreferencesHandler) listUserPreferences(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	userID, err := getUserID(c)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (h *UserPreferencesHandler) setUserPreference(c echo.Context) error {
 		return err
 	}
 
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	userID, err := getUserID(c)
 	if err != nil {
 		return err
