@@ -4,7 +4,7 @@ type CreateUploadRequest struct {
 	Size      int64  `json:"size" validate:"required"`       // Size of the upload in bytes
 	ChunkSize int64  `json:"chunk_size" validate:"required"` // Size of the chunk
 	Sha256    string `json:"sha256" validate:"required"`     // SHA-256 checksum of the file
-	Resumable bool   `json:"resumable"`                      // if true, returns an already existing upload matching the same sha256 and chunk_size
+	Resumable bool   `json:"resumable" example:"true"`       // If true, reuse an existing upload with the same sha256, chunk_size, and size. Recommended for large files. If omitted, treated as false.
 }
 
 type PulpUploadChunkRequest struct {
