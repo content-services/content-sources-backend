@@ -6468,6 +6468,15 @@ const docTemplate = `{
                     "description": "Enable snapshotting and hosting of this repository",
                     "type": "boolean"
                 },
+                "snapshot_publish_state": {
+                    "description": "Aggregate publish state across all snapshots (partner repos only)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.SnapshotPublishState"
+                        }
+                    ],
+                    "readOnly": true
+                },
                 "status": {
                     "description": "Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)",
                     "type": "string"
@@ -6802,6 +6811,15 @@ const docTemplate = `{
                 "snapshot": {
                     "description": "Enable snapshotting and hosting of this repository",
                     "type": "boolean"
+                },
+                "snapshot_publish_state": {
+                    "description": "Aggregate publish state across all snapshots (partner repos only)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.SnapshotPublishState"
+                        }
+                    ],
+                    "readOnly": true
                 },
                 "status": {
                     "description": "Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)",
@@ -7278,6 +7296,27 @@ const docTemplate = `{
                 }
             }
         },
+        "api.SnapshotPublishState": {
+            "type": "object",
+            "properties": {
+                "published": {
+                    "description": "At least one snapshot is published with a completed publish task",
+                    "type": "boolean"
+                },
+                "publishing": {
+                    "description": "At least one snapshot with published=true has a pending/running task (publish in progress)",
+                    "type": "boolean"
+                },
+                "stopped": {
+                    "description": "At least one snapshot has a failed/canceled publish task",
+                    "type": "boolean"
+                },
+                "unpublishing": {
+                    "description": "At least one snapshot with published=false has a pending/running task (unpublish in progress)",
+                    "type": "boolean"
+                }
+            }
+        },
         "api.SnapshotPublishedUpdateRequest": {
             "type": "object",
             "required": [
@@ -7315,6 +7354,18 @@ const docTemplate = `{
                 },
                 "detected_os_version": {
                     "description": "Release version of the repository (BaseOS)",
+                    "type": "string"
+                },
+                "publish_task": {
+                    "description": "Status of the publish/unpublish task",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.TaskInfoResponse"
+                        }
+                    ]
+                },
+                "publish_task_uuid": {
+                    "description": "UUID of the publish/unpublish task",
                     "type": "string"
                 },
                 "published": {

@@ -26,6 +26,8 @@ type Snapshot struct {
 	RemovedCounts               ContentCountsType `json:"removed_counts" gorm:"not null,default:{}"`
 	DetectedOSVersion           string            `json:"detected_os_version" gorm:"not null"`
 	Published                   bool              `json:"published" gorm:"default:false"`
+	PublishTaskUUID             string            `json:"publish_task_uuid" gorm:"default:null"`
+	PublishTask                 *TaskInfo         `json:"publish_task,omitempty" gorm:"foreignKey:publish_task_uuid"`
 }
 
 type ContentCountsType map[string]int64
