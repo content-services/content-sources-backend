@@ -68,6 +68,19 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 		repos = filterReposByName(repos, filters.Repository)
 	}
 
+	// Fast path: when the filters resolve to a single repository there is no
+	// cross-repo merge to do, so push pagination down to Tang and take the count
+	// from its total instead of fetching every package.
+	if len(repos) == 1 {
+		paged, totalCount, err := h.fetchPackagesPage(c.Request().Context(), repos[0], filters.Name, page.SortBy, page.Offset, page.Limit)
+		if err != nil {
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
+		}
+		resp := api.LightwellPackageCollectionResponse{Data: paged}
+		collResp := setCollectionResponseMetadata(&resp, c, totalCount)
+		return c.JSON(http.StatusOK, collResp)
+	}
+
 	items, err := h.aggregatePackages(c.Request().Context(), repos, filters.Name)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
@@ -79,6 +92,63 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 	resp := api.LightwellPackageCollectionResponse{Data: paged}
 	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
+}
+
+// tangSortBy translates the handler's sort_by ("<field> [asc|desc]") into the
+// sort string passed to Tang via PageOptions.SortBy. It returns "" for the
+// default sort so Tang uses its natural ordering. Tang does not yet honor this
+// field for package lists (see tangSupportsPackageSort); forwarding it here means
+// the fast path works unchanged once tang implements server-side sorting.
+func tangSortBy(sortBy string) string {
+	if sortBy == "" {
+		return ""
+	}
+	field, dir := parseSortBy(sortBy)
+	if field == "" {
+		field = "name"
+	}
+	return field + " " + dir
+}
+
+// fetchPackagesPage fetches a single page of packages for one repo directly from
+// Tang, returning the mapped items and the repo's total package count.
+func (h *LightwellPackagesHandler) fetchPackagesPage(ctx context.Context, repo api.RepositoryResponse, nameSearch, sortBy string, offset, limit int) ([]api.LightwellPackageResponse, int64, error) {
+	if repo.PublishedDistBasePath == "" {
+		return []api.LightwellPackageResponse{}, 0, nil
+	}
+
+	repositoryHref, err := h.resolveRepositoryHref(ctx, repo)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	pageOpts := tangy.PageOptions{Offset: offset, Limit: limit, SortBy: tangSortBy(sortBy)}
+
+	switch repo.ContentType {
+	case config.ContentTypeMaven:
+		tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, pageOpts)
+		if err != nil {
+			return nil, 0, err
+		}
+		return mapMavenToLightwellPackages(tangResp, repo), int64(tangResp.Total), nil
+
+	case config.ContentTypePython:
+		tangResp, err := h.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: nameSearch}, pageOpts)
+		if err != nil {
+			return nil, 0, err
+		}
+		return mapPythonToLightwellPackages(tangResp, repo), int64(tangResp.Total), nil
+
+	case config.ContentTypeNpm:
+		tangResp, err := h.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: nameSearch}, pageOpts)
+		if err != nil {
+			return nil, 0, err
+		}
+		return mapNpmToLightwellPackages(tangResp, repo), int64(tangResp.Total), nil
+
+	default:
+		return []api.LightwellPackageResponse{}, 0, nil
+	}
 }
 
 // listLightwellPackageVersions godoc
@@ -211,6 +281,31 @@ func (h *LightwellPackagesHandler) aggregatePackages(ctx context.Context, repos 
 	return combined, nil
 }
 
+// fetchAllPages repeatedly calls fetchPage with an increasing offset until every
+// package reported by Tang has been retrieved, merging the mapped items. This
+// avoids silently truncating repos that hold more than MaxLimit packages.
+//
+// fetchPage returns the mapped items for the page, the number of raw packages in
+// the page (used to advance the offset — this may differ from len(items) when a
+// package expands into multiple items), and the total package count reported by
+// Tang.
+func fetchAllPages[T any](fetchPage func(offset, limit int) (items []T, pageCount, total int, err error)) ([]T, error) {
+	var all []T
+	offset := 0
+	for {
+		items, pageCount, total, err := fetchPage(offset, MaxLimit)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, items...)
+		offset += pageCount
+		if pageCount == 0 || offset >= total {
+			break
+		}
+	}
+	return all, nil
+}
+
 func (h *LightwellPackagesHandler) fetchPackagesFromRepo(ctx context.Context, repo api.RepositoryResponse, nameSearch string) ([]api.LightwellPackageResponse, error) {
 	if repo.PublishedDistBasePath == "" {
 		return nil, nil
@@ -221,30 +316,33 @@ func (h *LightwellPackagesHandler) fetchPackagesFromRepo(ctx context.Context, re
 		return nil, err
 	}
 
-	// Fetch all packages from this repo (no server-side pagination — small datasets)
-	pageOpts := tangy.PageOptions{Offset: 0, Limit: MaxLimit}
-
 	switch repo.ContentType {
 	case config.ContentTypeMaven:
-		tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, pageOpts)
-		if err != nil {
-			return nil, err
-		}
-		return mapMavenToLightwellPackages(tangResp, repo), nil
+		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageResponse, int, int, error) {
+			tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			if err != nil {
+				return nil, 0, 0, err
+			}
+			return mapMavenToLightwellPackages(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+		})
 
 	case config.ContentTypePython:
-		tangResp, err := h.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: nameSearch}, pageOpts)
-		if err != nil {
-			return nil, err
-		}
-		return mapPythonToLightwellPackages(tangResp, repo), nil
+		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageResponse, int, int, error) {
+			tangResp, err := h.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			if err != nil {
+				return nil, 0, 0, err
+			}
+			return mapPythonToLightwellPackages(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+		})
 
 	case config.ContentTypeNpm:
-		tangResp, err := h.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: nameSearch}, pageOpts)
-		if err != nil {
-			return nil, err
-		}
-		return mapNpmToLightwellPackages(tangResp, repo), nil
+		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageResponse, int, int, error) {
+			tangResp, err := h.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			if err != nil {
+				return nil, 0, 0, err
+			}
+			return mapNpmToLightwellPackages(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+		})
 
 	default:
 		return nil, nil
@@ -303,29 +401,33 @@ func (h *LightwellPackagesHandler) fetchVersionsFromRepo(ctx context.Context, re
 		return nil, err
 	}
 
-	pageOpts := tangy.PageOptions{Offset: 0, Limit: MaxLimit}
-
 	switch repo.ContentType {
 	case config.ContentTypeMaven:
-		tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, pageOpts)
-		if err != nil {
-			return nil, err
-		}
-		return expandMavenVersions(tangResp, repo), nil
+		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageVersionResponse, int, int, error) {
+			tangResp, err := h.TangClient.MavenPackageList(ctx, repositoryHref, tangy.MavenPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			if err != nil {
+				return nil, 0, 0, err
+			}
+			return expandMavenVersions(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+		})
 
 	case config.ContentTypePython:
-		tangResp, err := h.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: nameSearch}, pageOpts)
-		if err != nil {
-			return nil, err
-		}
-		return expandPythonVersions(tangResp, repo), nil
+		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageVersionResponse, int, int, error) {
+			tangResp, err := h.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			if err != nil {
+				return nil, 0, 0, err
+			}
+			return expandPythonVersions(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+		})
 
 	case config.ContentTypeNpm:
-		tangResp, err := h.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: nameSearch}, pageOpts)
-		if err != nil {
-			return nil, err
-		}
-		return expandNpmVersions(tangResp, repo), nil
+		return fetchAllPages(func(offset, limit int) ([]api.LightwellPackageVersionResponse, int, int, error) {
+			tangResp, err := h.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: nameSearch}, tangy.PageOptions{Offset: offset, Limit: limit})
+			if err != nil {
+				return nil, 0, 0, err
+			}
+			return expandNpmVersions(tangResp, repo), len(tangResp.Results), tangResp.Total, nil
+		})
 
 	default:
 		return nil, nil
@@ -651,20 +753,28 @@ func sortLightwellPackages(items []api.LightwellPackageResponse, sortBy string) 
 	sort.SliceStable(items, func(i, j int) bool {
 		var less bool
 		switch field {
-		case "name":
-			less = items[i].Name < items[j].Name
 		case "ecosystem":
 			less = items[i].Ecosystem < items[j].Ecosystem
 		case "repository":
 			less = items[i].Repository < items[j].Repository
-		default:
-			less = items[i].Name < items[j].Name
+		default: // "name" (and default): match Tang's (group, name) ordering
+			less = lessByGroupName(items[i].Group, items[i].Name, items[j].Group, items[j].Name)
 		}
 		if dir == "desc" {
 			return !less
 		}
 		return less
 	})
+}
+
+// lessByGroupName orders by group then name, matching Tang's native ordering
+// (Maven: group_id, artifact_id; Python/npm have an empty group so this reduces
+// to name ordering).
+func lessByGroupName(groupA, nameA, groupB, nameB string) bool {
+	if groupA != groupB {
+		return groupA < groupB
+	}
+	return nameA < nameB
 }
 
 func sortLightwellVersions(items []api.LightwellPackageVersionResponse, sortBy string) {
@@ -675,16 +785,20 @@ func sortLightwellVersions(items []api.LightwellPackageVersionResponse, sortBy s
 	sort.SliceStable(items, func(i, j int) bool {
 		var less bool
 		switch field {
-		case "name":
-			less = items[i].Name < items[j].Name
 		case "version":
 			less = items[i].Version < items[j].Version
 		case "ecosystem":
 			less = items[i].Ecosystem < items[j].Ecosystem
 		case "repository":
 			less = items[i].Repository < items[j].Repository
-		default:
-			less = items[i].Name < items[j].Name
+		default: // "name" (and default): match Tang's (group, name, version) ordering
+			if items[i].Group != items[j].Group {
+				less = items[i].Group < items[j].Group
+			} else if items[i].Name != items[j].Name {
+				less = items[i].Name < items[j].Name
+			} else {
+				less = items[i].Version < items[j].Version
+			}
 		}
 		if dir == "desc" {
 			return !less
