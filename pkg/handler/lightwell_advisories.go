@@ -23,7 +23,7 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 		DaoRegistry:          *daoReg,
 		FeatureServiceClient: *fsClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.list, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.ListAdvisories, rbac.RbacVerbRead)
 }
 
 // listLightwellAdvisories godoc
@@ -43,14 +43,14 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/advisories [get]
-func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+func (h *LightwellAdvisoryHandler) ListAdvisories(c echo.Context) error {
+	_, orgID := GetAccountIdOrgId(c)
 
 	features, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
 	if err != nil {
 		log.Error().Err(err).Msg("error checking entitled features")
 		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
-		collResp := setCollectionResponseMetadata(&resp, c, 0)
+		collResp := SetCollectionResponseMetadata(&resp, c, 0)
 		return c.JSON(http.StatusOK, collResp)
 	}
 
@@ -62,7 +62,7 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	}
 	if len(lightwellFeatures) == 0 {
 		resp := api.LightwellAdvisoryCollectionResponse{Data: []api.LightwellAdvisoryResponse{}}
-		collResp := setCollectionResponseMetadata(&resp, c, 0)
+		collResp := SetCollectionResponseMetadata(&resp, c, 0)
 		return c.JSON(http.StatusOK, collResp)
 	}
 
@@ -91,7 +91,7 @@ func (h *LightwellAdvisoryHandler) list(c echo.Context) error {
 	}
 
 	resp := api.LightwellAdvisoryCollectionResponse{Data: data}
-	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
+	collResp := SetCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
 }
 

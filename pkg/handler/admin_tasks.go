@@ -64,7 +64,7 @@ func (adminTaskHandler *AdminTaskHandler) listTasks(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing tasks", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&tasks, c, totalTasks))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&tasks, c, totalTasks))
 }
 
 func (adminTaskHandler *AdminTaskHandler) fetch(c echo.Context) error {
@@ -93,7 +93,7 @@ func (adminTaskHandler *AdminTaskHandler) listFeatures(c echo.Context) error {
 
 func (adminTaskHandler *AdminTaskHandler) listContentForFeature(c echo.Context) error {
 	name := c.Param("name")
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	resp, statusCode, err := adminTaskHandler.FeatureServiceClient.ListFeatures(c.Request().Context())
 	if err != nil {

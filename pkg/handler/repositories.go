@@ -75,7 +75,7 @@ func RegisterRepositoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addRepoRoute(engine, http.MethodPost, "/repositories/:uuid/rpms/bulk_remove/", rh.bulkRemoveRpms, rbac.RbacVerbWrite)
 }
 
-func getAccountIdOrgId(c echo.Context) (string, string) {
+func GetAccountIdOrgId(c echo.Context) (string, string) {
 	data := identity.GetIdentity(c.Request().Context())
 	return data.Identity.AccountNumber, data.Identity.Internal.OrgID
 }
@@ -112,7 +112,7 @@ func getAccountIdOrgId(c echo.Context) (string, string) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/ [get]
 func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	c.Logger().Infof("org_id: %s", orgID)
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
@@ -124,7 +124,7 @@ func (rh *RepositoryHandler) listRepositories(c echo.Context) error {
 
 	rh.enrichLightwellRepoCounts(c, &repos)
 
-	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
+	return c.JSON(200, SetCollectionResponseMetadata(&repos, c, totalRepos))
 }
 
 // enrichLightwellRepoCounts populates advisory_count on Lightwell-origin
@@ -177,7 +177,7 @@ func (rh *RepositoryHandler) createRepository(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding params", err.Error())
 	}
 
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 	newRepository.FillDefaults(&accountID, &orgID)
 
 	if err = rh.CheckSnapshotForRepo(c, newRepository.Snapshot); err != nil {
@@ -227,7 +227,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error creating repositories", limitErrMsg)
 	}
 
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 	for i := 0; i < len(newRepositories); i++ {
 		newRepositories[i].FillDefaults(&accountID, &orgID)
 	}
@@ -269,7 +269,7 @@ func (rh *RepositoryHandler) bulkCreateRepositories(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid} [get]
 func (rh *RepositoryHandler) fetch(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	features, err := rh.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
@@ -332,7 +332,7 @@ func (rh *RepositoryHandler) partialUpdate(c echo.Context) error {
 func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 	uuid := c.Param("uuid")
 	repoParams := api.RepositoryUpdateRequest{}
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	if err := c.Bind(&repoParams); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -394,7 +394,7 @@ func (rh *RepositoryHandler) update(c echo.Context, fillDefaults bool) error {
 // @Failure      	500 {object} ce.ErrorResponse
 // @Router			/repositories/{uuid} [delete]
 func (rh *RepositoryHandler) deleteRepository(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	repoConfig, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
@@ -447,7 +447,7 @@ func (rh *RepositoryHandler) bulkDeleteRepositories(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error deleting repositories", limitErrMsg)
 	}
 
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	responses := make([]api.RepositoryResponse, len(uuids))
 	hasErr := false
@@ -500,7 +500,7 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 		return err
 	}
 	uuid := c.Param("uuid")
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	response, err := rh.DaoRegistry.RepositoryConfig.Fetch(c.Request().Context(), orgID, uuid)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching repository", err.Error())
@@ -551,7 +551,7 @@ func (rh *RepositoryHandler) createSnapshot(c echo.Context) error {
 func (rh *RepositoryHandler) introspect(c echo.Context) error {
 	var req api.RepositoryIntrospectRequest
 
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	if err := c.Bind(&req); err != nil {
@@ -633,7 +633,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Failure         500 {object} ce.ErrorResponse
 // @Router          /repositories/uploads/ [post]
 func (rh *RepositoryHandler) createUpload(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	ph := &PulpHandler{
 		DaoRegistry: rh.DaoRegistry,
 	}
@@ -736,7 +736,7 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 	var req api.UploadChunkRequest
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	uploadUuid := c.Param("upload_uuid")
 
 	if err := c.Bind(&req); err != nil {
@@ -795,7 +795,7 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 func (rh *RepositoryHandler) addUploads(c echo.Context) error {
 	var req api.AddUploadsRequest
 
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	if err := c.Bind(&req); err != nil {
@@ -873,7 +873,7 @@ func (rh *RepositoryHandler) getGpgKeyFile(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/bulk_export/ [post]
 func (rh *RepositoryHandler) bulkExportRepositories(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	var reposToExport api.RepositoryExportRequest
 	if err := c.Bind(&reposToExport); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -904,7 +904,7 @@ func (rh *RepositoryHandler) bulkExportRepositories(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/bulk_import/ [post]
 func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 	var reposToImport []api.RepositoryRequest
 	if err := c.Bind(&reposToImport); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -963,7 +963,7 @@ func (rh *RepositoryHandler) bulkImportRepositories(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router		 /repositories/{uuid}/rpms/bulk_remove/ [post]
 func (rh *RepositoryHandler) bulkRemoveRpms(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	repositoryUuid := c.Param("uuid")
 
 	var req api.BulkRemoveRpmsRequest

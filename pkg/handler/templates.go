@@ -73,7 +73,7 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 	if err := c.Bind(&newTemplate); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding params", err.Error())
 	}
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	newTemplate.OrgID = &orgID
 
 	user := getUser(c)
@@ -106,7 +106,7 @@ func (th *TemplateHandler) createTemplate(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /templates/{uuid} [get]
 func (th *TemplateHandler) fetch(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	resp, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid, false)
@@ -142,7 +142,7 @@ func (th *TemplateHandler) fetch(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /templates/ [get]
 func (th *TemplateHandler) listTemplates(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	pageData := ParsePagination(c)
 	filterData := ParseTemplateFilters(c)
 
@@ -150,7 +150,7 @@ func (th *TemplateHandler) listTemplates(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing templates", err.Error())
 	}
-	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&templates, c, total))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&templates, c, total))
 }
 
 // FullUpdateTemplate godoc
@@ -198,7 +198,7 @@ func (th *TemplateHandler) partialUpdate(c echo.Context) error {
 func (th *TemplateHandler) update(c echo.Context, fillDefaults bool) error {
 	uuid := c.Param("uuid")
 	tempParams := api.TemplateUpdateRequest{}
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	user := getUser(c)
 	tempParams.User = &user
@@ -277,7 +277,7 @@ func ParseTemplateFilters(c echo.Context) api.TemplateFilterData {
 // @Failure      	500 {object} ce.ErrorResponse
 // @Router			/templates/{uuid} [delete]
 func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	uuid := c.Param("uuid")
 
 	template, err := th.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid, false)
@@ -318,7 +318,7 @@ func (th *TemplateHandler) deleteTemplate(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /templates/{template_uuid}/config.repo [get]
 func (th *TemplateHandler) getTemplateRepoConfigurationFile(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	templateUUID := c.Param("template_uuid")
 
 	templateRepoConfigFiles, err := th.DaoRegistry.Template.GetRepositoryConfigurationFile(c.Request().Context(), orgID, templateUUID)
@@ -343,7 +343,7 @@ func (th *TemplateHandler) getTemplateRepoConfigurationFile(c echo.Context) erro
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /templates/{uuid}/advisories/ids [get]
 func (th *TemplateHandler) fetchTemplateAdvisoryIDs(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	templateUUID := c.Param("uuid")
 
 	advisoryIDs, err := th.DaoRegistry.Rpm.FetchTemplateErrataIDs(c.Request().Context(), orgID, templateUUID)
@@ -356,7 +356,7 @@ func (th *TemplateHandler) fetchTemplateAdvisoryIDs(c echo.Context) error {
 }
 
 func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID string, template api.TemplateResponse) error {
-	accountID, _ := getAccountIdOrgId(c)
+	accountID, _ := GetAccountIdOrgId(c)
 	payload := tasks.DeleteTemplatesPayload{TemplateUUID: template.UUID, RepoConfigUUIDs: template.RepositoryUUIDS}
 	task := queue.Task{
 		Typename:   config.DeleteTemplatesTask,
@@ -378,7 +378,7 @@ func (th *TemplateHandler) enqueueTemplateDeleteEvent(c echo.Context, orgID stri
 }
 
 func (th *TemplateHandler) enqueueUpdateTemplateContentEvent(c echo.Context, template api.TemplateResponse) uuid.UUID {
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 	payload := payloads.UpdateTemplateContentPayload{TemplateUUID: template.UUID, RepoConfigUUIDs: template.RepositoryUUIDS}
 	task := queue.Task{
 		Typename:   config.UpdateTemplateContentTask,

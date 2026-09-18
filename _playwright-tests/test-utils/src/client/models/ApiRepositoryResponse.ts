@@ -41,6 +41,12 @@ export interface ApiRepositoryResponse {
      */
     readonly accountId?: string;
     /**
+     * Lightwell: total security advisories
+     * @type {number}
+     * @memberof ApiRepositoryResponse
+     */
+    readonly advisoryCount?: number;
+    /**
      * Number of builds last read in the repository, not applicable to all repositories
      * @type {number}
      * @memberof ApiRepositoryResponse
@@ -270,6 +276,7 @@ export function ApiRepositoryResponseFromJSONTyped(json: any, ignoreDiscriminato
     return {
         
         'accountId': json['account_id'] == null ? undefined : json['account_id'],
+        'advisoryCount': json['advisory_count'] == null ? undefined : json['advisory_count'],
         'buildCount': json['build_count'] == null ? undefined : json['build_count'],
         'contentType': json['content_type'] == null ? undefined : json['content_type'],
         'distributionArch': json['distribution_arch'] == null ? undefined : json['distribution_arch'],
@@ -312,7 +319,7 @@ export function ApiRepositoryResponseToJSON(json: any): ApiRepositoryResponse {
     return ApiRepositoryResponseToJSONTyped(json, false);
 }
 
-export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
+export function ApiRepositoryResponseToJSONTyped(value?: Omit<ApiRepositoryResponse, 'account_id'|'advisory_count'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
