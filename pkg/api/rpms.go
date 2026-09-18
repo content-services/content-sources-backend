@@ -3,14 +3,14 @@ package api
 import "github.com/lib/pq"
 
 type RepositoryRpm struct {
-	UUID     string `json:"uuid"`     // Identifier of the rpm
-	Name     string `json:"name"`     // The rpm package name
-	Arch     string `json:"arch"`     // The architecture of the rpm
-	Version  string `json:"version"`  // The version of the  rpm
-	Release  string `json:"release"`  // The release of the rpm
-	Epoch    int32  `json:"epoch"`    // The epoch of the rpm
-	Summary  string `json:"summary"`  // The summary of the rpm
-	Checksum string `json:"checksum"` // The checksum of the rpm
+	UUID     string `json:"uuid,omitempty"` // Identifier of the rpm (not present for foreign partner repo rpms)
+	Name     string `json:"name"`           // The rpm package name
+	Arch     string `json:"arch"`           // The architecture of the rpm
+	Version  string `json:"version"`        // The version of the  rpm
+	Release  string `json:"release"`        // The release of the rpm
+	Epoch    int32  `json:"epoch"`          // The epoch of the rpm
+	Summary  string `json:"summary"`        // The summary of the rpm
+	Checksum string `json:"checksum"`       // The checksum of the rpm
 }
 
 type SnapshotRpm struct {

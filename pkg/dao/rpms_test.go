@@ -3,11 +3,13 @@ package dao
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/roadmap_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
@@ -16,6 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/content-services/yummy/pkg/yum"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
@@ -1698,6 +1701,333 @@ func (s *RpmSuite) TestReadableRepositoryQueryPartnerVisibility() {
 	err = readableRepositoryQuery(s.tx, viewerOrg, []string{}, uuids).Pluck("repositories.uuid", &repoUUIDs).Error
 	require.NoError(t, err)
 	assert.Contains(t, repoUUIDs, partnerRepo.UUID)
+}
+
+func (s *RpmSuite) TestRpmListForeignPartner() {
+	t := s.T()
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+	domainName := "domain-" + uuid.NewString()
+
+	require.NoError(t, s.tx.Create(&models.Domain{OrgId: ownerOrg, DomainName: domainName}).Error)
+
+	partnerRepo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		Origin:      config.OriginUpload,
+		ContentType: config.ContentTypeRpm,
+		Public:      false,
+	}
+	require.NoError(t, s.tx.Create(&partnerRepo).Error)
+	partnerRepoConfig := createTestPartnerRepoConfig(t, s.tx, partnerRepo, ownerOrg, "foreign partner rpm repo", true)
+
+	// A newer, unpublished snapshot must be ignored in favor of the latest published one.
+	require.NoError(t, s.tx.Create(&models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/published",
+		PublicationHref:             "/pulp/publication/published",
+		DistributionPath:            "/content/published",
+		RepositoryPath:              "/content/published",
+		DistributionHref:            "/pulp/distribution/published",
+		RepositoryConfigurationUUID: partnerRepoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}).Error)
+	require.NoError(t, s.tx.Create(&models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/unpublished",
+		PublicationHref:             "/pulp/publication/unpublished",
+		DistributionPath:            "/content/unpublished",
+		RepositoryPath:              "/content/unpublished",
+		DistributionHref:            "/pulp/distribution/unpublished",
+		RepositoryConfigurationUUID: partnerRepoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   false,
+	}).Error)
+
+	pulpPkgs := []zest.RpmPackageResponse{{
+		Name:    utils.Ptr("partner-pkg"),
+		Arch:    utils.Ptr("x86_64"),
+		Version: utils.Ptr("1.0"),
+		Release: utils.Ptr("1"),
+		Epoch:   utils.Ptr("2"),
+		Summary: utils.Ptr("partner package"),
+		Sha256:  utils.Ptr("abc123checksum"),
+	}}
+
+	mockPulp := pulp_client.NewMockPulpClient(t)
+	mockPulp.On("WithDomain", domainName).Return(mockPulp)
+	mockPulp.On("ListVersionPackagesWithFilters", ctx, "/pulp/version/published", int32(0), int32(100), "part", []string{"name"}).
+		Return(pulpPkgs, 1, nil)
+
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+	impl, ok := dao.(*rpmDaoImpl)
+	require.True(t, ok)
+	impl.pulpClient = mockPulp
+
+	resp, total, err := dao.List(ctx, viewerOrg, partnerRepoConfig.UUID, 100, 0, "part", "name:asc")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, resp.Data, 1)
+	assert.Equal(t, "partner-pkg", resp.Data[0].Name)
+	assert.Equal(t, "abc123checksum", resp.Data[0].Checksum)
+	assert.Equal(t, int32(2), resp.Data[0].Epoch)
+	// UUID must not be exposed for foreign partner views (served from Pulp).
+	assert.Empty(t, resp.Data[0].UUID)
+}
+
+func (s *RpmSuite) TestRpmListForeignNonPartnerNotFound() {
+	t := s.T()
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	repo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		Origin:      config.OriginUpload,
+		ContentType: config.ContentTypeRpm,
+	}
+	require.NoError(t, s.tx.Create(&repo).Error)
+	repoConfig := createTestPartnerRepoConfig(t, s.tx, repo, ownerOrg, "foreign non-partner repo", false)
+
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+	_, _, err := dao.List(ctx, viewerOrg, repoConfig.UUID, 100, 0, "", "")
+	require.Error(t, err)
+	daoErr, ok := err.(*ce.DaoError)
+	require.True(t, ok)
+	assert.True(t, daoErr.NotFound)
+}
+
+func (s *RpmSuite) TestRpmListForeignPartnerNoPublishedSnapshot() {
+	t := s.T()
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+
+	partnerRepo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		Origin:      config.OriginUpload,
+		ContentType: config.ContentTypeRpm,
+		Public:      false,
+	}
+	require.NoError(t, s.tx.Create(&partnerRepo).Error)
+	partnerRepoConfig := createTestPartnerRepoConfig(t, s.tx, partnerRepo, ownerOrg, "partner repo no published snap", true)
+
+	// Add only an unpublished snapshot
+	require.NoError(t, s.tx.Create(&models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/unpublished",
+		PublicationHref:             "/pulp/publication/unpublished",
+		DistributionPath:            "/content/unpublished",
+		RepositoryPath:              "/content/unpublished",
+		DistributionHref:            "/pulp/distribution/unpublished",
+		RepositoryConfigurationUUID: partnerRepoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   false,
+	}).Error)
+
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+	_, total, err := dao.List(ctx, viewerOrg, partnerRepoConfig.UUID, 100, 0, "", "")
+	require.Error(t, err)
+	assert.Equal(t, int64(0), total)
+	daoErr, ok := err.(*ce.DaoError)
+	require.True(t, ok)
+	assert.True(t, daoErr.NotFound)
+}
+
+func (s *RpmSuite) TestRpmListForeignPartnerPulpError() {
+	t := s.T()
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+	domainName := "domain-" + uuid.NewString()
+
+	require.NoError(t, s.tx.Create(&models.Domain{OrgId: ownerOrg, DomainName: domainName}).Error)
+
+	partnerRepo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		Origin:      config.OriginUpload,
+		ContentType: config.ContentTypeRpm,
+		Public:      false,
+	}
+	require.NoError(t, s.tx.Create(&partnerRepo).Error)
+	partnerRepoConfig := createTestPartnerRepoConfig(t, s.tx, partnerRepo, ownerOrg, "partner repo pulp error", true)
+
+	require.NoError(t, s.tx.Create(&models.Snapshot{
+		Base:                        models.Base{UUID: uuid.NewString()},
+		VersionHref:                 "/pulp/version/published",
+		PublicationHref:             "/pulp/publication/published",
+		DistributionPath:            "/content/published",
+		RepositoryPath:              "/content/published",
+		DistributionHref:            "/pulp/distribution/published",
+		RepositoryConfigurationUUID: partnerRepoConfig.UUID,
+		ContentCounts:               models.ContentCountsType{},
+		AddedCounts:                 models.ContentCountsType{},
+		RemovedCounts:               models.ContentCountsType{},
+		Published:                   true,
+	}).Error)
+
+	mockPulp := pulp_client.NewMockPulpClient(t)
+	mockPulp.On("WithDomain", domainName).Return(mockPulp)
+	mockPulp.On("ListVersionPackagesWithFilters", ctx, "/pulp/version/published", int32(0), int32(100), "", []string{"name"}).
+		Return(nil, 0, fmt.Errorf("pulp connection failure"))
+
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+	impl, ok := dao.(*rpmDaoImpl)
+	require.True(t, ok)
+	impl.pulpClient = mockPulp
+
+	_, _, err := dao.List(ctx, viewerOrg, partnerRepoConfig.UUID, 100, 0, "", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error listing packages for partner snapshot")
+	assert.Contains(t, err.Error(), "pulp connection failure")
+}
+
+func (s *RpmSuite) TestRpmListForeignPartnerInvalidPagination() {
+	t := s.T()
+	ctx := context.Background()
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+	partnerRepo := models.Repository{
+		Base:        models.Base{UUID: uuid.NewString()},
+		Origin:      config.OriginUpload,
+		ContentType: config.ContentTypeRpm,
+	}
+	require.NoError(t, s.tx.Create(&partnerRepo).Error)
+	partnerRepoConfig := createTestPartnerRepoConfig(t, s.tx, partnerRepo, ownerOrg, "invalid pagination partner repo", true)
+
+	testCases := []struct {
+		name   string
+		limit  int
+		offset int
+		want   string
+	}{
+		{name: "negative limit", limit: -1, offset: 0, want: "non-negative"},
+		{name: "negative offset", limit: 100, offset: -1, want: "non-negative"},
+		{name: "limit exceeds int32", limit: int(math.MaxInt32) + 1, offset: 0, want: "less than or equal"},
+		{name: "offset exceeds int32", limit: 100, offset: int(math.MaxInt32) + 1, want: "less than or equal"},
+	}
+
+	for _, testCase := range testCases {
+		s.Run(testCase.name, func() {
+			dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+			_, _, err := dao.List(ctx, viewerOrg, partnerRepoConfig.UUID, testCase.limit, testCase.offset, "", "")
+
+			var daoErr *ce.DaoError
+			require.ErrorAs(t, err, &daoErr)
+			assert.True(t, daoErr.BadValidation)
+			assert.Contains(t, daoErr.Error(), testCase.want)
+		})
+	}
+}
+
+func (s *RpmSuite) TestRpmListOwnedNegativePagination() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+
+	for _, testCase := range []struct {
+		name   string
+		limit  int
+		offset int
+	}{
+		{name: "negative limit", limit: -1, offset: 0},
+		{name: "negative offset", limit: 100, offset: -1},
+	} {
+		s.Run(testCase.name, func() {
+			_, _, err := dao.List(ctx, orgIDTest, s.repoConfig.UUID, testCase.limit, testCase.offset, "", "")
+
+			var daoErr *ce.DaoError
+			require.ErrorAs(t, err, &daoErr)
+			assert.True(t, daoErr.BadValidation)
+			assert.Equal(t, "limit and offset must be non-negative", daoErr.Error())
+		})
+	}
+}
+
+func (s *RpmSuite) TestRpmListEmptyOrgId() {
+	t := s.T()
+	ctx := context.Background()
+
+	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
+	_, _, err := dao.List(ctx, "", uuid.NewString(), 100, 0, "", "")
+	require.Error(t, err)
+	assert.Equal(t, "orgID cannot be an empty string", err.Error())
+}
+
+func (s *RpmSuite) TestPulpPackageToRepositoryRpm() {
+	t := s.T()
+
+	testCases := []struct {
+		name          string
+		input         zest.RpmPackageResponse
+		expectedEpoch int32
+	}{
+		{
+			name: "valid numeric epoch",
+			input: zest.RpmPackageResponse{
+				Name:    utils.Ptr("kernel"),
+				Arch:    utils.Ptr("x86_64"),
+				Version: utils.Ptr("5.14.0"),
+				Release: utils.Ptr("1.el9"),
+				Epoch:   utils.Ptr("2"),
+				Summary: utils.Ptr("Linux Kernel"),
+				Sha256:  utils.Ptr("sha256checksum"),
+			},
+			expectedEpoch: 2,
+		},
+		{
+			name: "zero epoch string",
+			input: zest.RpmPackageResponse{
+				Epoch: utils.Ptr("0"),
+			},
+			expectedEpoch: 0,
+		},
+		{
+			name: "non-numeric epoch string falls back to 0",
+			input: zest.RpmPackageResponse{
+				Epoch: utils.Ptr("invalid"),
+			},
+			expectedEpoch: 0,
+		},
+		{
+			name: "empty epoch string falls back to 0",
+			input: zest.RpmPackageResponse{
+				Epoch: utils.Ptr(""),
+			},
+			expectedEpoch: 0,
+		},
+		{
+			name:          "nil epoch falls back to 0",
+			input:         zest.RpmPackageResponse{},
+			expectedEpoch: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			rpm := pulpPackageToRepositoryRpm(tc.input)
+			assert.Equal(t, tc.expectedEpoch, rpm.Epoch)
+			assert.Empty(t, rpm.UUID)
+			assert.Equal(t, tc.input.GetName(), rpm.Name)
+			assert.Equal(t, tc.input.GetArch(), rpm.Arch)
+			assert.Equal(t, tc.input.GetVersion(), rpm.Version)
+			assert.Equal(t, tc.input.GetRelease(), rpm.Release)
+			assert.Equal(t, tc.input.GetSummary(), rpm.Summary)
+			assert.Equal(t, tc.input.GetSha256(), rpm.Checksum)
+		})
+	}
 }
 
 func makeErrataListItems(count int) []tangy.ErrataListItem {

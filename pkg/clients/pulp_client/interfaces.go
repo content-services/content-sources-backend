@@ -50,6 +50,7 @@ type PulpClient interface {
 	CreatePackage(ctx context.Context, artifactHref *string, uploadHref *string) (string, error)
 	LookupPackage(ctx context.Context, sha256sum string) (*string, error)
 	ListVersionAllPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error)
+	ListVersionPackagesWithFilters(ctx context.Context, versionHref string, offset, limit int32, search string, ordering []string) (pkgs []zest.RpmPackageResponse, total int, err error)
 
 	// Rpm Repository
 	CreateRpmRepository(ctx context.Context, uuid string, rpmRemotePulpRef *string) (*zest.RpmRpmRepositoryResponse, error)
