@@ -53,7 +53,7 @@ type RepositoryRequest struct {
 	UUID                   *string   `json:"uuid" readonly:"true" swaggerignore:"true"`
 	AccountID              *string   `json:"account_id" readonly:"true" swaggerignore:"true"`   // Account ID of the owner
 	OrgID                  *string   `json:"org_id" readonly:"true" swaggerignore:"true"`       // Organization ID of the owner
-	Origin                 *string   `json:"origin" readonly:"true"`                            // Origin of the repository
+	Origin                 *string   `json:"origin" enums:"external,upload"`                    // Origin of the repository (`external` or `upload`). Defaults to `external`. Set to `upload` for repositories that receive uploaded RPMs.
 	ContentType            *string   `json:"content_type" readonly:"true" swaggerignore:"true"` // Content Type (rpm) of the repository
 	Name                   *string   `json:"name" validate:"required"`                          // Name of the remote yum repository
 	URL                    *string   `json:"url"`                                               // URL of the remote yum repository

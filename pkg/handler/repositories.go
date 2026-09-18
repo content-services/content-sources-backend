@@ -627,7 +627,7 @@ func (rh *RepositoryHandler) introspect(c echo.Context) error {
 // @Accept          json
 // @Produce         json
 // @Param           body            body    api.CreateUploadRequest			true  "request body"
-// @Success         200 {object} api.UploadResponse
+// @Success         201 {object} api.UploadResponse
 // @Failure         400 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse
 // @Failure         500 {object} ce.ErrorResponse
@@ -728,7 +728,7 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 // @Param           file                   formData file   true  "file chunk"
 // @Param           sha256                 formData string true  "sha256"
 // @Param           Content-Range          header   string true  "Content-Range header"
-// @Success         200 {object} api.UploadResponse
+// @Success         201 {object} api.UploadResponse
 // @Failure         400 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse
 // @Failure         500 {object} ce.ErrorResponse
@@ -786,7 +786,7 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 // @Accept          json
 // @Param  			uuid            path    string                          true   "Repository ID."
 // @Param			body            body    api.AddUploadsRequest			true  "request body"
-// @Success			200 {object} api.TaskInfoResponse
+// @Success			201 {object} api.TaskInfoResponse
 // @Failure      	400 {object} ce.ErrorResponse
 // @Failure      	404 {object} ce.ErrorResponse
 // @Failure      	409 {object} ce.ErrorResponse

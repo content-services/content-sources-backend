@@ -1505,8 +1505,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/api.UploadResponse"
                         }
@@ -1574,8 +1574,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/api.UploadResponse"
                         }
@@ -2059,8 +2059,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/api.TaskInfoResponse"
                         }
@@ -5208,8 +5208,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "resumable": {
-                    "description": "if true, returns an already existing upload matching the same sha256 and chunk_size",
-                    "type": "boolean"
+                    "description": "If true, reuse an existing upload with the same sha256, chunk_size, and size. Recommended for large files. If omitted, treated as false.",
+                    "type": "boolean",
+                    "example": true
                 },
                 "sha256": {
                     "description": "SHA-256 checksum of the file",
@@ -6638,9 +6639,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "origin": {
-                    "description": "Origin of the repository",
+                    "description": "Origin of the repository (` + "`" + `external` + "`" + ` or ` + "`" + `upload` + "`" + `). Defaults to ` + "`" + `external` + "`" + `. Set to ` + "`" + `upload` + "`" + ` for repositories that receive uploaded RPMs.",
                     "type": "string",
-                    "readOnly": true
+                    "enum": [
+                        "external",
+                        "upload"
+                    ]
                 },
                 "snapshot": {
                     "description": "Enable snapshotting and hosting of this repository",
