@@ -133,7 +133,176 @@ func pythonTangResponse() tangy.PythonPackageListResponse {
 	}
 }
 
+// mavenTangResponsePage builds a page of maven results with distinct artifact
+// ids, reporting the given overall total so pagination can be exercised.
+func mavenTangResponsePage(offset, pageLen, total int) tangy.MavenPackageListResponse {
+	results := make([]tangy.MavenPackageListItem, pageLen)
+	for i := range pageLen {
+		results[i] = tangy.MavenPackageListItem{
+			GroupID:    "com.example",
+			ArtifactID: fmt.Sprintf("artifact-%d", offset+i),
+			Versions:   []string{"1.0.0"},
+		}
+	}
+	return tangy.MavenPackageListResponse{Results: results, Total: total, Limit: MaxLimit, Offset: offset}
+}
+
 // --- /lightwell/packages tests ---
+
+// TestListPackagesSingleRepoUsesTangTotal verifies the single-repo fast path:
+// the request's page is pushed down to Tang in one call and the count comes from
+// Tang's total, so a repo with more packages than a single page reports the full
+// count without fetching everything.
+func (s *LightwellPackagesSuite) TestListPackagesSingleRepoUsesTangTotal() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
+	href := "/api/pulp/repos/maven/big/"
+	s.stubRepoHref(mavenRepo, href)
+
+	total := 567 // far more than one page
+	// Exactly one Tang call, using the request's offset/limit (not a full fetch).
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 20},
+	).Return(mavenTangResponsePage(0, 20, total), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?offset=0&limit=20", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(total), resp.Meta.Count)
+	assert.Len(t, resp.Data, 20)
+}
+
+// TestListPackagesSingleRepoPushesSortWhenTangSupports verifies the forward
+// wiring: once Tang honors server-side sorting, a non-native sort (here, desc) on
+// a single repo takes the fast path and forwards the sort to Tang via SortBy.
+func (s *LightwellPackagesSuite) TestListPackagesSingleRepoPushesSortWhenTangSupports() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
+	href := "/api/pulp/repos/maven/sorted/"
+	s.stubRepoHref(mavenRepo, href)
+
+	// desc is not Tang-native, but with server-side sort enabled the fast path is
+	// used and the sort is forwarded to Tang.
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: DefaultLimit, SortBy: "name desc"},
+	).Return(mavenTangResponsePage(0, 5, 42), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?sort_by=name+desc", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(42), resp.Meta.Count)
+}
+
+// TestListPackagesMultiRepoPaginatesBeyondMaxLimit verifies that the multi-repo
+// fallback path still pages through Tang so repos larger than MaxLimit are not
+// truncated.
+func (s *LightwellPackagesSuite) TestListPackagesMultiRepoPaginatesBeyondMaxLimit() {
+	t := s.T()
+
+	repoA := newMavenRepo()
+	repoB := newMavenRepo()
+	repoB.UUID = "bbb-ccc-ddd"
+	repoB.Name = "lightwell/java/remediated-2"
+	repoB.PublishedDistBasePath = "java/remediated-2"
+	s.stubLightwellRepos([]api.RepositoryResponse{repoA, repoB})
+
+	hrefA := "/api/pulp/repos/maven/a/"
+	hrefB := "/api/pulp/repos/maven/b/"
+	s.stubRepoHref(repoA, hrefA)
+	s.stubRepoHref(repoB, hrefB)
+
+	totalA := MaxLimit + 4 // requires two pages
+	s.tangClient.On("MavenPackageList", test.MockCtx(), hrefA,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenTangResponsePage(0, MaxLimit, totalA), nil)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), hrefA,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: MaxLimit, Limit: MaxLimit},
+	).Return(mavenTangResponsePage(MaxLimit, 4, totalA), nil)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), hrefB,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenTangResponsePage(0, 3, 3), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?limit=1000", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Equal(t, int64(totalA+3), resp.Meta.Count)
+}
+
+// mavenVersionsTangResponsePage builds a page where every package has two
+// versions, so the number of expanded version items differs from the package
+// count used to advance the pagination offset.
+func mavenVersionsTangResponsePage(offset, pageLen, total int) tangy.MavenPackageListResponse {
+	results := make([]tangy.MavenPackageListItem, pageLen)
+	for i := range pageLen {
+		results[i] = tangy.MavenPackageListItem{
+			GroupID:    "com.example",
+			ArtifactID: fmt.Sprintf("artifact-%d", offset+i),
+			Versions:   []string{"1.0.0", "2.0.0"},
+		}
+	}
+	return tangy.MavenPackageListResponse{Results: results, Total: total, Limit: MaxLimit, Offset: offset}
+}
+
+func (s *LightwellPackagesSuite) TestListPackageVersionsPaginatesByPackageCount() {
+	t := s.T()
+
+	mavenRepo := newMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
+	href := "/api/pulp/repos/maven/bigversions/"
+	s.stubRepoHref(mavenRepo, href)
+
+	totalPackages := MaxLimit + 2
+	// Offset must advance by the package count (MaxLimit), not by the number of
+	// expanded version items, so the second page is requested at Offset=MaxLimit.
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(mavenVersionsTangResponsePage(0, MaxLimit, totalPackages), nil)
+	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: MaxLimit, Limit: MaxLimit},
+	).Return(mavenVersionsTangResponsePage(MaxLimit, 2, totalPackages), nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	// two versions per package across all pages
+	assert.Equal(t, int64(totalPackages*2), resp.Meta.Count)
+}
 
 func (s *LightwellPackagesSuite) TestListPackagesSingleRepo() {
 	t := s.T()
@@ -142,8 +311,9 @@ func (s *LightwellPackagesSuite) TestListPackagesSingleRepo() {
 	s.stubLightwellRepos([]api.RepositoryResponse{mavenRepo})
 	href := "/api/pulp/default/api/v3/repositories/maven/maven/some-uuid/"
 	s.stubRepoHref(mavenRepo, href)
+	// Single repo takes the fast path: one Tang call using the request's page.
 	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: DefaultLimit},
 	).Return(mavenTangResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages", api.FullRootPath())
@@ -222,8 +392,9 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 
 	href := "/api/pulp/repos/maven/1/"
 	s.stubRepoHref(mavenRepo, href)
+	// Single repo takes the fast path: one Tang call using the request's page.
 	s.tangClient.On("MavenPackageList", test.MockCtx(), href,
-		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: DefaultLimit},
 	).Return(mavenTangResponse(), nil)
 
 	path := fmt.Sprintf("%s/lightwell/packages?ecosystem=maven", api.FullRootPath())
