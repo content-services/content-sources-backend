@@ -82,7 +82,7 @@ func lightwellLensFeatureAccessible(
 	}
 
 	xrhid := identity.GetIdentity(ctx)
-	if fsClient == nil || xrhid.Identity.User == nil || !xrhid.Identity.User.Internal {
+	if fsClient == nil || xrhid.Identity.OrgID == "" {
 		return false
 	}
 

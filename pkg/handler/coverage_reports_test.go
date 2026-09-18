@@ -48,6 +48,11 @@ func (suite *CoverageReportSuite) SetupTest() {
 	suite.s3Mock = s3_client.NewMockS3Client(suite.T())
 	suite.tcMock = client.NewMockTaskClient(suite.T())
 	suite.fsMock = feature_service_client.NewMockFeatureServiceClient(suite.T())
+	oldLightwellEntitledFeatures := config.Get().Features.LightwellLensInternalEntitledFeatures
+	suite.T().Cleanup(func() {
+		config.Get().Features.LightwellLensInternalEntitledFeatures = oldLightwellEntitledFeatures
+	})
+	config.Get().Features.LightwellLensInternalEntitledFeatures = &[]string{"lightwell-lens"}
 	config.Get().Options.SeedLightwellCoverageReports = false
 }
 
@@ -134,6 +139,8 @@ func (suite *CoverageReportSuite) TestGetCoverageReportNotFound() {
 func (suite *CoverageReportSuite) TestGetCoverageReportNotAccessible() {
 	t := suite.T()
 	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+	suite.fsMock.On("GetEntitledFeatures", mock.Anything, test_handler.MockOrgId).Return([]string{}, nil).Once()
+
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverage_reports/%s", api.FullRootPath(), reportUUID), nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -195,6 +202,8 @@ func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotFound() {
 func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotAccessible() {
 	t := suite.T()
 	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+	suite.fsMock.On("GetEntitledFeatures", mock.Anything, test_handler.MockOrgId).Return([]string{}, nil).Once()
+
 	path := fmt.Sprintf("%s/coverage_reports/%s/packages", api.FullRootPath(), reportUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -367,6 +376,8 @@ func (suite *CoverageReportSuite) TestCreateCoverageReportWithoutStoreUploads() 
 
 func (suite *CoverageReportSuite) TestCreateCoverageReportNotAccessible() {
 	t := suite.T()
+	suite.fsMock.On("GetEntitledFeatures", mock.Anything, test_handler.MockOrgId).Return([]string{}, nil).Once()
+
 	reqBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(reqBody)
 	part, err := writer.CreateFormFile("file", "sbom.json")

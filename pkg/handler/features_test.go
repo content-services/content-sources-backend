@@ -214,15 +214,15 @@ func TestLightwellLensFeatureAccess(t *testing.T) {
 	})
 
 	testCases := []struct {
-		name          string
-		id            identity.Identity
-		entitled      []string
-		serviceError  error
-		expectLookup  bool
-		expectedValue bool
+		name              string
+		id                identity.Identity
+		entitled          []string
+		serviceError      error
+		expectedLookupOrg string
+		expectedValue     bool
 	}{
 		{
-			name: "configured organization remains accessible",
+			name: "configured organization is accessible without an entitlement lookup",
 			id: identity.Identity{
 				Type:  "User",
 				OrgID: "configured-org",
@@ -234,81 +234,60 @@ func TestLightwellLensFeatureAccess(t *testing.T) {
 			expectedValue: true,
 		},
 		{
-			name: "internal user with configured feature one uses top-level org",
+			name: "entitlement lookup uses the top-level organization",
 			id: identity.Identity{
 				Type:  "User",
 				OrgID: "feature-org",
 				Internal: identity.Internal{
 					OrgID: "different-org",
 				},
-				User: &identity.User{Username: "employee", Internal: true},
-			},
-			entitled:      []string{"feature-one"},
-			expectLookup:  true,
-			expectedValue: true,
-		},
-		{
-			name: "internal user with configured feature two",
-			id: identity.Identity{
-				Type:  "User",
-				OrgID: "feature-org",
-				Internal: identity.Internal{
-					OrgID: "feature-org",
-				},
-				User: &identity.User{Username: "employee", Internal: true},
-			},
-			entitled:      []string{"feature-two"},
-			expectLookup:  true,
-			expectedValue: true,
-		},
-		{
-			name: "internal user without a Lens feature",
-			id: identity.Identity{
-				Type:  "User",
-				OrgID: "feature-org",
-				Internal: identity.Internal{
-					OrgID: "feature-org",
-				},
-				User: &identity.User{Username: "employee", Internal: true},
-			},
-			entitled:      []string{"RHEL-OS-x86_64"},
-			expectLookup:  true,
-			expectedValue: false,
-		},
-		{
-			name: "external user with a configured feature",
-			id: identity.Identity{
-				Type:  "User",
-				OrgID: "feature-org",
-				Internal: identity.Internal{
-					OrgID: "feature-org",
-				},
 				User: &identity.User{Username: "user"},
 			},
-			entitled:      []string{"feature-one"},
-			expectedValue: false,
+			entitled:          []string{"feature-one"},
+			expectedLookupOrg: "feature-org",
+			expectedValue:     true,
+		},
+		{
+			name: "any configured entitlement grants access",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				User:  &identity.User{Username: "user"},
+			},
+			entitled:          []string{"feature-two"},
+			expectedLookupOrg: "feature-org",
+			expectedValue:     true,
+		},
+		{
+			name: "organization without a Lens entitlement is denied",
+			id: identity.Identity{
+				Type:  "User",
+				OrgID: "feature-org",
+				User:  &identity.User{Username: "user"},
+			},
+			entitled:          []string{"RHEL-OS-x86_64"},
+			expectedLookupOrg: "feature-org",
+			expectedValue:     false,
 		},
 		{
 			name: "feature service error denies access",
 			id: identity.Identity{
 				Type:  "User",
 				OrgID: "feature-org",
-				Internal: identity.Internal{
-					OrgID: "feature-org",
-				},
-				User: &identity.User{Username: "employee", Internal: true},
+				User:  &identity.User{Username: "user"},
 			},
-			serviceError:  fmt.Errorf("feature service unavailable"),
-			expectLookup:  true,
-			expectedValue: false,
+			serviceError:      fmt.Errorf("feature service unavailable"),
+			expectedLookupOrg: "feature-org",
+			expectedValue:     false,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			fsClientMock := fsc.NewMockFeatureServiceClient(t)
-			if testCase.expectLookup {
-				fsClientMock.On("GetEntitledFeatures", mock.Anything, "feature-org").Return(testCase.entitled, testCase.serviceError).Once()
+			if testCase.expectedLookupOrg != "" {
+				fsClientMock.On("GetEntitledFeatures", mock.Anything, testCase.expectedLookupOrg).
+					Return(testCase.entitled, testCase.serviceError).Once()
 			}
 			var fsClient fsc.FeatureServiceClient = fsClientMock
 
