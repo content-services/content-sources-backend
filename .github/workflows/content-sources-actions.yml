@@ -26,6 +26,8 @@ jobs:
           make openapi
       - run: |
           git diff --exit-code api/openapi.json
+      - run: |
+          git diff --exit-code api/lightwell/openapi.json
 
   openapivalidate:
     name: openapi validate

@@ -194,9 +194,9 @@ func createLink(c echo.Context, offset int) string {
 	return fmt.Sprintf("%v?%v", req.URL.Path, params)
 }
 
-// setCollectionResponseMetadata determines metadata of collection response based on context and collection size.
+// SetCollectionResponseMetadata determines metadata of collection response based on context and collection size.
 // Returns collection response with updated metadata.
-func setCollectionResponseMetadata(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
+func SetCollectionResponseMetadata(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
 	page := ParsePagination(c)
 	var lastPage int
 	if int(totalCount) > 0 && (int(totalCount)%page.Limit) == 0 {

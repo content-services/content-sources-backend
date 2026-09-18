@@ -76,7 +76,7 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, t
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/ [post]
 func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
@@ -172,7 +172,7 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/{uuid} [get]
 func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	report, err := ch.DaoRegistry.CoverageReport.Fetch(c.Request().Context(), orgID, c.Param("uuid"))
 	if err != nil {
@@ -200,7 +200,7 @@ func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/{uuid}/packages [get]
 func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	req := api.ListCoverageReportPackagesRequest{}
 	if err := c.Bind(&req); err != nil {
@@ -214,11 +214,11 @@ func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) erro
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing coverage report packages", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&response, c, totalCount))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&response, c, totalCount))
 }
 
 func (ch *CoverageReportHandler) enqueueCoverageAnalysisEvent(c echo.Context, report api.CoverageReportResponse, uploadUUID string, filename string) uuid.UUID {
-	accountID, orgID := getAccountIdOrgId(c)
+	accountID, orgID := GetAccountIdOrgId(c)
 	payload := payloads.CoverageAnalysisPayload{
 		CoverageReportUUID: report.UUID,
 		CoverageUploadUUID: uploadUUID,

@@ -400,7 +400,7 @@ func createTemplateCollection(size, limit, offset int) api.TemplateCollectionRes
 		Data: templates,
 	}
 	params := fmt.Sprintf("?offset=%d&limit=%d", offset, limit)
-	setCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
+	SetCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
 	return collection
 }
 
