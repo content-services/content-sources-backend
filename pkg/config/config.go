@@ -78,6 +78,7 @@ type Clients struct {
 	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
 	Roadmap        Roadmap        `mapstructure:"roadmap"`
 	Jira           Jira           `mapstructure:"jira"`
+	Scathan        Scathan        `mapstructure:"scathan"`
 }
 
 type Mocks struct {
@@ -173,6 +174,39 @@ type FeatureService struct {
 	ClientCertPath string `mapstructure:"client_cert_path"`
 	ClientKeyPath  string `mapstructure:"client_key_path"`
 	CACertPath     string `mapstructure:"ca_cert_path"`
+}
+
+// Scathan is the Lightwell Vulnerability Metadata Service (VMS). content-sources
+// calls it service-to-service to fetch OSV/VEX records that were previously read
+// from static Pulp files. Scathan is internal-only (scathan.lightwell.redhat.com)
+// and stays fail-closed on embargoed flaws, so callers must forward the customer's
+// x-rh-identity (see scathan_client) for entitlement/audience enforcement.
+//
+// The service-to-service auth mechanism is still being finalized with the
+// content-sources team; this block intentionally supports BOTH candidate options
+// so the choice is config-only, not a code change:
+//   - mTLS with the internal Red Hat CA (the ClientCert/ClientKey/CACert fields
+//     below, mirroring FeatureService) — used when Auth.Enabled is false.
+//   - OIDC service account / OAuth2 client-credentials (the Auth block, mirroring
+//     Kessel) — used when Auth.Enabled is true.
+type Scathan struct {
+	Server         string      `mapstructure:"server"`
+	Auth           ScathanAuth `mapstructure:"auth"`
+	ClientCert     string      `mapstructure:"client_cert"`
+	ClientKey      string      `mapstructure:"client_key"`
+	CACert         string      `mapstructure:"ca_cert"`
+	ClientCertPath string      `mapstructure:"client_cert_path"`
+	ClientKeyPath  string      `mapstructure:"client_key_path"`
+	CACertPath     string      `mapstructure:"ca_cert_path"`
+}
+
+// ScathanAuth holds the OIDC service-account (OAuth2 client-credentials) settings.
+// Only consulted when Enabled is true; otherwise Scathan uses mTLS.
+type ScathanAuth struct {
+	Enabled      bool   `mapstructure:"enabled"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	OIDCIssuer   string `mapstructure:"oidc_issuer"`
 }
 
 type PulpLogParser struct {
@@ -456,6 +490,21 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.feature_service.client_cert_path", "")
 	v.SetDefault("clients.feature_service.client_key_path", "")
 	v.SetDefault("clients.feature_service.ca_cert_path", "")
+
+	// Scathan (Lightwell VMS). Auth mechanism TBD with the content-sources team:
+	// leave auth.enabled false to use mTLS (client_cert/*), or set it true to use
+	// the OIDC service-account (client_id/client_secret/oidc_issuer) instead.
+	v.SetDefault("clients.scathan.server", "")
+	v.SetDefault("clients.scathan.auth.enabled", false)
+	v.SetDefault("clients.scathan.auth.client_id", "")
+	v.SetDefault("clients.scathan.auth.client_secret", "")
+	v.SetDefault("clients.scathan.auth.oidc_issuer", "")
+	v.SetDefault("clients.scathan.client_cert", "")
+	v.SetDefault("clients.scathan.client_key", "")
+	v.SetDefault("clients.scathan.ca_cert", "")
+	v.SetDefault("clients.scathan.client_cert_path", "")
+	v.SetDefault("clients.scathan.client_key_path", "")
+	v.SetDefault("clients.scathan.ca_cert_path", "")
 
 	v.SetDefault("clients.roadmap.server", "")
 	v.SetDefault("clients.roadmap.username", "")
@@ -786,6 +835,8 @@ func RoadmapConfigured() bool {
 }
 
 func KesselConfigured() bool { return Get().Clients.Kessel.Server != "" }
+
+func ScathanConfigured() bool { return Get().Clients.Scathan.Server != "" }
 
 func CustomHTTPErrorHandler(err error, c echo.Context) {
 	var code int

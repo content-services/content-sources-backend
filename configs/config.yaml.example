@@ -189,6 +189,24 @@ clients:
     url: ""
     user: ""
     token: ""
+  # Scathan is the Lightwell Vulnerability Metadata Service (internal-only).
+  # Service-to-service auth is EITHER mTLS (leave auth.enabled unset/false and
+  # set client_cert/*) OR an OIDC service account (set auth.enabled: true and the
+  # client_id/client_secret/oidc_issuer). Pick one; the mechanism is still being
+  # finalized with the content-sources team.
+  scathan:
+    server: #https://scathan.lightwell.redhat.com
+    auth:
+      enabled:
+      client_id:
+      client_secret:
+      oidc_issuer:
+    client_cert:
+    client_key:
+    ca_cert:
+    client_cert_path:
+    client_key_path:
+    ca_cert_path:
 
 # Configuration for the mocks
 mocks:

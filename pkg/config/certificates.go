@@ -207,6 +207,11 @@ func CertUsers() []CertUser {
 	if PulpConfigured() {
 		certUsers = append(certUsers, &PulpCertUser{})
 	}
+	// Only register Scathan's client cert when it's configured for mTLS. When
+	// auth.enabled is true it authenticates via OIDC instead and has no cert.
+	if ScathanConfigured() && !Get().Clients.Scathan.Auth.Enabled {
+		certUsers = append(certUsers, &ScathanCertUser{})
+	}
 	return certUsers
 }
 
@@ -238,6 +243,39 @@ func (c *FeatureServiceCertUser) ClientKeyPath() string {
 }
 
 func (c *FeatureServiceCertUser) Label() string { return "feature_service" }
+
+type ScathanCertUser struct {
+}
+
+func (c *ScathanCertUser) ClientCert() string {
+	return Get().Clients.Scathan.ClientCert
+}
+
+func (c *ScathanCertUser) ClientKey() string {
+	return Get().Clients.Scathan.ClientKey
+}
+
+func (c *ScathanCertUser) CACert() string {
+	return Get().Clients.Scathan.CACert
+}
+
+func (c *ScathanCertUser) CACertPath() string {
+	return Get().Clients.Scathan.CACertPath
+}
+
+func (c *ScathanCertUser) ClientCertPath() string {
+	return Get().Clients.Scathan.ClientCertPath
+}
+
+func (c *ScathanCertUser) ClientKeyPath() string {
+	return Get().Clients.Scathan.ClientKeyPath
+}
+
+func (c *ScathanCertUser) Label() string { return "scathan" }
+
+func (c *ScathanCertUser) Proxy() string {
+	return ""
+}
 
 func (c *FeatureServiceCertUser) Proxy() string {
 	return ""
