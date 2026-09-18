@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -81,33 +82,29 @@ func (s *CatalogSuite) TestLoadCatalog() {
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
 
 	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr(javaValidatedHref), nil)
-	s.mockTang.On("MavenPackageList", s.ctx, javaValidatedHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
-		Return(tangy.MavenPackageListResponse{
-			Results: []tangy.MavenPackageListItem{
+	s.mockPulp.On("ListMavenPackages", s.ctx, javaValidatedHref, "", mavenCatalogPageSize, 0).
+		Return(zest.PaginatedMavenRepositoryPackageListResponse{
+			Count: 1,
+			Results: []zest.MavenRepositoryPackageResponse{
 				{
-					GroupID:    "org.springframework",
-					ArtifactID: "spring-core",
+					GroupId:    "org.springframework",
+					ArtifactId: "spring-core",
 					Versions:   []string{"6.1.0", "6.0.0"},
 				},
 			},
-			Total:  1,
-			Limit:  tangy.DefaultLimit,
-			Offset: 0,
 		}, nil)
 
 	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaRemediatedBasePath).Return(utils.Ptr(javaRemediatedHref), nil)
-	s.mockTang.On("MavenPackageList", s.ctx, javaRemediatedHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
-		Return(tangy.MavenPackageListResponse{
-			Results: []tangy.MavenPackageListItem{
+	s.mockPulp.On("ListMavenPackages", s.ctx, javaRemediatedHref, "", mavenCatalogPageSize, 0).
+		Return(zest.PaginatedMavenRepositoryPackageListResponse{
+			Count: 1,
+			Results: []zest.MavenRepositoryPackageResponse{
 				{
-					GroupID:    "ch.qos.logback",
-					ArtifactID: "logback-access",
+					GroupId:    "ch.qos.logback",
+					ArtifactId: "logback-access",
 					Versions:   []string{"1.0.0"},
 				},
 			},
-			Total:  1,
-			Limit:  tangy.DefaultLimit,
-			Offset: 0,
 		}, nil)
 
 	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, pythonValidatedBasePath).Return(utils.Ptr(pythonValidatedHref), nil)
@@ -171,23 +168,19 @@ func (s *CatalogSuite) TestLoadCatalogPagination() {
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
 	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr(javaHref), nil)
 
-	s.mockTang.On("MavenPackageList", s.ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
-		Return(tangy.MavenPackageListResponse{
-			Results: []tangy.MavenPackageListItem{
-				{GroupID: "org.springframework", ArtifactID: "spring-core", Versions: []string{"6.1.0"}},
+	s.mockPulp.On("ListMavenPackages", s.ctx, javaHref, "", mavenCatalogPageSize, 0).
+		Return(zest.PaginatedMavenRepositoryPackageListResponse{
+			Count: int64(mavenCatalogPageSize + 1),
+			Results: []zest.MavenRepositoryPackageResponse{
+				{GroupId: "org.springframework", ArtifactId: "spring-core", Versions: []string{"6.1.0"}},
 			},
-			Total:  tangy.DefaultLimit + 1,
-			Limit:  tangy.DefaultLimit,
-			Offset: 0,
 		}, nil)
-	s.mockTang.On("MavenPackageList", s.ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: tangy.DefaultLimit, Limit: tangy.DefaultLimit}).
-		Return(tangy.MavenPackageListResponse{
-			Results: []tangy.MavenPackageListItem{
-				{GroupID: "com.google.guava", ArtifactID: "guava", Versions: []string{"32.0"}},
+	s.mockPulp.On("ListMavenPackages", s.ctx, javaHref, "", mavenCatalogPageSize, mavenCatalogPageSize).
+		Return(zest.PaginatedMavenRepositoryPackageListResponse{
+			Count: int64(mavenCatalogPageSize + 1),
+			Results: []zest.MavenRepositoryPackageResponse{
+				{GroupId: "com.google.guava", ArtifactId: "guava", Versions: []string{"32.0"}},
 			},
-			Total:  tangy.DefaultLimit + 1,
-			Limit:  tangy.DefaultLimit,
-			Offset: tangy.DefaultLimit,
 		}, nil)
 
 	catalog, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
@@ -218,7 +211,7 @@ func (s *CatalogSuite) TestLoadCatalogNoMatchingRepos() {
 	assert.Contains(s.T(), err.Error(), "no validated or remediated")
 }
 
-func (s *CatalogSuite) TestLoadCatalogTangError() {
+func (s *CatalogSuite) TestLoadCatalogMavenListError() {
 	domainName := "test-domain"
 	javaHref := "test-repo-href-1"
 	repos := []api.RepositoryResponse{
@@ -240,12 +233,12 @@ func (s *CatalogSuite) TestLoadCatalogTangError() {
 	s.mockPulp.On("WithDomain", domainName).Return(s.mockPulp)
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
 	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr(javaHref), nil)
-	s.mockTang.On("MavenPackageList", s.ctx, javaHref, tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).
-		Return(tangy.MavenPackageListResponse{}, errors.New("tang unavailable"))
+	s.mockPulp.On("ListMavenPackages", s.ctx, javaHref, "", mavenCatalogPageSize, 0).
+		Return(zest.PaginatedMavenRepositoryPackageListResponse{}, errors.New("pulp catalog unavailable"))
 
 	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
 	require.Error(s.T(), err)
-	assert.Contains(s.T(), err.Error(), "tang unavailable")
+	assert.Contains(s.T(), err.Error(), "pulp catalog unavailable")
 }
 
 func (s *CatalogSuite) TestLoadCatalogPulpError() {
