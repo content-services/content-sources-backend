@@ -33,6 +33,8 @@ type LightwellPackageVersionResponse struct {
 	RepositoryUUID string `json:"repository_uuid"`
 	Release        string `json:"release,omitempty"`
 	CreatedAt      string `json:"created_at,omitempty"`
+	Purl           string `json:"purl"`
+	Coordinates    string `json:"coordinates"`
 }
 
 // LightwellPackageVersionCollectionResponse is a paginated collection of cross-repo package versions.
