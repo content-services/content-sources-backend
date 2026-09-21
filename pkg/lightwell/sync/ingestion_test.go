@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
@@ -13,24 +16,46 @@ import (
 )
 
 type fakeJira struct {
-	fields      []jira_client.JiraField
-	fieldErr    error
-	pages       map[string]jira_client.JiraPage
-	searchErr   error
-	issues      map[string]jira_client.JiraIssue
-	issueCalls  []string
-	issueFields [][]string
-	searchCalls []string
+	fields         []jira_client.JiraField
+	fieldErr       error
+	pages          map[string]jira_client.JiraPage
+	searchErr      error
+	batchSearchErr error
+	issues         map[string]jira_client.JiraIssue
+	issueCalls     []string
+	issueFields    [][]string
+	searchCalls    []string
+	searchJQLs     []string
+	searchFields   [][]string
 }
 
 func (f *fakeJira) Fields(context.Context) ([]jira_client.JiraField, error) {
 	return f.fields, f.fieldErr
 }
 
-func (f *fakeJira) Search(_ context.Context, _ string, _ []string, token string) (jira_client.JiraPage, error) {
+func (f *fakeJira) Search(_ context.Context, jql string, fields []string, token string) (jira_client.JiraPage, error) {
 	f.searchCalls = append(f.searchCalls, token)
+	f.searchJQLs = append(f.searchJQLs, jql)
+	f.searchFields = append(f.searchFields, fields)
 	if f.searchErr != nil {
 		return jira_client.JiraPage{}, f.searchErr
+	}
+	if jql != VulnerabilityJQL {
+		if f.batchSearchErr != nil {
+			return jira_client.JiraPage{}, f.batchSearchErr
+		}
+		keys := make([]string, 0, len(f.issues))
+		for key := range f.issues {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		page := jira_client.JiraPage{}
+		for _, key := range keys {
+			if strings.Contains(jql, `"`+key+`"`) {
+				page.Issues = append(page.Issues, f.issues[key])
+			}
+		}
+		return page, nil
 	}
 	return f.pages[token], nil
 }
@@ -60,6 +85,86 @@ func (f *fakeVulnerabilityStore) Save(_ context.Context, input dao.LightwellVuln
 func (f *fakeVulnerabilityStore) DeleteByKey(_ context.Context, key string) (bool, error) {
 	f.deleted = append(f.deleted, key)
 	return f.deleteExisted, nil
+}
+
+func TestIngestorBatchLoadsRelationships(t *testing.T) {
+	first := validJiraIssue("LTWL-1")
+	first.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+	second := validJiraIssue("LTWL-2")
+	second.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-2"}}]`)
+	jira := &fakeJira{
+		fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+		pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{first, second}}},
+		issues: map[string]jira_client.JiraIssue{
+			"BATCH-1": {Key: "BATCH-1", Fields: map[string]json.RawMessage{"parent": json.RawMessage(`{"key":"EPIC-1"}`)}},
+			"BATCH-2": {Key: "BATCH-2", Fields: map[string]json.RawMessage{"parent": json.RawMessage(`{"key":"EPIC-2"}`)}},
+			"EPIC-1": {Key: "EPIC-1", Fields: map[string]json.RawMessage{
+				"customfield_account": json.RawMessage(`["111"]`),
+			}},
+			"EPIC-2": {Key: "EPIC-2", Fields: map[string]json.RawMessage{
+				"customfield_account": json.RawMessage(`["222"]`),
+			}},
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Empty(t, jira.issueCalls)
+	assert.Equal(t, []string{
+		VulnerabilityJQL,
+		`key IN ("BATCH-1", "BATCH-2") ORDER BY key ASC`,
+		`key IN ("EPIC-1", "EPIC-2") ORDER BY key ASC`,
+	}, jira.searchJQLs)
+	assert.Equal(t, 2, summary.Inserted)
+	require.Len(t, store.saved, 2)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "111"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "222"}}, store.saved[1].Tickets)
+}
+
+func TestIngestorChunksRelationshipBatchSearches(t *testing.T) {
+	jira := &fakeJira{issues: make(map[string]jira_client.JiraIssue, relationshipBatchSize+1)}
+	keys := make([]string, 0, relationshipBatchSize+1)
+	for index := 0; index < relationshipBatchSize+1; index++ {
+		key := fmt.Sprintf("BATCH-%03d", index)
+		keys = append(keys, key)
+		jira.issues[key] = jira_client.JiraIssue{Key: key}
+	}
+	ingestor := NewIngestor(jira, &fakeVulnerabilityStore{}, nil)
+
+	ingestor.prefetchIssues(context.Background(), keys, []string{"parent"})
+
+	assert.Len(t, jira.searchJQLs, 2)
+	assert.Len(t, ingestor.cache, relationshipBatchSize+1)
+	assert.Contains(t, jira.searchJQLs[0], `"BATCH-099"`)
+	assert.NotContains(t, jira.searchJQLs[0], `"BATCH-100"`)
+	assert.Contains(t, jira.searchJQLs[1], `"BATCH-100"`)
+}
+
+func TestIngestorFallsBackWhenRelationshipBatchSearchFails(t *testing.T) {
+	vulnerability := validJiraIssue("LTWL-1")
+	vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+	jira := &fakeJira{
+		fields:         []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{vulnerability}}},
+		batchSearchErr: errors.New("bulk search failed"),
+		issues: map[string]jira_client.JiraIssue{
+			"BATCH-1": {Key: "BATCH-1", Fields: map[string]json.RawMessage{"parent": json.RawMessage(`{"key":"EPIC-1"}`)}},
+			"EPIC-1": {Key: "EPIC-1", Fields: map[string]json.RawMessage{
+				"customfield_account": json.RawMessage(`["111"]`),
+			}},
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Inserted)
+	assert.Equal(t, []string{"BATCH-1", "EPIC-1"}, jira.issueCalls)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "111"}}, store.saved[0].Tickets)
 }
 
 func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
@@ -94,8 +199,8 @@ func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
 	assert.Equal(t, "LTWL-1", store.saved[0].VulnerabilityKey)
 	assert.Equal(t, "LW-0000-0001", store.saved[0].VulnerabilityID)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "123"}}, store.saved[0].Tickets)
-	assert.Equal(t, []string{"", "next"}, jira.searchCalls)
-	assert.Equal(t, []string{"BATCH-1", "EPIC-1"}, jira.issueCalls)
+	assert.Equal(t, []string{"", "next", "", ""}, jira.searchCalls)
+	assert.Empty(t, jira.issueCalls)
 }
 
 func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
@@ -118,7 +223,7 @@ func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
 	summary, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, SyncSummary{Unchanged: 1}, summary)
-	assert.Equal(t, []string{"BATCH-1", "EPIC-1"}, jira.issueCalls)
+	assert.Empty(t, jira.issueCalls)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "123"}}, store.saved[0].Tickets)
 }
@@ -181,7 +286,7 @@ func TestIngestorStoresEpicFromBatchParent(t *testing.T) {
 	_, err := NewIngestor(jira, store, nil).Sync(context.Background())
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
-	assert.Equal(t, []string{"parent", "issuelinks"}, jira.issueFields[0])
+	assert.Equal(t, []string{"parent", "issuelinks"}, jira.searchFields[1])
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "789"}}, store.saved[0].Tickets)
 }
 
