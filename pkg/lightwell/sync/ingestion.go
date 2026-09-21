@@ -10,7 +10,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 )
 
-const VulnerabilityJQL = "project = LTWL AND type = Vulnerability ORDER BY created ASC"
+// VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
+const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
 
 var vulnerabilityFields = []string{
 	"summary",

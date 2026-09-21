@@ -77,6 +77,26 @@ func TestMapVulnerabilityUsesCVEFromSummary(t *testing.T) {
 	assert.Equal(t, "Example product", *vulnerability.Title)
 }
 
+func TestVulnerabilityIDFromSummary(t *testing.T) {
+	tests := []struct {
+		name    string
+		summary string
+		want    string
+	}{
+		{name: "LW ID", summary: "LW-0000-0001 Example component", want: "LW-0000-0001"},
+		{name: "CVE ID", summary: "CVE-2025-12345 Example product", want: "CVE-2025-12345"},
+		{name: "CVE backport", summary: "[CVE Backport] Example product CVE-2025-12345", want: "CVE-2025-12345"},
+		{name: "CVE backport without CVE", summary: "[CVE Backport] Example product"},
+		{name: "CVE outside backport summary", summary: "Example product CVE-2025-12345"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, vulnerabilityIDFromSummary(tt.summary))
+		})
+	}
+}
+
 func TestMapVulnerabilityRejectsMissingVulnerabilityID(t *testing.T) {
 	issue := validJiraIssue("LTWL-5")
 	issue.Fields["summary"] = json.RawMessage(`"Example product without an id"`)
