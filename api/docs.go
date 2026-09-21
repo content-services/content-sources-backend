@@ -6850,7 +6850,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "uuid": {
-                    "description": "Identifier of the rpm",
+                    "description": "Identifier of the rpm (not present for foreign partner repo rpms)",
                     "type": "string"
                 },
                 "version": {

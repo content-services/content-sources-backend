@@ -61,6 +61,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		Rpm: &rpmDaoImpl{
 			db:            db,
 			roadmapClient: roadmapClient,
+			pulpClient:    pulp_client.GetPulpClientWithDomain(""),
 		},
 		ModuleStream: &moduleStreamsImpl{db: db},
 		Repository:   repositoryDaoImpl{db: db},
