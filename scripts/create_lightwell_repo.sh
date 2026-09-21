@@ -8,20 +8,14 @@
 # the appropriate domains, then runs the Go importer.
 #
 # Idempotent: existing distributions (matched by base_path) are reused;
-# Maven populate and the CS import always run.
-#
-# Requires bash 4+ (readarray, etc.). On macOS use Homebrew/MacPorts bash
-# (e.g. /opt/local/bin/bash) rather than the system /bin/bash 3.2.
-# Also requires GNU coreutils shuf (gshuf on macOS via ports/brew coreutils).
+# Maven catalog seed (if empty) and the CS import always run.
 #
 # Intended for local development against the Pulp instance started via docker-compose.
+# Maven catalogs are seeded with uploaded POM + repository modify (pull-through
+# GET does not create MavenPackage units that the packages API lists).
 #
 # Usage:
-#   ./scripts/create_lightwell_repo.sh [--remote-url URL] [--validated-count N]
-#
-#   --validated-count N  Number of distinct packages to push to the validated
-#                        Maven repo (default 20). Also settable via the
-#                        VALIDATED_PACKAGE_COUNT environment variable.
+#   ./scripts/create_lightwell_repo.sh [--remote-url URL]
 #
 # Auth:
 #   Basic auth (default): set PULP_USER and PULP_PASS
@@ -29,35 +23,6 @@
 #              Leave PULP_USER unset or empty to use cert auth.
 
 set -euo pipefail
-
-if (( BASH_VERSINFO[0] < 4 )); then
-  echo "ERROR: bash 4+ required (found ${BASH_VERSION})." >&2
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    echo "On macOS, run 'ports install bash' or 'brew install bash'." >&2
-  fi
-  exit 1
-fi
-
-# Resolve GNU shuf: on Darwin also accept gshuf (MacPorts/Homebrew coreutils).
-SHUF_CANDIDATES=(shuf)
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  SHUF_CANDIDATES=(gshuf shuf)
-fi
-
-SHUF_CMD=""
-for candidate in "${SHUF_CANDIDATES[@]}"; do
-  if command -v "$candidate" >/dev/null 2>&1; then
-    SHUF_CMD="$candidate"
-    break
-  fi
-done
-if [[ -z "$SHUF_CMD" ]]; then
-  echo "ERROR: ${SHUF_CANDIDATES[*]} required (GNU coreutils)." >&2
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    echo "On macOS, run 'ports install coreutils' or 'brew install coreutils'." >&2
-  fi
-  exit 1
-fi
 
 # ---------------------------------------------------------------------------
 # Configuration (override with environment variables)
@@ -92,15 +57,20 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --remote-url)      REMOTE_URL="$2"; shift 2 ;;
-    --validated-count) VALIDATED_PACKAGE_COUNT="$2"; shift 2 ;;
-    *)                 echo "Unknown option: $1" >&2; exit 1 ;;
+    --remote-url) REMOTE_URL="$2"; shift 2 ;;
+    *)            echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+# Joins PULP_URL and a path without producing a double slash.
+pulp_url() {
+  local path="$1"
+  printf '%s/%s\n' "${PULP_URL%/}" "${path#/}"
+}
 
 # Calls the Pulp REST API and returns the JSON response body.
 # Uses cert auth when PULP_CLIENT_CERT is set, otherwise basic auth.
@@ -110,12 +80,8 @@ pulp_api() {
   local path="$2"
   local body="${3:-}"
 
-  local -a args=(
-    -s -k
-    -X "${method}"
-    -H "Content-Type: application/json"
-  )
-
+  local -a args
+  args=(-s -k -X "${method}" -H "Content-Type: application/json")
   if [[ -n "$PULP_CLIENT_CERT" ]]; then
     args+=(--cert "${PULP_CLIENT_CERT}")
     if [[ -n "$PULP_CLIENT_KEY" ]]; then
@@ -132,7 +98,7 @@ pulp_api() {
     args+=(-d "$body")
   fi
 
-  curl "${args[@]}" "${PULP_URL}${path}"
+  curl "${args[@]}" "$(pulp_url "$path")"
 }
 
 # Calls pulp_api to POST a resource, extracts a field from the response, and
@@ -243,6 +209,7 @@ find_distribution_by_base_path() {
 
 # Ensures a remote, repository, and distribution exist in Pulp for the given
 # type. Reuses an existing distribution matched by base_path.
+# Sets REPO_HREF to the maven/python repository href.
 #   ensure_pulp_repo <DOMAIN_NAME> <TYPE> <BASE_PATH> <REMOTE_URL>
 #   TYPE is "maven" or "python"
 ensure_pulp_repo() {
@@ -262,6 +229,23 @@ ensure_pulp_repo() {
   find_distribution_by_base_path "$domain_name" "$dist_api_type" "$base_path"
   if [[ -n "$RESULT" ]]; then
     echo "    Distribution already exists: ${RESULT}"
+    local dist_json
+    dist_json=$(pulp_api GET "$RESULT")
+    REPO_HREF=$(echo "$dist_json" | jq -r '.repository // empty')
+    if [[ -z "$REPO_HREF" || "$REPO_HREF" == "null" ]]; then
+      local dist_name encoded_name repo_results
+      dist_name=$(echo "$dist_json" | jq -r '.name')
+      encoded_name=$(jq -nr --arg p "$dist_name" '$p|@uri')
+      repo_results=$(pulp_api GET \
+        "${API_ROOT}/${domain_name}/api/v3/repositories/${api_type}/?name=${encoded_name}")
+      REPO_HREF=$(echo "$repo_results" | jq -r '.results[0].pulp_href // empty')
+    fi
+    if [[ -z "$REPO_HREF" || "$REPO_HREF" == "null" ]]; then
+      echo "ERROR: Could not resolve repository href for distribution ${base_path}" >&2
+      echo "$dist_json" | jq . >&2
+      exit 1
+    fi
+    echo "    Repository: ${REPO_HREF}"
     return 0
   fi
 
@@ -299,185 +283,174 @@ ensure_pulp_repo() {
   echo "==> Waiting for distribution task to complete..."
   wait_for_task "$task_href"
   echo "    Distribution created successfully."
+  REPO_HREF="$repo_href"
 }
 
-# Pool of Maven packages that can be fetched through a distribution to
-# populate the Pulp cache.
-MAVEN_PACKAGES=(
-  /blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom
-  /blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.jar
-  /avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom
-  /avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.jar
-  /commons-logging/commons-logging/1.0.4/commons-logging-1.0.4.pom
-  /commons-logging/commons-logging/1.0.4/commons-logging-1.0.4.jar
-  /commons-io/commons-io/2.11.0/commons-io-2.11.0.pom
-  /commons-io/commons-io/2.11.0/commons-io-2.11.0.jar
-  /commons-codec/commons-codec/1.15/commons-codec-1.15.pom
-  /commons-codec/commons-codec/1.15/commons-codec-1.15.jar
-  /commons-lang/commons-lang/2.6/commons-lang-2.6.pom
-  /commons-lang/commons-lang/2.6/commons-lang-2.6.jar
-  /commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.pom
-  /commons-collections/commons-collections/3.2.2/commons-collections-3.2.2.jar
-  /junit/junit/4.13.2/junit-4.13.2.pom
-  /junit/junit/4.13.2/junit-4.13.2.jar
-  /org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.pom
-  /org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar
-  /org/slf4j/slf4j-simple/1.7.36/slf4j-simple-1.7.36.pom
-  /org/slf4j/slf4j-simple/1.7.36/slf4j-simple-1.7.36.jar
-  /com/google/guava/guava/31.1-jre/guava-31.1-jre.pom
-  /com/google/guava/guava/31.1-jre/guava-31.1-jre.jar
-  /com/google/code/gson/gson/2.10.1/gson-2.10.1.pom
-  /com/google/code/gson/gson/2.10.1/gson-2.10.1.jar
-  /org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.pom
-  /org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar
-  /org/apache/commons/commons-text/1.10.0/commons-text-1.10.0.pom
-  /org/apache/commons/commons-text/1.10.0/commons-text-1.10.0.jar
-  /org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.pom
-  /org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar
-  /org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.pom
-  /org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar
-  /org/yaml/snakeyaml/1.33/snakeyaml-1.33.pom
-  /org/yaml/snakeyaml/1.33/snakeyaml-1.33.jar
-  /com/fasterxml/jackson/core/jackson-core/2.15.2/jackson-core-2.15.2.pom
-  /com/fasterxml/jackson/core/jackson-core/2.15.2/jackson-core-2.15.2.jar
-  /com/fasterxml/jackson/core/jackson-databind/2.15.2/jackson-databind-2.15.2.pom
-  /com/fasterxml/jackson/core/jackson-databind/2.15.2/jackson-databind-2.15.2.jar
-  /org/mockito/mockito-core/5.3.1/mockito-core-5.3.1.pom
-  /org/mockito/mockito-core/5.3.1/mockito-core-5.3.1.jar
-)
-
-# Shuffle the pool once; each call to populate_maven_repo deals from the top.
-MAVEN_DEAL_INDEX=0
-
-# Fetches 1-4 Maven packages through a distribution to pull content into the
-# repo via its on-demand remote. Deals from a pre-shuffled pool so each repo
-# gets distinct packages.
-#   populate_maven_repo <DOMAIN_NAME> <BASE_PATH>
-populate_maven_repo() {
-  readarray -t SHUFFLED_MAVEN_PACKAGES < <(printf '%s\n' "${MAVEN_PACKAGES[@]}" | "$SHUF_CMD")
+# Uploads a Maven POM and returns the artifact pulp_href in RESULT.
+#   upload_maven_pom <DOMAIN_NAME> <RELATIVE_PATH> <POM_BODY>
+upload_maven_pom() {
   local domain_name="$1"
-  local base_path="$2"
-  local content_url="${PULP_CONTENT_URL}/api/pulp-content/${domain_name}/${base_path}"
+  local relative_path="$2"
+  local pom_body="$3"
 
-  local total=${#SHUFFLED_MAVEN_PACKAGES[@]}
-  local count=$(( (RANDOM % 8) + 1 ))
+  local tmp
+  tmp="$(mktemp)"
+  printf '%s' "$pom_body" >"$tmp"
 
-  # Wrap around if we've dealt most of the deck
-  if (( MAVEN_DEAL_INDEX + count > total )); then
-    MAVEN_DEAL_INDEX=0
+  local -a args
+  args=(-s -k -X POST)
+  if [[ -n "$PULP_CLIENT_CERT" ]]; then
+    args+=(--cert "${PULP_CLIENT_CERT}")
+    if [[ -n "$PULP_CLIENT_KEY" ]]; then
+      args+=(--key "${PULP_CLIENT_KEY}")
+    fi
+    if [[ -n "$PULP_CA_CERT" ]]; then
+      args+=(--cacert "${PULP_CA_CERT}")
+    fi
+  elif [[ -n "$PULP_USER" ]]; then
+    args+=(-u "${PULP_USER}:${PULP_PASS}")
+  fi
+  args+=(-F "file=@${tmp};filename=$(basename "$relative_path")" -F "relative_path=${relative_path}" -F "overwrite=true")
+
+  local response
+  response=$(curl "${args[@]}" "$(pulp_url "${API_ROOT}/${domain_name}/api/v3/content/maven/artifact/")")
+  rm -f "$tmp"
+
+  RESULT=$(echo "$response" | jq -r '.pulp_href // empty')
+  if [[ -n "$RESULT" && "$RESULT" != "null" ]]; then
+    return 0
   fi
 
-  local -a selected=("${SHUFFLED_MAVEN_PACKAGES[@]:MAVEN_DEAL_INDEX:count}")
-  MAVEN_DEAL_INDEX=$(( MAVEN_DEAL_INDEX + count ))
-
-  echo "    Fetching ${count} package(s) to populate ${base_path}..."
-
-  local success=0
-  local failed=0
-  for pkg in "${selected[@]}"; do
-    local status
-    status=$(curl -s -o /dev/null -w "%{http_code}" "${content_url}${pkg}")
-    local name
-    name=$(basename "$pkg")
-    if [[ "$status" -ge 200 && "$status" -lt 400 ]]; then
-      success=$((success + 1))
-      echo "      OK: ${name}"
-    else
-      failed=$((failed + 1))
-      echo "      WARN: ${name} returned HTTP ${status}"
-    fi
-  done
-  echo "    Fetched ${success}/${count} packages successfully."
+  local task_href
+  task_href=$(echo "$response" | jq -r '.task // empty')
+  if [[ -z "$task_href" || "$task_href" == "null" ]]; then
+    echo "ERROR: Failed to upload ${relative_path}:" >&2
+    echo "$response" | jq . >&2
+    exit 1
+  fi
+  wait_for_task "$task_href"
+  local task_response
+  task_response=$(pulp_api GET "$task_href")
+  RESULT=$(echo "$task_response" | jq -r '.created_resources[0] // empty')
+  if [[ -z "$RESULT" || "$RESULT" == "null" ]]; then
+    echo "ERROR: Upload task for ${relative_path} created no resources:" >&2
+    echo "$task_response" | jq . >&2
+    exit 1
+  fi
 }
 
-# Base path of the "validated" Maven repo that should be populated with a large
-# number of packages, and how many packages to push there.
-VALIDATED_BASE_PATH="${VALIDATED_BASE_PATH:-java/validated}"
-VALIDATED_PACKAGE_COUNT="${VALIDATED_PACKAGE_COUNT:-20}"
-
-# Maven Central base URL used to browse artifact directory listings and read
-# maven-metadata.xml when discovering distinct coordinates.
-MAVEN_CENTRAL_BROWSE_URL="${MAVEN_CENTRAL_BROWSE_URL:-https://repo1.maven.org/maven2}"
-
-# Group paths (dot-groupId as a slash path) whose directory listings contain
-# many distinct artifacts. org/webjars alone exposes >1000 distinct artifacts,
-# which is more than enough to reach a large package count.
-MAVEN_BULK_GROUP_PATHS=(
-  org/webjars
-)
-
-# Fetches many *distinct* Maven packages through a distribution to populate the
-# repo with a large package count.
-#
-# The application counts a Maven "package" as a distinct group_id:artifact_id
-# that has a .pom (see tangy MavenPackageList). Fetching many versions of a few
-# artifacts therefore does NOT increase the package count. Instead this
-# discovers distinct artifacts from Maven Central directory listings, resolves
-# each artifact's latest version from its maven-metadata.xml, and fetches that
-# single version's .pom through the distribution's on-demand remote until the
-# target number of distinct packages is reached.
-#   populate_maven_repo_bulk <DOMAIN_NAME> <BASE_PATH> <TARGET_COUNT>
-populate_maven_repo_bulk() {
+# Seeds MavenPackage units via artifact upload + repository modify.
+# Pull-through GETs only create artifacts and leave packages/ empty.
+#   seed_maven_packages <DOMAIN_NAME> <REPO_HREF>
+seed_maven_packages() {
   local domain_name="$1"
-  local base_path="$2"
-  local target="$3"
-  local content_url="${PULP_CONTENT_URL}/api/pulp-content/${domain_name}/${base_path}"
+  local repo_href="$2"
 
-  echo "    Bulk-populating ${base_path} with up to ${target} distinct package(s)..."
-  echo "    (this fetches ~${target} artifacts from Maven Central and may take a few minutes)"
+  local pkg_json pkg_count
+  pkg_json=$(pulp_api GET "${repo_href}packages/?limit=1")
+  pkg_count=$(echo "$pkg_json" | jq -r '.count // 0')
+  if [[ "$pkg_count" != "0" && "$pkg_count" != "null" ]]; then
+    echo "    Maven catalog already has ${pkg_count} package(s); skipping seed."
+    return 0
+  fi
 
-  local success=0
-  local failed=0
+  echo "    Seeding MavenPackage units (upload POM + modify)..."
 
-  for group_path in "${MAVEN_BULK_GROUP_PATHS[@]}"; do
-    (( success >= target )) && break
+  local -a content_hrefs=()
 
-    echo "      Discovering artifacts under ${group_path}/ ..."
-    local listing
-    listing=$(curl -s --max-time 60 "${MAVEN_CENTRAL_BROWSE_URL}/${group_path}/") || listing=""
+  upload_maven_pom "$domain_name" \
+    "blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom" \
+    '<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>blissed</groupId>
+  <artifactId>blissed</artifactId>
+  <version>1.0-beta-3</version>
+</project>
+'
+  content_hrefs+=("$RESULT")
 
-    # Directory listing entries look like href="artifact-id/"; take the dir
-    # names (trailing slash) and drop the parent-dir link.
-    local -a artifacts
-    readarray -t artifacts < <(printf '%s' "$listing" \
-      | grep -oP '(?<=href=")[^"/]+(?=/")' | grep -v '^\.\.$')
+  upload_maven_pom "$domain_name" \
+    "avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom" \
+    '<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>avalon-util</groupId>
+  <artifactId>avalon-util-exception</artifactId>
+  <version>1.0.0</version>
+</project>
+'
+  content_hrefs+=("$RESULT")
 
-    if (( ${#artifacts[@]} == 0 )); then
-      echo "      WARN: no artifacts found under ${group_path}/"
-      continue
+  upload_maven_pom "$domain_name" \
+    "org/example/demo-lib/5.3.18.rhlw-00001/demo-lib-5.3.18.rhlw-00001.pom" \
+    '<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.example</groupId>
+  <artifactId>demo-lib</artifactId>
+  <version>5.3.18.rhlw-00001</version>
+</project>
+'
+  content_hrefs+=("$RESULT")
+
+  upload_maven_pom "$domain_name" \
+    "org/example/demo-lib/5.3.18.rhlw-00003/demo-lib-5.3.18.rhlw-00003.pom" \
+    '<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.example</groupId>
+  <artifactId>demo-lib</artifactId>
+  <version>5.3.18.rhlw-00003</version>
+</project>
+'
+  content_hrefs+=("$RESULT")
+
+  local body
+  body=$(jq -n --args '{add_content_units: $ARGS.positional}' "${content_hrefs[@]}")
+
+  local attempt
+  for attempt in 1 2; do
+    pulp_create "repository modify" "${repo_href}modify/" "$body" '.task'
+    echo "    Waiting for modify task (attempt ${attempt})..."
+    if wait_for_task_or_warn "$RESULT"; then
+      echo "    Seeded ${#content_hrefs[@]} Maven artifacts."
+      return 0
     fi
-    echo "      Found ${#artifacts[@]} artifact(s) under ${group_path}/"
+    sleep 2
+  done
+  echo "WARN: Maven catalog seed failed for ${repo_href}; packages/ may be empty." >&2
+}
 
-    for artifact in "${artifacts[@]}"; do
-      (( success >= target )) && break
+# Like wait_for_task but returns 1 on failure instead of exiting.
+wait_for_task_or_warn() {
+  local task_href="$1"
+  local max_attempts=60
+  local state=""
 
-      local md ver
-      md=$(curl -s --max-time 20 \
-        "${MAVEN_CENTRAL_BROWSE_URL}/${group_path}/${artifact}/maven-metadata.xml") || md=""
-      ver=$(printf '%s' "$md" | sed -n 's|.*<release>\(.*\)</release>.*|\1|p' | head -1)
-      if [[ -z "$ver" ]]; then
-        ver=$(printf '%s' "$md" | sed -n 's|.*<latest>\(.*\)</latest>.*|\1|p' | head -1)
-      fi
-      if [[ -z "$ver" ]]; then
-        failed=$((failed + 1))
-        continue
-      fi
+  for ((i = 1; i <= max_attempts; i++)); do
+    local task_response
+    task_response=$(pulp_api GET "$task_href")
+    state=$(echo "$task_response" | jq -r '.state')
 
-      local pom="/${group_path}/${artifact}/${ver}/${artifact}-${ver}.pom"
-      local status
-      status=$(curl -s -o /dev/null -w "%{http_code}" "${content_url}${pom}")
-      if [[ "$status" -ge 200 && "$status" -lt 400 ]]; then
-        success=$((success + 1))
-        if (( success % 25 == 0 )); then
-          echo "      ...${success}/${target} packages"
-        fi
-      else
-        failed=$((failed + 1))
-      fi
-    done
+    case "$state" in
+      completed)
+        return 0
+        ;;
+      failed|canceled|canceling)
+        echo "WARN: Task ${state}:" >&2
+        echo "$task_response" | jq '.error' >&2
+        return 1
+        ;;
+      *)
+        printf "    [%d/%d] state=%s\r" "$i" "$max_attempts" "$state"
+        sleep 2
+        ;;
+    esac
   done
 
-  echo "    Bulk-populated ${success} distinct package(s) (${failed} fetch(es) failed/skipped)."
+  echo "WARN: Timed out waiting for task after ${max_attempts} attempts." >&2
+  return 1
 }
 
 # Ensures repos from a JSON allowlist file under the given domain.
@@ -502,11 +475,7 @@ create_repos_from_json() {
     case "$entry_type" in
       maven)
         ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
-        if [[ "$entry_base_path" == "$VALIDATED_BASE_PATH" ]]; then
-          populate_maven_repo_bulk "$domain_name" "$entry_base_path" "$VALIDATED_PACKAGE_COUNT"
-        else
-          populate_maven_repo "$domain_name" "$entry_base_path"
-        fi
+        seed_maven_packages "$domain_name" "$REPO_HREF"
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"

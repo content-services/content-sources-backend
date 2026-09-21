@@ -3,11 +3,18 @@ package pulp_client
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	zest "github.com/content-services/zest/release/v2026"
 )
 
 const mavenPackageContentPageSize int32 = 300
+
+// zestHrefPathParam strips a leading slash so zest does not request
+// {server}//api/pulp/... (Pulp hrefs are already absolute paths).
+func zestHrefPathParam(href string) string {
+	return strings.TrimLeft(href, "/")
+}
 
 // ListMavenPackages lists distinct (group_id, artifact_id) rows for a Maven repository.
 func (r *pulpDaoImpl) ListMavenPackages(ctx context.Context, repoHref string, search string, limit, offset int) (zest.PaginatedMavenRepositoryPackageListResponse, error) {
@@ -21,7 +28,7 @@ func (r *pulpDaoImpl) ListMavenPackages(ctx context.Context, repoHref string, se
 		return empty, err
 	}
 
-	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenPackages(ctx, repoHref).
+	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenPackages(ctx, zestHrefPathParam(repoHref)).
 		Search(search).
 		Limit(int32(limit)).   //nolint:gosec // G115: pagination / catalog page sizes are well below int32 max
 		Offset(int32(offset)). //nolint:gosec // G115: pagination / catalog page sizes are well below int32 max
@@ -54,7 +61,7 @@ func (r *pulpDaoImpl) GetMavenRepositoryMetrics(ctx context.Context, repoHref st
 		return empty, err
 	}
 
-	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenMetrics(ctx, repoHref).Execute()
+	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenMetrics(ctx, zestHrefPathParam(repoHref)).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}
@@ -105,7 +112,7 @@ func (r *pulpDaoImpl) mavenLatestVersionHref(ctx context.Context, repoHref strin
 		return "", err
 	}
 
-	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenRead(ctx, repoHref).Execute()
+	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenRead(ctx, zestHrefPathParam(repoHref)).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

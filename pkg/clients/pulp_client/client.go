@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/cache"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -65,7 +66,8 @@ func getZestClient(ctx context.Context) (context.Context, *zest.APIClient, error
 	pulpConfig.DefaultHeader["Correlation-ID"] = getCorrelationId(ctx)
 	pulpConfig.HTTPClient = &httpClient
 	pulpConfig.Servers = zest.ServerConfigurations{zest.ServerConfiguration{
-		URL: config.Get().Clients.Pulp.Server,
+		// Zest concatenates Server + "/" + path. A trailing slash here would produce "//".
+		URL: strings.TrimRight(config.Get().Clients.Pulp.Server, "/"),
 	}}
 	client := zest.NewAPIClient(pulpConfig)
 
