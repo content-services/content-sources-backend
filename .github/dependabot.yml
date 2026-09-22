@@ -13,6 +13,12 @@ updates:
       - dependency-name: "github.com/getkin/kin-openapi"
         versions:
           - ">=0.136.0"
+      # v4.20.1 pulls grpc-gateway/v2/runtime with no fixed CVE (Snyk CVSS 6.3).
+      # Stay on 4.19.x until 4.20.2 is available.
+      - dependency-name: "github.com/golang-migrate/migrate/v4"
+        versions:
+          - "4.20.0"
+          - "4.20.1"
     groups:
       go:
         patterns:

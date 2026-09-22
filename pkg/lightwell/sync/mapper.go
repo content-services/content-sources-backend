@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +25,8 @@ const (
 	fieldCVSS     = "customfield_10859"
 	fieldEmbargo  = "customfield_10860"
 )
+
+var cveBackportPattern = regexp.MustCompile(`\bCVE-\d{4}-\d{4,}\b`)
 
 type Vulnerability struct {
 	VulnerabilityKey   string
@@ -81,7 +84,7 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		return Vulnerability{}, errors.New("issue has no key")
 	}
 	summary := rawString(issue.Fields["summary"])
-	vulnerabilityID := vulnerabilityIDFromSummary(summary)
+	vulnerabilityID := vulnerabilityIDFromSummary(strings.TrimSpace(summary))
 	if vulnerabilityID == "" {
 		return Vulnerability{}, fmt.Errorf("issue %s has no LW- or CVE- vulnerability id in summary", issue.Key)
 	}
@@ -178,10 +181,13 @@ func renderADF(node adfNode, target *strings.Builder) {
 }
 
 func vulnerabilityIDFromSummary(summary string) string {
-	id, _, _ := strings.Cut(strings.TrimSpace(summary), " ")
+	id, _, _ := strings.Cut(summary, " ")
 	prefix := strings.ToUpper(id)
 	if strings.HasPrefix(prefix, "CVE-") || strings.HasPrefix(prefix, "LW-") {
 		return id
+	}
+	if strings.HasPrefix(summary, "[CVE Backport]") {
+		return cveBackportPattern.FindString(summary)
 	}
 	return ""
 }

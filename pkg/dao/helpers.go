@@ -66,6 +66,28 @@ func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy 
 	return sqlOrderBy
 }
 
+// Converts an API sort_by string (e.g. "name:desc,version") into the
+// Pulp "ordering" query parameter format (e.g. ["-name", "version"]).
+// Unknown fields are ignored. When nothing valid remains, defaultOrdering is returned.
+func convertSortByToPulpOrdering(sortBy string, sortMap map[string]string, defaultOrdering []string) []string {
+	ordering := []string{}
+	for _, part := range strings.Split(sortBy, ",") {
+		split := strings.Split(part, ":")
+		field, ok := sortMap[strings.TrimSpace(split[0])]
+		if !ok {
+			continue
+		}
+		if len(split) > 1 && strings.TrimSpace(split[1]) == "desc" {
+			field = "-" + field
+		}
+		ordering = append(ordering, field)
+	}
+	if len(ordering) == 0 {
+		return defaultOrdering
+	}
+	return ordering
+}
+
 func checkRequestUrlAndUuids(request api.ContentUnitSearchRequest) error {
 	if len(request.URLs) == 0 && len(request.UUIDs) == 0 {
 		return &ce.DaoError{

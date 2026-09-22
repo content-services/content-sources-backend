@@ -17,7 +17,11 @@
 # Intended for local development against the Pulp instance started via docker-compose.
 #
 # Usage:
-#   ./scripts/create_lightwell_repo.sh [--remote-url URL]
+#   ./scripts/create_lightwell_repo.sh [--remote-url URL] [--validated-count N]
+#
+#   --validated-count N  Number of distinct packages to push to the validated
+#                        Maven repo (default 20). Also settable via the
+#                        VALIDATED_PACKAGE_COUNT environment variable.
 #
 # Auth:
 #   Basic auth (default): set PULP_USER and PULP_PASS
@@ -88,8 +92,9 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --remote-url) REMOTE_URL="$2"; shift 2 ;;
-    *)            echo "Unknown option: $1" >&2; exit 1 ;;
+    --remote-url)      REMOTE_URL="$2"; shift 2 ;;
+    --validated-count) VALIDATED_PACKAGE_COUNT="$2"; shift 2 ;;
+    *)                 echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
@@ -385,6 +390,96 @@ populate_maven_repo() {
   echo "    Fetched ${success}/${count} packages successfully."
 }
 
+# Base path of the "validated" Maven repo that should be populated with a large
+# number of packages, and how many packages to push there.
+VALIDATED_BASE_PATH="${VALIDATED_BASE_PATH:-java/validated}"
+VALIDATED_PACKAGE_COUNT="${VALIDATED_PACKAGE_COUNT:-20}"
+
+# Maven Central base URL used to browse artifact directory listings and read
+# maven-metadata.xml when discovering distinct coordinates.
+MAVEN_CENTRAL_BROWSE_URL="${MAVEN_CENTRAL_BROWSE_URL:-https://repo1.maven.org/maven2}"
+
+# Group paths (dot-groupId as a slash path) whose directory listings contain
+# many distinct artifacts. org/webjars alone exposes >1000 distinct artifacts,
+# which is more than enough to reach a large package count.
+MAVEN_BULK_GROUP_PATHS=(
+  org/webjars
+)
+
+# Fetches many *distinct* Maven packages through a distribution to populate the
+# repo with a large package count.
+#
+# The application counts a Maven "package" as a distinct group_id:artifact_id
+# that has a .pom (see tangy MavenPackageList). Fetching many versions of a few
+# artifacts therefore does NOT increase the package count. Instead this
+# discovers distinct artifacts from Maven Central directory listings, resolves
+# each artifact's latest version from its maven-metadata.xml, and fetches that
+# single version's .pom through the distribution's on-demand remote until the
+# target number of distinct packages is reached.
+#   populate_maven_repo_bulk <DOMAIN_NAME> <BASE_PATH> <TARGET_COUNT>
+populate_maven_repo_bulk() {
+  local domain_name="$1"
+  local base_path="$2"
+  local target="$3"
+  local content_url="${PULP_CONTENT_URL}/api/pulp-content/${domain_name}/${base_path}"
+
+  echo "    Bulk-populating ${base_path} with up to ${target} distinct package(s)..."
+  echo "    (this fetches ~${target} artifacts from Maven Central and may take a few minutes)"
+
+  local success=0
+  local failed=0
+
+  for group_path in "${MAVEN_BULK_GROUP_PATHS[@]}"; do
+    (( success >= target )) && break
+
+    echo "      Discovering artifacts under ${group_path}/ ..."
+    local listing
+    listing=$(curl -s --max-time 60 "${MAVEN_CENTRAL_BROWSE_URL}/${group_path}/") || listing=""
+
+    # Directory listing entries look like href="artifact-id/"; take the dir
+    # names (trailing slash) and drop the parent-dir link.
+    local -a artifacts
+    readarray -t artifacts < <(printf '%s' "$listing" \
+      | grep -oP '(?<=href=")[^"/]+(?=/")' | grep -v '^\.\.$')
+
+    if (( ${#artifacts[@]} == 0 )); then
+      echo "      WARN: no artifacts found under ${group_path}/"
+      continue
+    fi
+    echo "      Found ${#artifacts[@]} artifact(s) under ${group_path}/"
+
+    for artifact in "${artifacts[@]}"; do
+      (( success >= target )) && break
+
+      local md ver
+      md=$(curl -s --max-time 20 \
+        "${MAVEN_CENTRAL_BROWSE_URL}/${group_path}/${artifact}/maven-metadata.xml") || md=""
+      ver=$(printf '%s' "$md" | sed -n 's|.*<release>\(.*\)</release>.*|\1|p' | head -1)
+      if [[ -z "$ver" ]]; then
+        ver=$(printf '%s' "$md" | sed -n 's|.*<latest>\(.*\)</latest>.*|\1|p' | head -1)
+      fi
+      if [[ -z "$ver" ]]; then
+        failed=$((failed + 1))
+        continue
+      fi
+
+      local pom="/${group_path}/${artifact}/${ver}/${artifact}-${ver}.pom"
+      local status
+      status=$(curl -s -o /dev/null -w "%{http_code}" "${content_url}${pom}")
+      if [[ "$status" -ge 200 && "$status" -lt 400 ]]; then
+        success=$((success + 1))
+        if (( success % 25 == 0 )); then
+          echo "      ...${success}/${target} packages"
+        fi
+      else
+        failed=$((failed + 1))
+      fi
+    done
+  done
+
+  echo "    Bulk-populated ${success} distinct package(s) (${failed} fetch(es) failed/skipped)."
+}
+
 # Ensures repos from a JSON allowlist file under the given domain.
 #   create_repos_from_json <DOMAIN_NAME> <JSON_FILE>
 create_repos_from_json() {
@@ -407,7 +502,11 @@ create_repos_from_json() {
     case "$entry_type" in
       maven)
         ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
-        populate_maven_repo "$domain_name" "$entry_base_path"
+        if [[ "$entry_base_path" == "$VALIDATED_BASE_PATH" ]]; then
+          populate_maven_repo_bulk "$domain_name" "$entry_base_path" "$VALIDATED_PACKAGE_COUNT"
+        else
+          populate_maven_repo "$domain_name" "$entry_base_path"
+        fi
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"

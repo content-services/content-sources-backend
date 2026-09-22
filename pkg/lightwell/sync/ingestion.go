@@ -3,13 +3,15 @@ package sync
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 )
 
-const VulnerabilityJQL = "project = LTWL AND type = Vulnerability ORDER BY created ASC"
+// VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
+const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
 
 var vulnerabilityFields = []string{
 	"summary",
@@ -79,6 +81,8 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 		return SyncSummary{}, err
 	}
 
+	i.prefetchRelationships(ctx, issues, accountFieldID)
+
 	advisories, err := i.loadAdvisories(ctx)
 	if err != nil {
 		return SyncSummary{}, err
@@ -92,6 +96,108 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 		}
 	}
 	return summary, nil
+}
+
+const relationshipBatchSize = 100
+
+func (i *Ingestor) prefetchRelationships(ctx context.Context, vulnerabilities []jira_client.JiraIssue, accountFieldID string) {
+	if accountFieldID == "" {
+		return
+	}
+
+	batchKeys := make(map[string]struct{})
+	for _, vulnerability := range vulnerabilities {
+		if discardedResolution(vulnerability.Fields["resolution"]) {
+			continue
+		}
+		for _, key := range linkedIssueKeys(vulnerability, "relates to") {
+			batchKeys[key] = struct{}{}
+		}
+	}
+	i.prefetchIssues(ctx, sortedKeys(batchKeys), []string{"parent", "issuelinks"})
+
+	epicKeys := make(map[string]struct{})
+	for batchKey := range batchKeys {
+		cached, exists := i.cache[batchKey]
+		if !exists || cached.err != nil {
+			continue
+		}
+		epicKey := parentIssueKey(cached.issue)
+		if epicKey == "" {
+			epicKey = linkedIssueKey(cached.issue, "is child of")
+		}
+		if epicKey != "" {
+			epicKeys[epicKey] = struct{}{}
+		}
+	}
+	i.prefetchIssues(ctx, sortedKeys(epicKeys), []string{accountFieldID, "issuelinks"})
+}
+
+func (i *Ingestor) prefetchIssues(ctx context.Context, keys []string, fields []string) {
+	uncached := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if _, exists := i.cache[key]; !exists {
+			uncached = append(uncached, key)
+		}
+	}
+
+	for start := 0; start < len(uncached); start += relationshipBatchSize {
+		end := min(start+relationshipBatchSize, len(uncached))
+		chunk := uncached[start:end]
+		if err := i.prefetchIssueChunk(ctx, chunk, fields); err != nil {
+			// Relationship resolution falls back to fetching missing issues one at a time.
+			continue
+		}
+	}
+}
+
+func (i *Ingestor) prefetchIssueChunk(ctx context.Context, keys []string, fields []string) error {
+	jql := issueKeysJQL(keys)
+	nextPageToken := ""
+	seenTokens := make(map[string]struct{})
+	wanted := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		wanted[key] = struct{}{}
+	}
+
+	for {
+		page, err := i.jira.Search(ctx, jql, fields, nextPageToken)
+		if err != nil {
+			return err
+		}
+		for _, issue := range page.Issues {
+			if _, exists := wanted[issue.Key]; !exists {
+				continue
+			}
+			i.cache[issue.Key] = cachedIssue{issue: issue}
+		}
+		if page.NextPageToken == "" {
+			return nil
+		}
+		if _, seen := seenTokens[page.NextPageToken]; seen {
+			return fmt.Errorf("jira repeated relationship pagination token %q", page.NextPageToken)
+		}
+		seenTokens[page.NextPageToken] = struct{}{}
+		nextPageToken = page.NextPageToken
+	}
+}
+
+func issueKeysJQL(keys []string) string {
+	quoted := make([]string, len(keys))
+	for index, key := range keys {
+		escaped := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(key)
+		quoted[index] = `"` + escaped + `"`
+	}
+	return fmt.Sprintf("key IN (%s) ORDER BY key ASC", strings.Join(quoted, ", "))
+}
+
+func sortedKeys(values map[string]struct{}) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	return keys
 }
 
 const advisoryPageSize = 100
