@@ -122,7 +122,7 @@ func ZestTaskResponseToApi(zestTaskResponse *zest.TaskResponse, apiTaskResponse 
 	apiTaskResponse.LoggingCid = zestTaskResponse.LoggingCid
 	apiTaskResponse.StartedAt = zestTaskResponse.StartedAt
 	apiTaskResponse.FinishedAt = zestTaskResponse.FinishedAt
-	apiTaskResponse.Worker = zestTaskResponse.Worker
+	apiTaskResponse.Worker = zestTaskResponse.Worker.Get()
 	apiTaskResponse.ParentTask = zestTaskResponse.ParentTask
 	apiTaskResponse.ChildTasks = zestTaskResponse.ChildTasks
 	apiTaskResponse.TaskGroup = zestTaskResponse.TaskGroup

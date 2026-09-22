@@ -1,6 +1,6 @@
 module github.com/content-services/content-sources-backend
 
-go 1.26.0
+go 1.25.8
 
 require (
 	github.com/ProtonMail/go-crypto v1.4.1
@@ -60,7 +60,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.22.0
 	google.golang.org/grpc v1.83.2
 )
 

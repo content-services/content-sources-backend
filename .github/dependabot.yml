@@ -13,6 +13,10 @@ updates:
       - dependency-name: "github.com/getkin/kin-openapi"
         versions:
           - ">=0.136.0"
+      # v0.23.0+ declares go >= 1.26, which would force the go directive past our pin.
+      - dependency-name: "golang.org/x/sync"
+        versions:
+          - ">=0.23.0"
       # v4.20.1 pulls grpc-gateway/v2/runtime with no fixed CVE (Snyk CVSS 6.3).
       # Stay on 4.19.x until 4.20.2 is available.
       - dependency-name: "github.com/golang-migrate/migrate/v4"
