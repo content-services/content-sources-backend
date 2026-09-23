@@ -6651,6 +6651,8 @@ objects:
                 value: ${{CLIENTS_PULP_SERVER}}
               - name: CLIENTS_PULP_CONTENT_ORIGIN
                 value: ${{CLIENTS_PULP_CONTENT_ORIGIN}}
+              - name: CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN
+                value: ${{CLIENTS_PULP_LIGHTWELL_CONTENT_ORIGIN}}
               - name: CLIENTS_PULP_CONTENT_PATH_PREFIX
                 value: ${{CLIENTS_PULP_CONTENT_PATH_PREFIX}}
               - name: CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS
@@ -6713,12 +6715,6 @@ objects:
                 value: ${FEATURES_ADMIN_NOTIFICATIONS_ACCOUNTS}
               - name: FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS}
-              - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED
-                value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ENABLED}
-              - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS
-                value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ACCOUNTS}
-              - name: FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS
-                value: ${FEATURES_LIGHTWELL_BEACON_AND_LENS_ORGANIZATIONS}
               - name: FEATURES_LIGHTWELL_BEACON_ENABLED
                 value: ${FEATURES_LIGHTWELL_BEACON_ENABLED}
               - name: FEATURES_LIGHTWELL_BEACON_ACCOUNTS
@@ -6733,6 +6729,8 @@ objects:
                 value: ${FEATURES_LIGHTWELL_LENS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_LENS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_LENS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_LENS_INTERNAL_ENTITLED_FEATURES
+                value: ${FEATURES_LIGHTWELL_LENS_INTERNAL_ENTITLED_FEATURES}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ENABLED}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS
@@ -6824,6 +6822,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
