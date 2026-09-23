@@ -163,6 +163,9 @@ type Candlepin struct {
 	ClientKey  string `mapstructure:"client_key"`
 	CACert     string `mapstructure:"ca_cert"`
 	DevelOrg   bool   `mapstructure:"devel_org"` // For use only in dev envs
+	// OverrideExposed sets the x-rh-override-exposed header on candlepin requests.
+	// Only populated in stage (from the content-sources-candlepin secret); empty elsewhere.
+	OverrideExposed string `mapstructure:"override_exposed"`
 }
 
 type FeatureService struct {
@@ -404,6 +407,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.candlepin.client_key", "")
 	v.SetDefault("clients.candlepin.ca_cert", "")
 	v.SetDefault("clients.candlepin.devel_org", false)
+	v.SetDefault("clients.candlepin.override_exposed", "")
 
 	v.SetDefault("clients.lightwell.username", "")
 	v.SetDefault("clients.lightwell.password", "")

@@ -56,6 +56,9 @@ func getCandlepinClient(ctx context.Context) (context.Context, *caliri.APIClient
 
 	cpConfig := caliri.NewConfiguration()
 	cpConfig.DefaultHeader["X-Correlation-ID"] = getCorrelationId(ctx)
+	if overrideExposed := config.Get().Clients.Candlepin.OverrideExposed; overrideExposed != "" {
+		cpConfig.DefaultHeader["x-rh-override-exposed"] = overrideExposed
+	}
 	cpConfig.UserAgent = "Content-Sources"
 	cpConfig.HTTPClient = &httpClient
 	cpConfig.Servers = caliri.ServerConfigurations{caliri.ServerConfiguration{

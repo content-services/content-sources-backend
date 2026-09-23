@@ -269,6 +269,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -616,6 +622,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -929,6 +941,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -1229,6 +1247,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -1534,6 +1558,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -1838,6 +1868,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -2146,6 +2182,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -2451,6 +2493,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -2752,6 +2800,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -3055,6 +3109,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -3356,6 +3416,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -3682,6 +3748,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -3984,6 +4056,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -4305,6 +4383,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -4603,6 +4687,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -4903,6 +4993,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -5201,6 +5297,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -5501,6 +5603,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -5799,6 +5907,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
@@ -6099,6 +6213,12 @@ objects:
                     name: content-sources-candlepin
                     key: ca
                     optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
+                    optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
               - name: CLIENTS_FEATURE_SERVICE_CLIENT_CERT
@@ -6397,6 +6517,12 @@ objects:
                   secretKeyRef:
                     name: content-sources-candlepin
                     key: ca
+                    optional: true
+              - name: CLIENTS_CANDLEPIN_OVERRIDE_EXPOSED
+                valueFrom:
+                  secretKeyRef:
+                    name: content-sources-candlepin
+                    key: x-rh-override-exposed
                     optional: true
               - name: CLIENTS_FEATURE_SERVICE_SERVER
                 value: ${CLIENTS_FEATURE_SERVICE_SERVER}
