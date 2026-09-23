@@ -117,6 +117,48 @@ func mavenTangResponse() tangy.MavenPackageListResponse {
 	}
 }
 
+func newNpmRepo() api.RepositoryResponse {
+	return api.RepositoryResponse{
+		UUID:                  "ggg-hhh-iii",
+		Name:                  "lightwell/npm/remediated",
+		ContentType:           config.ContentTypeNpm,
+		Origin:                config.OriginLightwell,
+		SecurityLevel:         "remediated",
+		PublishedDistBasePath: "npm/remediated",
+		OrgID:                 test_handler.MockOrgId,
+	}
+}
+
+func npmScopedTangResponse() tangy.NpmPackageListResponse {
+	return tangy.NpmPackageListResponse{
+		Results: []tangy.NpmPackageListItem{
+			{
+				Name:     "@types/is-odd",
+				Versions: []string{"3.0.0.rhlw-00001"},
+				LatestVersions: []tangy.NpmVersionInfo{
+					{Version: "3.0.0.rhlw-00001", CreatedAt: "2024-07-01T10:00:00Z"},
+				},
+			},
+		},
+		Total: 1, Limit: 200, Offset: 0,
+	}
+}
+
+func npmUnscopedTangResponse() tangy.NpmPackageListResponse {
+	return tangy.NpmPackageListResponse{
+		Results: []tangy.NpmPackageListItem{
+			{
+				Name:     "lodash",
+				Versions: []string{"4.17.21.rhlw-00001"},
+				LatestVersions: []tangy.NpmVersionInfo{
+					{Version: "4.17.21.rhlw-00001", CreatedAt: "2024-07-02T10:00:00Z"},
+				},
+			},
+		},
+		Total: 1, Limit: 200, Offset: 0,
+	}
+}
+
 func pythonTangResponse() tangy.PythonPackageListResponse {
 	return tangy.PythonPackageListResponse{
 		Results: []tangy.PythonPackageListItem{
@@ -381,7 +423,6 @@ func (s *LightwellPackagesSuite) TestListPackagesTypeFilter() {
 	t := s.T()
 
 	mavenRepo := newMavenRepo()
-	// Only maven repo should be returned when filtering by ecosystem=maven
 	s.reg.RepositoryConfig.On(
 		"List", test.MockCtx(), test_handler.MockOrgId,
 		mock.MatchedBy(func(p api.PaginationData) bool { return p.Limit == MaxLimit }),
@@ -473,6 +514,8 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsSingleRepo() {
 	assert.Len(t, resp.Data, 2)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
 	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].Ecosystem)
+	assert.Equal(t, "pkg:maven/com.fasterxml.jackson.core/jackson-databind@"+resp.Data[0].Version, resp.Data[0].Purl)
+	assert.Equal(t, "com.fasterxml.jackson.core:jackson-databind", resp.Data[0].Coordinates)
 }
 
 func (s *LightwellPackagesSuite) TestListPackageVersionsWithNameFilter() {
@@ -511,7 +554,6 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsPagination() {
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	// Request with limit=1&offset=0 — should get 1 of 2 versions
 	path := fmt.Sprintf("%s/lightwell/package_versions?limit=1&offset=0", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -597,6 +639,8 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsResolvesCveFilter() {
 	assert.Len(t, resp.Data, 1)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
 	assert.Equal(t, "2.15.3.rhlw-00001", resp.Data[0].Version)
+	assert.Equal(t, "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.3.rhlw-00001", resp.Data[0].Purl)
+	assert.Equal(t, "com.fasterxml.jackson.core:jackson-databind", resp.Data[0].Coordinates)
 }
 
 func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() {
@@ -610,8 +654,6 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() 
 		tangy.MavenPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
 	).Return(mavenTangResponse(), nil)
 
-	// Advisory says jackson-databind is fixed at 2.15.3.rhlw-00001, so
-	// the older version 2.14.2.rhlw-00001 should be returned as vulnerable.
 	s.reg.LightwellAdvisory.On("ListAdvisoriesByCveID", test.MockCtx(), "CVE-2024-8888").Return([]dao.LightwellAdvisoryCveMatch{
 		{
 			PackageName:   "jackson-databind",
@@ -636,4 +678,92 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsVulnerableToCveFilter() 
 	assert.Len(t, resp.Data, 1)
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
 	assert.Equal(t, "2.14.2.rhlw-00001", resp.Data[0].Version)
+}
+
+// --- npm PURL / coordinates tests ---
+
+func (s *LightwellPackagesSuite) TestListPackageVersionsNpmScoped() {
+	t := s.T()
+
+	npmRepo := newNpmRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{npmRepo})
+	href := "/api/pulp/repos/npm/1/"
+	s.stubRepoHref(npmRepo, href)
+	s.tangClient.On("NpmPackageList", test.MockCtx(), href,
+		tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(npmScopedTangResponse(), nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "is-odd", resp.Data[0].Name)
+	assert.Equal(t, "@types", resp.Data[0].Group)
+	assert.Equal(t, "pkg:npm/%40types/is-odd@3.0.0.rhlw-00001", resp.Data[0].Purl)
+	assert.Equal(t, "@types/is-odd", resp.Data[0].Coordinates)
+}
+
+func (s *LightwellPackagesSuite) TestListPackageVersionsNpmUnscoped() {
+	t := s.T()
+
+	npmRepo := newNpmRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{npmRepo})
+	href := "/api/pulp/repos/npm/1/"
+	s.stubRepoHref(npmRepo, href)
+	s.tangClient.On("NpmPackageList", test.MockCtx(), href,
+		tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(npmUnscopedTangResponse(), nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "lodash", resp.Data[0].Name)
+	assert.Equal(t, "-", resp.Data[0].Group)
+	assert.Equal(t, "pkg:npm/lodash@4.17.21.rhlw-00001", resp.Data[0].Purl)
+	assert.Equal(t, "lodash", resp.Data[0].Coordinates)
+}
+
+func (s *LightwellPackagesSuite) TestListPackageVersionsPythonPurl() {
+	t := s.T()
+
+	pythonRepo := newPythonRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{pythonRepo})
+	href := "/api/pulp/repos/python/1/"
+	s.stubRepoHref(pythonRepo, href)
+	s.tangClient.On("PythonPackageList", test.MockCtx(), href,
+		tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: MaxLimit},
+	).Return(pythonTangResponse(), nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageVersionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "requests", resp.Data[0].Name)
+	assert.Equal(t, "pkg:pypi/requests@2.31.0.rhlw-00001", resp.Data[0].Purl)
+	assert.Equal(t, "requests", resp.Data[0].Coordinates)
 }
