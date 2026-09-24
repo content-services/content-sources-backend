@@ -311,6 +311,18 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Filter by package version (substring match on advisory_id)",
+                        "name": "package_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by advisory id or alias (substring match)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Minimum severity level (low, moderate, important, critical)",
                         "name": "severity_min",
                         "in": "query"
@@ -319,6 +331,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter by CVE ID (exact match)",
                         "name": "cve_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version.",
+                        "name": "latest_release",
                         "in": "query"
                     },
                     {
@@ -5357,6 +5375,18 @@ const docTemplate = `{
                 "advisory_id": {
                     "type": "string"
                 },
+                "advisory_name": {
+                    "type": "string"
+                },
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
                 "details": {
                     "type": "string"
                 },
@@ -5366,7 +5396,16 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "modified": {
+                    "type": "string"
+                },
                 "package_name": {
+                    "type": "string"
+                },
+                "package_version": {
+                    "type": "string"
+                },
+                "published": {
                     "type": "string"
                 },
                 "reference_urls": {
@@ -5378,7 +5417,22 @@ const docTemplate = `{
                 "repository": {
                     "type": "string"
                 },
+                "schema_version": {
+                    "type": "string"
+                },
                 "severity": {
+                    "type": "string"
+                },
+                "severity_score": {
+                    "type": "number"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
