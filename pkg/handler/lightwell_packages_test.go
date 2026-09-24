@@ -296,7 +296,75 @@ func (s *LightwellPackagesSuite) TestListPackagesMultiRepoPaginatesBeyondMaxLimi
 	assert.Equal(t, int64(totalA+3), resp.Meta.Count)
 }
 
-// mavenVersionsPulpResponsePage builds a page where every package has two
+func newDemoMavenRepo() api.RepositoryResponse {
+	return api.RepositoryResponse{
+		UUID:                  "demo-uuid-111",
+		Name:                  "lightwell/java/validated-demo",
+		ContentType:           config.ContentTypeMaven,
+		Origin:                config.OriginLightwell,
+		SecurityLevel:         "validated",
+		PublishedDistBasePath: "java/validated-demo",
+		OrgID:                 config.LightwellDemoOrg,
+	}
+}
+
+// TestListPackagesExcludesDemoByDefault verifies demo repos (served from the
+// Lightwell demo org) are not aggregated unless demo=true is requested. Only the
+// production repo is queried; a Tang call against the demo repo would fail the
+// mock, since no expectation is registered for its href.
+func (s *LightwellPackagesSuite) TestListPackagesExcludesDemoByDefault() {
+	t := s.T()
+
+	realRepo := newMavenRepo()
+	demoRepo := newDemoMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{realRepo, demoRepo})
+
+	href := "/api/pulp/repos/maven/real/"
+	s.stubRepoHref(realRepo, href)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", DefaultLimit, 0).
+		Return(mavenPulpResponsePage(0, 3, 3), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.Equal(t, int64(3), resp.Meta.Count)
+}
+
+// TestListPackagesDemoTrueReturnsOnlyDemo verifies demo=true aggregates only the
+// demo-org repos and excludes production repos.
+func (s *LightwellPackagesSuite) TestListPackagesDemoTrueReturnsOnlyDemo() {
+	t := s.T()
+
+	realRepo := newMavenRepo()
+	demoRepo := newDemoMavenRepo()
+	s.stubLightwellRepos([]api.RepositoryResponse{realRepo, demoRepo})
+
+	href := "/api/pulp/repos/maven/demo/"
+	s.stubRepoHref(demoRepo, href)
+	s.pulpClient.On("ListMavenPackages", test.MockCtx(), href, "", DefaultLimit, 0).
+		Return(mavenPulpResponsePage(0, 7, 7), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?demo=true", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.LightwellPackageCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.Equal(t, int64(7), resp.Meta.Count)
+}
+
+// mavenVersionsTangResponsePage builds a page where every package has two
 // versions, so the number of expanded version items differs from the package
 // count used to advance the pagination offset.
 func mavenVersionsPulpResponsePage(offset, pageLen, total int) zest.PaginatedMavenRepositoryPackageListResponse {

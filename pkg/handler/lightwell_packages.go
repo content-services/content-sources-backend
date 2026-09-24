@@ -48,6 +48,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Param        ecosystem       query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
+// @Param        demo            query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit           query  int     false  "Limit of results to return"
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageCollectionResponse
@@ -62,7 +63,7 @@ func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid ecosystem filter", err.Error())
 	}
 
-	repos, err := h.fetchLightwellRepos(c, filters.Ecosystem, filters.SecurityLevel)
+	repos, err := h.fetchLightwellRepos(c, filters.Ecosystem, filters.SecurityLevel, filters.Demo)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing Lightwell repositories", err.Error())
 	}
@@ -166,6 +167,7 @@ func (h *LightwellPackagesHandler) fetchPackagesPage(ctx context.Context, repo a
 // @Param        repository           query  string  false  "Filter by repository name"
 // @Param        resolves_cve_id      query  string  false  "Show only packages that resolve this CVE"
 // @Param        vulnerable_to_cve_id query  string  false  "Show only packages vulnerable to this CVE"
+// @Param        demo                 query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit                query  int     false  "Limit of results to return"
 // @Param        offset               query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageVersionCollectionResponse
@@ -180,7 +182,7 @@ func (h *LightwellPackagesHandler) ListPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid ecosystem filter", err.Error())
 	}
 
-	repos, err := h.fetchLightwellRepos(c, filters.Ecosystem, filters.SecurityLevel)
+	repos, err := h.fetchLightwellRepos(c, filters.Ecosystem, filters.SecurityLevel, filters.Demo)
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error listing Lightwell repositories", err.Error())
 	}
@@ -215,8 +217,10 @@ func (h *LightwellPackagesHandler) ListPackageVersions(c echo.Context) error {
 }
 
 // fetchLightwellRepos returns Lightwell repos for the caller's org, optionally
-// filtered by content type and security level.
-func (h *LightwellPackagesHandler) fetchLightwellRepos(c echo.Context, contentType, securityLevel string) ([]api.RepositoryResponse, error) {
+// filtered by content type and security level. Demo repos (served from the
+// Lightwell demo org) are excluded by default and returned exclusively when
+// demo is true, so the two sets never overlap.
+func (h *LightwellPackagesHandler) fetchLightwellRepos(c echo.Context, contentType, securityLevel string, demo bool) ([]api.RepositoryResponse, error) {
 	_, orgID := GetAccountIdOrgId(c)
 	ctx := c.Request().Context()
 
@@ -230,14 +234,15 @@ func (h *LightwellPackagesHandler) fetchLightwellRepos(c echo.Context, contentTy
 		return nil, err
 	}
 
-	if securityLevel == "" {
-		return repos.Data, nil
-	}
 	filtered := make([]api.RepositoryResponse, 0, len(repos.Data))
 	for _, r := range repos.Data {
-		if strings.EqualFold(r.SecurityLevel, securityLevel) {
-			filtered = append(filtered, r)
+		if (r.OrgID == config.LightwellDemoOrg) != demo {
+			continue
 		}
+		if securityLevel != "" && !strings.EqualFold(r.SecurityLevel, securityLevel) {
+			continue
+		}
+		filtered = append(filtered, r)
 	}
 	return filtered, nil
 }
@@ -688,6 +693,7 @@ func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData
 		String("name", &f.Name).
 		String("repository", &f.Repository).
 		String("security_level", &f.SecurityLevel).
+		Bool("demo", &f.Demo).
 		BindError()
 	return f
 }
@@ -701,6 +707,7 @@ func parseLightwellPackageVersionFilters(c echo.Context) api.LightwellPackageVer
 		String("repository", &f.Repository).
 		String("resolves_cve_id", &f.ResolvesCveID).
 		String("vulnerable_to_cve_id", &f.VulnerableToCveID).
+		Bool("demo", &f.Demo).
 		BindError()
 	return f
 }

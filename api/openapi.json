@@ -3733,6 +3733,14 @@
                         }
                     },
                     {
+                        "description": "Return demo repositories instead of production ones (default false)",
+                        "in": "query",
+                        "name": "demo",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
                         "description": "Limit of results to return",
                         "in": "query",
                         "name": "limit",
@@ -3814,6 +3822,14 @@
                         "name": "security_level",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Return demo repositories instead of production ones (default false)",
+                        "in": "query",
+                        "name": "demo",
+                        "schema": {
+                            "type": "boolean"
                         }
                     },
                     {
