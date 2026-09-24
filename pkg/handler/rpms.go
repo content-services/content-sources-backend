@@ -46,7 +46,7 @@ func RegisterRpmRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /rpms/names [post]
 func (rh *RpmHandler) searchRpmByName(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -109,7 +109,7 @@ func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
@@ -118,7 +118,7 @@ func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing RPMs", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&apiResponse, c, total))
+	return c.JSON(200, SetCollectionResponseMetadata(&apiResponse, c, total))
 }
 
 // searchSnapshotRPMs godoc
@@ -137,7 +137,7 @@ func (rh *RpmHandler) listRepositoriesRpm(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /snapshots/rpms/names [post]
 func (rh *RpmHandler) searchSnapshotRPMs(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	dataInput := api.SnapshotSearchRpmRequest{}
 
 	err := CheckSnapshotAccessible(c.Request().Context())
@@ -183,7 +183,7 @@ func (rh *RpmHandler) listSnapshotRpm(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
@@ -192,7 +192,7 @@ func (rh *RpmHandler) listSnapshotRpm(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing RPMs", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
+	return c.JSON(200, SetCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
 }
 
 // listSnapshotErrata godoc
@@ -222,7 +222,7 @@ func (rh *RpmHandler) listSnapshotErrata(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
@@ -237,7 +237,7 @@ func (rh *RpmHandler) listSnapshotErrata(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing Errata", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
+	return c.JSON(200, SetCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
 }
 
 // listTemplateRpm godoc
@@ -264,7 +264,7 @@ func (rh *RpmHandler) listTemplateRpm(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
@@ -273,7 +273,7 @@ func (rh *RpmHandler) listTemplateRpm(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing RPMs", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
+	return c.JSON(200, SetCollectionResponseMetadata(&api.SnapshotRpmCollectionResponse{Data: data}, c, int64(total)))
 }
 
 // listTemplateErrata godoc
@@ -303,7 +303,7 @@ func (rh *RpmHandler) listTemplateErrata(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
@@ -318,5 +318,5 @@ func (rh *RpmHandler) listTemplateErrata(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing Errata", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
+	return c.JSON(200, SetCollectionResponseMetadata(&api.SnapshotErrataCollectionResponse{Data: data}, c, int64(total)))
 }

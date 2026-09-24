@@ -76,7 +76,7 @@ func RegisterSnapshotRoutes(group *echo.Group, daoReg *dao.DaoRegistry, taskClie
 func (sh *SnapshotHandler) listSnapshotsForTemplate(c echo.Context) error {
 	uuid := c.Param("uuid")
 	pageData := ParsePagination(c)
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	templateResponse, err := sh.DaoRegistry.Template.Fetch(c.Request().Context(), orgID, uuid, false)
 	if err != nil {
@@ -90,7 +90,7 @@ func (sh *SnapshotHandler) listSnapshotsForTemplate(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing snapshots for template", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&snapshots, c, totalSnaps))
 }
 
 // Get Snapshots godoc
@@ -114,13 +114,13 @@ func (sh *SnapshotHandler) listSnapshotsForRepo(c echo.Context) error {
 	uuid := c.Param("uuid")
 	pageData := ParsePagination(c)
 	filterData := ParseFilters(c)
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	snapshots, totalSnaps, err := sh.DaoRegistry.Snapshot.List(c.Request().Context(), orgID, uuid, pageData, filterData)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repository snapshots", err.Error())
 	}
-	return c.JSON(200, setCollectionResponseMetadata(&snapshots, c, totalSnaps))
+	return c.JSON(200, SetCollectionResponseMetadata(&snapshots, c, totalSnaps))
 }
 
 // Get Snapshots godoc
@@ -137,7 +137,7 @@ func (sh *SnapshotHandler) listSnapshotsForRepo(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/config.repo [get]
 func (sh *SnapshotHandler) getLatestRepoConfigurationFile(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	repoUUID := c.Param("uuid")
 
 	latestSnapshot, err := sh.DaoRegistry.Snapshot.FetchLatestSnapshot(c.Request().Context(), repoUUID)
@@ -194,7 +194,7 @@ func (sh *SnapshotHandler) listSnapshotsByDate(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "", badRequestMsg)
 	}
 
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	response, err := sh.DaoRegistry.Snapshot.FetchSnapshotsByDateAndRepository(c.Request().Context(), orgID, listSnapshotByDateParams)
 
 	if err != nil {
@@ -218,7 +218,7 @@ func (sh *SnapshotHandler) listSnapshotsByDate(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /snapshots/{snapshot_uuid}/config.repo [get]
 func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	snapshotUUID := c.Param("snapshot_uuid")
 
 	repoConfigFile, err := sh.DaoRegistry.Snapshot.GetRepositoryConfigurationFile(c.Request().Context(), orgID, snapshotUUID, false)
@@ -245,7 +245,7 @@ func (sh *SnapshotHandler) getRepoConfigurationFile(c echo.Context) error {
 // @Failure        500 {object} ce.ErrorResponse
 // @Router         /repositories/{repo_uuid}/snapshots/{snapshot_uuid}/published [patch]
 func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	repoUUID := c.Param("repo_uuid")
 	snapshotUUID := c.Param("snapshot_uuid")
 
@@ -303,7 +303,7 @@ func (sh *SnapshotHandler) publishSnapshot(c echo.Context) error {
 // @Failure      	500 {object} ce.ErrorResponse
 // @Router			/repositories/{repo_uuid}/snapshots/{snapshot_uuid} [delete]
 func (sh *SnapshotHandler) deleteSnapshot(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	repoUUID := c.Param("repo_uuid")
 	snapshotUUID := c.Param("snapshot_uuid")
 
@@ -343,7 +343,7 @@ func (sh *SnapshotHandler) deleteSnapshot(c echo.Context) error {
 // @Failure      	500 {object} ce.ErrorResponse
 // @Router			/repositories/{repo_uuid}/snapshots/bulk_delete/ [post]
 func (sh *SnapshotHandler) bulkDeleteSnapshot(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	repoUUID := c.Param("repo_uuid")
 	var body api.UUIDListRequest
 	var snapshotUUIDs []string
@@ -392,7 +392,7 @@ func (sh *SnapshotHandler) bulkDeleteSnapshot(c echo.Context) error {
 }
 
 func (sh *SnapshotHandler) enqueueDeleteSnapshotsTask(c echo.Context, orgID, repoUUID string, snapshotUUIDs ...string) error {
-	accountID, _ := getAccountIdOrgId(c)
+	accountID, _ := GetAccountIdOrgId(c)
 	payload := payloads.DeleteSnapshotsPayload{RepoUUID: repoUUID, SnapshotsUUIDs: snapshotUUIDs}
 	task := queue.Task{
 		Typename:   config.DeleteSnapshotsTask,

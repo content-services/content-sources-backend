@@ -35,17 +35,17 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.listPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.listMavenPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.getMavenPackageDetail, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.getPythonPackageDetail, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.getPythonPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.getNpmPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.getNpmPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.ListPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.ListMavenPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.GetMavenPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead)
 }
 
 func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	ctx := c.Request().Context()
 
 	repos, _, err := ph.DaoRegistry.RepositoryConfig.List(ctx, orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: uuid})
@@ -79,7 +79,7 @@ func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.R
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/packages [get]
-func (ph *PackageHandler) listPackages(c echo.Context) error {
+func (ph *PackageHandler) ListPackages(c echo.Context) error {
 	listPackagesRequest := api.ListPackagesRequest{}
 	if err := c.Bind(&listPackagesRequest); err != nil {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
@@ -260,7 +260,7 @@ func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.Packag
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name} [get]
-func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
+func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	groupID := c.Param("group")
 	name := c.Param("name")
@@ -343,7 +343,7 @@ func (ph *PackageHandler) listMavenPackageVersions(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
-func (ph *PackageHandler) getMavenPackageDetail(c echo.Context) error {
+func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	groupID := c.Param("group")
 	name := c.Param("name")
@@ -466,7 +466,7 @@ func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, nam
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/python_packages/{name} [get]
-func (ph *PackageHandler) getPythonPackageVersions(c echo.Context) error {
+func (ph *PackageHandler) GetPythonPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	name := c.Param("name")
 	ctx := c.Request().Context()
@@ -523,7 +523,7 @@ func (ph *PackageHandler) getPythonPackageVersions(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/python_packages/{name}/{version} [get]
-func (ph *PackageHandler) getPythonPackageDetail(c echo.Context) error {
+func (ph *PackageHandler) GetPythonPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	name := c.Param("name")
 	version := c.Param("version")
@@ -596,7 +596,7 @@ func npmPackageName(scope, name string) string {
 	return scope + "/" + name
 }
 
-func parseNpmPackageName(fullName string) (scope, name string) {
+func ParseNpmPackageName(fullName string) (scope, name string) {
 	if strings.HasPrefix(fullName, "@") {
 		parts := strings.SplitN(fullName, "/", 2)
 		if len(parts) == 2 {
@@ -630,7 +630,7 @@ func (ph *PackageHandler) listNpmPackages(c echo.Context, ctx context.Context, r
 func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageResponse {
 	results := make([]api.PackageItem, len(tangResp.Results))
 	for i, item := range tangResp.Results {
-		scope, name := parseNpmPackageName(item.Name)
+		scope, name := ParseNpmPackageName(item.Name)
 		releases := make([]api.ReleaseInfo, len(item.LatestVersions))
 		for j, ver := range item.LatestVersions {
 			releases[j] = api.ReleaseInfo{
@@ -670,7 +670,7 @@ func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageRespo
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/npm_packages/{scope}/{name} [get]
-func (ph *PackageHandler) getNpmPackageVersions(c echo.Context) error {
+func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")
 	name := c.Param("name")
@@ -731,7 +731,7 @@ func (ph *PackageHandler) getNpmPackageVersions(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/npm_packages/{scope}/{name}/{version} [get]
-func (ph *PackageHandler) getNpmPackageDetail(c echo.Context) error {
+func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")
 	name := c.Param("name")

@@ -44,5 +44,5 @@ func (rh *PublicRepositoriesHandler) listPublicRepositories(c echo.Context) erro
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing repositories", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&repos, c, totalRepos))
+	return c.JSON(200, SetCollectionResponseMetadata(&repos, c, totalRepos))
 }

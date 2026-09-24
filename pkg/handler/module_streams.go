@@ -38,7 +38,7 @@ func RegisterModuleStreamsRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /snapshots/module_streams/search [post]
 func (rh *ModuleStreamsHandler) searchSnapshotModuleStreams(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 
 	dataInput := api.SearchSnapshotModuleStreamsRequest{}
 
@@ -70,7 +70,7 @@ func (rh *ModuleStreamsHandler) searchSnapshotModuleStreams(c echo.Context) erro
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /module_streams/search [post]
 func (rh *ModuleStreamsHandler) searchRepoModuleStreams(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 
 	dataInput := api.SearchModuleStreamsRequest{}
 

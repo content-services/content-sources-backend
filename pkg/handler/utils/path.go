@@ -45,7 +45,7 @@ func (p Path) RemovePrefixes() Path {
 		return []string{}
 	}
 	idx++
-	if output[idx] != "content-sources" {
+	if output[idx] != "content-sources" && output[idx] != "lightwell" {
 		return []string{}
 	}
 	idx++

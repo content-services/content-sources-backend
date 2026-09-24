@@ -37,7 +37,7 @@ func RegisterPulpRoutes(engine *echo.Group, daoReg *dao.DaoRegistry) {
 }
 
 func (ph *PulpHandler) createUploadInternal(c echo.Context, request api.CreateUploadRequest) (*zest.UploadResponse, error) {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 
 	if request.Size <= 0 {
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "error creating upload", "upload size must be greater than 0")
@@ -85,7 +85,7 @@ func (ph *PulpHandler) createUpload(c echo.Context) error {
 }
 
 func (ph *PulpHandler) uploadChunkInternal(c echo.Context) (*zest.UploadResponse, error) {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	dataInput := api.PulpUploadChunkRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -131,7 +131,7 @@ func (ph *PulpHandler) uploadChunk(c echo.Context) error {
 }
 
 func (ph *PulpHandler) finishUpload(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	dataInput := api.FinishUploadRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -152,7 +152,7 @@ func (ph *PulpHandler) finishUpload(c echo.Context) error {
 }
 
 func (ph *PulpHandler) getTask(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	dataInput := api.TaskRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())

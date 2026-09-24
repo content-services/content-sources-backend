@@ -671,7 +671,7 @@ func createSnapshotCollection(size, limit, offset int) api.SnapshotCollectionRes
 		Data: snaps,
 	}
 	params := fmt.Sprintf("?offset=%d&limit=%d", offset, limit)
-	setCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
+	SetCollectionResponseMetadata(&collection, getTestContext(params), int64(size))
 	return collection
 }
 

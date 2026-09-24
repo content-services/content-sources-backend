@@ -41,7 +41,7 @@ func RegisterEnvironmentRoutes(engine *echo.Group, rDao *dao.DaoRegistry) {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /environments/names [post]
 func (rh *RepositoryEnvironmentHandler) searchEnvironmentByName(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	dataInput := api.ContentUnitSearchRequest{}
 	if err := c.Bind(&dataInput); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
@@ -104,7 +104,7 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	page := ParsePagination(c)
 
 	// Request record from database
@@ -113,7 +113,7 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing environments", err.Error())
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&apiResponse, c, total))
+	return c.JSON(200, SetCollectionResponseMetadata(&apiResponse, c, total))
 }
 
 // searchSnapshotEnvironments godoc
@@ -132,7 +132,7 @@ func (rh *RepositoryEnvironmentHandler) listRepositoriesEnvironments(c echo.Cont
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /snapshots/environments/names [post]
 func (rh *RepositoryEnvironmentHandler) searchSnapshotEnvironments(c echo.Context) error {
-	_, orgId := getAccountIdOrgId(c)
+	_, orgId := GetAccountIdOrgId(c)
 	dataInput := api.SnapshotSearchRpmRequest{}
 
 	var err error

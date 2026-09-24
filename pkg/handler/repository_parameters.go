@@ -82,7 +82,7 @@ func (rh *RepositoryParameterHandler) fetchGpgKey(c echo.Context) error {
 // @Failure      401 {object} ce.ErrorResponse
 // @Router       /repository_parameters/ [get]
 func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	features, err := rh.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
 	if err != nil {
@@ -149,7 +149,7 @@ func buildExtendedReleaseStreams(entitledFeatures []string) []api.ExtendedReleas
 // @Failure         500 {object} ce.ErrorResponse
 // @Router			/repository_parameters/validate/ [post]
 func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	var validationParams []api.RepositoryValidationRequest
 

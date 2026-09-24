@@ -38,6 +38,12 @@ export interface ApiEcosystemCoverageSummary {
      */
     partialMatches?: number;
     /**
+     * Whether the ecosystem is present in the Lightwell catalog.
+     * @type {boolean}
+     * @memberof ApiEcosystemCoverageSummary
+     */
+    supported?: boolean;
+    /**
      * 
      * @type {number}
      * @memberof ApiEcosystemCoverageSummary
@@ -71,6 +77,7 @@ export function ApiEcosystemCoverageSummaryFromJSONTyped(json: any, ignoreDiscri
         'ecosystem': json['ecosystem'] == null ? undefined : json['ecosystem'],
         'exactMatches': json['exact_matches'] == null ? undefined : json['exact_matches'],
         'partialMatches': json['partial_matches'] == null ? undefined : json['partial_matches'],
+        'supported': json['supported'] == null ? undefined : json['supported'],
         'total': json['total'] == null ? undefined : json['total'],
         'unmatched': json['unmatched'] == null ? undefined : json['unmatched'],
     };
@@ -90,6 +97,7 @@ export function ApiEcosystemCoverageSummaryToJSONTyped(value?: ApiEcosystemCover
         'ecosystem': value['ecosystem'],
         'exact_matches': value['exactMatches'],
         'partial_matches': value['partialMatches'],
+        'supported': value['supported'],
         'total': value['total'],
         'unmatched': value['unmatched'],
     };

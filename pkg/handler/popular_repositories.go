@@ -57,7 +57,7 @@ func (rh *PopularRepositoriesHandler) listPopularRepositories(c echo.Context) er
 		}
 	}
 
-	return c.JSON(200, setCollectionResponseMetadata(&filteredData, c, totalCount))
+	return c.JSON(200, SetCollectionResponseMetadata(&filteredData, c, totalCount))
 }
 
 func filterPopularRepositories(configData []api.PopularRepositoryResponse, filters api.FilterData, pageData api.PaginationData) (api.PopularRepositoriesCollectionResponse, int64) {
@@ -77,7 +77,7 @@ func filterPopularRepositories(configData []api.PopularRepositoryResponse, filte
 }
 
 func (rh *PopularRepositoriesHandler) updateIfExists(c echo.Context, repo *api.PopularRepositoryResponse) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 
 	// Go get the records for this URL
 	repos, _, err := rh.Dao.RepositoryConfig.List(c.Request().Context(), orgID, api.PaginationData{Limit: 1}, api.FilterData{Search: repo.URL, Origin: config.OriginExternal})

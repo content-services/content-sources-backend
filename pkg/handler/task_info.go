@@ -60,7 +60,7 @@ func RegisterTaskInfoRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskCli
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /tasks/ [get]
 func (t *TaskInfoHandler) listTasks(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	pageData := ParsePagination(c)
 	filterData := ParseTaskInfoFilters(c)
 
@@ -69,7 +69,7 @@ func (t *TaskInfoHandler) listTasks(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing tasks", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, setCollectionResponseMetadata(&tasks, c, totalTasks))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&tasks, c, totalTasks))
 }
 
 // Get TaskResponse godoc
@@ -87,7 +87,7 @@ func (t *TaskInfoHandler) listTasks(c echo.Context) error {
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /tasks/{uuid} [get]
 func (t *TaskInfoHandler) fetch(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	id := c.Param("uuid")
 
 	response, err := t.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, id)
@@ -98,7 +98,7 @@ func (t *TaskInfoHandler) fetch(c echo.Context) error {
 }
 
 func (t *TaskInfoHandler) cancel(c echo.Context) error {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	id := c.Param("uuid")
 
 	task, err := t.DaoRegistry.TaskInfo.Fetch(c.Request().Context(), orgID, id)

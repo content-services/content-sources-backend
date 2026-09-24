@@ -32,8 +32,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.listPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.listPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.ListPackages, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.ListPackageVersions, rbac.RbacVerbRead)
 }
 
 // listLightwellPackages godoc
@@ -52,7 +52,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/packages [get]
-func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
+func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 	page := ParsePagination(c)
 	filters := parseLightwellPackageFilters(c)
 
@@ -77,7 +77,7 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 			return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
 		}
 		resp := api.LightwellPackageCollectionResponse{Data: paged}
-		collResp := setCollectionResponseMetadata(&resp, c, totalCount)
+		collResp := SetCollectionResponseMetadata(&resp, c, totalCount)
 		return c.JSON(http.StatusOK, collResp)
 	}
 
@@ -90,7 +90,7 @@ func (h *LightwellPackagesHandler) listPackages(c echo.Context) error {
 	totalCount := int64(len(items))
 	paged := paginatePackages(items, page.Offset, page.Limit)
 	resp := api.LightwellPackageCollectionResponse{Data: paged}
-	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
+	collResp := SetCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
 }
 
@@ -170,7 +170,7 @@ func (h *LightwellPackagesHandler) fetchPackagesPage(ctx context.Context, repo a
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/package_versions [get]
-func (h *LightwellPackagesHandler) listPackageVersions(c echo.Context) error {
+func (h *LightwellPackagesHandler) ListPackageVersions(c echo.Context) error {
 	page := ParsePagination(c)
 	filters := parseLightwellPackageVersionFilters(c)
 
@@ -208,14 +208,14 @@ func (h *LightwellPackagesHandler) listPackageVersions(c echo.Context) error {
 	totalCount := int64(len(items))
 	paged := paginateVersions(items, page.Offset, page.Limit)
 	resp := api.LightwellPackageVersionCollectionResponse{Data: paged}
-	collResp := setCollectionResponseMetadata(&resp, c, totalCount)
+	collResp := SetCollectionResponseMetadata(&resp, c, totalCount)
 	return c.JSON(http.StatusOK, collResp)
 }
 
 // fetchLightwellRepos returns Lightwell repos for the caller's org, optionally
 // filtered by content type and security level.
 func (h *LightwellPackagesHandler) fetchLightwellRepos(c echo.Context, contentType, securityLevel string) ([]api.RepositoryResponse, error) {
-	_, orgID := getAccountIdOrgId(c)
+	_, orgID := GetAccountIdOrgId(c)
 	ctx := c.Request().Context()
 
 	filter := api.FilterData{Origin: config.OriginLightwell}
@@ -594,7 +594,7 @@ func mapNpmToLightwellPackages(resp tangy.NpmPackageListResponse, repo api.Repos
 		for j, ver := range item.LatestVersions {
 			releases[j] = api.ReleaseInfo{Version: ver.Version, CreatedAt: ver.CreatedAt}
 		}
-		scope, name := parseNpmPackageName(item.Name)
+		scope, name := ParseNpmPackageName(item.Name)
 		out = append(out, api.LightwellPackageResponse{
 			Name:           name,
 			Group:          scope,
@@ -659,7 +659,7 @@ func expandPythonVersions(resp tangy.PythonPackageListResponse, repo api.Reposit
 func expandNpmVersions(resp tangy.NpmPackageListResponse, repo api.RepositoryResponse) []api.LightwellPackageVersionResponse {
 	var out []api.LightwellPackageVersionResponse
 	for _, item := range resp.Results {
-		scope, name := parseNpmPackageName(item.Name)
+		scope, name := ParseNpmPackageName(item.Name)
 		verMap := npmVersionMap(item.LatestVersions)
 		for _, v := range item.Versions {
 			ver := api.LightwellPackageVersionResponse{
