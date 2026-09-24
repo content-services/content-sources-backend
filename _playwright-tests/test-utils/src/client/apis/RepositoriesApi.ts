@@ -131,7 +131,7 @@ export interface BulkRemoveRpmsRequest {
 }
 
 export interface CreateRepositoryRequest {
-    apiRepositoryRequest: Omit<ApiRepositoryRequest, 'origin'>;
+    apiRepositoryRequest: ApiRepositoryRequest;
 }
 
 export interface CreateSnapshotRequest {
@@ -148,7 +148,7 @@ export interface DeleteRepositoryRequest {
 
 export interface FullUpdateRepositoryRequest {
     uuid: string;
-    apiRepositoryRequest: Omit<ApiRepositoryRequest, 'origin'>;
+    apiRepositoryRequest: ApiRepositoryRequest;
 }
 
 export interface GetGpgKeyFileRequest {

@@ -26,7 +26,7 @@ export interface ApiCreateUploadRequest {
      */
     chunkSize: number;
     /**
-     * if true, returns an already existing upload matching the same sha256 and chunk_size
+     * If true, reuse an existing upload with the same sha256, chunk_size, and size. Recommended for large files. If omitted, treated as false.
      * @type {boolean}
      * @memberof ApiCreateUploadRequest
      */

@@ -56,11 +56,11 @@ export interface ApiRepositoryRequest {
      */
     name: string;
     /**
-     * Origin of the repository
-     * @type {string}
+     * Origin of the repository (`external` or `upload`). Defaults to `external`. Set to `upload` for repositories that receive uploaded RPMs.
+     * @type {ApiRepositoryRequestOriginEnum}
      * @memberof ApiRepositoryRequest
      */
-    readonly origin?: string;
+    origin?: ApiRepositoryRequestOriginEnum;
     /**
      * Enable snapshotting and hosting of this repository
      * @type {boolean}
@@ -74,6 +74,17 @@ export interface ApiRepositoryRequest {
      */
     url?: string;
 }
+
+
+/**
+ * @export
+ */
+export const ApiRepositoryRequestOriginEnum = {
+    External: 'external',
+    Upload: 'upload'
+} as const;
+export type ApiRepositoryRequestOriginEnum = typeof ApiRepositoryRequestOriginEnum[keyof typeof ApiRepositoryRequestOriginEnum];
+
 
 /**
  * Check if a given object implements the ApiRepositoryRequest interface.
@@ -109,7 +120,7 @@ export function ApiRepositoryRequestToJSON(json: any): ApiRepositoryRequest {
     return ApiRepositoryRequestToJSONTyped(json, false);
 }
 
-export function ApiRepositoryRequestToJSONTyped(value?: Omit<ApiRepositoryRequest, 'origin'> | null, ignoreDiscriminator: boolean = false): any {
+export function ApiRepositoryRequestToJSONTyped(value?: ApiRepositoryRequest | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
@@ -122,6 +133,7 @@ export function ApiRepositoryRequestToJSONTyped(value?: Omit<ApiRepositoryReques
         'metadata_verification': value['metadataVerification'],
         'module_hotfixes': value['moduleHotfixes'],
         'name': value['name'],
+        'origin': value['origin'],
         'snapshot': value['snapshot'],
         'url': value['url'],
     };

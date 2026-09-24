@@ -56,7 +56,7 @@ export interface ApiRepositoryRpm {
      */
     summary?: string;
     /**
-     * Identifier of the rpm
+     * Identifier of the rpm (not present for foreign partner repo rpms)
      * @type {string}
      * @memberof ApiRepositoryRpm
      */
