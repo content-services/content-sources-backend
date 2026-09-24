@@ -20,6 +20,13 @@ import {
     ApiTaskInfoResponseToJSON,
     ApiTaskInfoResponseToJSONTyped,
 } from './ApiTaskInfoResponse';
+import type { ApiSnapshotPublishState } from './ApiSnapshotPublishState';
+import {
+    ApiSnapshotPublishStateFromJSON,
+    ApiSnapshotPublishStateFromJSONTyped,
+    ApiSnapshotPublishStateToJSON,
+    ApiSnapshotPublishStateToJSONTyped,
+} from './ApiSnapshotPublishState';
 import type { ApiSnapshotResponse } from './ApiSnapshotResponse';
 import {
     ApiSnapshotResponseFromJSON,
@@ -40,6 +47,12 @@ export interface ApiRepositoryImportResponse {
      * @memberof ApiRepositoryImportResponse
      */
     readonly accountId?: string;
+    /**
+     * Lightwell: total security advisories
+     * @type {number}
+     * @memberof ApiRepositoryImportResponse
+     */
+    readonly advisoryCount?: number;
     /**
      * Number of builds last read in the repository, not applicable to all repositories
      * @type {number}
@@ -227,6 +240,12 @@ export interface ApiRepositoryImportResponse {
      */
     snapshot?: boolean;
     /**
+     * Aggregate publish state across all snapshots (partner repos only)
+     * @type {ApiSnapshotPublishState}
+     * @memberof ApiRepositoryImportResponse
+     */
+    readonly snapshotPublishState?: ApiSnapshotPublishState;
+    /**
      * Combined status of last introspection and snapshot of repository (Valid, Invalid, Unavailable, Pending)
      * @type {string}
      * @memberof ApiRepositoryImportResponse
@@ -276,6 +295,7 @@ export function ApiRepositoryImportResponseFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'accountId': json['account_id'] == null ? undefined : json['account_id'],
+        'advisoryCount': json['advisory_count'] == null ? undefined : json['advisory_count'],
         'buildCount': json['build_count'] == null ? undefined : json['build_count'],
         'contentType': json['content_type'] == null ? undefined : json['content_type'],
         'distributionArch': json['distribution_arch'] == null ? undefined : json['distribution_arch'],
@@ -307,6 +327,7 @@ export function ApiRepositoryImportResponseFromJSONTyped(json: any, ignoreDiscri
         'publishedDistributionUrl': json['published_distribution_url'] == null ? undefined : json['published_distribution_url'],
         'securityLevel': json['security_level'] == null ? undefined : json['security_level'],
         'snapshot': json['snapshot'] == null ? undefined : json['snapshot'],
+        'snapshotPublishState': json['snapshot_publish_state'] == null ? undefined : ApiSnapshotPublishStateFromJSON(json['snapshot_publish_state']),
         'status': json['status'] == null ? undefined : json['status'],
         'url': json['url'] == null ? undefined : json['url'],
         'uuid': json['uuid'] == null ? undefined : json['uuid'],
@@ -319,7 +340,7 @@ export function ApiRepositoryImportResponseToJSON(json: any): ApiRepositoryImpor
     return ApiRepositoryImportResponseToJSONTyped(json, false);
 }
 
-export function ApiRepositoryImportResponseToJSONTyped(value?: Omit<ApiRepositoryImportResponse, 'account_id'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
+export function ApiRepositoryImportResponseToJSONTyped(value?: Omit<ApiRepositoryImportResponse, 'account_id'|'advisory_count'|'org_id'|'partner'|'published_distribution_url'|'security_level'|'snapshot_publish_state'|'uuid'> | null, ignoreDiscriminator: boolean = false): any {
     if (value == null) {
         return value;
     }
