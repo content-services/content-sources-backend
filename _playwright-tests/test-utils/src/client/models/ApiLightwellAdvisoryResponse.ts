@@ -30,6 +30,24 @@ export interface ApiLightwellAdvisoryResponse {
      * @type {string}
      * @memberof ApiLightwellAdvisoryResponse
      */
+    advisoryName?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    aliases?: Array<string>;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    createdAt?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
     details?: string;
     /**
      * 
@@ -42,7 +60,25 @@ export interface ApiLightwellAdvisoryResponse {
      * @type {string}
      * @memberof ApiLightwellAdvisoryResponse
      */
+    modified?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
     packageName?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    packageVersion?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    published?: string;
     /**
      * 
      * @type {Array<string>}
@@ -60,7 +96,37 @@ export interface ApiLightwellAdvisoryResponse {
      * @type {string}
      * @memberof ApiLightwellAdvisoryResponse
      */
+    schemaVersion?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
     severity?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    severityScore?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    source?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    summary?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    updatedAt?: string;
 }
 
 /**
@@ -81,12 +147,23 @@ export function ApiLightwellAdvisoryResponseFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'advisoryId': json['advisory_id'] == null ? undefined : json['advisory_id'],
+        'advisoryName': json['advisory_name'] == null ? undefined : json['advisory_name'],
+        'aliases': json['aliases'] == null ? undefined : json['aliases'],
+        'createdAt': json['created_at'] == null ? undefined : json['created_at'],
         'details': json['details'] == null ? undefined : json['details'],
         'fixedVersions': json['fixed_versions'] == null ? undefined : json['fixed_versions'],
+        'modified': json['modified'] == null ? undefined : json['modified'],
         'packageName': json['package_name'] == null ? undefined : json['package_name'],
+        'packageVersion': json['package_version'] == null ? undefined : json['package_version'],
+        'published': json['published'] == null ? undefined : json['published'],
         'referenceUrls': json['reference_urls'] == null ? undefined : json['reference_urls'],
         'repository': json['repository'] == null ? undefined : json['repository'],
+        'schemaVersion': json['schema_version'] == null ? undefined : json['schema_version'],
         'severity': json['severity'] == null ? undefined : json['severity'],
+        'severityScore': json['severity_score'] == null ? undefined : json['severity_score'],
+        'source': json['source'] == null ? undefined : json['source'],
+        'summary': json['summary'] == null ? undefined : json['summary'],
+        'updatedAt': json['updated_at'] == null ? undefined : json['updated_at'],
     };
 }
 
@@ -102,12 +179,23 @@ export function ApiLightwellAdvisoryResponseToJSONTyped(value?: ApiLightwellAdvi
     return {
         
         'advisory_id': value['advisoryId'],
+        'advisory_name': value['advisoryName'],
+        'aliases': value['aliases'],
+        'created_at': value['createdAt'],
         'details': value['details'],
         'fixed_versions': value['fixedVersions'],
+        'modified': value['modified'],
         'package_name': value['packageName'],
+        'package_version': value['packageVersion'],
+        'published': value['published'],
         'reference_urls': value['referenceUrls'],
         'repository': value['repository'],
+        'schema_version': value['schemaVersion'],
         'severity': value['severity'],
+        'severity_score': value['severityScore'],
+        'source': value['source'],
+        'summary': value['summary'],
+        'updated_at': value['updatedAt'],
     };
 }
 
