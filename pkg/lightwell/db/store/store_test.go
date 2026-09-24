@@ -874,6 +874,236 @@ func TestStore_ListAdvisoriesFilterByRepoName(t *testing.T) {
 	assert.Equal(t, "requests", rows[0].PackageName)
 }
 
+func TestStore_ListAdvisoriesFilterByNameAlias(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	_, err := tx.Exec(ctx, `
+		UPDATE lightwell_advisories
+		SET aliases = $1
+		WHERE advisory_id = $2 AND package_name = $3`,
+		[]string{"GHSA-48rh-qgjr-xfj6"}, "CVE-2024-1002", "jackson-databind")
+	require.NoError(t, err)
+
+	name := "GHSA-48rh"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		Name:       &name,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "jackson-databind", rows[0].PackageName)
+	assert.Contains(t, rows[0].Aliases, "GHSA-48rh-qgjr-xfj6")
+}
+
+func TestStore_ListAdvisoriesFilterByNameAdvisoryID(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	name := "CVE-2024-1003"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		Name:       &name,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "requests", rows[0].PackageName)
+}
+
+func TestStore_ListAdvisoriesFilterByPackageVersion(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	_, err := tx.Exec(ctx, `
+		UPDATE lightwell_advisories
+		SET advisory_id = $1
+		WHERE advisory_id = $2 AND package_name = $3`,
+		"x_RHLW-CVE-2024-1002-2.15.3", "CVE-2024-1002", "jackson-databind")
+	require.NoError(t, err)
+
+	ver := "2.15.3"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		PackageVersion: &ver,
+		PageLimit:      100,
+		PageOffset:     0,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "jackson-databind", rows[0].PackageName)
+	assert.Equal(t, "x_RHLW-CVE-2024-1002-2.15.3", rows[0].AdvisoryID)
+}
+
+func TestStore_ListAdvisoriesFilterByNameAndPackageVersion(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	_, err := tx.Exec(ctx, `
+		UPDATE lightwell_advisories
+		SET advisory_id = $1, aliases = $2
+		WHERE advisory_id = $3 AND package_name = $4`,
+		"x_RHLW-CVE-2024-1002-2.15.3", []string{"GHSA-48rh-qgjr-xfj6"},
+		"CVE-2024-1002", "jackson-databind")
+	require.NoError(t, err)
+
+	name := "GHSA-48rh"
+	ver := "2.15.3"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		Name:           &name,
+		PackageVersion: &ver,
+		PageLimit:      100,
+		PageOffset:     0,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "jackson-databind", rows[0].PackageName)
+
+	wrongVer := "9.9.9"
+	rows, err = q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		Name:           &name,
+		PackageVersion: &wrongVer,
+		PageLimit:      100,
+		PageOffset:     0,
+	})
+	require.NoError(t, err)
+	assert.Empty(t, rows)
+}
+
+func TestStore_ListAdvisoriesFilterByCveIDExact(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	insertTestAdvisories(t, ctx, tx)
+
+	_, err := tx.Exec(ctx, `
+		UPDATE lightwell_advisories
+		SET advisory_id = $1
+		WHERE advisory_id = $2 AND package_name = $3`,
+		"x_RHLW-CVE-2024-1003-4.0.0", "CVE-2024-1003", "requests")
+	require.NoError(t, err)
+
+	cveID := "CVE-2024-1003"
+	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		CveID:      &cveID,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
+	assert.Empty(t, rows)
+
+	exactID := "x_RHLW-CVE-2024-1003-4.0.0"
+	rows, err = q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		CveID:      &exactID,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "requests", rows[0].PackageName)
+}
+
+func TestStore_ListAdvisoriesLatestRelease(t *testing.T) {
+	ctx, tx, q := beginTestTx(t)
+	defer rollbackTestTx(t, tx)
+
+	repoConfigUUID := uuid.New()
+	repoUUID := uuid.New()
+	now := time.Now()
+
+	_, err := tx.Exec(ctx,
+		`INSERT INTO repositories (uuid, url) VALUES ($1, $2)`,
+		repoUUID, "https://test.example.com/repo/"+repoConfigUUID.String())
+	require.NoError(t, err)
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO repository_configurations (uuid, created_at, updated_at, name, arch, org_id, repository_uuid, feature_name)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		repoConfigUUID, now, now, "test-latest-release-repo", "x86_64", "test-org-"+repoConfigUUID.String(), repoUUID, "lightwell-network")
+	require.NoError(t, err)
+
+	advisories := []struct {
+		id            string
+		severityScore float32
+		packageName   string
+		fixedVersion  string
+		baseline      int
+		novel         int
+		hotfix        int
+	}{
+		{"x_RHLW-CVE-2015-0001-1.2.3", 9.8, "org.jsoup:jsoup", "1.2.3.rhlw.00003", 3, 0, 0},
+		{"x_RHLW-CVE-2015-0002-1.2.3", 5.0, "org.jsoup:jsoup", "1.2.3.rhlw.00003.n00001", 3, 1, 0},
+		{"x_RHLW-CVE-2015-0003-1.2.3", 4.0, "org.jsoup:jsoup", "1.2.3.rhlw.00003.n00001.hf00001", 3, 1, 1},
+		{"x_RHLW-CVE-2015-0004-1.2.3", 7.0, "org.jsoup:jsoup", "1.2.3.rhlw.00004", 4, 0, 0},
+		{"x_RHLW-CVE-2015-0005-1.2.3", 6.0, "org.jsoup:jsoup", "1.2.3.rhlw.00004", 4, 0, 0},
+		{"x_RHLW-CVE-2015-0006-2.0.0", 10.0, "org.jsoup:jsoup", "2.0.0.rhlw.00009", 9, 0, 0},
+		{"x_RHLW-CVE-2015-0007-1.2.3", 9.9, "org.jsoup:jsoup", "1.2.3", 0, 0, 0},
+	}
+	for _, adv := range advisories {
+		advisoryUUID := uuid.New()
+		_, err := tx.Exec(ctx, `
+			INSERT INTO lightwell_advisories (
+				uuid, advisory_id, severity, severity_score, details,
+				reference_urls, package_name, fixed_versions,
+				repo_name, repository_configuration_uuid, checksum
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			advisoryUUID, adv.id, fmt.Sprintf("%.1f", adv.severityScore), adv.severityScore,
+			"test advisory", []string{"https://example.com/" + adv.id},
+			adv.packageName, []string{adv.fixedVersion},
+			"lightwell/java/remediated", repoConfigUUID, "checksum-"+adv.id,
+		)
+		require.NoError(t, err)
+
+		if adv.fixedVersion == "1.2.3" {
+			continue
+		}
+		_, err = tx.Exec(ctx, `
+			INSERT INTO lightwell_advisory_releases (
+				advisory_uuid, release_version, rhlw_baseline, rhlw_novel, rhlw_hotfix
+			) VALUES ($1, $2, $3, $4, $5)`,
+			advisoryUUID, adv.fixedVersion, adv.baseline, adv.novel, adv.hotfix,
+		)
+		require.NoError(t, err)
+	}
+
+	pkg := "jsoup"
+	ver := "1.2.3"
+	params := store.ListAdvisoriesParams{
+		RepositoryConfigUuid: pgtype.UUID{Bytes: repoConfigUUID, Valid: true},
+		PackageName:          &pkg,
+		PackageVersion:       &ver,
+		PageLimit:            100,
+		PageOffset:           0,
+	}
+
+	rows, err := q.ListAdvisories(ctx, params)
+	require.NoError(t, err)
+	assert.Len(t, rows, 6)
+	assert.Equal(t, int64(6), rows[0].TotalCount)
+
+	params.LatestRelease = pgtype.Bool{Bool: true, Valid: true}
+	rows, err = q.ListAdvisories(ctx, params)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, int64(2), rows[0].TotalCount)
+	ids := []string{rows[0].AdvisoryID, rows[1].AdvisoryID}
+	assert.ElementsMatch(t, []string{"x_RHLW-CVE-2015-0004-1.2.3", "x_RHLW-CVE-2015-0005-1.2.3"}, ids)
+
+	params.PageLimit = 1
+	rows, err = q.ListAdvisories(ctx, params)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, int64(2), rows[0].TotalCount)
+}
+
 func TestStore_CountAdvisoriesByRepo(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)

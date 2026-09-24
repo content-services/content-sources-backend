@@ -27,91 +27,163 @@ func (q *Queries) CountAdvisoriesByRepo(ctx context.Context, repositoryConfigUui
 }
 
 const listAdvisories = `-- name: ListAdvisories :many
-SELECT
-    la.uuid,
-    la.advisory_id,
-    la.severity,
-    la.severity_score,
-    la.details,
-    la.reference_urls,
-    la.package_name,
-    la.fixed_versions,
-    la.repo_name,
-    la.repository_configuration_uuid,
-    la.created_at,
-    COUNT(*) OVER() AS total_count
-FROM lightwell_advisories la
-JOIN repository_configurations rc
-  ON rc.uuid = la.repository_configuration_uuid
-WHERE 1=1
-    AND (
-        $1::uuid IS NULL
-        OR la.repository_configuration_uuid = $1::uuid
-    )
-    AND (
-        $2::text IS NULL
-        OR la.repo_name = $2::text
-    )
-    AND (
-        $3::text IS NULL
-        OR la.package_name ILIKE '%' || $3::text || '%'
-    )
-    AND (
-        $4::real IS NULL
-        OR la.severity_score >= $4::real
-    )
-    AND (
-        $5::text IS NULL
-        OR la.advisory_id = $5::text
-    )
-    AND (
-        $6::text[] IS NULL
-        OR EXISTS (
-            SELECT 1
-            FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
-            WHERE btrim(t.token) = ANY($6::text[])
+WITH filtered AS (
+    SELECT
+        la.uuid,
+        la.advisory_id,
+        la.severity,
+        la.severity_score,
+        la.details,
+        la.reference_urls,
+        la.package_name,
+        la.package_version,
+        la.fixed_versions,
+        la.repo_name,
+        la.repository_configuration_uuid,
+        la.published,
+        la.modified,
+        la.aliases,
+        la.schema_version,
+        la.source,
+        la.summary,
+        la.created_at,
+        la.updated_at
+    FROM lightwell_advisories la
+    JOIN repository_configurations rc
+      ON rc.uuid = la.repository_configuration_uuid
+    WHERE 1=1
+        AND (
+            $4::uuid IS NULL
+            OR la.repository_configuration_uuid = $4::uuid
         )
+        AND (
+            $5::text IS NULL
+            OR la.repo_name = $5::text
+        )
+        AND (
+            $6::text IS NULL
+            OR la.package_name ILIKE '%' || $6::text || '%'
+        )
+        AND (
+            $7::real IS NULL
+            OR la.severity_score >= $7::real
+        )
+        AND (
+            $8::text IS NULL
+            OR la.advisory_id = $8::text
+        )
+        AND (
+            $9::text IS NULL
+            OR la.advisory_id ILIKE '%' || $9::text || '%'
+            OR la.aliases::text ILIKE '%' || $9::text || '%'
+        )
+        AND (
+            $10::text IS NULL
+            OR la.advisory_id ILIKE '%' || $10::text || '%'
+        )
+        AND (
+            $11::text[] IS NULL
+            OR EXISTS (
+                SELECT 1
+                FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
+                WHERE btrim(t.token) = ANY($11::text[])
+            )
+        )
+),
+max_rank AS (
+    SELECT r.rhlw_baseline, r.rhlw_novel, r.rhlw_hotfix
+    FROM filtered f
+    INNER JOIN lightwell_advisory_releases r ON r.advisory_uuid = f.uuid
+    ORDER BY r.rhlw_baseline DESC, r.rhlw_novel DESC, r.rhlw_hotfix DESC
+    LIMIT 1
+)
+SELECT
+    uuid,
+    advisory_id,
+    severity,
+    severity_score,
+    details,
+    reference_urls,
+    package_name,
+    package_version,
+    fixed_versions,
+    repo_name,
+    repository_configuration_uuid,
+    published,
+    modified,
+    aliases,
+    schema_version,
+    source,
+    summary,
+    created_at,
+    updated_at,
+    COUNT(*) OVER() AS total_count
+FROM filtered f
+WHERE
+    $1::boolean IS NOT TRUE
+    OR EXISTS (
+        SELECT 1
+        FROM lightwell_advisory_releases r
+        INNER JOIN max_rank m
+            ON r.rhlw_baseline = m.rhlw_baseline
+            AND r.rhlw_novel = m.rhlw_novel
+            AND r.rhlw_hotfix = m.rhlw_hotfix
+        WHERE r.advisory_uuid = f.uuid
     )
-ORDER BY la.severity_score DESC, la.created_at DESC
-LIMIT $8 OFFSET $7
+ORDER BY severity_score DESC, created_at DESC
+LIMIT $3 OFFSET $2
 `
 
 type ListAdvisoriesParams struct {
+	LatestRelease        pgtype.Bool   `json:"latest_release"`
+	PageOffset           int32         `json:"page_offset"`
+	PageLimit            int32         `json:"page_limit"`
 	RepositoryConfigUuid pgtype.UUID   `json:"repository_config_uuid"`
 	RepoName             *string       `json:"repo_name"`
 	PackageName          *string       `json:"package_name"`
 	SeverityMin          pgtype.Float4 `json:"severity_min"`
 	CveID                *string       `json:"cve_id"`
+	Name                 *string       `json:"name"`
+	PackageVersion       *string       `json:"package_version"`
 	EntitledFeatures     []string      `json:"entitled_features"`
-	PageOffset           int32         `json:"page_offset"`
-	PageLimit            int32         `json:"page_limit"`
 }
 
 type ListAdvisoriesRow struct {
-	Uuid                        uuid.UUID `json:"uuid"`
-	AdvisoryID                  string    `json:"advisory_id"`
-	Severity                    string    `json:"severity"`
-	SeverityScore               float32   `json:"severity_score"`
-	Details                     string    `json:"details"`
-	ReferenceUrls               []string  `json:"reference_urls"`
-	PackageName                 string    `json:"package_name"`
-	FixedVersions               []string  `json:"fixed_versions"`
-	RepoName                    string    `json:"repo_name"`
-	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
-	CreatedAt                   time.Time `json:"created_at"`
-	TotalCount                  int64     `json:"total_count"`
+	Uuid                        uuid.UUID  `json:"uuid"`
+	AdvisoryID                  string     `json:"advisory_id"`
+	Severity                    string     `json:"severity"`
+	SeverityScore               float32    `json:"severity_score"`
+	Details                     string     `json:"details"`
+	ReferenceUrls               []string   `json:"reference_urls"`
+	PackageName                 string     `json:"package_name"`
+	PackageVersion              string     `json:"package_version"`
+	FixedVersions               []string   `json:"fixed_versions"`
+	RepoName                    string     `json:"repo_name"`
+	RepositoryConfigurationUuid uuid.UUID  `json:"repository_configuration_uuid"`
+	Published                   *time.Time `json:"published"`
+	Modified                    *time.Time `json:"modified"`
+	Aliases                     []string   `json:"aliases"`
+	SchemaVersion               string     `json:"schema_version"`
+	Source                      string     `json:"source"`
+	Summary                     string     `json:"summary"`
+	CreatedAt                   time.Time  `json:"created_at"`
+	UpdatedAt                   time.Time  `json:"updated_at"`
+	TotalCount                  int64      `json:"total_count"`
 }
 
 func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) ([]ListAdvisoriesRow, error) {
 	rows, err := q.db.Query(ctx, listAdvisories,
+		arg.LatestRelease,
+		arg.PageOffset,
+		arg.PageLimit,
 		arg.RepositoryConfigUuid,
 		arg.RepoName,
 		arg.PackageName,
 		arg.SeverityMin,
 		arg.CveID,
+		arg.Name,
+		arg.PackageVersion,
 		arg.EntitledFeatures,
-		arg.PageOffset,
-		arg.PageLimit,
 	)
 	if err != nil {
 		return nil, err
@@ -128,10 +200,18 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 			&i.Details,
 			&i.ReferenceUrls,
 			&i.PackageName,
+			&i.PackageVersion,
 			&i.FixedVersions,
 			&i.RepoName,
 			&i.RepositoryConfigurationUuid,
+			&i.Published,
+			&i.Modified,
+			&i.Aliases,
+			&i.SchemaVersion,
+			&i.Source,
+			&i.Summary,
 			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.TotalCount,
 		); err != nil {
 			return nil, err

@@ -11,17 +11,24 @@ CREATE TABLE lightwell_advisories (
     uuid UUID UNIQUE NOT NULL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    repo_name VARCHAR(255) NOT NULL,
-    advisory_id VARCHAR(255) NOT NULL,
-    severity VARCHAR(255) NOT NULL DEFAULT '',
+    repo_name TEXT NOT NULL,
+    advisory_id TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT '',
     severity_score REAL NOT NULL DEFAULT 0,
     details TEXT NOT NULL DEFAULT '',
     reference_urls TEXT[],
-    package_name VARCHAR(255) NOT NULL DEFAULT '',
-    fixed_version VARCHAR(255) NOT NULL DEFAULT '',
+    package_name TEXT NOT NULL DEFAULT '',
+    fixed_version TEXT NOT NULL DEFAULT '',
     fixed_versions TEXT[] NOT NULL DEFAULT '{}',
     repository_configuration_uuid UUID NOT NULL REFERENCES repository_configurations(uuid) ON DELETE CASCADE,
-    checksum VARCHAR(255) NOT NULL
+    checksum TEXT NOT NULL,
+    published TIMESTAMPTZ NULL,
+    modified TIMESTAMPTZ NULL,
+    aliases TEXT[] NOT NULL DEFAULT '{}',
+    schema_version TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT '',
+    summary TEXT NOT NULL DEFAULT '',
+    package_version TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_lightwell_advisories_repo_config_advisory
@@ -30,6 +37,19 @@ CREATE INDEX idx_lightwell_advisories_severity_score
     ON lightwell_advisories (severity_score);
 CREATE INDEX idx_lightwell_advisories_package_name
     ON lightwell_advisories (package_name);
+CREATE INDEX idx_lightwell_advisories_advisory_id_trgm
+    ON lightwell_advisories USING gin (advisory_id gin_trgm_ops);
+
+CREATE TABLE lightwell_advisory_releases (
+    advisory_uuid UUID NOT NULL REFERENCES lightwell_advisories(uuid) ON DELETE CASCADE,
+    release_version TEXT NOT NULL,
+    rhlw_baseline INT NOT NULL DEFAULT 0,
+    rhlw_novel INT NOT NULL DEFAULT 0,
+    rhlw_hotfix INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (advisory_uuid, release_version)
+);
+CREATE INDEX idx_lightwell_advisory_releases_rank
+    ON lightwell_advisory_releases (rhlw_baseline DESC, rhlw_novel DESC, rhlw_hotfix DESC);
 
 CREATE TABLE lightwell_vulnerabilities (
     uuid UUID PRIMARY KEY,

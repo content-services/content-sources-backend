@@ -12,20 +12,35 @@ import (
 )
 
 type LightwellAdvisory struct {
-	Uuid                        uuid.UUID `json:"uuid"`
-	CreatedAt                   time.Time `json:"created_at"`
-	UpdatedAt                   time.Time `json:"updated_at"`
-	RepoName                    string    `json:"repo_name"`
-	AdvisoryID                  string    `json:"advisory_id"`
-	Severity                    string    `json:"severity"`
-	SeverityScore               float32   `json:"severity_score"`
-	Details                     string    `json:"details"`
-	ReferenceUrls               []string  `json:"reference_urls"`
-	PackageName                 string    `json:"package_name"`
-	FixedVersion                string    `json:"fixed_version"`
-	FixedVersions               []string  `json:"fixed_versions"`
-	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
-	Checksum                    string    `json:"checksum"`
+	Uuid                        uuid.UUID  `json:"uuid"`
+	CreatedAt                   time.Time  `json:"created_at"`
+	UpdatedAt                   time.Time  `json:"updated_at"`
+	RepoName                    string     `json:"repo_name"`
+	AdvisoryID                  string     `json:"advisory_id"`
+	Severity                    string     `json:"severity"`
+	SeverityScore               float32    `json:"severity_score"`
+	Details                     string     `json:"details"`
+	ReferenceUrls               []string   `json:"reference_urls"`
+	PackageName                 string     `json:"package_name"`
+	FixedVersion                string     `json:"fixed_version"`
+	FixedVersions               []string   `json:"fixed_versions"`
+	RepositoryConfigurationUuid uuid.UUID  `json:"repository_configuration_uuid"`
+	Checksum                    string     `json:"checksum"`
+	Published                   *time.Time `json:"published"`
+	Modified                    *time.Time `json:"modified"`
+	Aliases                     []string   `json:"aliases"`
+	SchemaVersion               string     `json:"schema_version"`
+	Source                      string     `json:"source"`
+	Summary                     string     `json:"summary"`
+	PackageVersion              string     `json:"package_version"`
+}
+
+type LightwellAdvisoryRelease struct {
+	AdvisoryUuid   uuid.UUID `json:"advisory_uuid"`
+	ReleaseVersion string    `json:"release_version"`
+	RhlwBaseline   int32     `json:"rhlw_baseline"`
+	RhlwNovel      int32     `json:"rhlw_novel"`
+	RhlwHotfix     int32     `json:"rhlw_hotfix"`
 }
 
 type LightwellVulnerability struct {
