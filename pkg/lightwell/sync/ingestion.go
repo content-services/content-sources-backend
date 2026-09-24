@@ -38,6 +38,8 @@ type SyncSummary struct {
 	// Failures are per-issue problems encountered while the sync still completed.
 	// A non-nil Sync error means the job could not run at all.
 	Failures []string
+	// Warnings are degraded publication checks. They do not make a saved issue fail.
+	Warnings []string
 }
 
 // VulnerabilityStore persists the vulnerabilities discovered during ingestion.
@@ -58,6 +60,7 @@ type Ingestor struct {
 	jira            jira_client.JiraClient
 	vulnerabilities VulnerabilityStore
 	advisories      AdvisoryStore
+	packageVerifier PublicationPackageVerifier
 	cache           map[string]cachedIssue
 }
 
@@ -66,8 +69,16 @@ type cachedIssue struct {
 	err   error
 }
 
-func NewIngestor(jira jira_client.JiraClient, vulnerabilities VulnerabilityStore, advisories AdvisoryStore) *Ingestor {
-	return &Ingestor{jira: jira, vulnerabilities: vulnerabilities, advisories: advisories, cache: make(map[string]cachedIssue)}
+func NewIngestor(
+	jira jira_client.JiraClient,
+	vulnerabilities VulnerabilityStore,
+	advisories AdvisoryStore,
+	packageVerifier PublicationPackageVerifier,
+) *Ingestor {
+	return &Ingestor{
+		jira: jira, vulnerabilities: vulnerabilities, advisories: advisories,
+		packageVerifier: packageVerifier, cache: make(map[string]cachedIssue),
+	}
 }
 
 func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
@@ -89,13 +100,31 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 	}
 
 	var summary SyncSummary
+	confirmedByIssue := i.verifyBreadcrumbPackages(ctx, issues, &summary)
 	for _, issue := range issues {
-		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, &summary); err != nil {
+		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], &summary); err != nil {
 			summary.Failed++
 			summary.Failures = append(summary.Failures, err.Error())
 		}
 	}
 	return summary, nil
+}
+
+func (i *Ingestor) verifyBreadcrumbPackages(
+	ctx context.Context,
+	issues []jira_client.JiraIssue,
+	summary *SyncSummary,
+) map[string][]string {
+	if i.packageVerifier == nil {
+		return nil
+	}
+	packages, byIssue := collectBreadcrumbPackages(issues)
+	if len(packages) == 0 {
+		return nil
+	}
+	confirmed, warnings := i.packageVerifier.VerifyPublished(ctx, packages)
+	summary.Warnings = append(summary.Warnings, warnings...)
+	return confirmedVersionsByIssue(byIssue, confirmed)
 }
 
 const relationshipBatchSize = 100
@@ -267,7 +296,14 @@ func (i *Ingestor) accountFieldID(ctx context.Context) (string, error) {
 	return matches[0], nil
 }
 
-func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, accountFieldID string, advisories []PublishedAdvisory, summary *SyncSummary) error {
+func (i *Ingestor) syncIssue(
+	ctx context.Context,
+	issue jira_client.JiraIssue,
+	accountFieldID string,
+	advisories []PublishedAdvisory,
+	confirmedVersions []string,
+	summary *SyncSummary,
+) error {
 	if discardedResolution(issue.Fields["resolution"]) {
 		return i.deleteDiscardedIssue(ctx, issue.Key, summary)
 	}
@@ -282,7 +318,7 @@ func (i *Ingestor) syncIssue(ctx context.Context, issue jira_client.JiraIssue, a
 		return fmt.Errorf("issue %s relationships: %w", issue.Key, err)
 	}
 
-	applyPublishedStage(&vulnerability, advisories)
+	applyPublishedStage(&vulnerability, confirmedVersions, advisories)
 
 	outcome, err := i.vulnerabilities.Save(ctx, vulnerabilityInput(vulnerability, tickets))
 	if err != nil {
@@ -349,11 +385,19 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 	return input
 }
 
-func applyPublishedStage(vulnerability *Vulnerability, advisories []PublishedAdvisory) {
+func applyPublishedStage(vulnerability *Vulnerability, confirmedVersions []string, advisories []PublishedAdvisory) {
 	if vulnerability.Stage != "Validation" {
 		return
 	}
-	updateIfPublishedOnNetwork(vulnerability, advisories)
+	versions := append(slices.Clone(confirmedVersions), matchingPublishedVersions(*vulnerability, advisories)...)
+	if len(versions) == 0 {
+		return
+	}
+	slices.Sort(versions)
+	versions = slices.Compact(versions)
+	slices.Reverse(versions)
+	vulnerability.PublishedVersions = versions
+	vulnerability.Stage = "Lightwell Network"
 }
 
 // issueRelationships resolves the support-ticket links for a vulnerability. A
