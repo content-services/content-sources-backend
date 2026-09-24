@@ -24,5 +24,11 @@
     "type": "python",
     "base_path": "python/validated",
     "feature_name": "lightwell-network,lightwell-clearinghouse,lightwell-research-institutions"
+  },
+  {
+    "name": "lightwell/python/remediated",
+    "type": "python",
+    "base_path": "python/remediated",
+    "feature_name": "lightwell-network,lightwell-clearinghouse,lightwell-research-institutions"
   }
 ]

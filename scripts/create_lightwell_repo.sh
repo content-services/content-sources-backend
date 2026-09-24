@@ -8,7 +8,8 @@
 # the appropriate domains, then runs the Go importer.
 #
 # Idempotent: existing distributions (matched by base_path) are reused;
-# Maven catalog seed (if empty) and the CS import always run.
+# Maven catalog seed (if empty) and the CS import always run. Python
+# remediated fixture files are uploaded only if missing from the repository.
 #
 # Intended for local development against the Pulp instance started via docker-compose.
 # Maven catalogs are seeded with uploaded POM + repository modify (pull-through
@@ -453,6 +454,63 @@ wait_for_task_or_warn() {
   return 1
 }
 
+# Uploads checked-in wheel and source distributions into the remediated
+# Python repository. PyPI cannot supply our remediated versions.
+#   populate_python_remediated_repo <DOMAIN_NAME> <BASE_PATH>
+populate_python_remediated_repo() (
+  local domain_name="$1"
+  local base_path="$2"
+  local artifact_dir="${REPO_DIR}/scripts/fixtures/python_remediated"
+
+  find_distribution_by_base_path "$domain_name" "python/pypi" "$base_path"
+  if [[ -z "$RESULT" ]]; then
+    echo "ERROR: Python distribution not found for ${base_path}" >&2
+    exit 1
+  fi
+
+  local distribution repo_href
+  distribution=$(pulp_api GET "$RESULT")
+  repo_href=$(echo "$distribution" | jq -er '.repository')
+
+  echo "    Uploading synthetic remediated Python releases..."
+  local artifact filename encoded_filename repo_version encoded_version existing response task_href
+  for artifact in "$artifact_dir"/*.whl "$artifact_dir"/*.tar.gz; do
+    if [[ ! -f "$artifact" ]]; then
+      echo "ERROR: Missing remediated Python fixture: ${artifact}" >&2
+      exit 1
+    fi
+    filename=$(basename "$artifact")
+    encoded_filename=$(jq -nr --arg value "$filename" '$value|@uri')
+    repo_version=$(pulp_api GET "$repo_href" | jq -er '.latest_version_href')
+    encoded_version=$(jq -nr --arg value "$repo_version" '$value|@uri')
+    existing=$(pulp_api GET \
+      "${API_ROOT}/${domain_name}/api/v3/content/python/packages/?filename=${encoded_filename}&repository_version=${encoded_version}" \
+      | jq -er '.count')
+    if (( existing > 0 )); then
+      echo "      Already present: ${filename}"
+      continue
+    fi
+
+    local -a args=(-sS -k --fail-with-body -F "relative_path=${filename}" -F "repository=${repo_href}" -F "file=@${artifact}")
+    if [[ -n "$PULP_CLIENT_CERT" ]]; then
+      args+=(--cert "$PULP_CLIENT_CERT")
+      if [[ -n "$PULP_CLIENT_KEY" ]]; then
+        args+=(--key "$PULP_CLIENT_KEY")
+      fi
+      if [[ -n "$PULP_CA_CERT" ]]; then
+        args+=(--cacert "$PULP_CA_CERT")
+      fi
+    elif [[ -n "$PULP_USER" ]]; then
+      args+=(-u "${PULP_USER}:${PULP_PASS}")
+    fi
+
+    response=$(curl "${args[@]}" "$(pulp_url "${API_ROOT}/${domain_name}/api/v3/content/python/packages/")")
+    task_href=$(echo "$response" | jq -er '.task')
+    wait_for_task "$task_href"
+    echo "      Uploaded: ${filename}"
+  done
+)
+
 # Ensures repos from a JSON allowlist file under the given domain.
 #   create_repos_from_json <DOMAIN_NAME> <JSON_FILE>
 create_repos_from_json() {
@@ -479,6 +537,9 @@ create_repos_from_json() {
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
+        if [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "python/remediated" ]]; then
+          populate_python_remediated_repo "$domain_name" "$entry_base_path"
+        fi
         ;;
       *)
         echo "WARN: Skipping unsupported type '${entry_type}' for ${entry_name}"
