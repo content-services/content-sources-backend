@@ -24,6 +24,12 @@ export interface ApiLightwellPackageVersionResponse {
      * @type {string}
      * @memberof ApiLightwellPackageVersionResponse
      */
+    coordinates?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellPackageVersionResponse
+     */
     createdAt?: string;
     /**
      * 
@@ -43,6 +49,12 @@ export interface ApiLightwellPackageVersionResponse {
      * @memberof ApiLightwellPackageVersionResponse
      */
     name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiLightwellPackageVersionResponse
+     */
+    purl?: string;
     /**
      * 
      * @type {string}
@@ -86,10 +98,12 @@ export function ApiLightwellPackageVersionResponseFromJSONTyped(json: any, ignor
     }
     return {
         
+        'coordinates': json['coordinates'] == null ? undefined : json['coordinates'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
         'ecosystem': json['ecosystem'] == null ? undefined : json['ecosystem'],
         'group': json['group'] == null ? undefined : json['group'],
         'name': json['name'] == null ? undefined : json['name'],
+        'purl': json['purl'] == null ? undefined : json['purl'],
         'release': json['release'] == null ? undefined : json['release'],
         'repository': json['repository'] == null ? undefined : json['repository'],
         'repositoryUuid': json['repository_uuid'] == null ? undefined : json['repository_uuid'],
@@ -108,10 +122,12 @@ export function ApiLightwellPackageVersionResponseToJSONTyped(value?: ApiLightwe
 
     return {
         
+        'coordinates': value['coordinates'],
         'created_at': value['createdAt'],
         'ecosystem': value['ecosystem'],
         'group': value['group'],
         'name': value['name'],
+        'purl': value['purl'],
         'release': value['release'],
         'repository': value['repository'],
         'repository_uuid': value['repositoryUuid'],
