@@ -23,6 +23,18 @@
                     "advisory_id": {
                         "type": "string"
                     },
+                    "advisory_name": {
+                        "type": "string"
+                    },
+                    "aliases": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
                     "details": {
                         "type": "string"
                     },
@@ -32,7 +44,16 @@
                         },
                         "type": "array"
                     },
+                    "modified": {
+                        "type": "string"
+                    },
                     "package_name": {
+                        "type": "string"
+                    },
+                    "package_version": {
+                        "type": "string"
+                    },
+                    "published": {
                         "type": "string"
                     },
                     "reference_urls": {
@@ -44,7 +65,22 @@
                     "repository": {
                         "type": "string"
                     },
+                    "schema_version": {
+                        "type": "string"
+                    },
                     "severity": {
+                        "type": "string"
+                    },
+                    "severity_score": {
+                        "type": "number"
+                    },
+                    "source": {
+                        "type": "string"
+                    },
+                    "summary": {
+                        "type": "string"
+                    },
+                    "updated_at": {
                         "type": "string"
                     }
                 },

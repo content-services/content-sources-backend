@@ -37,8 +37,11 @@ import {
 export interface ListLightwellAdvisoriesRequest {
     repository?: string;
     packageName?: string;
+    packageVersion?: string;
+    name?: string;
     severityMin?: string;
     cveId?: string;
+    latestRelease?: boolean;
     limit?: number;
     offset?: number;
 }
@@ -81,12 +84,24 @@ export class LightwellApi extends runtime.BaseAPI {
             queryParameters['package_name'] = requestParameters['packageName'];
         }
 
+        if (requestParameters['packageVersion'] != null) {
+            queryParameters['package_version'] = requestParameters['packageVersion'];
+        }
+
+        if (requestParameters['name'] != null) {
+            queryParameters['name'] = requestParameters['name'];
+        }
+
         if (requestParameters['severityMin'] != null) {
             queryParameters['severity_min'] = requestParameters['severityMin'];
         }
 
         if (requestParameters['cveId'] != null) {
             queryParameters['cve_id'] = requestParameters['cveId'];
+        }
+
+        if (requestParameters['latestRelease'] != null) {
+            queryParameters['latest_release'] = requestParameters['latestRelease'];
         }
 
         if (requestParameters['limit'] != null) {
