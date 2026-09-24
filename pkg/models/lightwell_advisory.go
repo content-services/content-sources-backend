@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -9,15 +11,22 @@ type LightwellAdvisory struct {
 	Base
 	RepoName                    string         `json:"repo_name" gorm:"not null"`
 	AdvisoryID                  string         `json:"advisory_id" gorm:"not null"`
-	Severity                    string         `json:"severity" gorm:"type:varchar(255)"`
+	Severity                    string         `json:"severity"`
 	SeverityScore               float32        `json:"severity_score" gorm:"not null;default:0"`
 	Details                     string         `json:"details"`
 	ReferenceURLs               pq.StringArray `json:"reference_urls" gorm:"type:text[]"`
 	PackageName                 string         `json:"package_name"`
+	PackageVersion              string         `json:"package_version"`
 	FixedVersion                string         `json:"fixed_version"`
 	FixedVersions               pq.StringArray `json:"fixed_versions" gorm:"type:text[]"`
 	RepositoryConfigurationUUID string         `json:"repository_configuration_uuid" gorm:"not null"`
 	Checksum                    string         `json:"checksum"`
+	Published                   *time.Time     `json:"published"`
+	Modified                    *time.Time     `json:"modified"`
+	Aliases                     pq.StringArray `json:"aliases" gorm:"type:text[]"`
+	SchemaVersion               string         `json:"schema_version"`
+	Source                      string         `json:"source"`
+	Summary                     string         `json:"summary"`
 }
 
 func (*LightwellAdvisory) TableName() string {

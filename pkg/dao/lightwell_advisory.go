@@ -5,25 +5,36 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	csdb "github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type LightwellAdvisoryInput struct {
-	RepoName      string
-	AdvisoryID    string
-	Severity      string
-	Details       string
-	ReferenceURLs []string
-	PackageName   string
-	FixedVersions []string
-	Checksum      string
+	RepoName       string
+	AdvisoryID     string
+	Severity       string
+	Details        string
+	ReferenceURLs  []string
+	PackageName    string
+	PackageVersion string
+	FixedVersions  []string
+	Checksum       string
+	Published      *time.Time
+	Modified       *time.Time
+	Aliases        []string
+	SchemaVersion  string
+	Source         string
+	Summary        string
 }
 
 type LightwellNotificationData struct {
@@ -37,8 +48,11 @@ type LightwellNotificationData struct {
 type ListLightwellAdvisoriesOptions struct {
 	RepoName         *string
 	PackageName      *string
+	PackageVersion   *string
 	SeverityMin      string
 	CveID            *string
+	Name             *string
+	LatestRelease    bool
 	EntitledFeatures []string
 	Limit            int32
 	Offset           int32
@@ -57,7 +71,7 @@ type lightwellAdvisoryDaoImpl struct {
 }
 
 func GetLightwellAdvisoryDao(db *gorm.DB) LightwellAdvisoryDao {
-	return lightwellAdvisoryDaoImpl{db: db}
+	return lightwellAdvisoryDaoImpl{db: db, querier: csdb.LightwellQueries}
 }
 
 func (d lightwellAdvisoryDaoImpl) ListByRepository(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error) {
@@ -87,14 +101,21 @@ func advisoryInputs(advisories []models.LightwellAdvisory) []LightwellAdvisoryIn
 	inputs := make([]LightwellAdvisoryInput, len(advisories))
 	for i, a := range advisories {
 		inputs[i] = LightwellAdvisoryInput{
-			RepoName:      a.RepoName,
-			AdvisoryID:    a.AdvisoryID,
-			Severity:      a.Severity,
-			Details:       a.Details,
-			ReferenceURLs: a.ReferenceURLs,
-			PackageName:   a.PackageName,
-			FixedVersions: a.FixedVersions,
-			Checksum:      a.Checksum,
+			RepoName:       a.RepoName,
+			AdvisoryID:     a.AdvisoryID,
+			Severity:       a.Severity,
+			Details:        a.Details,
+			ReferenceURLs:  a.ReferenceURLs,
+			PackageName:    a.PackageName,
+			PackageVersion: a.PackageVersion,
+			FixedVersions:  a.FixedVersions,
+			Checksum:       a.Checksum,
+			Published:      a.Published,
+			Modified:       a.Modified,
+			Aliases:        a.Aliases,
+			SchemaVersion:  a.SchemaVersion,
+			Source:         a.Source,
+			Summary:        a.Summary,
 		}
 	}
 	return inputs
@@ -149,9 +170,16 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				Details:                     a.Details,
 				ReferenceURLs:               a.ReferenceURLs,
 				PackageName:                 a.PackageName,
+				PackageVersion:              a.PackageVersion,
 				FixedVersions:               a.FixedVersions,
 				RepositoryConfigurationUUID: repoConfigUUID,
 				Checksum:                    a.Checksum,
+				Published:                   a.Published,
+				Modified:                    a.Modified,
+				Aliases:                     pq.StringArray(emptyStrings(a.Aliases)),
+				SchemaVersion:               a.SchemaVersion,
+				Source:                      a.Source,
+				Summary:                     a.Summary,
 			}
 		}
 
@@ -164,23 +192,68 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 			DoUpdates: clause.AssignmentColumns([]string{
 				"repo_name", "severity", "severity_score", "details",
 				"reference_urls", "fixed_versions", "checksum", "updated_at",
+				"published", "modified", "aliases", "schema_version",
+				"source", "summary", "package_version",
 			}),
 		}).CreateInBatches(&modelAdvisories, 100)
 		if result.Error != nil {
 			return fmt.Errorf("failed to upsert advisories: %w", result.Error)
 		}
 
-		query := fmt.Sprintf(
+		keptQuery := fmt.Sprintf(
+			"repository_configuration_uuid = ? AND (advisory_id, package_name) IN (%s)",
+			strings.Join(advisoryPackagePairs, ", "),
+		)
+		var kept []models.LightwellAdvisory
+		result = tx.Where(keptQuery, args...).Find(&kept)
+		if result.Error != nil {
+			return fmt.Errorf("failed to load upserted advisories: %w", result.Error)
+		}
+		if err := replaceAdvisoryReleases(tx, kept); err != nil {
+			return err
+		}
+
+		staleQuery := fmt.Sprintf(
 			"repository_configuration_uuid = ? AND (advisory_id, package_name) NOT IN (%s)",
 			strings.Join(advisoryPackagePairs, ", "),
 		)
-		result = tx.Where(query, args...).Delete(&models.LightwellAdvisory{})
+		result = tx.Where(staleQuery, args...).Delete(&models.LightwellAdvisory{})
 		if result.Error != nil {
 			return fmt.Errorf("failed to delete stale advisories: %w", result.Error)
 		}
 
 		return nil
 	})
+}
+
+func replaceAdvisoryReleases(tx *gorm.DB, advisories []models.LightwellAdvisory) error {
+	if len(advisories) == 0 {
+		return nil
+	}
+	uuids := make([]string, len(advisories))
+	rows := make([]models.LightwellAdvisoryRelease, 0, len(advisories))
+	for i, a := range advisories {
+		uuids[i] = a.UUID
+		for _, rel := range rhlw.Releases(a.FixedVersions, a.AdvisoryID) {
+			rows = append(rows, models.LightwellAdvisoryRelease{
+				AdvisoryUUID:   a.UUID,
+				ReleaseVersion: rel.Version,
+				RhlwBaseline:   rel.Rank.Baseline,
+				RhlwNovel:      rel.Rank.Novel,
+				RhlwHotfix:     rel.Rank.Hotfix,
+			})
+		}
+	}
+	if err := tx.Where("advisory_uuid IN ?", uuids).Delete(&models.LightwellAdvisoryRelease{}).Error; err != nil {
+		return fmt.Errorf("failed to delete advisory releases: %w", err)
+	}
+	if len(rows) == 0 {
+		return nil
+	}
+	if err := tx.CreateInBatches(&rows, 100).Error; err != nil {
+		return fmt.Errorf("failed to insert advisory releases: %w", err)
+	}
+	return nil
 }
 
 func (d lightwellAdvisoryDaoImpl) ListUnnotifiedAdvisories(ctx context.Context, repoConfigUUID string, orgID string) ([]LightwellNotificationData, error) {
@@ -245,12 +318,17 @@ func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListL
 	}
 
 	params := store.ListAdvisoriesParams{
-		RepoName:    opts.RepoName,
-		PackageName: opts.PackageName,
-		SeverityMin: severityMin,
-		CveID:       opts.CveID,
-		PageOffset:  opts.Offset,
-		PageLimit:   opts.Limit,
+		RepoName:       opts.RepoName,
+		PackageName:    opts.PackageName,
+		PackageVersion: opts.PackageVersion,
+		SeverityMin:    severityMin,
+		CveID:          opts.CveID,
+		Name:           opts.Name,
+		PageOffset:     opts.Offset,
+		PageLimit:      opts.Limit,
+	}
+	if opts.LatestRelease {
+		params.LatestRelease = pgtype.Bool{Bool: true, Valid: true}
 	}
 	if len(opts.EntitledFeatures) > 0 {
 		params.EntitledFeatures = opts.EntitledFeatures
@@ -268,25 +346,35 @@ func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListL
 
 	data := make([]api.LightwellAdvisoryResponse, 0, len(rows))
 	for _, row := range rows {
-		refURLs := row.ReferenceUrls
-		if refURLs == nil {
-			refURLs = []string{}
-		}
-		fixedVersions := row.FixedVersions
-		if fixedVersions == nil {
-			fixedVersions = []string{}
-		}
 		data = append(data, api.LightwellAdvisoryResponse{
-			AdvisoryID:    row.AdvisoryID,
-			Severity:      row.Severity,
-			Details:       row.Details,
-			ReferenceURLs: refURLs,
-			PackageName:   row.PackageName,
-			FixedVersions: fixedVersions,
-			Repository:    row.RepoName,
+			AdvisoryID:     row.AdvisoryID,
+			AdvisoryName:   api.LightwellAdvisoryName(row.AdvisoryID),
+			Severity:       row.Severity,
+			SeverityScore:  row.SeverityScore,
+			Summary:        row.Summary,
+			Details:        row.Details,
+			ReferenceURLs:  emptyStrings(row.ReferenceUrls),
+			PackageName:    row.PackageName,
+			PackageVersion: row.PackageVersion,
+			FixedVersions:  emptyStrings(row.FixedVersions),
+			Repository:     row.RepoName,
+			Published:      row.Published,
+			Modified:       row.Modified,
+			Aliases:        emptyStrings(row.Aliases),
+			SchemaVersion:  row.SchemaVersion,
+			Source:         row.Source,
+			CreatedAt:      row.CreatedAt,
+			UpdatedAt:      row.UpdatedAt,
 		})
 	}
 	return data, totalCount, nil
+}
+
+func emptyStrings(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 func (d lightwellAdvisoryDaoImpl) ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]LightwellAdvisoryCveMatch, error) {
