@@ -160,6 +160,26 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesInvalidSeverity() {
 	assert.Equal(t, http.StatusInternalServerError, code)
 }
 
+func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByNameAndPackageVersion() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
+		return opts.Name != nil && *opts.Name == "CVE-2015-6748" &&
+			opts.PackageVersion != nil && *opts.PackageVersion == "1.7.2" &&
+			opts.PackageName != nil && *opts.PackageName == "jsoup" &&
+			len(opts.EntitledFeatures) == 1 && opts.EntitledFeatures[0] == "lightwell-network"
+	})).Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/advisories?name=CVE-2015-6748&package_version=1.7.2&package_name=jsoup", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
 func (s *LightwellAdvisorySuite) TestListAdvisoriesFilterByRepoName() {
 	t := s.T()
 	s.stubLightwellAccess()
@@ -199,6 +219,47 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesNoFeatureAccess() {
 	assert.Equal(t, int64(0), resp.Meta.Count)
 	assert.NotNil(t, resp.Data)
 	assert.Empty(t, resp.Data)
+}
+
+func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestRelease() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
+		return opts.LatestRelease &&
+			opts.PackageName != nil && *opts.PackageName == "jsoup" &&
+			opts.PackageVersion != nil && *opts.PackageVersion == "1.7.2" &&
+			len(opts.EntitledFeatures) == 1 && opts.EntitledFeatures[0] == "lightwell-network"
+	})).Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/advisories?package_name=jsoup&package_version=1.7.2&latest_release=true", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestReleaseRequiresPackage() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	queries := []string{
+		"latest_release=true",
+		"latest_release=true&package_name=jsoup",
+		"latest_release=true&package_version=1.7.2",
+	}
+	for _, q := range queries {
+		path := fmt.Sprintf("%s/lightwell/advisories?%s", api.FullRootPath(), q)
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+		code, body, err := s.serveRouter(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, code, q)
+		assert.Contains(t, string(body), "latest_release requires package_name and package_version", q)
+	}
 }
 
 func (s *LightwellAdvisorySuite) TestListAdvisoriesEmptyResult() {

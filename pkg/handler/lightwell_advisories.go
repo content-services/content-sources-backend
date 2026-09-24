@@ -35,8 +35,11 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Produce      json
 // @Param        repository       query  string  false  "Filter by repository name"
 // @Param        package_name     query  string  false  "Filter by package name (substring match)"
+// @Param        package_version  query  string  false  "Filter by package version (substring match on advisory_id)"
+// @Param        name             query  string  false  "Filter by advisory id or alias (substring match)"
 // @Param        severity_min     query  string  false  "Minimum severity level (low, moderate, important, critical)"
 // @Param        cve_id           query  string  false  "Filter by CVE ID (exact match)"
+// @Param        latest_release   query  bool    false  "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version."
 // @Param        limit            query  int     false  "Limit of results to return"
 // @Param        offset           query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellAdvisoryCollectionResponse
@@ -68,9 +71,13 @@ func (h *LightwellAdvisoryHandler) ListAdvisories(c echo.Context) error {
 
 	page := ParsePagination(c)
 	filters := parseLightwellAdvisoryFilters(c)
+	if filters.LatestRelease && (filters.PackageName == "" || filters.PackageVersion == "") {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error listing advisories", "latest_release requires package_name and package_version")
+	}
 
 	opts := dao.ListLightwellAdvisoriesOptions{
 		SeverityMin:      filters.SeverityMin,
+		LatestRelease:    filters.LatestRelease,
 		EntitledFeatures: lightwellFeatures,
 		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
 		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
@@ -81,8 +88,14 @@ func (h *LightwellAdvisoryHandler) ListAdvisories(c echo.Context) error {
 	if filters.PackageName != "" {
 		opts.PackageName = &filters.PackageName
 	}
+	if filters.PackageVersion != "" {
+		opts.PackageVersion = &filters.PackageVersion
+	}
 	if filters.CveID != "" {
 		opts.CveID = &filters.CveID
+	}
+	if filters.Name != "" {
+		opts.Name = &filters.Name
 	}
 
 	data, totalCount, err := h.DaoRegistry.LightwellAdvisory.ListAdvisories(c.Request().Context(), opts)
@@ -100,8 +113,11 @@ func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterDa
 	_ = echo.QueryParamsBinder(c).
 		String("repository", &filters.Repository).
 		String("package_name", &filters.PackageName).
+		String("package_version", &filters.PackageVersion).
 		String("severity_min", &filters.SeverityMin).
 		String("cve_id", &filters.CveID).
+		String("name", &filters.Name).
+		Bool("latest_release", &filters.LatestRelease).
 		BindError()
 	return filters
 }
