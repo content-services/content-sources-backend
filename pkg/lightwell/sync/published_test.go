@@ -222,13 +222,13 @@ func TestApplyPublishedStageOnlyPromotesValidation(t *testing.T) {
 		FixedVersions: []string{"1.2.3.build-00001"},
 	}}
 
-	applyPublishedStage(&match, advisories)
+	applyPublishedStage(&match, nil, advisories)
 	assert.Equal(t, "Lightwell Network", match.Stage)
 	assert.Equal(t, []string{"1.2.3.build-00001"}, match.PublishedVersions)
 
 	inProgress := match
 	inProgress.Stage = "Fix in Progress"
-	applyPublishedStage(&inProgress, advisories)
+	applyPublishedStage(&inProgress, nil, advisories)
 	assert.Equal(t, "Fix in Progress", inProgress.Stage)
 	assert.Equal(t, []string{"1.2.3.build-00001"}, inProgress.PublishedVersions)
 
@@ -236,7 +236,7 @@ func TestApplyPublishedStageOnlyPromotesValidation(t *testing.T) {
 	closedUnpublished.Stage = "Validation"
 	closedUnpublished.ComponentName = "com.example:other-lib"
 	closedUnpublished.PublishedVersions = nil
-	applyPublishedStage(&closedUnpublished, advisories)
+	applyPublishedStage(&closedUnpublished, nil, advisories)
 	assert.Equal(t, "Validation", closedUnpublished.Stage)
 	assert.Empty(t, closedUnpublished.PublishedVersions)
 }
