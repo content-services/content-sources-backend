@@ -275,13 +275,20 @@ func buildAdvisoryInputs(
 			var advisories []dao.LightwellAdvisoryInput
 			for _, info := range infos {
 				advisories = append(advisories, dao.LightwellAdvisoryInput{
-					AdvisoryID:    info.AdvisoryID,
-					Severity:      info.Severity,
-					Details:       info.Details,
-					ReferenceURLs: info.References,
-					PackageName:   info.PackageName,
-					FixedVersions: info.FixedVersions,
-					Checksum:      entry.Checksum,
+					AdvisoryID:     info.AdvisoryID,
+					Severity:       info.Severity,
+					Details:        info.Details,
+					ReferenceURLs:  info.References,
+					PackageName:    info.PackageName,
+					PackageVersion: info.PackageVersion,
+					FixedVersions:  info.FixedVersions,
+					Checksum:       entry.Checksum,
+					Published:      info.Published,
+					Modified:       info.Modified,
+					Aliases:        info.Aliases,
+					SchemaVersion:  info.SchemaVersion,
+					Source:         info.Source,
+					Summary:        info.Summary,
 				})
 			}
 			results[idx] = fetchResult{advisories: advisories, fetched: true}

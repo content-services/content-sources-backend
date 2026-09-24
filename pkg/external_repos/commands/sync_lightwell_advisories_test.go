@@ -290,6 +290,111 @@ func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) 
 	mockDao.UserPreference.AssertNotCalled(t, "ListDistinctOrgsByPreference", mock.Anything, mock.Anything, mock.Anything)
 }
 
+func TestProcessOsvForEntry_PersistsOSVMetadata(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
+	const richOSV = `{
+		"schema_version": "1.6.8",
+		"id": "x_RHLW-CVE-2015-6748-1.7.2",
+		"published": "2026-09-17T18:39:42Z",
+		"modified": "2026-09-17T18:39:42Z",
+		"summary": "Improper Neutralization of Input During Web Page Generation in Jsoup",
+		"details": "Cross-site scripting (XSS) vulnerability in jsoup before 1.8.3.",
+		"aliases": ["GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"],
+		"affected": [{
+			"package": {"ecosystem": "Maven", "name": "org.jsoup:jsoup"},
+			"versions": ["1.7.2"],
+			"ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "1.7.2.rhlw-00001"}]}]
+		}],
+		"database_specific": {"lightwell": {"source": "pnc-build", "backport_base_version": "1.7.2"}}
+	}`
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "x_RHLW-CVE-2015-6748-1.7.2.json,checksum-jsoup,1500\n")
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/x_RHLW-CVE-2015-6748-1.7.2.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, richOSV)
+	})
+
+	server := setupTestServer(t, mux)
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
+		if len(advisories) != 1 {
+			return false
+		}
+		a := advisories[0]
+		return a.AdvisoryID == "x_RHLW-CVE-2015-6748-1.7.2" &&
+			a.PackageName == "org.jsoup:jsoup" &&
+			a.PackageVersion == "1.7.2" &&
+			a.Source == "pnc-build" &&
+			a.SchemaVersion == "1.6.8" &&
+			a.Summary == "Improper Neutralization of Input During Web Page Generation in Jsoup" &&
+			len(a.Aliases) == 2 && a.Aliases[1] == "CVE-2015-6748" &&
+			a.Published != nil && a.Modified != nil
+	})).Return(nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+}
+
+func TestProcessOsvForEntry_UpdatesWhenChecksumChanges(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
+	const updatedOSV = `{
+		"schema_version": "1.7.0",
+		"id": "ADV-001",
+		"summary": "Updated summary",
+		"details": "Updated details",
+		"affected": [{
+			"package": {"name": "com.example:lib-a", "ecosystem": "Maven"},
+			"versions": ["1.0.1"],
+			"ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "1.0.2"}]}]
+		}]
+	}`
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "advisory-1.json,checksum-zzz,1600\n")
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, updatedOSV)
+	})
+
+	server := setupTestServer(t, mux)
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+
+	existing := dao.LightwellAdvisoryInput{
+		AdvisoryID:    "ADV-001",
+		PackageName:   "com.example:lib-a",
+		Checksum:      "checksum-aaa",
+		Details:       "Original details",
+		Summary:       "Original summary",
+		FixedVersions: []string{"1.0.1"},
+	}
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{existing}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
+		if len(advisories) != 1 {
+			return false
+		}
+		a := advisories[0]
+		return a.AdvisoryID == "ADV-001" &&
+			a.Checksum == "checksum-zzz" &&
+			a.Details == "Updated details" &&
+			a.Summary == "Updated summary" &&
+			a.PackageVersion == "1.0.1" &&
+			a.SchemaVersion == "1.7.0" &&
+			len(a.FixedVersions) == 1 && a.FixedVersions[0] == "1.0.2"
+	})).Return(nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+}
+
 func TestProcessOsvForEntry_SkipsExistingByChecksum(t *testing.T) {
 	config.Get().Features.LightwellNotifications.Enabled = false
 
