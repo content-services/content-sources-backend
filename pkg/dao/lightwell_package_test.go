@@ -86,6 +86,23 @@ func (s *LightwellPackageSuite) createPackageWithVersions(ctx context.Context, r
 	return pkgUUID
 }
 
+func (s *LightwellPackageSuite) createPackageWithoutVersions(ctx context.Context, repoConfigUUID string, name string, group string) string {
+	pkgUUID := uuid.New().String()
+
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, name, group,
+	).Error
+	s.Require().NoError(err)
+
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	return pkgUUID
+}
+
 func (s *LightwellPackageSuite) createAdvisory(ctx context.Context, repoConfigUUID string, advisoryID string, packageName string, fixedVersions []string) {
 	advisoryUUID := uuid.New().String()
 
@@ -134,6 +151,30 @@ func (s *LightwellPackageSuite) TestListPackagesAggregatesVersions() {
 	assert.Equal(s.T(), "com.example:commons-lib", rows[0].Name)
 	assert.Equal(s.T(), "com.example", rows[0].Group)
 	assert.Equal(s.T(), "maven", rows[0].Ecosystem)
+}
+
+func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {
+	ctx, dao := s.dao()
+	testID := fmt.Sprintf("zero-ver-%d", time.Now().UnixNano())
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+
+	s.createPackageWithoutVersions(ctx, repoConfigUUID, "com.example:no-versions", "com.example")
+
+	rows, total, err := dao.ListPackages(ctx, ListLightwellPackagesOptions{
+		Repository:       ptr(testID),
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+
+	s.NoError(err)
+	assert.Equal(s.T(), int64(1), total)
+	s.Require().Len(rows, 1)
+	assert.Equal(s.T(), "com.example:no-versions", rows[0].Name)
+	assert.Empty(s.T(), rows[0].Versions, "Versions should be empty slice, not ['']")
+	assert.Empty(s.T(), rows[0].Releases, "Releases should be empty slice, not ['']")
+	assert.Empty(s.T(), rows[0].PublishedAts, "PublishedAts should be empty slice, not ['']")
+	assert.Len(s.T(), rows[0].Versions, 0, "Versions length should be 0")
 }
 
 func (s *LightwellPackageSuite) TestListPackagesNameFilterCaseInsensitive() {

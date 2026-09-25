@@ -165,10 +165,13 @@ func interfaceToStringSlice(v interface{}) []string {
 	}
 	switch arr := v.(type) {
 	case []interface{}:
-		result := make([]string, len(arr))
-		for i, item := range arr {
+		result := make([]string, 0, len(arr))
+		for _, item := range arr {
+			if item == nil {
+				continue
+			}
 			if str, ok := item.(string); ok {
-				result[i] = str
+				result = append(result, str)
 			}
 		}
 		return result
