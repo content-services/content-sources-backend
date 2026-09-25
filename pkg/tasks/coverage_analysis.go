@@ -132,6 +132,13 @@ func (c *CoverageAnalysis) Run() error {
 	}
 
 	if len(parsedPackages.Packages) == 0 {
+		if parsedPackages.SkippedEntries > 0 {
+			return fmt.Errorf(
+				"none of the %d package entries in the uploaded %s manifest include a Package URL (PURL); "+
+					"coverage analysis requires PURLs to identify packages — consider regenerating the SBOM with a PURL-aware tool such as Syft",
+				parsedPackages.SkippedEntries, parsedPackages.InputFormat,
+			)
+		}
 		return fmt.Errorf("no packages found in manifest")
 	}
 
