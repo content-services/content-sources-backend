@@ -217,6 +217,19 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysisManifestEmpty() {
 	assert.Contains(s.T(), err.Error(), "no packages found in manifest")
 }
 
+func (s *CoverageAnalysisSuite) TestCoverageAnalysisNoPURLs() {
+	ctx := context.Background()
+	reportUUID := uuid.NewString()
+	manifest := []byte(`{"spdxVersion":"SPDX-2.3","packages":[` +
+		`{"name":"flask","SPDXID":"SPDXRef-1","versionInfo":"3.0.3","downloadLocation":"NOASSERTION"}]}`)
+	payload := s.mockFetchManifest(ctx, reportUUID, "sbom.spdx.json", manifest)
+
+	err := s.newTask(ctx, &payload).Run()
+	require.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "Package URL")
+	assert.Contains(s.T(), err.Error(), "1 package entries")
+}
+
 func (s *CoverageAnalysisSuite) TestCoverageAnalysisCatalogLoadFails() {
 	ctx := context.Background()
 	reportUUID := uuid.NewString()

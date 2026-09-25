@@ -132,6 +132,14 @@ func (c *CoverageAnalysis) Run() error {
 	}
 
 	if len(parsedPackages.Packages) == 0 {
+		if parsedPackages.SkippedEntries > 0 {
+			//nolint:staticcheck // ST1005: user-facing message persisted verbatim to AnalysisTaskError and rendered in the UI; never wrapped further
+			return fmt.Errorf(
+				"None of the %d package entries in the uploaded %s manifest include a Package URL (PURL).\n"+
+					"Coverage analysis requires PURLs to identify packages — consider regenerating the SBOM with a PURL-aware tool such as Syft.",
+				parsedPackages.SkippedEntries, parsedPackages.InputFormat,
+			)
+		}
 		return fmt.Errorf("no packages found in manifest")
 	}
 

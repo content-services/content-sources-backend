@@ -33,8 +33,9 @@ type Package struct {
 }
 
 type ParseResult struct {
-	Packages    []Package
-	InputFormat string
+	Packages       []Package
+	InputFormat    string
+	SkippedEntries int
 }
 
 // Parse detects the format of the manifest file and extracts package metadata.
@@ -48,6 +49,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	}
 
 	var packages []Package
+	var skippedEntries int
 	switch format {
 	case FormatCSV:
 		packages, err = parseCSV(br)
@@ -58,7 +60,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	case FormatCycloneDX:
 		packages, err = parseCycloneDX(br)
 	case FormatSPDX:
-		packages, err = parseSPDX(br)
+		packages, skippedEntries, err = parseSPDX(br)
 	default:
 		return nil, fmt.Errorf("unsupported manifest format for file %q", filename)
 	}
@@ -67,8 +69,9 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	}
 
 	return &ParseResult{
-		Packages:    deduplicate(packages),
-		InputFormat: format,
+		Packages:       deduplicate(packages),
+		InputFormat:    format,
+		SkippedEntries: skippedEntries,
 	}, nil
 }
 
