@@ -4533,3 +4533,99 @@ func (suite *RepositoryConfigSuite) TestPartnerPackageCountOverrideUsesPublished
 	require.NoError(t, err)
 	assert.Equal(t, 100, fetched.PackageCount, "owner viewer should see package count from latest repo state")
 }
+
+func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport() {
+	t := suite.T()
+	ctx := context.Background()
+
+	// Create two Lightwell repos: maven and python
+	mavenRepoUUID := uuid.NewString()
+	mavenRepoConfigUUID := uuid.NewString()
+	err := suite.tx.Exec(`
+		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, published_distribution_base_path)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		mavenRepoUUID, config.OriginLightwell, config.ContentTypeMaven, "/maven/repo",
+	).Error
+	require.NoError(t, err)
+	err = suite.tx.Exec(`
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?)`,
+		mavenRepoConfigUUID, "maven-test", config.LightwellOrg, mavenRepoUUID, "lightwell-maven", "maven-test",
+	).Error
+	require.NoError(t, err)
+
+	pythonRepoUUID := uuid.NewString()
+	pythonRepoConfigUUID := uuid.NewString()
+	err = suite.tx.Exec(`
+		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, published_distribution_base_path)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pythonRepoUUID, config.OriginLightwell, config.ContentTypePython, "/python/repo",
+	).Error
+	require.NoError(t, err)
+	err = suite.tx.Exec(`
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label, last_import_repository_version)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?, ?)`,
+		pythonRepoConfigUUID, "python-test", config.LightwellDemoOrg, pythonRepoUUID, "lightwell-python", "python-test", "/versions/3/",
+	).Error
+	require.NoError(t, err)
+
+	// Create a non-Lightwell repo (should be excluded)
+	normalRepoUUID := uuid.NewString()
+	normalRepoConfigUUID := uuid.NewString()
+	err = suite.tx.Exec(`
+		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, published_distribution_base_path)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		normalRepoUUID, config.OriginExternal, config.ContentTypeRpm, "/rpm/repo",
+	).Error
+	require.NoError(t, err)
+	err = suite.tx.Exec(`
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?)`,
+		normalRepoConfigUUID, "normal-test", seeds.RandomOrgId(), normalRepoUUID, "", "normal-test",
+	).Error
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_ = suite.tx.Exec(`DELETE FROM repository_configurations WHERE uuid IN (?, ?, ?)`, mavenRepoConfigUUID, pythonRepoConfigUUID, normalRepoConfigUUID).Error
+		_ = suite.tx.Exec(`DELETE FROM repositories WHERE uuid IN (?, ?, ?)`, mavenRepoUUID, pythonRepoUUID, normalRepoUUID).Error
+	})
+
+	dao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+	repos, err := dao.InternalOnly_ListLightwellReposToImport(ctx)
+	require.NoError(t, err)
+
+	// Only the two Lightwell maven/python repos, each with BasePath + ContentType populated
+	assert.Len(t, repos, 2)
+
+	// Find maven repo in results
+	var mavenRepo *LightwellRepoToImport
+	var pythonRepo *LightwellRepoToImport
+	for i := range repos {
+		if repos[i].ContentType == config.ContentTypeMaven {
+			mavenRepo = &repos[i]
+		} else if repos[i].ContentType == config.ContentTypePython {
+			pythonRepo = &repos[i]
+		}
+	}
+
+	require.NotNil(t, mavenRepo)
+	assert.Equal(t, mavenRepoConfigUUID, mavenRepo.RepoConfigUUID)
+	assert.Equal(t, config.LightwellOrg, mavenRepo.OrgID)
+	assert.Equal(t, "maven-test", mavenRepo.Name)
+	assert.Equal(t, "/maven/repo", mavenRepo.BasePath)
+	assert.Equal(t, "", mavenRepo.LastImportRepositoryVersion)
+
+	require.NotNil(t, pythonRepo)
+	assert.Equal(t, pythonRepoConfigUUID, pythonRepo.RepoConfigUUID)
+	assert.Equal(t, config.LightwellDemoOrg, pythonRepo.OrgID)
+	assert.Equal(t, "python-test", pythonRepo.Name)
+	assert.Equal(t, "/python/repo", pythonRepo.BasePath)
+	assert.Equal(t, "/versions/3/", pythonRepo.LastImportRepositoryVersion)
+
+	// Update + read back
+	err = dao.InternalOnly_UpdateLastImportRepositoryVersion(ctx, mavenRepoConfigUUID, "/versions/5/")
+	require.NoError(t, err)
+	var rc models.RepositoryConfiguration
+	suite.tx.Where("uuid = ?", mavenRepoConfigUUID).First(&rc)
+	assert.Equal(t, "/versions/5/", rc.LastImportRepositoryVersion)
+}

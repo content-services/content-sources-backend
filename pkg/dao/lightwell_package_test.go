@@ -8,23 +8,55 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 type LightwellPackageSuite struct {
-	suite.Suite
+	*DaoSuite
 }
 
 func TestLightwellPackageSuite(t *testing.T) {
-	suite.Run(t, new(LightwellPackageSuite))
+	m := DaoSuite{}
+	r := LightwellPackageSuite{
+		DaoSuite: &m,
+	}
+	suite.Run(t, &r)
 }
 
 func (s *LightwellPackageSuite) dao() (context.Context, LightwellPackageDao) {
 	s.Require().NotNil(db.LightwellQueries)
 	return context.Background(), GetDaoRegistry(db.DB).LightwellPackage
+}
+
+func (s *LightwellPackageSuite) seedLightwellRepoConfig(contentType string, securityLevel string, name string) string {
+	repoUUID := uuid.New().String()
+	repoConfigUUID := uuid.New().String()
+
+	err := s.tx.Exec(`
+		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, security_level, published_distribution_base_path)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?)`,
+		repoUUID, config.OriginLightwell, contentType, securityLevel, "/path/to/"+name,
+	).Error
+	s.Require().NoError(err)
+
+	err = s.tx.Exec(`
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?)`,
+		repoConfigUUID, name, config.LightwellOrg, repoUUID, "lightwell-"+contentType, name,
+	).Error
+	s.Require().NoError(err)
+
+	s.T().Cleanup(func() {
+		_ = s.tx.Exec(`DELETE FROM repository_configurations WHERE uuid = ?`, repoConfigUUID).Error
+		_ = s.tx.Exec(`DELETE FROM repositories WHERE uuid = ?`, repoUUID).Error
+	})
+
+	return repoConfigUUID
 }
 
 func (s *LightwellPackageSuite) createLightwellRepoWithFeature(ctx context.Context, name string, featureName string, securityLevel string) (string, string) {
@@ -375,4 +407,68 @@ func (s *LightwellPackageSuite) TestListPackageVersionsVulnerableToCveId() {
 	s.NoError(err)
 	s.Require().Len(vrows, 1)
 	assert.Equal(s.T(), "1.0", vrows[0].Version)
+}
+
+func (s *LightwellPackageSuite) TestSyncPackagesForRepositoryUpsertAndDeleteDiff() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetLightwellPackageDao(s.tx)
+	rcUUID := s.seedLightwellRepoConfig("maven", "validated", "lightwell-maven")
+
+	// initial import: two packages
+	err := dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "commons", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "1.0", Release: "", PublishedAt: "2020-01-01T00:00:00Z", Purl: "pkg:maven/org.apache/commons@1.0"},
+			{Version: "2.0", Purl: "pkg:maven/org.apache/commons@2.0"},
+		}},
+		{Name: "logging", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "1.5", Purl: "pkg:maven/org.apache/logging@1.5"},
+		}},
+	})
+	require.NoError(t, err)
+
+	var pkgCount, verCount int64
+	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
+	s.tx.Model(&models.LightwellPackageVersion{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&verCount)
+	assert.Equal(t, int64(2), pkgCount)
+	assert.Equal(t, int64(3), verCount)
+
+	// capture a stable uuid to prove upsert keeps it
+	var before models.LightwellPackage
+	s.tx.Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "commons").First(&before)
+
+	// second import: "logging" removed, "commons" drops 1.0, 2.0 purl updated
+	err = dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "commons", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "2.0", Purl: "pkg:maven/org.apache/commons@2.0-updated"},
+		}},
+	})
+	require.NoError(t, err)
+
+	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
+	s.tx.Model(&models.LightwellPackageVersion{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&verCount)
+	assert.Equal(t, int64(1), pkgCount) // logging deleted
+	assert.Equal(t, int64(1), verCount) // only commons 2.0 remains
+
+	var after models.LightwellPackage
+	s.tx.Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "commons").First(&after)
+	assert.Equal(t, before.UUID, after.UUID) // upsert kept the uuid
+
+	var ver models.LightwellPackageVersion
+	s.tx.Where("lightwell_package_uuid = ?", after.UUID).First(&ver)
+	assert.Equal(t, "pkg:maven/org.apache/commons@2.0-updated", ver.Purl) // updated in place
+}
+
+func (s *LightwellPackageSuite) TestSyncPackagesEmptyDeletesAll() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetLightwellPackageDao(s.tx)
+	rcUUID := s.seedLightwellRepoConfig("python", "validated", "lightwell-python")
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "requests", Group: "", Versions: []LightwellPackageVersionInput{{Version: "2.0", Purl: "pkg:pypi/requests@2.0"}}},
+	}))
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{}))
+	var pkgCount int64
+	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
+	assert.Equal(t, int64(0), pkgCount)
 }

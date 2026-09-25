@@ -121,6 +121,17 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 	SetPartnerRepo(ctx context.Context, repoConfigUUID string, partner bool) error
 	InternalOnly_FetchRepoConfigByName(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error)
+	InternalOnly_ListLightwellReposToImport(ctx context.Context) ([]LightwellRepoToImport, error)
+	InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string) error
+}
+
+type LightwellRepoToImport struct {
+	RepoConfigUUID              string `gorm:"column:repo_config_uuid"`
+	OrgID                       string `gorm:"column:org_id"`
+	Name                        string `gorm:"column:name"`
+	ContentType                 string `gorm:"column:content_type"`
+	BasePath                    string `gorm:"column:base_path"`
+	LastImportRepositoryVersion string `gorm:"column:last_import_repository_version"`
 }
 
 type ModuleStreamDao interface {
