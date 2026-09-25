@@ -600,6 +600,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Return demo repositories instead of production ones (default false)",
+                        "name": "demo",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Limit of results to return",
                         "name": "limit",
@@ -665,6 +671,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Filter by security level (validated, remediated)",
                         "name": "security_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Return demo repositories instead of production ones (default false)",
+                        "name": "demo",
                         "in": "query"
                     },
                     {
