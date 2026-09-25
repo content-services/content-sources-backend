@@ -39,6 +39,30 @@ func TestParse_SPDXTagValue(t *testing.T) {
 	}, result.Packages)
 }
 
+func TestParse_SPDX2JSON_NoPURLs(t *testing.T) {
+	data := `{"spdxVersion":"SPDX-2.3","packages":[` +
+		`{"name":"flask","SPDXID":"SPDXRef-1","versionInfo":"3.0.3","downloadLocation":"NOASSERTION"},` +
+		`{"name":"requests","SPDXID":"SPDXRef-2","versionInfo":"2.31.0","downloadLocation":"NOASSERTION"},` +
+		`{"name":"bash","SPDXID":"SPDXRef-3","versionInfo":"5.1.8-9.el9","downloadLocation":"NOASSERTION",` +
+		`"externalRefs":[{"referenceCategory":"SECURITY","referenceType":"cpe23Type",` +
+		`"referenceLocator":"cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*"}]}` +
+		`]}`
+	result, err := Parse("sbom.spdx.json", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Empty(t, result.Packages)
+	assert.Equal(t, 3, result.SkippedEntries)
+}
+
+func TestParse_SPDXTagValue_NoPURLs(t *testing.T) {
+	data := "SPDXVersion: SPDX-2.3\nSPDXID: SPDXRef-DOCUMENT\n" +
+		"PackageName: flask\nPackageVersion: 3.0.3\n" +
+		"PackageName: requests\nPackageVersion: 2.31.0\n"
+	result, err := Parse("bom.spdx", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Empty(t, result.Packages)
+	assert.Equal(t, 2, result.SkippedEntries)
+}
+
 func TestParse_SPDXUnsupportedEncodings(t *testing.T) {
 	tests := []struct {
 		name, filename, body string
