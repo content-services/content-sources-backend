@@ -2199,3 +2199,43 @@ func (r repositoryConfigDaoImpl) SetPartnerRepo(ctx context.Context, repoConfigU
 	}
 	return r.db.WithContext(ctx).Model(&repoConfig).Omit("Repository").Update("partner", partner).Error
 }
+
+func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx context.Context) ([]LightwellRepoToImport, error) {
+	var out []LightwellRepoToImport
+	rows, err := r.db.WithContext(ctx).Raw(`
+		SELECT
+			rc.uuid,
+			rc.org_id,
+			rc.name,
+			r.content_type,
+			COALESCE(r.published_distribution_base_path, ''),
+			COALESCE(rc.last_import_repository_version, '')
+		FROM repository_configurations rc
+		JOIN repositories r ON r.uuid = rc.repository_uuid
+		WHERE rc.org_id IN (?, ?)
+			AND r.content_type IN (?, ?, ?)
+			AND rc.deleted_at IS NULL
+	`, config.LightwellOrg, config.LightwellDemoOrg,
+		config.ContentTypeMaven, config.ContentTypePython, config.ContentTypeNpm).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item LightwellRepoToImport
+		if err := rows.Scan(&item.RepoConfigUUID, &item.OrgID, &item.Name,
+			&item.ContentType, &item.BasePath, &item.LastImportRepositoryVersion); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.RepositoryConfiguration{}).
+		Where("uuid = ?", repoConfigUUID).
+		UpdateColumn("last_import_repository_version", versionHref).Error
+}

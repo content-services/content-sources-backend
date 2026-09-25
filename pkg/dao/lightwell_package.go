@@ -5,12 +5,24 @@ import (
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
+	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgx/v5/pgtype"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-// TODO(Task 5): replace stub
-type LightwellPackageInput struct{}
+type LightwellPackageVersionInput struct {
+	Version     string
+	Release     string
+	PublishedAt string
+	Purl        string
+}
+
+type LightwellPackageInput struct {
+	Name     string
+	Group    string
+	Versions []LightwellPackageVersionInput
+}
 
 type LightwellPackageRow struct {
 	RepositoryConfigurationUUID string
@@ -147,9 +159,69 @@ func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts L
 	return out, total, nil
 }
 
-// TODO(Task 5): replace stub
 func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error {
-	return fmt.Errorf("not implemented")
+	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		keepPkgUUIDs := make([]string, 0, len(pkgs))
+		keepVerUUIDs := make([]string, 0)
+
+		for _, in := range pkgs {
+			pkg := models.LightwellPackage{
+				RepositoryConfigurationUUID: repoConfigUUID,
+				Name:                        in.Name,
+				Group:                       in.Group,
+			}
+			if err := tx.Clauses(
+				clause.OnConflict{
+					Columns:   []clause.Column{{Name: "repository_configuration_uuid"}, {Name: "package_group"}, {Name: "name"}},
+					DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+				},
+				clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
+			).Create(&pkg).Error; err != nil {
+				return err
+			}
+			keepPkgUUIDs = append(keepPkgUUIDs, pkg.UUID)
+
+			for _, v := range in.Versions {
+				ver := models.LightwellPackageVersion{
+					LightwellPackageUUID:        pkg.UUID,
+					RepositoryConfigurationUUID: repoConfigUUID,
+					Version:                     v.Version,
+					Release:                     v.Release,
+					PublishedAt:                 v.PublishedAt,
+					Purl:                        v.Purl,
+				}
+				if err := tx.Clauses(
+					clause.OnConflict{
+						Columns:   []clause.Column{{Name: "lightwell_package_uuid"}, {Name: "version"}},
+						DoUpdates: clause.AssignmentColumns([]string{"release", "published_at", "purl", "updated_at"}),
+					},
+					clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
+				).Create(&ver).Error; err != nil {
+					return err
+				}
+				keepVerUUIDs = append(keepVerUUIDs, ver.UUID)
+			}
+		}
+
+		// Delete versions that are no longer present for this repo.
+		vq := tx.Where("repository_configuration_uuid = ?", repoConfigUUID)
+		if len(keepVerUUIDs) > 0 {
+			vq = vq.Where("uuid NOT IN ?", keepVerUUIDs)
+		}
+		if err := vq.Delete(&models.LightwellPackageVersion{}).Error; err != nil {
+			return err
+		}
+
+		// Delete packages that are no longer present for this repo.
+		pq := tx.Where("repository_configuration_uuid = ?", repoConfigUUID)
+		if len(keepPkgUUIDs) > 0 {
+			pq = pq.Where("uuid NOT IN ?", keepPkgUUIDs)
+		}
+		if err := pq.Delete(&models.LightwellPackage{}).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func pgtextToString(t pgtype.Text) string {
