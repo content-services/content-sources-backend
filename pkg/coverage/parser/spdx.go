@@ -90,6 +90,9 @@ func parseSPDXJSONObject(dec *json.Decoder, isRoot bool, skipped *int) ([]Packag
 		sawPackageType    bool
 		sawNonPackageType bool
 		purl              string
+		name              string
+		version           string
+		packageFileName   string
 		pkgs              []Package
 	)
 
@@ -123,6 +126,9 @@ func parseSPDXJSONObject(dec *json.Decoder, isRoot bool, skipped *int) ([]Packag
 			return nil
 		},
 		"packageUrl":          func(d *json.Decoder) error { return decodeJSONString(d, &purl) },
+		"name":                func(d *json.Decoder) error { return decodeJSONString(d, &name) },
+		"versionInfo":         func(d *json.Decoder) error { return decodeJSONString(d, &version) },
+		"packageFileName":     func(d *json.Decoder) error { return decodeJSONString(d, &packageFileName) },
 		"externalRefs":        idents,
 		"externalIdentifier":  idents,
 		"externalIdentifiers": idents,
@@ -143,9 +149,39 @@ func parseSPDXJSONObject(dec *json.Decoder, isRoot bool, skipped *int) ([]Packag
 	}
 	result := appendFromPURL(pkgs, purl)
 	if !isRoot && len(result) == 0 {
+		if pkg := inferFromSPDX2Fields(name, version, packageFileName); pkg != nil {
+			result = append(result, *pkg)
+		}
+	}
+	if !isRoot && len(result) == 0 {
 		*skipped++
 	}
 	return result, nil
+}
+
+// inferFromSPDX2Fields constructs a Package directly from SPDX 2 name/versionInfo/packageFileName
+// when no PURL is present. Some SBOM generators (e.g. Clair/Scanner V4) emit SPDX 2.3 packages
+// identified only by name, versionInfo, and a packageFileName ecosystem prefix
+// (maven:, python:, sqlite:, go:, jar:, file:) rather than a Package URL.
+// Only Maven and Python are currently present in the Lightwell catalog, so other
+// ecosystems are intentionally left unmatched (and counted as skipped).
+func inferFromSPDX2Fields(name, version, packageFileName string) *Package {
+	if name == "" || version == "" || packageFileName == "" {
+		return nil
+	}
+	prefix, _, _ := strings.Cut(packageFileName, ":")
+	switch prefix {
+	case "maven":
+		group, artifact, ok := strings.Cut(name, ":")
+		if !ok {
+			return nil
+		}
+		return &Package{Ecosystem: EcosystemJava, Namespace: group, Name: artifact, Version: version}
+	case "python":
+		return &Package{Ecosystem: EcosystemPython, Name: name, Version: version}
+	default:
+		return nil
+	}
 }
 
 // decodeJSONStringOrArray accepts SPDX 3 type as either "Package" or ["software_Package", "Element"].
@@ -218,16 +254,23 @@ func parseSPDXTagValue(r io.Reader) ([]Package, int, error) {
 	var current []string
 	var skipped int
 	var currentIsPackage bool
+	var currentName, currentVersion, currentFileName string
 	flush := func() {
 		before := len(pkgs)
 		for _, purl := range current {
 			pkgs = appendFromPURL(pkgs, purl)
 		}
 		if currentIsPackage && len(pkgs) == before {
+			if pkg := inferFromSPDX2Fields(currentName, currentVersion, currentFileName); pkg != nil {
+				pkgs = append(pkgs, *pkg)
+			}
+		}
+		if currentIsPackage && len(pkgs) == before {
 			skipped++
 		}
 		current = current[:0]
 		currentIsPackage = false
+		currentName, currentVersion, currentFileName = "", "", ""
 	}
 
 	for scanner.Scan() {
@@ -244,8 +287,13 @@ func parseSPDXTagValue(r io.Reader) ([]Package, int, error) {
 		case "PackageName":
 			flush()
 			currentIsPackage = true
+			currentName = value
 		case "FileName":
 			flush()
+		case "PackageVersion":
+			currentVersion = value
+		case "PackageFileName":
+			currentFileName = value
 		case "ExternalRef":
 			fields := strings.Fields(value)
 			if len(fields) >= 3 {
