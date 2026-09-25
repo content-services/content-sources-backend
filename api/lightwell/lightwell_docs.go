@@ -669,6 +669,18 @@ const docTemplatelightwell = `{
                 "advisory_id": {
                     "type": "string"
                 },
+                "advisory_name": {
+                    "type": "string"
+                },
+                "aliases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
                 "details": {
                     "type": "string"
                 },
@@ -678,7 +690,16 @@ const docTemplatelightwell = `{
                         "type": "string"
                     }
                 },
+                "modified": {
+                    "type": "string"
+                },
                 "package_name": {
+                    "type": "string"
+                },
+                "package_version": {
+                    "type": "string"
+                },
+                "published": {
                     "type": "string"
                 },
                 "reference_urls": {
@@ -690,7 +711,22 @@ const docTemplatelightwell = `{
                 "repository": {
                     "type": "string"
                 },
+                "schema_version": {
+                    "type": "string"
+                },
                 "severity": {
+                    "type": "string"
+                },
+                "severity_score": {
+                    "type": "number"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
