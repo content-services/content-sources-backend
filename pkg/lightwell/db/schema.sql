@@ -4,7 +4,18 @@
 
 CREATE TABLE repository_configurations (
     uuid UUID PRIMARY KEY,
-    feature_name VARCHAR(255) DEFAULT NULL
+    org_id VARCHAR(255) DEFAULT NULL,
+    name VARCHAR(255) DEFAULT NULL,
+    repository_uuid UUID DEFAULT NULL,
+    feature_name VARCHAR(255) DEFAULT NULL,
+    last_import_repository_version TEXT DEFAULT NULL
+);
+
+CREATE TABLE repositories (
+    uuid UUID PRIMARY KEY,
+    content_type VARCHAR(255) NOT NULL DEFAULT 'rpm',
+    security_level VARCHAR(255) DEFAULT NULL,
+    origin VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE lightwell_advisories (
@@ -155,3 +166,33 @@ WHERE vc.customer_id = p_customer_id
         OR v.title ILIKE '%' || p_search || '%'
     )
 $$;
+
+CREATE TABLE lightwell_packages (
+    uuid UUID PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    repository_configuration_uuid UUID NOT NULL REFERENCES repository_configurations(uuid) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    package_group TEXT NOT NULL DEFAULT ''
+);
+
+CREATE UNIQUE INDEX idx_lightwell_packages_repo_group_name
+    ON lightwell_packages (repository_configuration_uuid, package_group, name);
+
+CREATE TABLE lightwell_package_versions (
+    uuid UUID PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    lightwell_package_uuid UUID NOT NULL REFERENCES lightwell_packages(uuid) ON DELETE CASCADE,
+    repository_configuration_uuid UUID NOT NULL REFERENCES repository_configurations(uuid) ON DELETE CASCADE,
+    version TEXT NOT NULL,
+    release TEXT NOT NULL DEFAULT '',
+    published_at TEXT NOT NULL DEFAULT '',
+    purl TEXT NOT NULL DEFAULT ''
+);
+
+CREATE UNIQUE INDEX idx_lightwell_package_versions_pkg_version
+    ON lightwell_package_versions (lightwell_package_uuid, version);
+
+CREATE INDEX idx_lightwell_package_versions_repo
+    ON lightwell_package_versions (repository_configuration_uuid);
