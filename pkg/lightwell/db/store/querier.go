@@ -23,6 +23,8 @@ type Querier interface {
 	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]ListAdvisoriesByCveIDRow, error)
 	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
+	ListLightwellPackageVersions(ctx context.Context, arg ListLightwellPackageVersionsParams) ([]ListLightwellPackageVersionsRow, error)
+	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)
 	UpsertVulnerability(ctx context.Context, arg UpsertVulnerabilityParams) (UpsertVulnerabilityRow, error)

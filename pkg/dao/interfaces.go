@@ -36,6 +36,7 @@ type DaoRegistry struct {
 	MavenPackages          MavenPackagesDao
 	LightwellAdvisory      LightwellAdvisoryDao
 	LightwellVulnerability LightwellVulnerabilityDao
+	LightwellPackage       LightwellPackageDao
 	UserPreference         UserPreferenceDao
 	CoverageReport         CoverageReportDao
 }
@@ -84,6 +85,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		MavenPackages:          mavenPackagesDaoImpl{db: db},
 		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db, querier: csdb.LightwellQueries},
 		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
+		LightwellPackage:       lightwellPackageDaoImpl{db: db, querier: csdb.LightwellQueries},
 		UserPreference:         userPreferenceDaoImpl{db: db},
 		CoverageReport:         coverageReportDaoImpl{db: db},
 	}
@@ -291,6 +293,12 @@ type LightwellVulnerabilityDao interface {
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
 	Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)
 	DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error)
+}
+
+type LightwellPackageDao interface {
+	ListPackages(ctx context.Context, opts ListLightwellPackagesOptions) ([]LightwellPackageRow, int64, error)
+	ListPackageVersions(ctx context.Context, opts ListLightwellPackageVersionsOptions) ([]LightwellPackageVersionRow, int64, error)
+	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
 }
 
 type UserPreferenceDao interface {

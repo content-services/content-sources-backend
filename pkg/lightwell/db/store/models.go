@@ -43,6 +43,27 @@ type LightwellAdvisoryRelease struct {
 	RhlwHotfix     int32     `json:"rhlw_hotfix"`
 }
 
+type LightwellPackage struct {
+	Uuid                        uuid.UUID `json:"uuid"`
+	CreatedAt                   time.Time `json:"created_at"`
+	UpdatedAt                   time.Time `json:"updated_at"`
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	Name                        string    `json:"name"`
+	PackageGroup                string    `json:"package_group"`
+}
+
+type LightwellPackageVersion struct {
+	Uuid                        uuid.UUID `json:"uuid"`
+	CreatedAt                   time.Time `json:"created_at"`
+	UpdatedAt                   time.Time `json:"updated_at"`
+	LightwellPackageUuid        uuid.UUID `json:"lightwell_package_uuid"`
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	Version                     string    `json:"version"`
+	Release                     string    `json:"release"`
+	PublishedAt                 string    `json:"published_at"`
+	Purl                        string    `json:"purl"`
+}
+
 type LightwellVulnerability struct {
 	Uuid               uuid.UUID `json:"uuid"`
 	VulnerabilityKey   string    `json:"vulnerability_key"`
@@ -85,7 +106,18 @@ type LightwellVulnerabilitySupportTicket struct {
 	CreatedAt         time.Time `json:"created_at"`
 }
 
+type Repository struct {
+	Uuid          uuid.UUID   `json:"uuid"`
+	ContentType   string      `json:"content_type"`
+	SecurityLevel pgtype.Text `json:"security_level"`
+	Origin        pgtype.Text `json:"origin"`
+}
+
 type RepositoryConfiguration struct {
-	Uuid        uuid.UUID   `json:"uuid"`
-	FeatureName pgtype.Text `json:"feature_name"`
+	Uuid                        uuid.UUID   `json:"uuid"`
+	OrgID                       pgtype.Text `json:"org_id"`
+	Name                        pgtype.Text `json:"name"`
+	RepositoryUuid              pgtype.UUID `json:"repository_uuid"`
+	FeatureName                 pgtype.Text `json:"feature_name"`
+	LastImportRepositoryVersion *string     `json:"last_import_repository_version"`
 }
