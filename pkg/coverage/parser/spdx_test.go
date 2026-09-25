@@ -39,6 +39,151 @@ func TestParse_SPDXTagValue(t *testing.T) {
 	}, result.Packages)
 }
 
+func TestParse_SPDX2JSON_NoPURLs(t *testing.T) {
+	data := `{"spdxVersion":"SPDX-2.3","packages":[` +
+		`{"name":"flask","SPDXID":"SPDXRef-1","versionInfo":"3.0.3","downloadLocation":"NOASSERTION"},` +
+		`{"name":"requests","SPDXID":"SPDXRef-2","versionInfo":"2.31.0","downloadLocation":"NOASSERTION"},` +
+		`{"name":"bash","SPDXID":"SPDXRef-3","versionInfo":"5.1.8-9.el9","downloadLocation":"NOASSERTION",` +
+		`"externalRefs":[{"referenceCategory":"SECURITY","referenceType":"cpe23Type",` +
+		`"referenceLocator":"cpe:2.3:o:redhat:enterprise_linux:9:*:*:*:*:*:*:*"}]}` +
+		`]}`
+	result, err := Parse("sbom.spdx.json", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Empty(t, result.Packages)
+	assert.Equal(t, 3, result.SkippedEntries)
+}
+
+func TestParse_SPDXTagValue_NoPURLs(t *testing.T) {
+	data := "SPDXVersion: SPDX-2.3\nSPDXID: SPDXRef-DOCUMENT\n" +
+		"PackageName: flask\nPackageVersion: 3.0.3\n" +
+		"PackageName: requests\nPackageVersion: 2.31.0\n"
+	result, err := Parse("bom.spdx", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Empty(t, result.Packages)
+	assert.Equal(t, 2, result.SkippedEntries)
+}
+
+// TestParse_SPDX2JSON_ClairStyle_NoPURLs covers Clair/Scanner V4 style SPDX 2.3 output, which
+// identifies packages via name/versionInfo/packageFileName instead of a Package URL.
+func TestParse_SPDX2JSON_ClairStyle_NoPURLs(t *testing.T) {
+	data := `{"spdxVersion":"SPDX-2.3","packages":[` +
+		`{"name":"org.springframework:spring-core","SPDXID":"SPDXRef-1","versionInfo":"5.3.20",` +
+		`"packageFileName":"maven:usr/share/app/spring-core-5.3.20.jar","downloadLocation":"NOASSERTION"},` +
+		`{"name":"flask","SPDXID":"SPDXRef-2","versionInfo":"3.0.3",` +
+		`"packageFileName":"python:usr/lib/python3.11/site-packages/flask","downloadLocation":"NOASSERTION"},` +
+		`{"name":"bash","SPDXID":"SPDXRef-3","versionInfo":"5.1.8-9.el9",` +
+		`"packageFileName":"sqlite:var/lib/rpm/rpmdb.sqlite","downloadLocation":"NOASSERTION"},` +
+		`{"name":"github.com/foo/bar","SPDXID":"SPDXRef-4","versionInfo":"v1.2.3",` +
+		`"packageFileName":"go:usr/bin/app","downloadLocation":"NOASSERTION"}` +
+		`]}`
+	result, err := Parse("sbom.spdx.json", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []Package{
+		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
+		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+	}, result.Packages)
+	assert.Equal(t, 2, result.SkippedEntries)
+}
+
+// TestParse_SPDX2JSON_PURLTakesPrecedence ensures a valid PURL is preferred over field inference.
+func TestParse_SPDX2JSON_PURLTakesPrecedence(t *testing.T) {
+	data := `{"spdxVersion":"SPDX-2.3","packages":[` +
+		`{"name":"flask","SPDXID":"SPDXRef-1","versionInfo":"3.0.3",` +
+		`"packageFileName":"python:usr/lib/python3.11/site-packages/flask",` +
+		`"externalRefs":[{"referenceType":"purl","referenceLocator":"pkg:pypi/flask@3.0.4"}]}` +
+		`]}`
+	result, err := Parse("sbom.spdx.json", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Equal(t, []Package{
+		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.4"},
+	}, result.Packages)
+	assert.Equal(t, 0, result.SkippedEntries)
+}
+
+// TestParse_SPDXTagValue_ClairStyle_NoPURLs mirrors the JSON Clair-style test for tag-value SPDX.
+func TestParse_SPDXTagValue_ClairStyle_NoPURLs(t *testing.T) {
+	data := "SPDXVersion: SPDX-2.3\nSPDXID: SPDXRef-DOCUMENT\n" +
+		"PackageName: org.springframework:spring-core\nPackageVersion: 5.3.20\n" +
+		"PackageFileName: maven:usr/share/app/spring-core-5.3.20.jar\n" +
+		"PackageName: flask\nPackageVersion: 3.0.3\n" +
+		"PackageFileName: python:usr/lib/python3.11/site-packages/flask\n" +
+		"PackageName: bash\nPackageVersion: 5.1.8-9.el9\n" +
+		"PackageFileName: sqlite:var/lib/rpm/rpmdb.sqlite\n"
+	result, err := Parse("bom.spdx", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []Package{
+		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
+		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+	}, result.Packages)
+	assert.Equal(t, 1, result.SkippedEntries)
+}
+
+func TestInferFromSPDX2Fields(t *testing.T) {
+	tests := []struct {
+		name            string
+		pkgName         string
+		version         string
+		packageFileName string
+		want            *Package
+	}{
+		{
+			name:            "maven",
+			pkgName:         "org.springframework:spring-core",
+			version:         "5.3.20",
+			packageFileName: "maven:usr/share/app/spring-core-5.3.20.jar",
+			want:            &Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
+		},
+		{
+			name:            "python",
+			pkgName:         "flask",
+			version:         "3.0.3",
+			packageFileName: "python:usr/lib/python3.11/site-packages/flask",
+			want:            &Package{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+		},
+		{
+			name:            "maven without group is skipped",
+			pkgName:         "spring-core",
+			version:         "5.3.20",
+			packageFileName: "maven:usr/share/app/spring-core-5.3.20.jar",
+			want:            nil,
+		},
+		{
+			name:            "rpm is skipped",
+			pkgName:         "bash",
+			version:         "5.1.8-9.el9",
+			packageFileName: "sqlite:var/lib/rpm/rpmdb.sqlite",
+			want:            nil,
+		},
+		{
+			name:            "go is skipped",
+			pkgName:         "github.com/foo/bar",
+			version:         "v1.2.3",
+			packageFileName: "go:usr/bin/app",
+			want:            nil,
+		},
+		{
+			name:            "missing version is skipped",
+			pkgName:         "flask",
+			version:         "",
+			packageFileName: "python:usr/lib/python3.11/site-packages/flask",
+			want:            nil,
+		},
+		{
+			name:            "missing packageFileName is skipped",
+			pkgName:         "flask",
+			version:         "3.0.3",
+			packageFileName: "",
+			want:            nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := inferFromSPDX2Fields(tt.pkgName, tt.version, tt.packageFileName)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestParse_SPDXUnsupportedEncodings(t *testing.T) {
 	tests := []struct {
 		name, filename, body string
