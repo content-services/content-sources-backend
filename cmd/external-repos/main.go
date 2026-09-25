@@ -104,6 +104,17 @@ func main() {
 				},
 			},
 			{
+				Name:   "import-lightwell-packages",
+				Usage:  "Import lightwell package and version data into the database mirror",
+				Action: commands.ImportLightwellPackagesAction,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "force",
+						Usage: "Re-import all lightwell repos regardless of repository version",
+					},
+				},
+			},
+			{
 				Name:   "snapshot",
 				Usage:  "Snapshot a repository",
 				Action: commands.SnapshotAction,
