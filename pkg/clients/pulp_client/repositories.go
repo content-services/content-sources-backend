@@ -61,3 +61,28 @@ func (r *pulpDaoImpl) ResolveRepositoryFromBasePath(ctx context.Context, basePat
 
 	return &repositoryHref, nil
 }
+
+// GetLatestVersionHref returns the current latest_version_href of a repository,
+// looked up generically by its repository href. This value changes whenever the
+// repository's content changes, so it is used to detect when a Lightwell repo
+// needs re-importing. Returns (nil, nil) if no repository matches the href.
+func (r *pulpDaoImpl) GetLatestVersionHref(ctx context.Context, repoHref string) (*string, error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, httpResp, err := client.RepositoriesAPI.RepositoriesList(ctx, r.domainName).
+		PulpHrefIn([]string{repoHref}).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return nil, errorWithResponseBody("error reading repository", httpResp, err)
+	}
+	results := resp.GetResults()
+	if len(results) == 0 {
+		return nil, nil
+	}
+	href := results[0].GetLatestVersionHref()
+	return &href, nil
+}
