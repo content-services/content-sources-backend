@@ -105,6 +105,7 @@ type PulpClient interface {
 	// Generic Repository
 	FindGenericRepositoryByName(ctx context.Context, name string) (*zest.RepositoryResponse, error)
 	ResolveRepositoryFromBasePath(ctx context.Context, basePath string) (*string, error)
+	GetLatestVersionHref(ctx context.Context, repoHref string) (*string, error)
 
 	// Maven catalog (MavenPackage units, not artifacts)
 	ListMavenPackages(ctx context.Context, repoHref string, search string, limit, offset int) (zest.PaginatedMavenRepositoryPackageListResponse, error)

@@ -2141,6 +2141,74 @@ func (_c *MockPulpClient_GetDomain_Call) RunAndReturn(run func() string) *MockPu
 	return _c
 }
 
+// GetLatestVersionHref provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) GetLatestVersionHref(ctx context.Context, repoHref string) (*string, error) {
+	ret := _mock.Called(ctx, repoHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetLatestVersionHref")
+	}
+
+	var r0 *string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*string, error)); ok {
+		return returnFunc(ctx, repoHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *string); ok {
+		r0 = returnFunc(ctx, repoHref)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_GetLatestVersionHref_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetLatestVersionHref'
+type MockPulpClient_GetLatestVersionHref_Call struct {
+	*mock.Call
+}
+
+// GetLatestVersionHref is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoHref string
+func (_e *MockPulpClient_Expecter) GetLatestVersionHref(ctx interface{}, repoHref interface{}) *MockPulpClient_GetLatestVersionHref_Call {
+	return &MockPulpClient_GetLatestVersionHref_Call{Call: _e.mock.On("GetLatestVersionHref", ctx, repoHref)}
+}
+
+func (_c *MockPulpClient_GetLatestVersionHref_Call) Run(run func(ctx context.Context, repoHref string)) *MockPulpClient_GetLatestVersionHref_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_GetLatestVersionHref_Call) Return(s *string, err error) *MockPulpClient_GetLatestVersionHref_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockPulpClient_GetLatestVersionHref_Call) RunAndReturn(run func(ctx context.Context, repoHref string) (*string, error)) *MockPulpClient_GetLatestVersionHref_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMavenRepositoryMetrics provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) GetMavenRepositoryMetrics(ctx context.Context, repoHref string) (zest.MavenRepositoryMetricsResponse, error) {
 	ret := _mock.Called(ctx, repoHref)
@@ -2953,7 +3021,7 @@ type MockPulpClient_ListVersionPackagesWithFilters_Call struct {
 //   - limit int32
 //   - search string
 //   - ordering []string
-func (_e *MockPulpClient_Expecter) ListVersionPackagesWithFilters(ctx any, versionHref any, offset any, limit any, search any, ordering any) *MockPulpClient_ListVersionPackagesWithFilters_Call {
+func (_e *MockPulpClient_Expecter) ListVersionPackagesWithFilters(ctx interface{}, versionHref interface{}, offset interface{}, limit interface{}, search interface{}, ordering interface{}) *MockPulpClient_ListVersionPackagesWithFilters_Call {
 	return &MockPulpClient_ListVersionPackagesWithFilters_Call{Call: _e.mock.On("ListVersionPackagesWithFilters", ctx, versionHref, offset, limit, search, ordering)}
 }
 
