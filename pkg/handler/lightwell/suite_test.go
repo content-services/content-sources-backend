@@ -39,10 +39,10 @@ func (s *LightwellSuite) serveRouter(req *http.Request) (int, []byte, error) {
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(LightwellAPIPath)
 
-	RegisterLightwellRepositoryRoutes(pathPrefix, s.reg.ToDaoRegistry())
-	RegisterLightwellPackageRoutes(pathPrefix, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient)
-
 	var fsClient feature_service_client.FeatureServiceClient = s.fsClient
+
+	RegisterLightwellRepositoryRoutes(pathPrefix, s.reg.ToDaoRegistry())
+	RegisterLightwellPackageRoutes(pathPrefix, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient, &fsClient)
 	RegisterLightwellAdvisoryRoutes(pathPrefix, s.reg.ToDaoRegistry(), &fsClient)
 
 	rr := httptest.NewRecorder()
