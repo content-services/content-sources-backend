@@ -4601,9 +4601,10 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport(
 	var mavenRepo *LightwellRepoToImport
 	var pythonRepo *LightwellRepoToImport
 	for i := range repos {
-		if repos[i].ContentType == config.ContentTypeMaven {
+		switch repos[i].ContentType {
+		case config.ContentTypeMaven:
 			mavenRepo = &repos[i]
-		} else if repos[i].ContentType == config.ContentTypePython {
+		case config.ContentTypePython:
 			pythonRepo = &repos[i]
 		}
 	}
