@@ -36,8 +36,6 @@ WHERE r.origin = 'lightwell'
     AND ($4::text IS NULL OR lower(r.security_level) = lower($4::text))
     AND (
         $5::text[] IS NULL
-        OR rc.feature_name IS NULL
-        OR btrim(rc.feature_name) = ''
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
@@ -167,8 +165,6 @@ WHERE r.origin = 'lightwell'
     AND ($4::text IS NULL OR lower(r.security_level) = lower($4::text))
     AND (
         $5::text[] IS NULL
-        OR rc.feature_name IS NULL
-        OR btrim(rc.feature_name) = ''
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)

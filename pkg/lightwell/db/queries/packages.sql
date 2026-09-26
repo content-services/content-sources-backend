@@ -21,8 +21,6 @@ WHERE r.origin = 'lightwell'
     AND (sqlc.narg(security_level)::text IS NULL OR lower(r.security_level) = lower(sqlc.narg(security_level)::text))
     AND (
         sqlc.narg(entitled_features)::text[] IS NULL
-        OR rc.feature_name IS NULL
-        OR btrim(rc.feature_name) = ''
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
@@ -57,8 +55,6 @@ WHERE r.origin = 'lightwell'
     AND (sqlc.narg(security_level)::text IS NULL OR lower(r.security_level) = lower(sqlc.narg(security_level)::text))
     AND (
         sqlc.narg(entitled_features)::text[] IS NULL
-        OR rc.feature_name IS NULL
-        OR btrim(rc.feature_name) = ''
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
