@@ -292,7 +292,11 @@ func (s *LightwellPackageSuite) TestListPackagesEntitlementExcludes() {
 	assert.Empty(s.T(), rows)
 }
 
-func (s *LightwellPackageSuite) TestListPackagesBlankFeatureNameVisible() {
+// TestListPackagesBlankFeatureNameHidden verifies the entitlement gate is
+// fail-closed: a Lightwell repo with a blank feature_name is entitled to no
+// org and must NOT appear in results, even for an entitled caller. (Matches
+// advisories.sql; the earlier fail-open branches were removed for security.)
+func (s *LightwellPackageSuite) TestListPackagesBlankFeatureNameHidden() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("blank-%d", time.Now().UnixNano())
 	repoConfigUUID1, _ := s.createLightwellRepoWithFeature(ctx, testID, "", "validated")
@@ -315,9 +319,8 @@ func (s *LightwellPackageSuite) TestListPackagesBlankFeatureNameVisible() {
 	})
 
 	s.NoError(err)
-	assert.Equal(s.T(), int64(1), total)
-	s.Require().Len(rows, 1)
-	assert.Equal(s.T(), "com.example:public-lib", rows[0].Name)
+	assert.Equal(s.T(), int64(0), total)
+	assert.Empty(s.T(), rows)
 }
 
 func (s *LightwellPackageSuite) TestListPackageVersionsReturnsPurlAndCount() {
