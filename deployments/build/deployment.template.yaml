@@ -271,6 +271,21 @@ objects:
               - sync-lightwell-advisories
             env:{{ENV_VARS}}
 
+        - name: import-lightwell-packages
+          schedule: ${IMPORT_LIGHTWELL_PACKAGES_CRON_JOB}
+          suspend: ${{SUSPEND_IMPORT_LIGHTWELL_PACKAGES}}
+          concurrencyPolicy: "Forbid"
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /external-repos
+              - import-lightwell-packages
+            env:{{ENV_VARS}}
+
         - name: sync-lightwell-vulns
           schedule: ${SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB}
           suspend: ${{SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES}}

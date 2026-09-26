@@ -341,6 +341,12 @@ parameters:
     description: whether to suspend the sync-lightwell-advisories cronjob
     required: false
     value: "false"
+  - name: IMPORT_LIGHTWELL_PACKAGES_CRON_JOB
+    value: '*/15 * * * *'
+  - name: SUSPEND_IMPORT_LIGHTWELL_PACKAGES
+    description: whether to suspend the import-lightwell-packages cronjob
+    required: false
+    value: 'false'
   - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB
     value: "0 */2 * * *"
   - name: SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES
