@@ -55,6 +55,7 @@ type LightwellPackageFilterData struct {
 	Name          string `query:"name"`
 	Repository    string `query:"repository"`
 	SecurityLevel string `query:"security_level"`
+	Demo          bool   `query:"demo"`
 }
 
 // LightwellPackageVersionFilterData holds query-parameter filters for the cross-repo package_versions endpoint.
@@ -65,4 +66,5 @@ type LightwellPackageVersionFilterData struct {
 	Repository        string `query:"repository"`
 	ResolvesCveID     string `query:"resolves_cve_id"`
 	VulnerableToCveID string `query:"vulnerable_to_cve_id"`
+	Demo              bool   `query:"demo"`
 }

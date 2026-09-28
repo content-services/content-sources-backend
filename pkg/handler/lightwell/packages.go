@@ -57,6 +57,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Param        ecosystem       query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
+// @Param        demo            query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit           query  int     false  "Limit of results to return"
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageCollectionResponse
@@ -79,6 +80,7 @@ func (h *LightwellPackageHandler) listPackages(c echo.Context) error {
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
 // @Param        resolves_cve    query  string  false  "Filter versions that resolve specific CVE ID"
 // @Param        vulnerable_to_cve query string false "Filter versions vulnerable to specific CVE ID"
+// @Param        demo            query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit           query  int     false  "Limit of results to return"
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageVersionCollectionResponse

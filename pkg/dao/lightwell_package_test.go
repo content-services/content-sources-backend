@@ -85,6 +85,34 @@ func (s *LightwellPackageSuite) createLightwellRepoWithFeature(ctx context.Conte
 	return repoConfigUUID, repoUUID
 }
 
+// createLightwellRepoWithOrg seeds a Lightwell repo under a specific org, used to
+// distinguish production (LightwellOrg) from demo (LightwellDemoOrg) repos.
+func (s *LightwellPackageSuite) createLightwellRepoWithOrg(ctx context.Context, name string, featureName string, securityLevel string, orgID string) (string, string) {
+	repoUUID := uuid.New().String()
+	repoConfigUUID := uuid.New().String()
+
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, security_level)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		repoUUID, config.OriginLightwell, config.ContentTypeMaven, securityLevel,
+	).Error
+	s.Require().NoError(err)
+
+	err = db.DB.WithContext(ctx).Exec(`
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?)`,
+		repoConfigUUID, name, orgID, repoUUID, featureName, name,
+	).Error
+	s.Require().NoError(err)
+
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM repository_configurations WHERE uuid = ?`, repoConfigUUID).Error
+		_ = db.DB.Exec(`DELETE FROM repositories WHERE uuid = ?`, repoUUID).Error
+	})
+
+	return repoConfigUUID, repoUUID
+}
+
 func (s *LightwellPackageSuite) createPackageWithVersions(ctx context.Context, repoConfigUUID string, name string, group string, versions []string, releases []string, purls []string) string {
 	pkgUUID := uuid.New().String()
 
@@ -183,6 +211,53 @@ func (s *LightwellPackageSuite) TestListPackagesAggregatesVersions() {
 	assert.Equal(s.T(), "com.example:commons-lib", rows[0].Name)
 	assert.Equal(s.T(), "com.example", rows[0].Group)
 	assert.Equal(s.T(), "maven", rows[0].Ecosystem)
+}
+
+// TestListPackagesDemoFilter verifies demo repos (LightwellDemoOrg) are excluded
+// by default and returned exclusively when Demo is true, so the two sets never
+// overlap. Package names embed a unique suffix so the Name filter isolates this
+// test's rows on the shared database.
+func (s *LightwellPackageSuite) TestListPackagesDemoFilter() {
+	ctx, dao := s.dao()
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	pkgPrefix := "com.example:demotest-" + suffix
+
+	prodRepo, _ := s.createLightwellRepoWithOrg(ctx, "prod-"+suffix, "lightwell-maven", "validated", config.LightwellOrg)
+	demoRepo, _ := s.createLightwellRepoWithOrg(ctx, "demo-"+suffix, "lightwell-maven", "validated", config.LightwellDemoOrg)
+
+	prodPkg := pkgPrefix + "-prod"
+	demoPkg := pkgPrefix + "-demo"
+	s.createPackageWithVersions(ctx, prodRepo, prodPkg, "com.example",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.example/prod-lib@1.0"})
+	s.createPackageWithVersions(ctx, demoRepo, demoPkg, "com.example",
+		[]string{"9.0"}, []string{""}, []string{"pkg:maven/com.example/demo-lib@9.0"})
+
+	// Default (Demo=false): only the production repo's package.
+	rows, total, err := dao.ListPackages(ctx, ListLightwellPackagesOptions{
+		Name:             ptr(pkgPrefix),
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+	s.NoError(err)
+	assert.Equal(s.T(), int64(1), total, "default should return only the production package")
+	s.Require().Len(rows, 1)
+	assert.Equal(s.T(), prodPkg, rows[0].Name)
+	assert.Equal(s.T(), prodRepo, rows[0].RepositoryConfigurationUUID)
+
+	// Demo=true: only the demo repo's package.
+	demoRows, demoTotal, err := dao.ListPackages(ctx, ListLightwellPackagesOptions{
+		Name:             ptr(pkgPrefix),
+		Demo:             true,
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+	s.NoError(err)
+	assert.Equal(s.T(), int64(1), demoTotal, "demo=true should return only the demo package")
+	s.Require().Len(demoRows, 1)
+	assert.Equal(s.T(), demoPkg, demoRows[0].Name)
+	assert.Equal(s.T(), demoRepo, demoRows[0].RepositoryConfigurationUUID)
 }
 
 func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {
@@ -350,6 +425,47 @@ func (s *LightwellPackageSuite) TestListPackageVersionsReturnsPurlAndCount() {
 	s.Require().Len(vrows, 2)
 	assert.NotEmpty(s.T(), vrows[0].Purl)
 	assert.Contains(s.T(), vrows[0].Purl, "pkg:maven/com.example/commons-lib")
+}
+
+// TestListPackageVersionsDemoFilter verifies the package_versions query excludes
+// demo repos by default and returns them exclusively when Demo is true.
+func (s *LightwellPackageSuite) TestListPackageVersionsDemoFilter() {
+	ctx, dao := s.dao()
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	pkgPrefix := "com.example:demover-" + suffix
+
+	prodRepo, _ := s.createLightwellRepoWithOrg(ctx, "vprod-"+suffix, "lightwell-maven", "validated", config.LightwellOrg)
+	demoRepo, _ := s.createLightwellRepoWithOrg(ctx, "vdemo-"+suffix, "lightwell-maven", "validated", config.LightwellDemoOrg)
+
+	s.createPackageWithVersions(ctx, prodRepo, pkgPrefix+"-prod", "com.example",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.example/prod-lib@1.0"})
+	s.createPackageWithVersions(ctx, demoRepo, pkgPrefix+"-demo", "com.example",
+		[]string{"9.0"}, []string{""}, []string{"pkg:maven/com.example/demo-lib@9.0"})
+
+	rows, total, err := dao.ListPackageVersions(ctx, ListLightwellPackageVersionsOptions{
+		Name:             ptr(pkgPrefix),
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+	s.NoError(err)
+	assert.Equal(s.T(), int64(1), total)
+	s.Require().Len(rows, 1)
+	assert.Equal(s.T(), prodRepo, rows[0].RepositoryConfigurationUUID)
+	assert.Equal(s.T(), "1.0", rows[0].Version)
+
+	demoRows, demoTotal, err := dao.ListPackageVersions(ctx, ListLightwellPackageVersionsOptions{
+		Name:             ptr(pkgPrefix),
+		Demo:             true,
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+	s.NoError(err)
+	assert.Equal(s.T(), int64(1), demoTotal)
+	s.Require().Len(demoRows, 1)
+	assert.Equal(s.T(), demoRepo, demoRows[0].RepositoryConfigurationUUID)
+	assert.Equal(s.T(), "9.0", demoRows[0].Version)
 }
 
 func (s *LightwellPackageSuite) TestListPackageVersionsResolvesCveId() {

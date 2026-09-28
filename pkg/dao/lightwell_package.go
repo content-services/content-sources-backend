@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -54,6 +55,7 @@ type ListLightwellPackagesOptions struct {
 	Name             *string
 	Repository       *string
 	SecurityLevel    *string
+	Demo             bool
 	EntitledFeatures []string
 	Limit            int32
 	Offset           int32
@@ -66,6 +68,7 @@ type ListLightwellPackageVersionsOptions struct {
 	SecurityLevel     *string
 	ResolvesCveID     *string
 	VulnerableToCveID *string
+	Demo              bool
 	EntitledFeatures  []string
 	Limit             int32
 	Offset            int32
@@ -89,6 +92,8 @@ func (d lightwellPackageDaoImpl) ListPackages(ctx context.Context, opts ListLigh
 		Name:          opts.Name,
 		Repository:    opts.Repository,
 		SecurityLevel: opts.SecurityLevel,
+		DemoOrg:       config.LightwellDemoOrg,
+		IsDemo:        opts.Demo,
 		PageLimit:     opts.Limit,
 		PageOffset:    opts.Offset,
 	}
@@ -129,6 +134,8 @@ func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts L
 		SecurityLevel:     opts.SecurityLevel,
 		ResolvesCveID:     opts.ResolvesCveID,
 		VulnerableToCveID: opts.VulnerableToCveID,
+		DemoOrg:           config.LightwellDemoOrg,
+		IsDemo:            opts.Demo,
 		PageLimit:         opts.Limit,
 		PageOffset:        opts.Offset,
 	}

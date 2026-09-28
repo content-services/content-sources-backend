@@ -150,6 +150,44 @@ func (s *LightwellPackagesSuite) TestListPackagesWithFilters() {
 	assert.Empty(t, resp.Data)
 }
 
+// TestListPackagesDemoDefaultsToProduction verifies that, without a demo query
+// param, the DAO is called with Demo=false (production repos only).
+func (s *LightwellPackagesSuite) TestListPackagesDemoDefaultsToProduction() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackages", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackagesOptions) bool {
+		return !opts.Demo
+	})).Return([]dao.LightwellPackageRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListPackagesDemoTrue verifies that demo=true is passed through to the DAO
+// so only demo-org repos are returned.
+func (s *LightwellPackagesSuite) TestListPackagesDemoTrue() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackages", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackagesOptions) bool {
+		return opts.Demo
+	})).Return([]dao.LightwellPackageRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?demo=true", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
 func (s *LightwellPackagesSuite) TestListPackagesFeatureServiceError() {
 	t := s.T()
 
@@ -309,6 +347,43 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsWithCVEFilters() {
 
 	assert.Equal(t, int64(0), resp.Meta.Count)
 	assert.Empty(t, resp.Data)
+}
+
+// TestListPackageVersionsDemoTrue verifies demo=true is passed through to the DAO.
+func (s *LightwellPackagesSuite) TestListPackageVersionsDemoTrue() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackageVersions", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackageVersionsOptions) bool {
+		return opts.Demo
+	})).Return([]dao.LightwellPackageVersionRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions?demo=true", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListPackageVersionsDemoDefaultsToProduction verifies the default (no demo
+// param) calls the DAO with Demo=false.
+func (s *LightwellPackagesSuite) TestListPackageVersionsDemoDefaultsToProduction() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackageVersions", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackageVersionsOptions) bool {
+		return !opts.Demo
+	})).Return([]dao.LightwellPackageVersionRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/package_versions", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func (s *LightwellPackagesSuite) TestListPackageVersionsFeatureServiceError() {

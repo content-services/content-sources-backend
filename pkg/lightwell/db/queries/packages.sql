@@ -19,6 +19,7 @@ WHERE r.origin = 'lightwell'
     AND (sqlc.narg(name)::text IS NULL OR p.name ILIKE '%' || sqlc.narg(name)::text || '%')
     AND (sqlc.narg(repository)::text IS NULL OR lower(rc.name) = lower(sqlc.narg(repository)::text))
     AND (sqlc.narg(security_level)::text IS NULL OR lower(r.security_level) = lower(sqlc.narg(security_level)::text))
+    AND ((rc.org_id = sqlc.arg(demo_org)::text) = sqlc.arg(is_demo)::bool)
     AND (
         sqlc.narg(entitled_features)::text[] IS NULL
         OR EXISTS (
@@ -53,6 +54,7 @@ WHERE r.origin = 'lightwell'
     AND (sqlc.narg(name)::text IS NULL OR p.name ILIKE '%' || sqlc.narg(name)::text || '%')
     AND (sqlc.narg(repository)::text IS NULL OR lower(rc.name) = lower(sqlc.narg(repository)::text))
     AND (sqlc.narg(security_level)::text IS NULL OR lower(r.security_level) = lower(sqlc.narg(security_level)::text))
+    AND ((rc.org_id = sqlc.arg(demo_org)::text) = sqlc.arg(is_demo)::bool)
     AND (
         sqlc.narg(entitled_features)::text[] IS NULL
         OR EXISTS (
