@@ -249,6 +249,7 @@ func TestStage(t *testing.T) {
 	assert.Equal(t, "Submitted", stage(json.RawMessage(`{"name":"New"}`)))
 	assert.Equal(t, "Classified", stage(json.RawMessage(`{"name":"Backlog"}`)))
 	assert.Equal(t, "Fix in Progress", stage(json.RawMessage(`{"name":"In Progress"}`)))
+	assert.Equal(t, "Fix in Progress", stage(json.RawMessage(`{"name":"On Hold"}`)))
 	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Verified"}`)))
 	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Release Pending"}`)))
 	assert.Equal(t, "Validation", stage(json.RawMessage(`{"name":"Released"}`)))
