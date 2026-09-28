@@ -17,7 +17,7 @@ func main() {
 	inputFile := filepath.Clean(os.Args[1])
 	outputFile := filepath.Clean(os.Args[2])
 
-	input, err := os.ReadFile(inputFile)
+	input, err := os.ReadFile(inputFile) //nolint:gosec // G703: CLI tool; path comes from argv
 	if err != nil {
 		panic(err)
 	}
