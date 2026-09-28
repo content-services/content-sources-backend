@@ -3,6 +3,7 @@ import {
   RepositoriesApi,
   GetRepositoryRequest,
   ListRepositoriesRequest,
+  ApiRepositoryRequest,
   ApiRepositoryResponse,
   ApiRepositoryValidationResponseFromJSON,
   type ValidateRepositoryParametersRequest,
@@ -376,13 +377,13 @@ test.describe('Repositories', () => {
 
   test('Bulk import repositories', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoNamePrefix = 'bulk-import-';
-    const repoDict1 = {
+    const repoDict1: ApiRepositoryRequest = {
       name: `bulk-import-${randomName()}`,
       url: await unusedRepoUrl(),
       origin: 'external',
       snapshot: true,
     };
-    const repoDict2 = {
+    const repoDict2: ApiRepositoryRequest = {
       name: `bulk-import-${randomName()}`,
       url: await unusedRepoUrl(),
       origin: 'external',
@@ -413,7 +414,7 @@ test.describe('Repositories', () => {
 
   test('Bulk export repositories', async ({ client, cleanup, unusedRepoUrl }) => {
     const repoNamePrefix = 'bulk-export-';
-    const repositories = [
+    const repositories: ApiRepositoryRequest[] = [
       {
         name: `bulk-export-${randomName()}`,
         url: await unusedRepoUrl(),
