@@ -361,6 +361,7 @@ func stage(raw json.RawMessage) string {
 		"to do":           "Classified",
 		"in progress":     "Fix in Progress",
 		"review":          "Fix in Progress",
+		"on hold":         "Fix in Progress",
 		"verified":        "Validation",
 		"release pending": "Validation",
 		"released":        "Validation",
