@@ -43,6 +43,7 @@ packages:
       SnapshotDao: {}
       TaskInfoDao: {}
       TemplateDao: {}
+      UploadDao: {}
       LightwellAdvisoryDao: {}
       LightwellVulnerabilityDao: {}
       LightwellPackageDao: {}

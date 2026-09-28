@@ -270,8 +270,9 @@ type TemplateDao interface {
 
 type UploadDao interface {
 	StoreFileUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkSize int64, uploadSize int64) error
-	StoreChunkUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string) error
+	StoreChunkUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkRange UploadChunkRange) error
 	GetExistingUploadIDAndCompletedChunks(ctx context.Context, orgID string, sha256 string, chunkSize int64, uploadSize int64) (string, []string, error)
+	GetCompletedUploadChunk(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkRange UploadChunkRange) (*models.Upload, error)
 	DeleteUpload(ctx context.Context, uploadUUID string) error
 	ListUploadsForCleanup(ctx context.Context) ([]models.Upload, error)
 }

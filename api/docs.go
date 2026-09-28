@@ -1646,6 +1646,12 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.UploadResponse"
+                        }
+                    },
                     "201": {
                         "description": "Created",
                         "schema": {
