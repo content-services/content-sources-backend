@@ -2,7 +2,10 @@ package handler
 
 import (
 	"fmt"
+	"math"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +31,8 @@ const (
 	BulkCreateLimit = 20
 	BulkDeleteLimit = 100
 )
+
+var uploadChunkRangePattern = regexp.MustCompile(`^bytes ([0-9]+)-([0-9]+)/([0-9]+|\*)$`)
 
 type RepositoryHandler struct {
 	DaoRegistry          dao.DaoRegistry
@@ -729,6 +734,7 @@ func (rh *RepositoryHandler) createUpload(c echo.Context) error {
 // @Param           sha256                 formData string true  "sha256"
 // @Param           Content-Range          header   string true  "Content-Range header"
 // @Success         201 {object} api.UploadResponse
+// @Success         200 {object} api.UploadResponse
 // @Failure         400 {object} ce.ErrorResponse
 // @Failure         404 {object} ce.ErrorResponse
 // @Failure         500 {object} ce.ErrorResponse
@@ -742,6 +748,30 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
+
+	req.Sha256 = strings.TrimSpace(req.Sha256)
+
+	binder := echo.DefaultBinder{}
+	if err := binder.BindHeaders(c, &req); err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding headers", err.Error())
+	}
+
+	chunkRange := parseContentRange(req.ContentRange)
+	if chunkRange == nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error parsing content range", "Invalid content range")
+	}
+
+	existing, err := rh.DaoRegistry.Uploads.GetCompletedUploadChunk(c.Request().Context(), orgId, uploadUuid, req.Sha256, *chunkRange)
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error validating uniqueness of upload chunk", err.Error())
+	}
+	if existing != nil {
+		return c.JSON(http.StatusOK, &api.UploadResponse{
+			UploadUuid: &uploadUuid,
+			Size:       existing.Size,
+		})
+	}
+
 	domainName, err := rh.DaoRegistry.Domain.Fetch(c.Request().Context(), orgId)
 	if err != nil {
 		return err
@@ -770,7 +800,7 @@ func (rh *RepositoryHandler) uploadChunk(c echo.Context) error {
 		Completed:   pulpResp.Completed,
 	}
 
-	err = ph.DaoRegistry.Uploads.StoreChunkUpload(c.Request().Context(), orgId, uploadUuid, req.Sha256)
+	err = ph.DaoRegistry.Uploads.StoreChunkUpload(c.Request().Context(), orgId, uploadUuid, req.Sha256, *chunkRange)
 	if err != nil {
 		return err
 	}
@@ -1201,4 +1231,31 @@ func (rh *RepositoryHandler) CheckSnapshotForRepos(c echo.Context, repos []api.R
 		return rh.CheckSnapshotForRepo(c, repo.Snapshot)
 	}
 	return nil
+}
+
+func parseContentRange(header string) *dao.UploadChunkRange {
+	matches := uploadChunkRangePattern.FindStringSubmatch(header)
+	if matches == nil {
+		return nil
+	}
+
+	start, err := strconv.ParseInt(matches[1], 10, 64)
+	if err != nil {
+		return nil
+	}
+
+	end, err := strconv.ParseInt(matches[2], 10, 64)
+	if err != nil || end < start {
+		return nil
+	}
+
+	// Prevent overflow when converting the inclusive range to a size.
+	if end-start == math.MaxInt64 {
+		return nil
+	}
+
+	return &dao.UploadChunkRange{
+		Offset: start,
+		Size:   end - start + 1,
+	}
 }

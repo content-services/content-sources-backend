@@ -5060,6 +5060,16 @@
                     }
                 },
                 "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.UploadResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
                     "201": {
                         "content": {
                             "application/json": {

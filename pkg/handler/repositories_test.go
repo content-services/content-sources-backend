@@ -3,11 +3,16 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"math"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,6 +35,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -1383,6 +1390,232 @@ func (suite *ReposSuite) TestCreateSnapshot() {
 	assert.Equal(t, http.StatusOK, code)
 }
 
+func (suite *ReposSuite) TestUploadChunkDuplicate() {
+	t := suite.T()
+	uploadsMock := dao.NewMockUploadDao(t)
+	domainMock := dao.NewMockDomainDao(t)
+	rh := RepositoryHandler{DaoRegistry: dao.DaoRegistry{Uploads: uploadsMock, Domain: domainMock}}
+	router := echo.New()
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
+	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
+	router.POST(api.FullRootPath()+"/repositories/uploads/:upload_uuid/upload_chunk/", rh.uploadChunk)
+	uploadUUID := uuid.NewString()
+	chunkRange := dao.UploadChunkRange{Offset: 100, Size: 100}
+	uploadsMock.On("GetCompletedUploadChunk", test.MockCtx(), test_handler.MockOrgId, uploadUUID, "chunk-sha256", chunkRange).
+		Return(&models.Upload{UploadUUID: uploadUUID, Size: 1000}, nil).Once()
+
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	require.NoError(t, writer.WriteField("sha256", " \tchunk-sha256\r\n"))
+	part, err := writer.CreateFormFile("file", "chunk")
+	require.NoError(t, err)
+	_, err = part.Write(bytes.Repeat([]byte("a"), 100))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/uploads/"+uploadUUID+"/upload_chunk/", &requestBody)
+	req.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	req.Header.Set("Content-Range", "bytes 100-199/1000")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	var response api.UploadResponse
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	assert.Equal(t, api.UploadResponse{UploadUuid: &uploadUUID, Size: 1000}, response)
+	assert.Empty(t, domainMock.Calls)
+	uploadsMock.AssertNumberOfCalls(t, "StoreChunkUpload", 0)
+}
+
+func (suite *ReposSuite) TestUploadChunkInvalidContentRange() {
+	for _, header := range []string{"", "100-199/1000", "bytes 199-100/1000", "bytes 0-9223372036854775807/*"} {
+		suite.Run("range="+header, func() {
+			t := suite.T()
+			uploadsMock := dao.NewMockUploadDao(t)
+			domainMock := dao.NewMockDomainDao(t)
+			rh := RepositoryHandler{DaoRegistry: dao.DaoRegistry{Uploads: uploadsMock, Domain: domainMock}}
+			router := echo.New()
+			router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
+			router.HTTPErrorHandler = config.CustomHTTPErrorHandler
+			router.POST(api.FullRootPath()+"/repositories/uploads/:upload_uuid/upload_chunk/", rh.uploadChunk)
+
+			var requestBody bytes.Buffer
+			writer := multipart.NewWriter(&requestBody)
+			require.NoError(t, writer.WriteField("sha256", "chunk-sha256"))
+			part, err := writer.CreateFormFile("file", "chunk")
+			require.NoError(t, err)
+			_, err = part.Write([]byte("chunk"))
+			require.NoError(t, err)
+			require.NoError(t, writer.Close())
+
+			req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/uploads/"+uuid.NewString()+"/upload_chunk/", &requestBody)
+			req.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+			req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+			if header != "" {
+				req.Header.Set("Content-Range", header)
+			}
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, req)
+			assert.Equal(t, http.StatusBadRequest, recorder.Code)
+
+			var response ce.ErrorResponse
+			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+			assert.Equal(t, ce.NewErrorResponse(http.StatusBadRequest, "Error parsing content range", "Invalid content range"), response)
+			assert.Empty(t, uploadsMock.Calls)
+			assert.Empty(t, domainMock.Calls)
+		})
+	}
+}
+
+func (suite *ReposSuite) TestUploadChunkLookupError() {
+	testCases := []struct {
+		name string
+		err  error
+		code int
+	}{
+		{"database error", errors.New("lookup failed"), http.StatusInternalServerError},
+		{"not found", &ce.DaoError{NotFound: true, Message: "upload not found"}, http.StatusNotFound},
+	}
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			t := suite.T()
+			uploadsMock := dao.NewMockUploadDao(t)
+			domainMock := dao.NewMockDomainDao(t)
+			rh := RepositoryHandler{DaoRegistry: dao.DaoRegistry{Uploads: uploadsMock, Domain: domainMock}}
+			router := echo.New()
+			router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
+			router.HTTPErrorHandler = config.CustomHTTPErrorHandler
+			router.POST(api.FullRootPath()+"/repositories/uploads/:upload_uuid/upload_chunk/", rh.uploadChunk)
+			uploadUUID := uuid.NewString()
+			uploadsMock.On("GetCompletedUploadChunk", test.MockCtx(), test_handler.MockOrgId, uploadUUID, "chunk-sha256", dao.UploadChunkRange{Offset: 0, Size: 5}).
+				Return(nil, tc.err).Once()
+
+			var requestBody bytes.Buffer
+			writer := multipart.NewWriter(&requestBody)
+			require.NoError(t, writer.WriteField("sha256", "chunk-sha256"))
+			part, err := writer.CreateFormFile("file", "chunk")
+			require.NoError(t, err)
+			_, err = part.Write([]byte("chunk"))
+			require.NoError(t, err)
+			require.NoError(t, writer.Close())
+
+			req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/uploads/"+uploadUUID+"/upload_chunk/", &requestBody)
+			req.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+			req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+			req.Header.Set("Content-Range", "bytes 0-4/1000")
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, req)
+			assert.Equal(t, tc.code, recorder.Code)
+
+			var response ce.ErrorResponse
+			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+			assert.Equal(t, ce.NewErrorResponse(tc.code, "Error validating uniqueness of upload chunk", tc.err.Error()), response)
+			assert.Empty(t, domainMock.Calls)
+			uploadsMock.AssertNumberOfCalls(t, "StoreChunkUpload", 0)
+		})
+	}
+}
+
+func (suite *ReposSuite) TestUploadChunkNew() {
+	testCases := []struct {
+		name       string
+		pulpStatus int
+		storeError error
+		code       int
+	}{
+		{"success", http.StatusOK, nil, http.StatusCreated},
+		{"pulp error", http.StatusBadGateway, nil, http.StatusBadGateway},
+		{"storage error", http.StatusOK, errors.New("storing chunk failed"), http.StatusInternalServerError},
+	}
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			t := suite.T()
+			uploadsMock := dao.NewMockUploadDao(t)
+			domainMock := dao.NewMockDomainDao(t)
+			rh := RepositoryHandler{DaoRegistry: dao.DaoRegistry{Uploads: uploadsMock, Domain: domainMock}}
+			router := echo.New()
+			router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
+			router.HTTPErrorHandler = config.CustomHTTPErrorHandler
+			router.POST(api.FullRootPath()+"/repositories/uploads/:upload_uuid/upload_chunk/", rh.uploadChunk)
+			uploadUUID := uuid.NewString()
+			uploadHref := "/api/pulp/test-domain/api/v3/uploads/" + uploadUUID + "/"
+			contentRange := "bytes 100-104/*"
+			chunk := []byte("chunk")
+			var pulpCalls atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				pulpCalls.Add(1)
+				assert.Equal(t, http.MethodPut, r.Method)
+				// Zest adds a slash before the already absolute upload href.
+				assert.Equal(t, uploadHref, "/"+strings.TrimLeft(r.URL.Path, "/"))
+				assert.Equal(t, contentRange, r.Header.Get("Content-Range"))
+				assert.Equal(t, "chunk-sha256", strings.TrimSpace(r.FormValue("sha256")))
+				file, _, err := r.FormFile("file")
+				if assert.NoError(t, err) {
+					defer file.Close()
+					contents, err := io.ReadAll(file)
+					assert.NoError(t, err)
+					assert.Equal(t, chunk, contents)
+				}
+				w.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+				w.WriteHeader(tc.pulpStatus)
+				if tc.pulpStatus != http.StatusOK {
+					_, err = io.WriteString(w, `{"detail":"pulp failed"}`)
+				} else {
+					err = json.NewEncoder(w).Encode(map[string]any{"pulp_href": uploadHref, "size": 1000})
+				}
+				assert.NoError(t, err)
+			}))
+			t.Cleanup(server.Close)
+
+			pulpConfig := config.Get().Clients.Pulp
+			config.Get().Clients.Pulp.Server = server.URL
+			config.Get().Clients.Pulp.Username = "test-user"
+			config.Get().Clients.Pulp.Password = "test-password"
+			config.Get().Clients.Pulp.CACert = ""
+			config.Get().Clients.Pulp.CACertPath = ""
+			config.Get().Clients.Pulp.Proxy = ""
+			t.Cleanup(func() { config.Get().Clients.Pulp = pulpConfig })
+
+			chunkRange := dao.UploadChunkRange{Offset: 100, Size: 5}
+			lookup := uploadsMock.On("GetCompletedUploadChunk", test.MockCtx(), test_handler.MockOrgId, uploadUUID, "chunk-sha256", chunkRange).
+				Return(nil, nil).Once()
+			domainMock.On("Fetch", test.MockCtx(), test_handler.MockOrgId).Return("test-domain", nil).Twice().NotBefore(lookup)
+			if tc.pulpStatus == http.StatusOK {
+				uploadsMock.On("StoreChunkUpload", test.MockCtx(), test_handler.MockOrgId, uploadUUID, "chunk-sha256", chunkRange).
+					Run(func(_ mock.Arguments) { assert.Equal(t, int32(1), pulpCalls.Load()) }).
+					Return(tc.storeError).Once().NotBefore(lookup)
+			}
+
+			var requestBody bytes.Buffer
+			writer := multipart.NewWriter(&requestBody)
+			require.NoError(t, writer.WriteField("sha256", " \tchunk-sha256\r\n"))
+			part, err := writer.CreateFormFile("file", "chunk")
+			require.NoError(t, err)
+			_, err = part.Write(chunk)
+			require.NoError(t, err)
+			require.NoError(t, writer.Close())
+
+			req := httptest.NewRequest(http.MethodPost, api.FullRootPath()+"/repositories/uploads/"+uploadUUID+"/upload_chunk/", &requestBody)
+			req.Header.Set(echo.HeaderContentType, writer.FormDataContentType())
+			req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+			req.Header.Set("Content-Range", contentRange)
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, req)
+			assert.Equal(t, tc.code, recorder.Code, recorder.Body.String())
+			assert.Equal(t, int32(1), pulpCalls.Load())
+			if tc.code == http.StatusCreated {
+				var response api.UploadResponse
+				require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+				assert.Equal(t, api.UploadResponse{UploadUuid: &uploadUUID, Size: 1000}, response)
+			}
+			if tc.pulpStatus != http.StatusOK {
+				uploadsMock.AssertNotCalled(t, "StoreChunkUpload", mock.Anything, mock.Anything, uploadUUID, mock.Anything, mock.Anything)
+			}
+		})
+	}
+}
+
 func (suite *ReposSuite) TestAddUploads() {
 	t := suite.T()
 
@@ -1734,6 +1967,39 @@ func (suite *ReposSuite) TestGetGpgKeyFile() {
 	code, _, err = suite.serveRepositoriesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusNotFound, code)
+}
+
+func TestParseContentRange(t *testing.T) {
+	testCases := []struct {
+		name     string
+		header   string
+		expected *dao.UploadChunkRange
+	}{
+		{"first chunk", "bytes 0-99/1000", &dao.UploadChunkRange{Offset: 0, Size: 100}},
+		{"nonzero offset", "bytes 100-199/1000", &dao.UploadChunkRange{Offset: 100, Size: 100}},
+		{"unknown total", "bytes 100-199/*", &dao.UploadChunkRange{Offset: 100, Size: 100}},
+		{"single byte", "bytes 42-42/1000", &dao.UploadChunkRange{Offset: 42, Size: 1}},
+		{"maximum offset", "bytes 9223372036854775807-9223372036854775807/*", &dao.UploadChunkRange{Offset: math.MaxInt64, Size: 1}},
+		{"maximum size", "bytes 1-9223372036854775807/*", &dao.UploadChunkRange{Offset: 1, Size: math.MaxInt64}},
+		{"missing header", "", nil},
+		{"missing unit", "0-99/1000", nil},
+		{"wrong unit", "items 0-99/1000", nil},
+		{"missing total", "bytes 0-99", nil},
+		{"invalid total", "bytes 0-99/invalid", nil},
+		{"negative offset", "bytes -1-99/1000", nil},
+		{"reversed range", "bytes 100-99/1000", nil},
+		{"multiple ranges", "bytes 0-99,100-199/1000", nil},
+		{"leading whitespace", " bytes 0-99/1000", nil},
+		{"trailing whitespace", "bytes 0-99/1000 ", nil},
+		{"start overflow", "bytes 9223372036854775808-9223372036854775808/*", nil},
+		{"end overflow", "bytes 0-9223372036854775808/*", nil},
+		{"size overflow", "bytes 0-9223372036854775807/*", nil},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, parseContentRange(tc.header))
+		})
+	}
 }
 
 func TestReposSuite(t *testing.T) {

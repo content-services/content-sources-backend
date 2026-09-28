@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE uploads
+ADD COLUMN chunk_metadata JSONB NOT NULL DEFAULT '{}'::JSONB;
+
+COMMIT;
