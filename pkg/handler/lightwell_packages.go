@@ -45,6 +45,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Param        ecosystem       query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
+// @Param        demo            query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit           query  int     false  "Limit of results to return"
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageCollectionResponse
@@ -81,6 +82,7 @@ func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 	}
 
 	opts := dao.ListLightwellPackagesOptions{
+		Demo:             filters.Demo,
 		EntitledFeatures: lightwellFeatures,
 		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
 		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
@@ -149,6 +151,7 @@ func mapRowToLightwellPackage(row dao.LightwellPackageRow) api.LightwellPackageR
 // @Param        repository           query  string  false  "Filter by repository name"
 // @Param        resolves_cve_id      query  string  false  "Show only packages that resolve this CVE"
 // @Param        vulnerable_to_cve_id query  string  false  "Show only packages vulnerable to this CVE"
+// @Param        demo                 query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit                query  int     false  "Limit of results to return"
 // @Param        offset               query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageVersionCollectionResponse
@@ -185,6 +188,7 @@ func (h *LightwellPackagesHandler) ListPackageVersions(c echo.Context) error {
 	}
 
 	opts := dao.ListLightwellPackageVersionsOptions{
+		Demo:             filters.Demo,
 		EntitledFeatures: lightwellFeatures,
 		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
 		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
@@ -243,6 +247,7 @@ func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData
 		String("name", &f.Name).
 		String("repository", &f.Repository).
 		String("security_level", &f.SecurityLevel).
+		Bool("demo", &f.Demo).
 		BindError()
 	return f
 }
@@ -256,6 +261,7 @@ func parseLightwellPackageVersionFilters(c echo.Context) api.LightwellPackageVer
 		String("repository", &f.Repository).
 		String("resolves_cve_id", &f.ResolvesCveID).
 		String("vulnerable_to_cve_id", &f.VulnerableToCveID).
+		Bool("demo", &f.Demo).
 		BindError()
 	return f
 }

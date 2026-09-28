@@ -34,44 +34,45 @@ WHERE r.origin = 'lightwell'
     AND ($2::text IS NULL OR p.name ILIKE '%' || $2::text || '%')
     AND ($3::text IS NULL OR lower(rc.name) = lower($3::text))
     AND ($4::text IS NULL OR lower(r.security_level) = lower($4::text))
+    AND ((rc.org_id = $5::text) = $6::bool)
     AND (
-        $5::text[] IS NULL
+        $7::text[] IS NULL
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
-            WHERE btrim(t.token) = ANY($5::text[])
+            WHERE btrim(t.token) = ANY($7::text[])
         )
     )
     AND (
-        $6::text IS NULL
+        $8::text IS NULL
         OR EXISTS (
             SELECT 1 FROM lightwell_advisories la
             WHERE la.repository_configuration_uuid = rc.uuid
                 AND la.package_name = p.name
-                AND la.advisory_id = $6::text
+                AND la.advisory_id = $8::text
                 AND pv.version = ANY(la.fixed_versions)
         )
     )
     AND (
-        $7::text IS NULL
+        $9::text IS NULL
         OR (
             EXISTS (
                 SELECT 1 FROM lightwell_advisories la
                 WHERE la.repository_configuration_uuid = rc.uuid
                     AND la.package_name = p.name
-                    AND la.advisory_id = $7::text
+                    AND la.advisory_id = $9::text
             )
             AND NOT EXISTS (
                 SELECT 1 FROM lightwell_advisories la
                 WHERE la.repository_configuration_uuid = rc.uuid
                     AND la.package_name = p.name
-                    AND la.advisory_id = $7::text
+                    AND la.advisory_id = $9::text
                     AND pv.version = ANY(la.fixed_versions)
             )
         )
     )
 ORDER BY p.package_group, p.name, pv.version
-LIMIT $9 OFFSET $8
+LIMIT $11 OFFSET $10
 `
 
 type ListLightwellPackageVersionsParams struct {
@@ -79,6 +80,8 @@ type ListLightwellPackageVersionsParams struct {
 	Name              *string  `json:"name"`
 	Repository        *string  `json:"repository"`
 	SecurityLevel     *string  `json:"security_level"`
+	DemoOrg           string   `json:"demo_org"`
+	IsDemo            bool     `json:"is_demo"`
 	EntitledFeatures  []string `json:"entitled_features"`
 	ResolvesCveID     *string  `json:"resolves_cve_id"`
 	VulnerableToCveID *string  `json:"vulnerable_to_cve_id"`
@@ -106,6 +109,8 @@ func (q *Queries) ListLightwellPackageVersions(ctx context.Context, arg ListLigh
 		arg.Name,
 		arg.Repository,
 		arg.SecurityLevel,
+		arg.DemoOrg,
+		arg.IsDemo,
 		arg.EntitledFeatures,
 		arg.ResolvesCveID,
 		arg.VulnerableToCveID,
@@ -163,17 +168,18 @@ WHERE r.origin = 'lightwell'
     AND ($2::text IS NULL OR p.name ILIKE '%' || $2::text || '%')
     AND ($3::text IS NULL OR lower(rc.name) = lower($3::text))
     AND ($4::text IS NULL OR lower(r.security_level) = lower($4::text))
+    AND ((rc.org_id = $5::text) = $6::bool)
     AND (
-        $5::text[] IS NULL
+        $7::text[] IS NULL
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
-            WHERE btrim(t.token) = ANY($5::text[])
+            WHERE btrim(t.token) = ANY($7::text[])
         )
     )
 GROUP BY p.uuid, p.repository_configuration_uuid, rc.name, r.content_type, p.name, p.package_group
 ORDER BY p.package_group, p.name
-LIMIT $7 OFFSET $6
+LIMIT $9 OFFSET $8
 `
 
 type ListLightwellPackagesParams struct {
@@ -181,6 +187,8 @@ type ListLightwellPackagesParams struct {
 	Name             *string  `json:"name"`
 	Repository       *string  `json:"repository"`
 	SecurityLevel    *string  `json:"security_level"`
+	DemoOrg          string   `json:"demo_org"`
+	IsDemo           bool     `json:"is_demo"`
 	EntitledFeatures []string `json:"entitled_features"`
 	PageOffset       int32    `json:"page_offset"`
 	PageLimit        int32    `json:"page_limit"`
@@ -205,6 +213,8 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 		arg.Name,
 		arg.Repository,
 		arg.SecurityLevel,
+		arg.DemoOrg,
+		arg.IsDemo,
 		arg.EntitledFeatures,
 		arg.PageOffset,
 		arg.PageLimit,
