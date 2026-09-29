@@ -16,7 +16,13 @@
 # GET does not create MavenPackage units that the packages API lists).
 #
 # Usage:
-#   ./scripts/create_lightwell_repo.sh [--remote-url URL]
+#   ./scripts/create_lightwell_repo.sh [--remote-url URL] [--validated-count N]
+#
+#   --validated-count N  Number of distinct packages to seed into the validated
+#                        Maven repo (default 20). Also settable via the
+#                        VALIDATED_PACKAGE_COUNT environment variable. Packages
+#                        are synthetic POMs uploaded via repository modify so
+#                        they appear in the packages API.
 #
 # Auth:
 #   Basic auth (default): set PULP_USER and PULP_PASS
@@ -46,6 +52,11 @@ REPO_DIR="$(cd "$(dirname "$0")/.."; pwd)"
 LIGHTWELL_JSON="${REPO_DIR}/pkg/external_repos/lightwell_repos.json"
 LIGHTWELL_DEMO_JSON="${REPO_DIR}/pkg/external_repos/lightwell_demo_repos.json"
 
+# Base path of the "validated" Maven repo that should be seeded with a large
+# number of distinct packages, and how many packages to seed there.
+VALIDATED_BASE_PATH="${VALIDATED_BASE_PATH:-java/validated}"
+VALIDATED_PACKAGE_COUNT="${VALIDATED_PACKAGE_COUNT:-20}"
+
 # If no user is set, default to basic auth with admin/password for backwards compat
 if [[ -z "$PULP_USER" && -z "$PULP_CLIENT_CERT" ]]; then
   PULP_USER="admin"
@@ -58,8 +69,9 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --remote-url) REMOTE_URL="$2"; shift 2 ;;
-    *)            echo "Unknown option: $1" >&2; exit 1 ;;
+    --remote-url)      REMOTE_URL="$2"; shift 2 ;;
+    --validated-count) VALIDATED_PACKAGE_COUNT="$2"; shift 2 ;;
+    *)                 echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
@@ -130,6 +142,7 @@ wait_for_task() {
   local task_href="$1"
   local max_attempts=60
   local state=""
+  local i
 
   for ((i = 1; i <= max_attempts; i++)); do
     local task_response
@@ -147,7 +160,7 @@ wait_for_task() {
         ;;
       *)
         printf "    [%d/%d] state=%s\r" "$i" "$max_attempts" "$state"
-        sleep 2
+        sleep .5
         ;;
     esac
   done
@@ -342,10 +355,21 @@ upload_maven_pom() {
 
 # Seeds MavenPackage units via artifact upload + repository modify.
 # Pull-through GETs only create artifacts and leave packages/ empty.
-#   seed_maven_packages <DOMAIN_NAME> <REPO_HREF>
+#
+# BASE_PATH is used to give each repo a uniquely-namespaced marker package.
+# pulp_maven derives a repo's .meta/prefixes.txt from the first two segments of
+# each package's group_id; that file's content is deterministic (no timestamp),
+# so two repos with the same package set produce a byte-identical prefixes.txt
+# and thus the same sha256. MavenMetadata.sha256 is globally unique, but
+# pulp_maven's IntegrityError recovery does a domain-scoped lookup, so a second
+# domain seeding identical content crashes the modify task with
+# "MavenMetadata matching query does not exist". The per-repo marker guarantees
+# a unique prefix (hence a unique prefixes.txt) so the collision cannot happen.
+#   seed_maven_packages <DOMAIN_NAME> <REPO_HREF> <BASE_PATH>
 seed_maven_packages() {
   local domain_name="$1"
   local repo_href="$2"
+  local base_path="$3"
 
   local pkg_json pkg_count
   pkg_json=$(pulp_api GET "${repo_href}packages/?limit=1")
@@ -358,6 +382,22 @@ seed_maven_packages() {
   echo "    Seeding MavenPackage units (upload POM + modify)..."
 
   local -a content_hrefs=()
+
+  # Per-repo marker package so this repo's prefixes.txt is globally unique
+  # (see function header for why identical prefixes.txt across domains crashes).
+  local marker_slug
+  marker_slug=$(printf '%s-%s' "$domain_name" "$base_path" | tr -c 'a-zA-Z0-9' '-')
+  upload_maven_pom "$domain_name" \
+    "csseed/${marker_slug}/marker/1.0.0/marker-1.0.0.pom" \
+    "<?xml version=\"1.0\"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>csseed.${marker_slug}</groupId>
+  <artifactId>marker</artifactId>
+  <version>1.0.0</version>
+</project>
+"
+  content_hrefs+=("$RESULT")
 
   upload_maven_pom "$domain_name" \
     "blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom" \
@@ -418,7 +458,7 @@ seed_maven_packages() {
       echo "    Seeded ${#content_hrefs[@]} Maven artifacts."
       return 0
     fi
-    sleep 2
+    sleep .5
   done
   echo "WARN: Maven catalog seed failed for ${repo_href}; packages/ may be empty." >&2
 }
@@ -428,6 +468,7 @@ wait_for_task_or_warn() {
   local task_href="$1"
   local max_attempts=60
   local state=""
+  local i
 
   for ((i = 1; i <= max_attempts; i++)); do
     local task_response
@@ -445,7 +486,7 @@ wait_for_task_or_warn() {
         ;;
       *)
         printf "    [%d/%d] state=%s\r" "$i" "$max_attempts" "$state"
-        sleep 2
+        sleep .5
         ;;
     esac
   done
@@ -511,6 +552,65 @@ populate_python_remediated_repo() (
   done
 )
 
+# Seeds a large number of *distinct* MavenPackage units into the validated repo.
+#
+# The application counts a Maven "package" as a distinct group_id:artifact_id
+# that has a .pom. This uploads TARGET synthetic POMs, each with a distinct
+# artifactId, and adds them to the repository in a single modify so they appear
+# in the packages API. Idempotent: if the catalog already holds at least TARGET
+# packages the seed is skipped.
+#   seed_validated_maven_packages <DOMAIN_NAME> <REPO_HREF> <TARGET_COUNT>
+seed_validated_maven_packages() {
+  local domain_name="$1"
+  local repo_href="$2"
+  local target="$3"
+
+  local pkg_json pkg_count
+  pkg_json=$(pulp_api GET "${repo_href}packages/?limit=1")
+  pkg_count=$(echo "$pkg_json" | jq -r '.count // 0')
+  if [[ "$pkg_count" != "null" && "$pkg_count" -ge "$target" ]]; then
+    echo "    Validated catalog already has ${pkg_count} package(s) (>= ${target}); skipping seed."
+    return 0
+  fi
+
+  echo "    Seeding ${target} distinct validated MavenPackage units (upload POM + modify)..."
+
+  local -a content_hrefs=()
+  local i artifact_id relative_path
+  for ((i = 1; i <= target; i++)); do
+    group="org.lightwell.validated"
+    artifact_id=$(printf 'validated-pkg-%04d' $RANDOM)
+    version="1.0.$RANDOM"
+    relative_path="org/lightwell/validated/"${group//./\/}"/${artifact_id}/$version/${artifact_id}-$version.pom"
+    upload_maven_pom "$domain_name" "$relative_path" \
+      "<?xml version=\"1.0\"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>${group}</groupId>
+  <artifactId>${artifact_id}</artifactId>
+  <version>${version}</version>
+</project>
+"
+    content_hrefs+=("$RESULT")
+    echo "      ...uploaded ${i}/${target} POMs"
+  done
+
+  local body
+  body=$(jq -n --args '{add_content_units: $ARGS.positional}' "${content_hrefs[@]}")
+
+  local attempt
+  for attempt in 1 2; do
+    pulp_create "repository modify" "${repo_href}modify/" "$body" '.task'
+    echo "    Waiting for modify task (attempt ${attempt})..."
+    if wait_for_task_or_warn "$RESULT"; then
+      echo "    Seeded ${#content_hrefs[@]} validated Maven packages."
+      return 0
+    fi
+    sleep 2
+  done
+  echo "WARN: Validated catalog seed failed for ${repo_href}; packages/ may be incomplete." >&2
+}
+
 # Ensures repos from a JSON allowlist file under the given domain.
 #   create_repos_from_json <DOMAIN_NAME> <JSON_FILE>
 create_repos_from_json() {
@@ -533,7 +633,11 @@ create_repos_from_json() {
     case "$entry_type" in
       maven)
         ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
-        seed_maven_packages "$domain_name" "$REPO_HREF"
+        if [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "$VALIDATED_BASE_PATH" ]]; then
+          seed_validated_maven_packages "$domain_name" "$REPO_HREF" "$VALIDATED_PACKAGE_COUNT"
+        else
+          seed_maven_packages "$domain_name" "$REPO_HREF" "$entry_base_path"
+        fi
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
@@ -584,6 +688,15 @@ if [[ "$import_err" -ne 0 ]]; then
   echo "ERROR: import failed (exit code ${import_err})" >&2
   exit 1
 fi
+
+import_err=0
+(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true go run ./cmd/external-repos/main.go import-lightwell-packages) || import_err=$?
+
+if [[ "$import_err" -ne 0 ]]; then
+  echo "ERROR: import packages failed (exit code ${import_err})" >&2
+  exit 1
+fi
+
 
 # ---------------------------------------------------------------------------
 # Done
