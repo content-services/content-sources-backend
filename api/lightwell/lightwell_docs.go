@@ -21,7 +21,7 @@ const docTemplatelightwell = `{
     "paths": {
         "/advisories": {
             "get": {
-                "description": "List security advisories for Lightwell remediated packages.",
+                "description": "List security advisories for Lightwell remediated packages with optional filtering.",
                 "consumes": [
                     "application/json"
                 ],
@@ -42,8 +42,20 @@ const docTemplatelightwell = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by package name (substring match)",
+                        "description": "Filter by package name (exact match)",
                         "name": "package_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by package version (exact match)",
+                        "name": "package_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by advisory id or alias (substring match)",
+                        "name": "name",
                         "in": "query"
                     },
                     {
@@ -56,6 +68,12 @@ const docTemplatelightwell = `{
                         "type": "string",
                         "description": "Filter by CVE ID (exact match)",
                         "name": "cve_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version.",
+                        "name": "latest_release",
                         "in": "query"
                     },
                     {

@@ -797,7 +797,7 @@
     "paths": {
         "/advisories": {
             "get": {
-                "description": "List security advisories for Lightwell remediated packages.",
+                "description": "List security advisories for Lightwell remediated packages with optional filtering.",
                 "operationId": "listLightwellNetworkAdvisories",
                 "parameters": [
                     {
@@ -809,9 +809,25 @@
                         }
                     },
                     {
-                        "description": "Filter by package name (substring match)",
+                        "description": "Filter by package name (exact match)",
                         "in": "query",
                         "name": "package_name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by package version (exact match)",
+                        "in": "query",
+                        "name": "package_version",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by advisory id or alias (substring match)",
+                        "in": "query",
+                        "name": "name",
                         "schema": {
                             "type": "string"
                         }
@@ -830,6 +846,14 @@
                         "name": "cve_id",
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "description": "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version.",
+                        "in": "query",
+                        "name": "latest_release",
+                        "schema": {
+                            "type": "boolean"
                         }
                     },
                     {

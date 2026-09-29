@@ -305,13 +305,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by package name (substring match)",
+                        "description": "Filter by package name (exact match)",
                         "name": "package_name",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by package version (substring match on advisory_id)",
+                        "description": "Filter by package version (exact match)",
                         "name": "package_version",
                         "in": "query"
                     },
