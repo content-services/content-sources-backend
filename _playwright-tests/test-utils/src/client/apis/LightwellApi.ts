@@ -53,6 +53,7 @@ export interface ListLightwellPackageVersionsRequest {
     repository?: string;
     resolvesCveId?: string;
     vulnerableToCveId?: string;
+    demo?: boolean;
     limit?: number;
     offset?: number;
 }
@@ -61,6 +62,7 @@ export interface ListLightwellPackagesRequest {
     ecosystem?: string;
     name?: string;
     securityLevel?: string;
+    demo?: boolean;
     limit?: number;
     offset?: number;
 }
@@ -175,6 +177,10 @@ export class LightwellApi extends runtime.BaseAPI {
             queryParameters['vulnerable_to_cve_id'] = requestParameters['vulnerableToCveId'];
         }
 
+        if (requestParameters['demo'] != null) {
+            queryParameters['demo'] = requestParameters['demo'];
+        }
+
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
         }
@@ -232,6 +238,10 @@ export class LightwellApi extends runtime.BaseAPI {
 
         if (requestParameters['securityLevel'] != null) {
             queryParameters['security_level'] = requestParameters['securityLevel'];
+        }
+
+        if (requestParameters['demo'] != null) {
+            queryParameters['demo'] = requestParameters['demo'];
         }
 
         if (requestParameters['limit'] != null) {
