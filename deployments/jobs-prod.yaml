@@ -73,3 +73,13 @@ objects:
       appName: content-sources-backend
       jobs:
         - cancel-tasks
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: send-template-update-events-2026-08-24
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - send-template-update-events
