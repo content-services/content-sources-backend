@@ -62,7 +62,7 @@ WITH filtered AS (
         )
         AND (
             $6::text IS NULL
-            OR la.package_name ILIKE '%' || $6::text || '%'
+            OR la.package_name = $6::text
         )
         AND (
             $7::real IS NULL
@@ -79,7 +79,7 @@ WITH filtered AS (
         )
         AND (
             $10::text IS NULL
-            OR la.advisory_id ILIKE '%' || $10::text || '%'
+            OR la.package_version = $10::text
         )
         AND (
             $11::text[] IS NULL

@@ -289,10 +289,13 @@ func (s *LightwellAdvisorySuite) TestList() {
 	})
 	s.Require().NoError(err)
 
-	result, total, err := dao.List(context.Background(), 0, 10)
+	var expected int64
+	s.Require().NoError(s.tx.Model(&models.LightwellAdvisory{}).Count(&expected).Error)
+
+	result, total, err := dao.List(context.Background(), 0, int(expected))
 	s.NoError(err)
-	s.Equal(int64(2), total)
-	s.Require().Len(result, 2)
+	s.Equal(expected, total)
+	s.Require().Len(result, int(expected))
 	byID := map[string]LightwellAdvisoryInput{}
 	for _, row := range result {
 		byID[row.AdvisoryID] = row
@@ -303,7 +306,7 @@ func (s *LightwellAdvisorySuite) TestList() {
 
 	page, total, err := dao.List(context.Background(), 0, 1)
 	s.NoError(err)
-	s.Equal(int64(2), total)
+	s.Equal(expected, total)
 	s.Len(page, 1)
 }
 
@@ -532,18 +535,20 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesFiltersNamePackageVersionAndC
 
 	err := daoImpl.SyncForRepository(context.Background(), repoConfigUUID, repoName, []LightwellAdvisoryInput{
 		{
-			AdvisoryID:    "x_RHLW-CVE-2015-6748-1.7.2",
-			PackageName:   "org.jsoup:jsoup",
-			Checksum:      "jsoup-1",
-			FixedVersions: []string{"1.7.2.rhlw-00001"},
-			Aliases:       []string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"},
+			AdvisoryID:     "x_RHLW-CVE-2015-6748-1.7.2",
+			PackageName:    "org.jsoup:jsoup",
+			PackageVersion: "1.7.2",
+			Checksum:       "jsoup-1",
+			FixedVersions:  []string{"1.7.2.rhlw-00001"},
+			Aliases:        []string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"},
 		},
 		{
-			AdvisoryID:    "x_RHLW-LW-2026-4255-2.11.0",
-			PackageName:   "com.example:other",
-			Checksum:      "other-1",
-			FixedVersions: []string{"2.11.0.rhlw-00000"},
-			Aliases:       []string{"LW-2026-4255"},
+			AdvisoryID:     "x_RHLW-LW-2026-4255-2.11.0",
+			PackageName:    "com.example:other",
+			PackageVersion: "2.11.0",
+			Checksum:       "other-1",
+			FixedVersions:  []string{"2.11.0.rhlw-00000"},
+			Aliases:        []string{"LW-2026-4255"},
 		},
 	})
 	s.Require().NoError(err)
@@ -575,6 +580,30 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesFiltersNamePackageVersionAndC
 	s.Require().NoError(err)
 	s.Equal(int64(1), total)
 	s.Equal("x_RHLW-CVE-2015-6748-1.7.2", data[0].AdvisoryID)
+
+	partialVer := "1.7"
+	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
+		o.PackageVersion = &partialVer
+	}))
+	s.Require().NoError(err)
+	s.Equal(int64(0), total)
+	s.Empty(data)
+
+	partialName := "jsoup"
+	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
+		o.PackageName = &partialName
+	}))
+	s.Require().NoError(err)
+	s.Equal(int64(0), total)
+	s.Empty(data)
+
+	exactName := "org.jsoup:jsoup"
+	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
+		o.PackageName = &exactName
+	}))
+	s.Require().NoError(err)
+	s.Equal(int64(1), total)
+	s.Equal("org.jsoup:jsoup", data[0].PackageName)
 
 	ver := "1.7.2"
 	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
@@ -668,7 +697,7 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestRelease() {
 	}
 	s.Require().NoError(daoImpl.SyncForRepository(context.Background(), repoConfigUUID, repoName, base))
 
-	pkg := "jsoup"
+	pkg := "org.jsoup:jsoup"
 	ver := "1.2.3"
 	opts := ListLightwellAdvisoriesOptions{
 		RepoName:         &repoName,

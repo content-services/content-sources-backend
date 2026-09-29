@@ -3395,7 +3395,7 @@
                         }
                     },
                     {
-                        "description": "Filter by package name (substring match)",
+                        "description": "Filter by package name (exact match)",
                         "in": "query",
                         "name": "package_name",
                         "schema": {
@@ -3403,7 +3403,7 @@
                         }
                     },
                     {
-                        "description": "Filter by package version (substring match on advisory_id)",
+                        "description": "Filter by package version (exact match)",
                         "in": "query",
                         "name": "package_version",
                         "schema": {

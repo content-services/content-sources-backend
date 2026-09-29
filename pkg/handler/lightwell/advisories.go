@@ -34,14 +34,17 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // listAdvisories godoc
 // @Summary      List Lightwell Advisories
 // @ID           listLightwellNetworkAdvisories
-// @Description  List security advisories for Lightwell remediated packages.
+// @Description  List security advisories for Lightwell remediated packages with optional filtering.
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
 // @Param        repository       query  string  false  "Filter by repository name"
-// @Param        package_name     query  string  false  "Filter by package name (substring match)"
+// @Param        package_name     query  string  false  "Filter by package name (exact match)"
+// @Param        package_version  query  string  false  "Filter by package version (exact match)"
+// @Param        name             query  string  false  "Filter by advisory id or alias (substring match)"
 // @Param        severity_min     query  string  false  "Minimum severity level (low, moderate, important, critical)"
 // @Param        cve_id           query  string  false  "Filter by CVE ID (exact match)"
+// @Param        latest_release   query  bool    false  "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version."
 // @Param        limit            query  int     false  "Limit of results to return"
 // @Param        offset           query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellAdvisoryCollectionResponse

@@ -217,15 +217,27 @@ func (s *LightwellAdvisoriesSuite) TestListAdvisoriesFilters() {
 	s.Equal("x_RHLW-CVE-2015-6748-1.7.2", resp.Data[0].AdvisoryID)
 
 	q = s.repoQuery()
+	q.Set("package_version", "1.7")
+	resp = s.list(q)
+	s.Equal(int64(0), resp.Meta.Count)
+	s.Empty(resp.Data)
+
+	q = s.repoQuery()
 	q.Set("package_version", "1.7.2")
 	resp = s.list(q)
 	s.Equal(int64(1), resp.Meta.Count)
 	s.Equal("org.jsoup:jsoup", resp.Data[0].PackageName)
 
 	q = s.repoQuery()
+	q.Set("package_name", "jsoup")
+	resp = s.list(q)
+	s.Equal(int64(0), resp.Meta.Count)
+	s.Empty(resp.Data)
+
+	q = s.repoQuery()
 	q.Set("name", "CVE-2015-6748")
 	q.Set("package_version", "1.7.2")
-	q.Set("package_name", "jsoup")
+	q.Set("package_name", "org.jsoup:jsoup")
 	resp = s.list(q)
 	s.Equal(int64(1), resp.Meta.Count)
 	s.Equal("org.jsoup:jsoup", resp.Data[0].PackageName)
@@ -298,7 +310,7 @@ func (s *LightwellAdvisoriesSuite) TestListAdvisoriesLatestRelease() {
 	s.Require().NoError(err)
 
 	q := s.repoQuery()
-	q.Set("package_name", "jsoup")
+	q.Set("package_name", "org.jsoup:jsoup")
 	q.Set("package_version", "1.2.3")
 	resp := s.list(q)
 	s.Equal(int64(4), resp.Meta.Count)

@@ -34,7 +34,7 @@ WITH filtered AS (
         )
         AND (
             sqlc.narg(package_name)::text IS NULL
-            OR la.package_name ILIKE '%' || sqlc.narg(package_name)::text || '%'
+            OR la.package_name = sqlc.narg(package_name)::text
         )
         AND (
             sqlc.narg(severity_min)::real IS NULL
@@ -51,7 +51,7 @@ WITH filtered AS (
         )
         AND (
             sqlc.narg(package_version)::text IS NULL
-            OR la.advisory_id ILIKE '%' || sqlc.narg(package_version)::text || '%'
+            OR la.package_version = sqlc.narg(package_version)::text
         )
         AND (
             sqlc.narg(entitled_features)::text[] IS NULL
