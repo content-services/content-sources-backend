@@ -32,6 +32,18 @@ docker compose exec -T postgres-content psql "sslmode=disable dbname=content use
 
 Adjust connection parameters to match your `configs/config.yaml` if they differ from the compose defaults.
 
+Advisories for those vulnerabilities are a second script, applied locally after the vulnerability seed. It inserts one advisory (and a release row per `published_versions` entry) only for seed rows whose stage is `Lightwell Network`, using the vulnerability purl as `package_name` and `component_version` as `package_version`:
+
+```bash
+psql "sslmode=disable dbname=content user=content host=localhost port=5433 password=content" -f db/seeds/lightwell_advisories.sql
+```
+
+Or through the compose postgres container:
+
+```bash
+docker compose exec -T postgres-content psql "sslmode=disable dbname=content user=content host=localhost port=5432 password=content" -f - < db/seeds/lightwell_advisories.sql
+```
+
 ## Read API
 
 With the API running, authenticated clients can call:
