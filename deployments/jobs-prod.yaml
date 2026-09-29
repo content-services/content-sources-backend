@@ -83,3 +83,8 @@ objects:
       appName: content-sources-backend
       jobs:
         - sync-lightwell-advisories-force
+      name: send-template-update-events-2026-08-24
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - send-template-update-events
