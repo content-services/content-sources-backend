@@ -248,14 +248,18 @@ func (c *FeatureServiceCertUser) Proxy() string {
 
 type TermsServiceCertUser struct{}
 
-func (c *TermsServiceCertUser) ClientCert() string     { return Get().Clients.TermsService.ClientCert }
-func (c *TermsServiceCertUser) ClientKey() string      { return Get().Clients.TermsService.ClientKey }
-func (c *TermsServiceCertUser) CACert() string         { return Get().Clients.TermsService.CACert }
-func (c *TermsServiceCertUser) CACertPath() string     { return Get().Clients.TermsService.CACertPath }
-func (c *TermsServiceCertUser) ClientCertPath() string { return Get().Clients.TermsService.ClientCertPath }
-func (c *TermsServiceCertUser) ClientKeyPath() string  { return Get().Clients.TermsService.ClientKeyPath }
-func (c *TermsServiceCertUser) Label() string          { return "terms_service" }
-func (c *TermsServiceCertUser) Proxy() string          { return "" }
+func (c *TermsServiceCertUser) ClientCert() string { return Get().Clients.TermsService.ClientCert }
+func (c *TermsServiceCertUser) ClientKey() string  { return Get().Clients.TermsService.ClientKey }
+func (c *TermsServiceCertUser) CACert() string     { return Get().Clients.TermsService.CACert }
+func (c *TermsServiceCertUser) CACertPath() string { return Get().Clients.TermsService.CACertPath }
+func (c *TermsServiceCertUser) ClientCertPath() string {
+	return Get().Clients.TermsService.ClientCertPath
+}
+func (c *TermsServiceCertUser) ClientKeyPath() string {
+	return Get().Clients.TermsService.ClientKeyPath
+}
+func (c *TermsServiceCertUser) Label() string { return "terms_service" }
+func (c *TermsServiceCertUser) Proxy() string { return "" }
 
 type CandlepinCertUser struct {
 }
