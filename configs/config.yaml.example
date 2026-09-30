@@ -171,6 +171,11 @@ clients:
     client_cert_path:
     client_key_path:
     ca_cert_path:
+  # Terms service (mTLS). Certs are in Vault:
+  #   Stage: vault.devshift.net → app-interface/lightwell-ui/stage/service-account
+  #   Prod:  vault.devshift.net → app-interface/lightwell-ui/prod/service-account
+  # The Vault secret contains: cert, csr, key, password, username.
+  # For local dev, save the cert, key, and CA chain as PEM files and use the *_path fields.
   terms_service:
     server: #https://terms.stage.api.redhat.com
     client_cert:
