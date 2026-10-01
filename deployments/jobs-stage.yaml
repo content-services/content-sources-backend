@@ -93,4 +93,14 @@ objects:
       appName: content-sources-backend
       jobs:
         - send-template-update-events
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: sync-lightwell-advisories-force-2026-10-01
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - sync-lightwell-advisories-force
 
