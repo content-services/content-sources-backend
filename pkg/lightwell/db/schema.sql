@@ -196,3 +196,8 @@ CREATE UNIQUE INDEX idx_lightwell_package_versions_pkg_version
 
 CREATE INDEX idx_lightwell_package_versions_repo
     ON lightwell_package_versions (repository_configuration_uuid);
+
+CREATE TABLE lightwell_beacon_sync (
+    id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id),
+    last_processed_at TIMESTAMPTZ NOT NULL
+);
