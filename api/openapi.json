@@ -419,6 +419,15 @@
                 },
                 "type": "object"
             },
+            "api.LightwellBeaconStatusResponse": {
+                "properties": {
+                    "last_processed_at": {
+                        "description": "When the latest successful beacon sync started",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.LightwellCustomerIdsResponse": {
                 "properties": {
                     "data": {
@@ -3494,6 +3503,58 @@
                 "summary": "List Lightwell Advisories",
                 "tags": [
                     "lightwell"
+                ]
+            }
+        },
+        "/lightwell/beacon/status/": {
+            "get": {
+                "description": "Return when the latest successful beacon sync started. The timestamp is omitted until the first successful sync.",
+                "operationId": "getLightwellBeaconStatus",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.LightwellBeaconStatusResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get Lightwell beacon status",
+                "tags": [
+                    "lightwell_vulnerabilities"
                 ]
             }
         },

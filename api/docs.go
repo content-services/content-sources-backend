@@ -374,6 +374,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/lightwell/beacon/status/": {
+            "get": {
+                "description": "Return when the latest successful beacon sync started. The timestamp is omitted until the first successful sync.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "Get Lightwell beacon status",
+                "operationId": "getLightwellBeaconStatus",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellBeaconStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/lightwell/beacon/vulnerabilities/": {
             "get": {
                 "description": "List Lightwell vulnerabilities for a customer, with filters, pagination, and aggregate counts.",
@@ -5445,6 +5487,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.LightwellBeaconStatusResponse": {
+            "type": "object",
+            "properties": {
+                "last_processed_at": {
+                    "description": "When the latest successful beacon sync started",
                     "type": "string"
                 }
             }

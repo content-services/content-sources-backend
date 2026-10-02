@@ -18,6 +18,7 @@ type Querier interface {
 	DeleteVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (int64, error)
 	DeleteVulnerabilityCustomersNotIn(ctx context.Context, arg DeleteVulnerabilityCustomersNotInParams) error
 	DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg DeleteVulnerabilityTicketsNotInParams) error
+	GetBeaconSync(ctx context.Context) (time.Time, error)
 	GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (LightwellVulnerability, error)
 	InsertVulnerabilityCustomer(ctx context.Context, arg InsertVulnerabilityCustomerParams) error
 	ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) ([]ListAdvisoriesRow, error)

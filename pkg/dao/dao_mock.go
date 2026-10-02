@@ -10392,6 +10392,64 @@ func (_c *MockLightwellVulnerabilityDao_List_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// LastProcessedAt provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) LastProcessedAt(ctx context.Context) (*time.Time, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LastProcessedAt")
+	}
+
+	var r0 *time.Time
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (*time.Time, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *time.Time); ok {
+		r0 = returnFunc(ctx)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*time.Time)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellVulnerabilityDao_LastProcessedAt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LastProcessedAt'
+type MockLightwellVulnerabilityDao_LastProcessedAt_Call struct {
+	*mock.Call
+}
+
+// LastProcessedAt is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockLightwellVulnerabilityDao_Expecter) LastProcessedAt(ctx interface{}) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	return &MockLightwellVulnerabilityDao_LastProcessedAt_Call{Call: _e.mock.On("LastProcessedAt", ctx)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) Run(run func(ctx context.Context)) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(arg0)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) Return(at *time.Time, err error) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	_c.Call.Return(at, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) RunAndReturn(run func(ctx context.Context) (*time.Time, error)) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListCustomerIds provides a mock function for the type MockLightwellVulnerabilityDao
 func (_mock *MockLightwellVulnerabilityDao) ListCustomerIds(ctx context.Context) ([]string, error) {
 	ret := _mock.Called(ctx)

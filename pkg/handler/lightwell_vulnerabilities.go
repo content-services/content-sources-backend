@@ -34,9 +34,30 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 	}
 
 	h := LightwellVulnerabilityHandler{DaoRegistry: *daoReg}
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/status/", h.beaconStatus, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
+}
+
+// GetLightwellBeaconStatus godoc
+// @Summary      Get Lightwell beacon status
+// @ID           getLightwellBeaconStatus
+// @Description  Return when the latest successful beacon sync started. The timestamp is omitted until the first successful sync.
+// @Tags         lightwell_vulnerabilities
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.LightwellBeaconStatusResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      401 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /lightwell/beacon/status/ [get]
+func (h *LightwellVulnerabilityHandler) beaconStatus(c echo.Context) error {
+	at, err := h.DaoRegistry.LightwellVulnerability.LastProcessedAt(c.Request().Context())
+	if err != nil {
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error reading beacon status", err.Error())
+	}
+	return c.JSON(http.StatusOK, api.LightwellBeaconStatusResponse{LastProcessedAt: at})
 }
 
 // ListLightwellCustomerIds godoc

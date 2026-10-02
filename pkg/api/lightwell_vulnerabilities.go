@@ -54,6 +54,11 @@ func (r *LightwellVulnerabilityCollectionResponse) SetMetadata(meta ResponseMeta
 	r.Links = links
 }
 
+// LightwellBeaconStatusResponse is the freshness of the stored beacon data.
+type LightwellBeaconStatusResponse struct {
+	LastProcessedAt *time.Time `json:"last_processed_at,omitempty"` // When the latest successful beacon sync started
+}
+
 // LightwellCustomerIdsResponse is the list of customer IDs that have vulnerabilities.
 type LightwellCustomerIdsResponse struct {
 	Data []string `json:"data"` // Customer IDs
