@@ -76,6 +76,48 @@ func (suite *LightwellVulnerabilitiesSuite) newGet(path string) *http.Request {
 	return req
 }
 
+func (suite *LightwellVulnerabilitiesSuite) TestBeaconStatus() {
+	processedAt := time.Date(2026, 10, 2, 8, 0, 0, 0, time.UTC)
+	suite.reg.LightwellVulnerability.On("LastProcessedAt", test.MockCtx()).Return(&processedAt, nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/status/", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellBeaconStatusResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	suite.Require().NotNil(resp.LastProcessedAt)
+	assert.True(suite.T(), processedAt.Equal(resp.LastProcessedAt.UTC()))
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestBeaconStatusEmpty() {
+	suite.reg.LightwellVulnerability.On("LastProcessedAt", test.MockCtx()).Return((*time.Time)(nil), nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/status/", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+	assert.NotContains(suite.T(), string(body), "last_processed_at")
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestBeaconStatusNotAccessible() {
+	path := fmt.Sprintf("%s/lightwell/beacon/status/", api.FullRootPath())
+	code, body, err := suite.serveRouterWithAccess(suite.newGet(path), true, false)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusBadRequest, code)
+	assert.Contains(suite.T(), string(body), "Neither the user nor account is allowed")
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestBeaconStatusDaoError() {
+	suite.reg.LightwellVulnerability.On("LastProcessedAt", test.MockCtx()).Return((*time.Time)(nil), &ce.DaoError{Message: "db down"})
+
+	path := fmt.Sprintf("%s/lightwell/beacon/status/", api.FullRootPath())
+	code, _, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusInternalServerError, code)
+}
+
 func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIds() {
 	expected := []string{"demo-customer-1", "demo-customer-2"}
 	suite.reg.LightwellVulnerability.On("ListCustomerIds", test.MockCtx()).Return(expected, nil)

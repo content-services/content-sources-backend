@@ -249,3 +249,27 @@ func (s *LightwellVulnerabilitiesSuite) TestListUnknownCustomerEmpty() {
 	s.Equal(int64(0), resp.Meta.CriticalCount)
 	s.Empty(resp.Meta.StatusCounts)
 }
+
+func (s *LightwellVulnerabilitiesSuite) TestBeaconStatus() {
+	ctx := context.Background()
+	var existing []time.Time
+	s.Require().NoError(db.DB.WithContext(ctx).Raw(`SELECT last_processed_at FROM lightwell_beacon_sync`).Scan(&existing).Error)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_beacon_sync`).Error
+		if len(existing) == 1 {
+			_ = db.DB.Exec(`INSERT INTO lightwell_beacon_sync (last_processed_at) VALUES (?)`, existing[0]).Error
+		}
+	})
+
+	processedAt := time.Date(2026, 10, 2, 8, 0, 0, 0, time.UTC)
+	s.Require().NoError(s.dao.LightwellVulnerability.RecordSuccessfulSync(ctx, processedAt))
+
+	path := fmt.Sprintf("%s/lightwell/beacon/status/", api.FullRootPath())
+	code, body := s.serve(s.get(path))
+	s.Equal(http.StatusOK, code)
+
+	var resp api.LightwellBeaconStatusResponse
+	s.Require().NoError(json.Unmarshal(body, &resp))
+	s.Require().NotNil(resp.LastProcessedAt)
+	s.True(processedAt.Equal(resp.LastProcessedAt.UTC()))
+}

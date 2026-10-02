@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+const getBeaconSync = `-- name: GetBeaconSync :one
+SELECT last_processed_at
+FROM lightwell_beacon_sync
+WHERE id = true
+`
+
+func (q *Queries) GetBeaconSync(ctx context.Context) (time.Time, error) {
+	row := q.db.QueryRow(ctx, getBeaconSync)
+	var last_processed_at time.Time
+	err := row.Scan(&last_processed_at)
+	return last_processed_at, err
+}
+
 const recordBeaconSync = `-- name: RecordBeaconSync :exec
 INSERT INTO lightwell_beacon_sync (id, last_processed_at)
 VALUES (true, $1)
