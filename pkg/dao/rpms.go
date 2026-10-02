@@ -27,8 +27,6 @@ import (
 
 var DbInClauseLimit = 60000
 
-const TemplateErrataIDsPageLimit = 10000
-
 type rpmDaoImpl struct {
 	db            *gorm.DB
 	roadmapClient roadmap_client.RoadmapClient
@@ -1149,33 +1147,33 @@ func (r *rpmDaoImpl) FetchForRepository(ctx context.Context, orgID string, repos
 	return rpms, nil
 }
 
-// FetchTemplateErrataIDs returns deduplicated and sorted errata IDs for the given template
+// FetchTemplateErrataIDs returns distinct sorted errata IDs for the given template.
+// Uses Tangy's ID-only query to avoid loading full errata payloads (titles, CVEs, etc.).
 func (r *rpmDaoImpl) FetchTemplateErrataIDs(ctx context.Context, orgID string, templateUUID string) ([]string, error) {
-	limit := TemplateErrataIDsPageLimit
-	var offset int
-	seen := make(map[string]struct{})
-	var errataIDs []string
-
-	// paginate through ListTemplateErrata until all errata are fetched
-	for {
-		page, total, err := r.ListTemplateErrata(ctx, orgID, templateUUID, tangy.ErrataListFilters{}, api.PaginationData{
-			Limit: limit, Offset: offset,
-		})
-		if err != nil {
-			return nil, err
-		}
-		for _, errata := range page {
-			if _, ok := seen[errata.ErrataId]; !ok {
-				seen[errata.ErrataId] = struct{}{}
-				errataIDs = append(errataIDs, errata.ErrataId)
-			}
-		}
-		offset += len(page)
-		if offset >= total || len(page) == 0 {
-			break
-		}
+	snapshots, err := r.fetchSnapshotsForTemplate(ctx, orgID, templateUUID)
+	if err != nil {
+		return nil, err
 	}
 
+	pulpHrefs := make([]string, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		pulpHrefs = append(pulpHrefs, snapshot.VersionHref)
+	}
+
+	if len(pulpHrefs) == 0 {
+		return []string{}, nil
+	}
+
+	if config.Tang == nil {
+		return nil, fmt.Errorf("no tang configuration present")
+	}
+
+	errataIDs, err := (*config.Tang).RpmRepositoryVersionErrataIDs(ctx, pulpHrefs)
+	if err != nil {
+		return nil, fmt.Errorf("error querying errata IDs in snapshots: %w", err)
+	}
+
+	// Tangy already returns DISTINCT sorted IDs; keep Sort for defensive stability.
 	slices.Sort(errataIDs)
 	return errataIDs, nil
 }

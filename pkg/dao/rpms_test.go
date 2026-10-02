@@ -1620,33 +1620,12 @@ func (s *RpmSuite) TestFetchTemplateErrataIDs() {
 	require.NoError(s.T(), err)
 	template := templates[0]
 
-	pageLimit := TemplateErrataIDsPageLimit
-	page1 := makeErrataListItems(pageLimit) // adv-1 ... adv-10000
-	// add duplicates plus a new unique one
-	page2 := []tangy.ErrataListItem{
-		{
-			Id:       page1[0].Id,
-			ErrataId: page1[0].ErrataId,
-		},
-		{
-			Id:       page1[1].Id,
-			ErrataId: page1[1].ErrataId,
-		},
-		{
-			Id:       fmt.Sprintf("%d", pageLimit+1),
-			ErrataId: fmt.Sprintf("adv-%d", pageLimit+1),
-		},
-	}
-	total := pageLimit + 1
-
-	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{},
-		tangy.PageOptions{Offset: 0, Limit: pageLimit}).Return(page1, total, nil)
-	mTangy.On("RpmRepositoryVersionErrataList", ctx, hrefs, tangy.ErrataListFilters{},
-		tangy.PageOptions{Offset: pageLimit, Limit: pageLimit}).Return(page2, total, nil)
+	expectedIDs := []string{"adv-1", "adv-2", "adv-10"}
+	mTangy.On("RpmRepositoryVersionErrataIDs", ctx, hrefs).Return(expectedIDs, nil)
 
 	ids, err := dao.FetchTemplateErrataIDs(ctx, orgId, template.UUID)
 	require.NoError(s.T(), err)
-	assert.Equal(s.T(), pageLimit+1, len(ids)) // 501 unique, duplicates removed
+	assert.Equal(s.T(), []string{"adv-1", "adv-10", "adv-2"}, ids) // sorted
 	assert.True(s.T(), slices.IsSorted(ids))
 }
 
@@ -2028,15 +2007,4 @@ func (s *RpmSuite) TestPulpPackageToRepositoryRpm() {
 			assert.Equal(t, tc.input.GetSha256(), rpm.Checksum)
 		})
 	}
-}
-
-func makeErrataListItems(count int) []tangy.ErrataListItem {
-	items := make([]tangy.ErrataListItem, count)
-	for i := range items {
-		items[i] = tangy.ErrataListItem{
-			Id:       fmt.Sprintf("%d", i+1),
-			ErrataId: fmt.Sprintf("adv-%d", i+1),
-		}
-	}
-	return items
 }
