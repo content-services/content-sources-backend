@@ -6,6 +6,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,6 +28,7 @@ type Querier interface {
 	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)
+	RecordBeaconSync(ctx context.Context, lastProcessedAt time.Time) error
 	UpsertVulnerability(ctx context.Context, arg UpsertVulnerabilityParams) (UpsertVulnerabilityRow, error)
 	UpsertVulnerabilityTicket(ctx context.Context, arg UpsertVulnerabilityTicketParams) error
 }

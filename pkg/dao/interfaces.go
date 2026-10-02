@@ -304,6 +304,7 @@ type LightwellVulnerabilityDao interface {
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)
 	Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error)
 	DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error)
+	RecordSuccessfulSync(ctx context.Context, at time.Time) error
 }
 
 type LightwellPackageDao interface {
