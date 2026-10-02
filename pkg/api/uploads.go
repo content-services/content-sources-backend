@@ -19,9 +19,10 @@ type Artifact struct {
 }
 
 type UploadChunkRequest struct {
-	UploadUuid string `param:"upload_uuid" validate:"required"` // Upload UUID
-	File       string `form:"file" validate:"required"`         // A chunk of the uploaded file
-	Sha256     string `form:"sha256" validate:"required"`       // SHA-256 checksum of the chunk
+	UploadUuid   string `param:"upload_uuid" validate:"required"`                     // Upload UUID
+	File         string `form:"file" validate:"required"`                             // A chunk of the uploaded file
+	Sha256       string `form:"sha256" validate:"required"`                           // SHA-256 checksum of the chunk
+	ContentRange string `header:"Content-Range" json:"-" xml:"-" validate:"required"` // Byte range of the chunk
 }
 
 type UploadResponse struct {
