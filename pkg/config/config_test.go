@@ -79,6 +79,42 @@ func runTestCustomHTTPErrorHandler(t *testing.T, e *echo.Echo, method string, gi
 	}
 }
 
+func TestTermsServiceConfigured(t *testing.T) {
+	c := Get()
+
+	c.Clients.TermsService.Server = ""
+	assert.False(t, TermsServiceConfigured())
+
+	c.Clients.TermsService.Server = "https://terms.stage.api.redhat.com"
+	assert.True(t, TermsServiceConfigured())
+
+	// reset to avoid leaking state into other tests
+	c.Clients.TermsService.Server = ""
+}
+
+func TestTermsServiceCertUser(t *testing.T) {
+	c := Get()
+	c.Clients.TermsService.ClientCert = "test-cert"
+	c.Clients.TermsService.ClientKey = "test-key"
+	c.Clients.TermsService.CACert = "test-ca"
+	c.Clients.TermsService.ClientCertPath = "/path/to/cert"
+	c.Clients.TermsService.ClientKeyPath = "/path/to/key"
+	c.Clients.TermsService.CACertPath = "/path/to/ca"
+
+	certUser := &TermsServiceCertUser{}
+	assert.Equal(t, "test-cert", certUser.ClientCert())
+	assert.Equal(t, "test-key", certUser.ClientKey())
+	assert.Equal(t, "test-ca", certUser.CACert())
+	assert.Equal(t, "/path/to/cert", certUser.ClientCertPath())
+	assert.Equal(t, "/path/to/key", certUser.ClientKeyPath())
+	assert.Equal(t, "/path/to/ca", certUser.CACertPath())
+	assert.Equal(t, "terms_service", certUser.Label())
+	assert.Equal(t, "", certUser.Proxy())
+
+	// reset to avoid leaking state into other tests
+	c.Clients.TermsService = TermsService{}
+}
+
 func TestClowderS3URL(t *testing.T) {
 	assert.Equal(t, "http://foo:80", ClowderS3Url(clowder.ObjectStoreConfig{
 		Hostname: "foo",

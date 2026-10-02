@@ -746,6 +746,93 @@
                 },
                 "type": "object"
             },
+            "api.TermDetailResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "is_optional": {
+                        "type": "boolean"
+                    },
+                    "translations": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.TermTranslationResponse"
+                        },
+                        "type": "array"
+                    },
+                    "url_to_display_all_terms": {
+                        "type": "string"
+                    },
+                    "url_to_display_this_term": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TermTranslationResponse": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "is_default": {
+                        "type": "boolean"
+                    },
+                    "locale_code": {
+                        "type": "string"
+                    },
+                    "pdf_download_url": {
+                        "type": "string"
+                    },
+                    "terms_pdf_id": {
+                        "type": "string"
+                    },
+                    "translated_description": {
+                        "type": "string"
+                    },
+                    "translated_instructions": {
+                        "type": "string"
+                    },
+                    "translated_terms_name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TermsAcceptRequest": {
+                "properties": {
+                    "terms_pdf_id": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TermsAcceptResponse": {
+                "properties": {
+                    "accepted": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TermsDetailsResponse": {
+                "properties": {
+                    "terms": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.TermDetailResponse"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
+            "api.TermsRequiredResponse": {
+                "properties": {
+                    "required": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "errors.ErrorResponse": {
                 "properties": {
                     "errors": {
@@ -1609,6 +1696,134 @@
                     }
                 },
                 "summary": "Get Python Package Detail",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
+        "/terms/accept": {
+            "put": {
+                "description": "Record the user's acceptance of a specific Lightwell term.",
+                "operationId": "acceptLightwellNetworkTerms",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/api.TermsAcceptRequest"
+                            }
+                        }
+                    },
+                    "description": "Term acceptance request",
+                    "required": true,
+                    "x-originalParamName": "body"
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TermsAcceptResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Accept Lightwell terms",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
+        "/terms/details": {
+            "get": {
+                "description": "Retrieve term names, PDF links, and IDs for terms the user must accept.",
+                "operationId": "getLightwellNetworkTermsDetails",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TermsDetailsResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Get required Lightwell terms details",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
+        "/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms.",
+                "operationId": "getLightwellNetworkTermsRequired",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TermsRequiredResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Check if Lightwell terms acceptance is required",
                 "tags": [
                     "lightwell"
                 ]

@@ -673,6 +673,113 @@ const docTemplatelightwell = `{
                     }
                 }
             }
+        },
+        "/terms/accept": {
+            "put": {
+                "description": "Record the user's acceptance of a specific Lightwell term.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Accept Lightwell terms",
+                "operationId": "acceptLightwellNetworkTerms",
+                "parameters": [
+                    {
+                        "description": "Term acceptance request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsAcceptRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsAcceptResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/terms/details": {
+            "get": {
+                "description": "Retrieve term names, PDF links, and IDs for terms the user must accept.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Get required Lightwell terms details",
+                "operationId": "getLightwellNetworkTermsDetails",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsDetailsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Check if Lightwell terms acceptance is required",
+                "operationId": "getLightwellNetworkTermsRequired",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsRequiredResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1418,6 +1525,93 @@ const docTemplatelightwell = `{
                 "uuid": {
                     "description": "UUID of the object",
                     "type": "string"
+                }
+            }
+        },
+        "api.TermDetailResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_optional": {
+                    "type": "boolean"
+                },
+                "translations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TermTranslationResponse"
+                    }
+                },
+                "url_to_display_all_terms": {
+                    "type": "string"
+                },
+                "url_to_display_this_term": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.TermTranslationResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "locale_code": {
+                    "type": "string"
+                },
+                "pdf_download_url": {
+                    "type": "string"
+                },
+                "terms_pdf_id": {
+                    "type": "string"
+                },
+                "translated_description": {
+                    "type": "string"
+                },
+                "translated_instructions": {
+                    "type": "string"
+                },
+                "translated_terms_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.TermsAcceptRequest": {
+            "type": "object",
+            "properties": {
+                "terms_pdf_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.TermsAcceptResponse": {
+            "type": "object",
+            "properties": {
+                "accepted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "api.TermsDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "terms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.TermDetailResponse"
+                    }
+                }
+            }
+        },
+        "api.TermsRequiredResponse": {
+            "type": "object",
+            "properties": {
+                "required": {
+                    "type": "boolean"
                 }
             }
         },
