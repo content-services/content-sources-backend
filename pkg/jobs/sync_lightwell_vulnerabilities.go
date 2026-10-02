@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -41,6 +42,8 @@ func SyncLightwellVulnerabilities(_ []string) {
 }
 
 func runLightwellVulnerabilitySync(ctx context.Context) (lightwellsync.SyncSummary, error) {
+	startedAt := time.Now().UTC()
+
 	jiraConfig := config.Get().Clients.Jira
 	jiraClient, err := jira_client.NewAtlassianJiraClient(jiraConfig.URL, jiraConfig.User, jiraConfig.Token)
 	if err != nil {
@@ -63,7 +66,13 @@ func runLightwellVulnerabilitySync(ctx context.Context) (lightwellsync.SyncSumma
 	if warning != "" {
 		summary.Warnings = append([]string{warning}, summary.Warnings...)
 	}
-	return summary, err
+	if err != nil {
+		return summary, err
+	}
+	if err := daos.LightwellVulnerability.RecordSuccessfulSync(ctx, startedAt); err != nil {
+		return summary, err
+	}
+	return summary, nil
 }
 
 func publicationPackageVerifier(daos *dao.DaoRegistry) (lightwellsync.PublicationPackageVerifier, func(), string) {

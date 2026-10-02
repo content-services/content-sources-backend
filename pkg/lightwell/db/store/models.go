@@ -43,6 +43,11 @@ type LightwellAdvisoryRelease struct {
 	RhlwHotfix     int32     `json:"rhlw_hotfix"`
 }
 
+type LightwellBeaconSync struct {
+	ID              bool      `json:"id"`
+	LastProcessedAt time.Time `json:"last_processed_at"`
+}
+
 type LightwellPackage struct {
 	Uuid                        uuid.UUID `json:"uuid"`
 	CreatedAt                   time.Time `json:"created_at"`

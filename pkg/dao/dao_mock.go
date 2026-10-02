@@ -10522,6 +10522,64 @@ func (_c *MockLightwellVulnerabilityDao_ListLtwlsuptTicketIds_Call) RunAndReturn
 	return _c
 }
 
+// RecordSuccessfulSync provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) RecordSuccessfulSync(ctx context.Context, at time.Time) error {
+	ret := _mock.Called(ctx, at)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RecordSuccessfulSync")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, time.Time) error); ok {
+		r0 = returnFunc(ctx, at)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RecordSuccessfulSync'
+type MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call struct {
+	*mock.Call
+}
+
+// RecordSuccessfulSync is a helper method to define mock.On call
+//   - ctx context.Context
+//   - at time.Time
+func (_e *MockLightwellVulnerabilityDao_Expecter) RecordSuccessfulSync(ctx interface{}, at interface{}) *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call {
+	return &MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call{Call: _e.mock.On("RecordSuccessfulSync", ctx, at)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call) Run(run func(ctx context.Context, at time.Time)) *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 time.Time
+		if args[1] != nil {
+			arg1 = args[1].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call) Return(err error) *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call) RunAndReturn(run func(ctx context.Context, at time.Time) error) *MockLightwellVulnerabilityDao_RecordSuccessfulSync_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Save provides a mock function for the type MockLightwellVulnerabilityDao
 func (_mock *MockLightwellVulnerabilityDao) Save(ctx context.Context, input LightwellVulnerabilityInput) (LightwellVulnerabilitySaveOutcome, error) {
 	ret := _mock.Called(ctx, input)
