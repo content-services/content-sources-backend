@@ -125,16 +125,18 @@ func processOSVForEntry(
 		}
 	}
 
-	return sendAdvisoryNotifications(ctx, daoReg, logger, repoConfigUUID, entry.Name)
+	return sendAdvisoryNotifications(ctx, daoReg, httpClient, logger, repoConfigUUID, entry)
 }
 
 func sendAdvisoryNotifications(
 	ctx context.Context,
 	daoReg *dao.DaoRegistry,
+	httpClient *http.Client,
 	logger zerolog.Logger,
 	repoConfigUUID string,
-	repoName string,
+	entry external_repos.LightwellAllowlistEntry,
 ) error {
+	repoName := entry.Name
 	if !config.Get().Features.LightwellNotifications.Enabled {
 		logger.Debug().Msg("Lightwell notifications feature is disabled, skipping notifications")
 		return nil
@@ -164,7 +166,19 @@ func sendAdvisoryNotifications(
 					ReferenceURLs: a.ReferenceURLs,
 				}
 			}
-			bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs, nil)
+			checksumRequests := buildChecksumRequests(bridgeInputs)
+			contentBaseURL := buildContentBaseURL(entry)
+			checksums := event.FetchArtifactChecksums(
+				ctx, httpClient, contentBaseURL, entry.Type,
+				checksumRequests,
+				config.Get().Clients.Lightwell.Username,
+				config.Get().Clients.Lightwell.Password,
+			)
+			var opts *event.NotificationBuildOptions
+			if len(checksums) > 0 {
+				opts = &event.NotificationBuildOptions{ArtifactChecksums: checksums}
+			}
+			bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs, opts)
 			if eventErr := event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, eventType, bridgeEvents); eventErr == nil {
 				if err := daoReg.LightwellAdvisory.MarkAsNotified(ctx, repoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified); err != nil {
 					logger.Error().Err(err).Msg("Error marking bridge advisories as notified")
@@ -306,6 +320,37 @@ func buildAdvisoryInputs(
 		}
 	}
 	return advisories, updated
+}
+
+func buildChecksumRequests(inputs []event.LightwellNotificationInput) []event.ArtifactChecksumRequest {
+	seen := make(map[string]struct{})
+	var requests []event.ArtifactChecksumRequest
+	for _, input := range inputs {
+		for _, v := range input.FixedVersions {
+			key := input.PackageName + "@" + v
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			requests = append(requests, event.ArtifactChecksumRequest{
+				PackageName: input.PackageName,
+				Version:     v,
+			})
+		}
+	}
+	return requests
+}
+
+func buildContentBaseURL(entry external_repos.LightwellAllowlistEntry) string {
+	hostname := config.Get().Clients.Pulp.LightwellContentOrigin
+	if hostname == "" {
+		hostname = config.Get().Clients.Pulp.ContentOrigin
+	}
+	base, err := url.JoinPath(hostname, config.Get().Clients.Pulp.ContentPathPrefix, entry.BasePath)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimRight(base, "/")
 }
 
 func httpGet(ctx context.Context, client *http.Client, reqURL string) ([]byte, error) {
