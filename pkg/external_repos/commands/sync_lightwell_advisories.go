@@ -164,7 +164,7 @@ func sendAdvisoryNotifications(
 					ReferenceURLs: a.ReferenceURLs,
 				}
 			}
-			bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs)
+			bridgeEvents := event.BuildLightwellNotificationEvents(repoName, bridgeInputs, nil)
 			if eventErr := event.SendLightwellAdvisoryCreatedEvent(event.LightwellAdvisoryCreated, eventType, bridgeEvents); eventErr == nil {
 				if err := daoReg.LightwellAdvisory.MarkAsNotified(ctx, repoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified); err != nil {
 					logger.Error().Err(err).Msg("Error marking bridge advisories as notified")
@@ -207,7 +207,7 @@ func sendAdvisoryNotifications(
 			}
 		}
 
-		events := event.BuildLightwellNotificationEvents(repoName, inputs)
+		events := event.BuildLightwellNotificationEvents(repoName, inputs, nil)
 		severity := event.MaximumSeverity(inputs)
 
 		if err := event.SendLightwellNotification(orgID, eventType, severity, events); err != nil {

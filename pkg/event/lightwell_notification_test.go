@@ -104,7 +104,7 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 	}
 
 	repoName := "lightwell/java/remediated"
-	events := BuildLightwellNotificationEvents(repoName, inputs)
+	events := BuildLightwellNotificationEvents(repoName, inputs, nil)
 	require.Len(t, events, 2)
 
 	// Index by package name to avoid depending on map iteration order
@@ -154,7 +154,7 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 }
 
 func TestBuildLightwellNotificationEventsEmpty(t *testing.T) {
-	events := BuildLightwellNotificationEvents("lightwell/java/remediated", nil)
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", nil, nil)
 	assert.Empty(t, events)
 }
 
@@ -168,7 +168,7 @@ func TestBuildLightwellNotificationEventsMetadata(t *testing.T) {
 		},
 	}
 
-	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs)
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, nil)
 	require.Len(t, events, 1)
 	assert.NotNil(t, events[0].Metadata)
 	assert.Empty(t, events[0].Metadata)
@@ -182,6 +182,50 @@ func TestLightwellPackageLinkJavaMaven(t *testing.T) {
 func TestLightwellPackageLinkNoColon(t *testing.T) {
 	link := LightwellPackageLink("lightwell/python/remediated", "requests")
 	assert.True(t, strings.HasSuffix(link, "/lightwell/python-remediated/requests"))
+}
+
+func TestBuildLightwellNotificationEventsWithChecksums(t *testing.T) {
+	inputs := []LightwellNotificationInput{
+		{
+			PackageName:   "org.example:lib-a",
+			AdvisoryID:    "CVE-2026-0001",
+			Severity:      "9.8",
+			FixedVersions: []string{"1.0.1.rhlw-00001"},
+		},
+	}
+
+	checksums := map[string]map[string]string{
+		"1.0.1.rhlw-00001": {"lib-a-1.0.1.rhlw-00001.jar": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
+	}
+	opts := &NotificationBuildOptions{ArtifactChecksums: checksums}
+
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, opts)
+	require.Len(t, events, 1)
+
+	payload, ok := events[0].Payload.(LightwellPackagePayload)
+	require.True(t, ok)
+	require.Len(t, payload.Releases, 1)
+	assert.Equal(t, "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+		payload.Releases[0].ArtifactChecksums["lib-a-1.0.1.rhlw-00001.jar"])
+}
+
+func TestBuildLightwellNotificationEventsNilOptsOmitsChecksums(t *testing.T) {
+	inputs := []LightwellNotificationInput{
+		{
+			PackageName:   "org.example:lib-a",
+			AdvisoryID:    "CVE-2026-0001",
+			Severity:      "9.8",
+			FixedVersions: []string{"1.0.1"},
+		},
+	}
+
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, nil)
+	require.Len(t, events, 1)
+
+	payload, ok := events[0].Payload.(LightwellPackagePayload)
+	require.True(t, ok)
+	require.Len(t, payload.Releases, 1)
+	assert.Nil(t, payload.Releases[0].ArtifactChecksums)
 }
 
 func TestLightwellReleasePayloadArtifactChecksumsSerialize(t *testing.T) {
