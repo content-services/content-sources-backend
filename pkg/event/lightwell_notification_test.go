@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -103,7 +104,7 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 	}
 
 	repoName := "lightwell/java/remediated"
-	events := BuildLightwellNotificationEvents(repoName, inputs)
+	events := BuildLightwellNotificationEvents(repoName, inputs, nil)
 	require.Len(t, events, 2)
 
 	// Index by package name to avoid depending on map iteration order
@@ -153,7 +154,7 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 }
 
 func TestBuildLightwellNotificationEventsEmpty(t *testing.T) {
-	events := BuildLightwellNotificationEvents("lightwell/java/remediated", nil)
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", nil, nil)
 	assert.Empty(t, events)
 }
 
@@ -167,7 +168,7 @@ func TestBuildLightwellNotificationEventsMetadata(t *testing.T) {
 		},
 	}
 
-	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs)
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, nil)
 	require.Len(t, events, 1)
 	assert.NotNil(t, events[0].Metadata)
 	assert.Empty(t, events[0].Metadata)
@@ -181,4 +182,77 @@ func TestLightwellPackageLinkJavaMaven(t *testing.T) {
 func TestLightwellPackageLinkNoColon(t *testing.T) {
 	link := LightwellPackageLink("lightwell/python/remediated", "requests")
 	assert.True(t, strings.HasSuffix(link, "/lightwell/python-remediated/requests"))
+}
+
+func TestBuildLightwellNotificationEventsWithChecksums(t *testing.T) {
+	inputs := []LightwellNotificationInput{
+		{
+			PackageName:   "org.example:lib-a",
+			AdvisoryID:    "CVE-2026-0001",
+			Severity:      "9.8",
+			FixedVersions: []string{"1.0.1.rhlw-00001"},
+		},
+	}
+
+	checksums := map[string]map[string]string{
+		"1.0.1.rhlw-00001": {"lib-a-1.0.1.rhlw-00001.jar": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
+	}
+	opts := &NotificationBuildOptions{ArtifactChecksums: checksums}
+
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, opts)
+	require.Len(t, events, 1)
+
+	payload, ok := events[0].Payload.(LightwellPackagePayload)
+	require.True(t, ok)
+	require.Len(t, payload.Releases, 1)
+	assert.Equal(t, "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+		payload.Releases[0].ArtifactChecksums["lib-a-1.0.1.rhlw-00001.jar"])
+}
+
+func TestBuildLightwellNotificationEventsNilOptsOmitsChecksums(t *testing.T) {
+	inputs := []LightwellNotificationInput{
+		{
+			PackageName:   "org.example:lib-a",
+			AdvisoryID:    "CVE-2026-0001",
+			Severity:      "9.8",
+			FixedVersions: []string{"1.0.1"},
+		},
+	}
+
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, nil)
+	require.Len(t, events, 1)
+
+	payload, ok := events[0].Payload.(LightwellPackagePayload)
+	require.True(t, ok)
+	require.Len(t, payload.Releases, 1)
+	assert.Nil(t, payload.Releases[0].ArtifactChecksums)
+}
+
+func TestLightwellReleasePayloadArtifactChecksumsSerialize(t *testing.T) {
+	payload := LightwellReleasePayload{
+		RelatedCVE:   []LightwellCVEPayload{{CVE: "CVE-2026-0001", Severity: "critical", URL: "https://example.com"}},
+		ReleaseNames: []LightwellReleaseName{{Name: "1.0.1.rhlw-00001"}},
+		ArtifactChecksums: map[string]string{
+			"lib-a-1.0.1.rhlw-00001.jar": "c8f6dc3b2e92d7912f5e7b381085f5b30be378b4886367c4cad7358022512c47",
+		},
+	}
+	data, err := json.Marshal(payload)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"artifact_checksums"`)
+	assert.Contains(t, string(data), "c8f6dc3b2e92d7912f5e7b381085f5b30be378b4886367c4cad7358022512c47")
+}
+
+func TestLightwellReleasePayloadArtifactChecksumsOmitEmpty(t *testing.T) {
+	payload := LightwellReleasePayload{
+		RelatedCVE:   []LightwellCVEPayload{{CVE: "CVE-2026-0001", Severity: "critical", URL: "https://example.com"}},
+		ReleaseNames: []LightwellReleaseName{{Name: "1.0.1"}},
+	}
+	data, err := json.Marshal(payload)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "artifact_checksums")
+
+	payload.ArtifactChecksums = map[string]string{}
+	data, err = json.Marshal(payload)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "artifact_checksums")
 }
