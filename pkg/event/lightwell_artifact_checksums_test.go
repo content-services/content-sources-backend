@@ -19,7 +19,7 @@ func TestFetchArtifactChecksumsJava(t *testing.T) {
 			http.NotFound(w, r)
 			return
 		}
-		w.Write([]byte(testSHA))
+		_, _ = w.Write([]byte(testSHA))
 	}))
 	defer srv.Close()
 
@@ -41,7 +41,7 @@ func TestFetchArtifactChecksumsDeduplicatesVersions(t *testing.T) {
 	fetchCount := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fetchCount++
-		w.Write([]byte("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"))
+		_, _ = w.Write([]byte("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"))
 	}))
 	defer srv.Close()
 
@@ -76,7 +76,7 @@ func TestFetchArtifactChecksums404(t *testing.T) {
 
 func TestFetchArtifactChecksumsInvalidHex(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("not-a-valid-sha256"))
+		_, _ = w.Write([]byte("not-a-valid-sha256"))
 	}))
 	defer srv.Close()
 
@@ -109,7 +109,7 @@ func TestFetchArtifactChecksumsBasicAuth(t *testing.T) {
 	var receivedUser, receivedPass string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedUser, receivedPass, _ = r.BasicAuth()
-		w.Write([]byte("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"))
+		_, _ = w.Write([]byte("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"))
 	}))
 	defer srv.Close()
 
@@ -129,7 +129,7 @@ func TestFetchArtifactChecksumsBasicAuth(t *testing.T) {
 func TestFetchArtifactChecksumsTrimsWhitespace(t *testing.T) {
 	const testSHA = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("  " + testSHA + "\n"))
+		_, _ = w.Write([]byte("  " + testSHA + "\n"))
 	}))
 	defer srv.Close()
 
