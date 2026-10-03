@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -181,4 +182,33 @@ func TestLightwellPackageLinkJavaMaven(t *testing.T) {
 func TestLightwellPackageLinkNoColon(t *testing.T) {
 	link := LightwellPackageLink("lightwell/python/remediated", "requests")
 	assert.True(t, strings.HasSuffix(link, "/lightwell/python-remediated/requests"))
+}
+
+func TestLightwellReleasePayloadArtifactChecksumsSerialize(t *testing.T) {
+	payload := LightwellReleasePayload{
+		RelatedCVE:   []LightwellCVEPayload{{CVE: "CVE-2026-0001", Severity: "critical", URL: "https://example.com"}},
+		ReleaseNames: []LightwellReleaseName{{Name: "1.0.1.rhlw-00001"}},
+		ArtifactChecksums: map[string]string{
+			"lib-a-1.0.1.rhlw-00001.jar": "c8f6dc3b2e92d7912f5e7b381085f5b30be378b4886367c4cad7358022512c47",
+		},
+	}
+	data, err := json.Marshal(payload)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), `"artifact_checksums"`)
+	assert.Contains(t, string(data), "c8f6dc3b2e92d7912f5e7b381085f5b30be378b4886367c4cad7358022512c47")
+}
+
+func TestLightwellReleasePayloadArtifactChecksumsOmitEmpty(t *testing.T) {
+	payload := LightwellReleasePayload{
+		RelatedCVE:   []LightwellCVEPayload{{CVE: "CVE-2026-0001", Severity: "critical", URL: "https://example.com"}},
+		ReleaseNames: []LightwellReleaseName{{Name: "1.0.1"}},
+	}
+	data, err := json.Marshal(payload)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "artifact_checksums")
+
+	payload.ArtifactChecksums = map[string]string{}
+	data, err = json.Marshal(payload)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "artifact_checksums")
 }
