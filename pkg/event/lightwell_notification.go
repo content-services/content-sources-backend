@@ -72,8 +72,9 @@ type LightwellPackagePayload struct {
 }
 
 type LightwellReleasePayload struct {
-	RelatedCVE   []LightwellCVEPayload  `json:"related_cve"`
-	ReleaseNames []LightwellReleaseName `json:"release_names"`
+	RelatedCVE        []LightwellCVEPayload  `json:"related_cve"`
+	ReleaseNames      []LightwellReleaseName `json:"release_names"`
+	ArtifactChecksums map[string]string      `json:"artifact_checksums,omitempty"`
 }
 
 type LightwellCVEPayload struct {
