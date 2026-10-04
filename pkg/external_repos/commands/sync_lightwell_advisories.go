@@ -327,7 +327,7 @@ func buildChecksumRequests(inputs []event.LightwellNotificationInput) []event.Ar
 	var requests []event.ArtifactChecksumRequest
 	for _, input := range inputs {
 		for _, v := range input.FixedVersions {
-			key := input.PackageName + "@" + v
+			key := event.ArtifactChecksumKey(input.PackageName, v)
 			if _, ok := seen[key]; ok {
 				continue
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,8 +34,9 @@ func TestFetchArtifactChecksumsJava(t *testing.T) {
 		"maven", items, "", "",
 	)
 
-	require.Contains(t, result, "5.3.18.rhlw-00003")
-	assert.Equal(t, testSHA, result["5.3.18.rhlw-00003"]["spring-core-5.3.18.rhlw-00003.jar"])
+	key := ArtifactChecksumKey("org.springframework:spring-core", "5.3.18.rhlw-00003")
+	require.Contains(t, result, key)
+	assert.Equal(t, testSHA, result[key]["spring-core-5.3.18.rhlw-00003.jar"])
 }
 
 func TestFetchArtifactChecksumsDeduplicatesVersions(t *testing.T) {
@@ -142,8 +144,45 @@ func TestFetchArtifactChecksumsTrimsWhitespace(t *testing.T) {
 		srv.URL+"/repo", "maven", items, "", "",
 	)
 
-	require.Contains(t, result, "1.0.0")
-	assert.Equal(t, testSHA, result["1.0.0"]["lib-a-1.0.0.jar"])
+	key := ArtifactChecksumKey("org.example:lib-a", "1.0.0")
+	require.Contains(t, result, key)
+	assert.Equal(t, testSHA, result[key]["lib-a-1.0.0.jar"])
+}
+
+func TestFetchArtifactChecksumsDistinctPackagesSameVersion(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Return a checksum derived from the artifact name so each package's
+		// sidecar is distinguishable.
+		if strings.Contains(r.URL.Path, "lib-a") {
+			_, _ = w.Write([]byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+			return
+		}
+		if strings.Contains(r.URL.Path, "lib-b") {
+			_, _ = w.Write([]byte("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	items := []ArtifactChecksumRequest{
+		{PackageName: "org.example:lib-a", Version: "1.0.0"},
+		{PackageName: "org.example:lib-b", Version: "1.0.0"},
+	}
+
+	result := FetchArtifactChecksums(
+		context.Background(), srv.Client(),
+		srv.URL+"/repo", "maven", items, "", "",
+	)
+
+	keyA := ArtifactChecksumKey("org.example:lib-a", "1.0.0")
+	keyB := ArtifactChecksumKey("org.example:lib-b", "1.0.0")
+	require.Contains(t, result, keyA)
+	require.Contains(t, result, keyB)
+	assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		result[keyA]["lib-a-1.0.0.jar"])
+	assert.Equal(t, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		result[keyB]["lib-b-1.0.0.jar"])
 }
 
 func TestMavenSidecarURL(t *testing.T) {

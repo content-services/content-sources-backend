@@ -147,7 +147,8 @@ func enrichBridgeEventsWithChecksums(ctx context.Context, events []event.Notific
 				for j, rel := range payload.Releases {
 					merged := make(map[string]string)
 					for _, rn := range rel.ReleaseNames {
-						for filename, sha := range checksums[rn.Name] {
+						key := event.ArtifactChecksumKey(payload.PackageName, rn.Name)
+						for filename, sha := range checksums[key] {
 							merged[filename] = sha
 						}
 					}
