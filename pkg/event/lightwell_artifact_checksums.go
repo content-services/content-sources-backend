@@ -21,11 +21,18 @@ type ArtifactChecksumRequest struct {
 	Version     string // e.g. "1.0.1.rhlw-00001"
 }
 
+// ArtifactChecksumKey builds the map key used to look up a fetched checksum.
+// Checksums are scoped by both package and version because different packages
+// can share a version string, and each package produces its own artifact.
+func ArtifactChecksumKey(packageName, version string) string {
+	return packageName + "@" + version
+}
+
 // FetchArtifactChecksums fetches .sha256 sidecar files from the Pulp content
-// server for each request. Returns a map: version → (filename → sha256).
-// Errors for individual artifacts are logged as warnings and omitted from the
-// result. Only Java (Maven) repositories are supported; Python repositories
-// log a warning and return an empty map.
+// server for each request. Returns a map: ArtifactChecksumKey(package, version)
+// → (filename → sha256). Errors for individual artifacts are logged as warnings
+// and omitted from the result. Only Java (Maven) repositories are supported;
+// Python repositories log a warning and return an empty map.
 func FetchArtifactChecksums(
 	ctx context.Context,
 	httpClient *http.Client,
@@ -45,10 +52,11 @@ func FetchArtifactChecksums(
 	result := make(map[string]map[string]string, len(items))
 	seen := make(map[string]struct{})
 	for _, item := range items {
-		if _, ok := seen[item.Version]; ok {
+		key := ArtifactChecksumKey(item.PackageName, item.Version)
+		if _, ok := seen[key]; ok {
 			continue
 		}
-		seen[item.Version] = struct{}{}
+		seen[key] = struct{}{}
 
 		filename, sidecarURL, err := mavenSidecarURL(contentBaseURL, item.PackageName, item.Version)
 		if err != nil {
@@ -69,7 +77,7 @@ func FetchArtifactChecksums(
 			continue
 		}
 
-		result[item.Version] = map[string]string{filename: sha}
+		result[key] = map[string]string{filename: sha}
 	}
 
 	return result

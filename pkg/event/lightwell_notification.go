@@ -90,7 +90,7 @@ type LightwellReleaseName struct {
 // NotificationBuildOptions carries optional data for enriching notification
 // events. Pass nil to omit all optional enrichment.
 type NotificationBuildOptions struct {
-	// ArtifactChecksums maps version → (filename → sha256).
+	// ArtifactChecksums maps ArtifactChecksumKey(package, version) → (filename → sha256).
 	// When non-nil, the builder attaches matching checksums to each release.
 	ArtifactChecksums map[string]map[string]string
 }
@@ -138,7 +138,8 @@ func buildReleases(inputs []LightwellNotificationInput, opts *NotificationBuildO
 		if opts != nil && opts.ArtifactChecksums != nil {
 			merged := make(map[string]string)
 			for _, v := range group[0].FixedVersions {
-				for filename, sha := range opts.ArtifactChecksums[v] {
+				key := ArtifactChecksumKey(group[0].PackageName, v)
+				for filename, sha := range opts.ArtifactChecksums[key] {
 					merged[filename] = sha
 				}
 			}

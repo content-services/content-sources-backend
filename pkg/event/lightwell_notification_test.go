@@ -195,7 +195,7 @@ func TestBuildLightwellNotificationEventsWithChecksums(t *testing.T) {
 	}
 
 	checksums := map[string]map[string]string{
-		"1.0.1.rhlw-00001": {"lib-a-1.0.1.rhlw-00001.jar": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
+		ArtifactChecksumKey("org.example:lib-a", "1.0.1.rhlw-00001"): {"lib-a-1.0.1.rhlw-00001.jar": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
 	}
 	opts := &NotificationBuildOptions{ArtifactChecksums: checksums}
 
@@ -207,6 +207,52 @@ func TestBuildLightwellNotificationEventsWithChecksums(t *testing.T) {
 	require.Len(t, payload.Releases, 1)
 	assert.Equal(t, "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
 		payload.Releases[0].ArtifactChecksums["lib-a-1.0.1.rhlw-00001.jar"])
+}
+
+// TestBuildLightwellNotificationEventsChecksumsScopedByPackage guards against
+// cross-package collisions: two packages sharing a version string must each get
+// their own artifact's checksum, never the other package's.
+func TestBuildLightwellNotificationEventsChecksumsScopedByPackage(t *testing.T) {
+	inputs := []LightwellNotificationInput{
+		{
+			PackageName:   "org.example:lib-a",
+			AdvisoryID:    "CVE-2026-0001",
+			Severity:      "9.8",
+			FixedVersions: []string{"1.0.0"},
+		},
+		{
+			PackageName:   "org.example:lib-b",
+			AdvisoryID:    "CVE-2026-0002",
+			Severity:      "9.8",
+			FixedVersions: []string{"1.0.0"},
+		},
+	}
+
+	const shaA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	const shaB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	checksums := map[string]map[string]string{
+		ArtifactChecksumKey("org.example:lib-a", "1.0.0"): {"lib-a-1.0.0.jar": shaA},
+		ArtifactChecksumKey("org.example:lib-b", "1.0.0"): {"lib-b-1.0.0.jar": shaB},
+	}
+	opts := &NotificationBuildOptions{ArtifactChecksums: checksums}
+
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, opts)
+	require.Len(t, events, 2)
+
+	byPackage := make(map[string]LightwellPackagePayload)
+	for _, ev := range events {
+		p, ok := ev.Payload.(LightwellPackagePayload)
+		require.True(t, ok)
+		byPackage[p.PackageName] = p
+	}
+
+	a := byPackage["org.example:lib-a"]
+	require.Len(t, a.Releases, 1)
+	assert.Equal(t, map[string]string{"lib-a-1.0.0.jar": shaA}, a.Releases[0].ArtifactChecksums)
+
+	b := byPackage["org.example:lib-b"]
+	require.Len(t, b.Releases, 1)
+	assert.Equal(t, map[string]string{"lib-b-1.0.0.jar": shaB}, b.Releases[0].ArtifactChecksums)
 }
 
 func TestBuildLightwellNotificationEventsNilOptsOmitsChecksums(t *testing.T) {
