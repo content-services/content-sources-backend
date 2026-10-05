@@ -1,7 +1,7 @@
 # https://docs.docker.com/compose/compose-file/compose-file-v3/
 services:
   postgres-content:
-    image: "docker.io/library/postgres:16"
+    image: "docker.io/library/postgres:18"
     pull_policy: always
     ports:
       - ${CONTENT_DATABASE_PORT:-5433}:5432
@@ -14,7 +14,7 @@ services:
       POSTGRES_HOST_AUTH_METHOD: 'scram-sha-256'
     volumes:
         - ../compose_files/postgres/init.d/:/docker-entrypoint-initdb.d:z
-        - database:/var/lib/postgresql/data/
+        - database:/var/lib/postgresql
     healthcheck:
       test: pg_isready
       interval: 5s
