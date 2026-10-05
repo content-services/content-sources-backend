@@ -6,6 +6,7 @@ import (
 	lwdocs "github.com/content-services/content-sources-backend/api/lightwell"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -48,6 +49,15 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 
 	RegisterLightwellRepositoryRoutes(group, daoReg)
 	RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
+
+	if config.TermsServiceConfigured() {
+		var tsClient terms_service_client.TermsServiceClient
+		tsClient, err = terms_service_client.NewTermsServiceClient()
+		if err != nil {
+			panic(err)
+		}
+		RegisterLightwellTermsRoutes(group, &tsClient)
+	}
 
 	pulpClient := pulp_client.GetPulpClientWithDomain("")
 	if config.Tang == nil {

@@ -166,6 +166,18 @@ func CheckLightwellBeaconAccessible(ctx context.Context) (err error) {
 	}
 }
 
+func CheckLightwellTermsAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellTerms.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot check Lightwell terms",
+			"Lightwell Terms feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellTerms) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot check Lightwell terms",
+			"Neither the user nor account is allowed.")
+	}
+}
+
 func CheckLightwellLensAccessible(ctx context.Context, fsClient feature_service_client.FeatureServiceClient) (err error) {
 	feature := config.Get().Features.LightwellLens
 	if !feature.Enabled {
