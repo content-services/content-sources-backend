@@ -75,6 +75,7 @@ type Clients struct {
 	Redis          Redis          `mapstructure:"redis"`
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
 	FeatureService FeatureService `mapstructure:"feature_service"`
+	TermsService   TermsService   `mapstructure:"terms_service"`
 	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
 	Roadmap        Roadmap        `mapstructure:"roadmap"`
 	Jira           Jira           `mapstructure:"jira"`
@@ -110,6 +111,7 @@ type FeatureSet struct {
 	LightwellBeacon                       Feature `mapstructure:"lightwell_beacon"`
 	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
+	LightwellTerms                        Feature `mapstructure:"lightwell_terms"`
 	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
 }
 
@@ -170,6 +172,16 @@ type Candlepin struct {
 
 type FeatureService struct {
 	Server         string
+	ClientCert     string `mapstructure:"client_cert"`
+	ClientKey      string `mapstructure:"client_key"`
+	CACert         string `mapstructure:"ca_cert"`
+	ClientCertPath string `mapstructure:"client_cert_path"`
+	ClientKeyPath  string `mapstructure:"client_key_path"`
+	CACertPath     string `mapstructure:"ca_cert_path"`
+}
+
+type TermsService struct {
+	Server         string `mapstructure:"server"`
 	ClientCert     string `mapstructure:"client_cert"`
 	ClientKey      string `mapstructure:"client_key"`
 	CACert         string `mapstructure:"ca_cert"`
@@ -461,6 +473,14 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.feature_service.client_key_path", "")
 	v.SetDefault("clients.feature_service.ca_cert_path", "")
 
+	v.SetDefault("clients.terms_service.server", "")
+	v.SetDefault("clients.terms_service.client_cert", "")
+	v.SetDefault("clients.terms_service.client_key", "")
+	v.SetDefault("clients.terms_service.ca_cert", "")
+	v.SetDefault("clients.terms_service.client_cert_path", "")
+	v.SetDefault("clients.terms_service.client_key_path", "")
+	v.SetDefault("clients.terms_service.ca_cert_path", "")
+
 	v.SetDefault("clients.roadmap.server", "")
 	v.SetDefault("clients.roadmap.username", "")
 	v.SetDefault("clients.roadmap.password", "")
@@ -525,6 +545,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.lightwell_store_uploads.accounts", nil)
 	v.SetDefault("features.lightwell_store_uploads.organizations", nil)
 	v.SetDefault("features.lightwell_store_uploads.users", nil)
+	v.SetDefault("features.lightwell_terms.enabled", false)
+	v.SetDefault("features.lightwell_terms.accounts", nil)
+	v.SetDefault("features.lightwell_terms.organizations", nil)
+	v.SetDefault("features.lightwell_terms.users", nil)
 	v.SetDefault("features.admin_jfrog_upload.enabled", false)
 	v.SetDefault("features.admin_jfrog_upload.accounts", nil)
 	v.SetDefault("features.admin_jfrog_upload.organizations", nil)
@@ -783,6 +807,10 @@ func CandlepinConfigured() bool {
 
 func FeatureServiceConfigured() bool {
 	return Get().Clients.FeatureService.Server != ""
+}
+
+func TermsServiceConfigured() bool {
+	return Get().Clients.TermsService.Server != ""
 }
 
 func RoadmapConfigured() bool {
