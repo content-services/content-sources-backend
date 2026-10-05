@@ -673,6 +673,33 @@ const docTemplatelightwell = `{
                     }
                 }
             }
+        },
+        "/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Check if Lightwell terms acceptance is required",
+                "operationId": "getLightwellNetworkTermsRequired",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsRequiredResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1460,6 +1487,14 @@ const docTemplatelightwell = `{
                 "uuid": {
                     "description": "UUID of the object",
                     "type": "string"
+                }
+            }
+        },
+        "api.TermsRequiredResponse": {
+            "type": "object",
+            "properties": {
+                "required": {
+                    "type": "boolean"
                 }
             }
         },

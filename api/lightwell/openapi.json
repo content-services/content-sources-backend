@@ -788,6 +788,14 @@
                 },
                 "type": "object"
             },
+            "api.TermsRequiredResponse": {
+                "properties": {
+                    "required": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
             "errors.ErrorResponse": {
                 "properties": {
                     "errors": {
@@ -1651,6 +1659,38 @@
                     }
                 },
                 "summary": "Get Python Package Detail",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
+        "/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms.",
+                "operationId": "getLightwellNetworkTermsRequired",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TermsRequiredResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Check if Lightwell terms acceptance is required",
                 "tags": [
                     "lightwell"
                 ]
