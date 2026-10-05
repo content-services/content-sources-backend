@@ -1,7 +1,4 @@
----
-render_with_liquid: false
----
-
+{% raw %}
 # Lightwell Package Mirror Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -1844,3 +1841,4 @@ Expected: logs "Successfully imported lightwell packages"; `lightwell_packages`/
 git add -A
 git commit -m "chore: lint and verification fixes for lightwell package mirror"
 ```
+{% endraw %}
