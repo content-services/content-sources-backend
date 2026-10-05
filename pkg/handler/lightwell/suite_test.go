@@ -7,6 +7,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
@@ -23,6 +24,7 @@ type LightwellSuite struct {
 	tangClient *tangy.MockTangy
 	pulpClient *pulp_client.MockPulpClient
 	fsClient   *feature_service_client.MockFeatureServiceClient
+	tsClient   *terms_service_client.MockTermsServiceClient
 }
 
 func (s *LightwellSuite) SetupTest() {
@@ -30,6 +32,7 @@ func (s *LightwellSuite) SetupTest() {
 	s.tangClient = tangy.NewMockTangy(s.T())
 	s.pulpClient = pulp_client.NewMockPulpClient(s.T())
 	s.fsClient = feature_service_client.NewMockFeatureServiceClient(s.T())
+	s.tsClient = terms_service_client.NewMockTermsServiceClient(s.T())
 }
 
 // serveRouter sets up a router with all lightwell routes registered
@@ -44,6 +47,9 @@ func (s *LightwellSuite) serveRouter(req *http.Request) (int, []byte, error) {
 	RegisterLightwellRepositoryRoutes(pathPrefix, s.reg.ToDaoRegistry())
 	RegisterLightwellPackageRoutes(pathPrefix, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient, &fsClient)
 	RegisterLightwellAdvisoryRoutes(pathPrefix, s.reg.ToDaoRegistry(), &fsClient)
+
+	var tsClient terms_service_client.TermsServiceClient = s.tsClient
+	RegisterLightwellTermsRoutes(pathPrefix, &tsClient)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
