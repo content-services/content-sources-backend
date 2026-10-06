@@ -8060,8 +8060,17 @@ const docTemplate = `{
         "api.TermsRequiredResponse": {
             "type": "object",
             "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "required": {
                     "type": "boolean"
+                },
+                "site": {
+                    "type": "string"
                 }
             }
         },

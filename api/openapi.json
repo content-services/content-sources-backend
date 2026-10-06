@@ -2960,8 +2960,17 @@
             },
             "api.TermsRequiredResponse": {
                 "properties": {
+                    "events": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
                     "required": {
                         "type": "boolean"
+                    },
+                    "site": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
