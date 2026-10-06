@@ -34,6 +34,7 @@ SELECT
     v.embargo,
     v.duplicate,
     v.duplicate_of,
+    v.resolution_reason,
     ARRAY(
         SELECT t.ticket_id
         FROM lightwell_vulnerability_support_tickets t
@@ -99,14 +100,14 @@ WHERE vulnerability_key = sqlc.arg(vulnerability_key);
 INSERT INTO lightwell_vulnerabilities (
     uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,
     severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage,
-    language, complexity, submitted_date, last_updated, embargo, duplicate
+    language, complexity, submitted_date, last_updated, embargo, duplicate, resolution_reason
 ) VALUES (
     sqlc.arg(uuid), sqlc.arg(vulnerability_key), sqlc.arg(vulnerability_id), sqlc.narg(purl), sqlc.arg(component_name),
     sqlc.arg(component_version), COALESCE(sqlc.arg(published_versions)::text[], '{}'::text[]), sqlc.narg(title), sqlc.narg(cwe), sqlc.narg(description),
     sqlc.arg(severity), sqlc.narg(cvss), sqlc.narg(cvss_vector), sqlc.arg(exploit_tested),
     sqlc.arg(reproducer_included), sqlc.narg(customer_priority), sqlc.arg(stage),
     sqlc.narg(language), sqlc.arg(complexity), sqlc.arg(submitted_date), sqlc.arg(last_updated),
-    sqlc.arg(embargo), sqlc.arg(duplicate)
+    sqlc.arg(embargo), sqlc.arg(duplicate), sqlc.narg(resolution_reason)
 )
 ON CONFLICT (vulnerability_key) DO UPDATE SET
     vulnerability_id = EXCLUDED.vulnerability_id,
@@ -134,6 +135,7 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
     last_updated = EXCLUDED.last_updated,
     embargo = EXCLUDED.embargo,
     duplicate = EXCLUDED.duplicate,
+    resolution_reason = EXCLUDED.resolution_reason,
     updated_at = NOW()
 WHERE (
     lightwell_vulnerabilities.vulnerability_id, lightwell_vulnerabilities.purl,
@@ -146,7 +148,8 @@ WHERE (
     lightwell_vulnerabilities.customer_priority, lightwell_vulnerabilities.stage,
     lightwell_vulnerabilities.language, lightwell_vulnerabilities.complexity,
     lightwell_vulnerabilities.submitted_date, lightwell_vulnerabilities.last_updated,
-    lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate
+    lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate,
+    lightwell_vulnerabilities.resolution_reason
 ) IS DISTINCT FROM (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
     EXCLUDED.component_version, EXCLUDED.published_versions, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
@@ -158,7 +161,7 @@ WHERE (
         ELSE EXCLUDED.stage
     END,
     EXCLUDED.language, EXCLUDED.complexity, EXCLUDED.submitted_date, EXCLUDED.last_updated,
-    EXCLUDED.embargo, EXCLUDED.duplicate
+    EXCLUDED.embargo, EXCLUDED.duplicate, EXCLUDED.resolution_reason
 )
 RETURNING uuid, (xmax = 0) AS inserted;
 

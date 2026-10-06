@@ -90,14 +90,17 @@ pkg:maven/org.example/demo@1.0.0.rhlw-00001`)
 	nonValidation := breadcrumbJiraIssue(t, "LTWL-2", "In Progress", "Lightwell Fixed Versions: pkg:pypi/django@5.0")
 	discarded := breadcrumbJiraIssue(t, "LTWL-3", "Closed", "Lightwell Fixed Versions: pkg:pypi/demo@1.0.0")
 	discarded.Fields["resolution"] = json.RawMessage(`{"name":"Duplicate"}`)
+	closed := breadcrumbJiraIssue(t, "LTWL-4", "Closed", "Lightwell Fixed Versions: pkg:pypi/demo@3.0.0")
+	closed.Fields["resolution"] = json.RawMessage(`{"name":"Won't do"}`)
 
-	packages, byIssue := collectBreadcrumbPackages([]jira_client.JiraIssue{validation, nonValidation, discarded})
+	packages, byIssue := collectBreadcrumbPackages([]jira_client.JiraIssue{validation, nonValidation, discarded, closed})
 
 	expectedPackage := PublicationPackage{Ecosystem: "maven", Namespace: "org.example", Name: "demo"}
 	assert.Equal(t, map[PublicationPackage][]string{expectedPackage: {"1.0.0.rhlw-00001", "2.0.0-rhlw-00002"}}, packages)
 	assert.Len(t, byIssue["LTWL-1"], 2)
 	assert.NotContains(t, byIssue, "LTWL-2")
 	assert.NotContains(t, byIssue, "LTWL-3")
+	assert.NotContains(t, byIssue, "LTWL-4")
 }
 
 func jsonString(t *testing.T, value string) json.RawMessage {

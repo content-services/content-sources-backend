@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -290,6 +291,52 @@ func (suite *LightwellVulnerabilitiesSuite) TestListWithFiltersAndDuplicateOf() 
 	assert.Equal(suite.T(), int64(1), resp.Meta.Count)
 	assert.Equal(suite.T(), int64(0), resp.Meta.CriticalCount)
 	assert.Equal(suite.T(), int64(1), resp.Meta.StatusCounts["Validation"])
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListIncludesClosedResolutionReason() {
+	reason := "The package's license is not in the list of software licenses Lightwell will ship."
+	now := time.Date(2026, 8, 18, 0, 0, 0, 0, time.UTC)
+	rows := []api.LightwellVulnerabilityResponse{{
+		UUID:              "00000000-0000-4000-8000-000000000021",
+		VulnerabilityID:   "LWL-2026-4501",
+		ComponentName:     "lodash",
+		Package:           "lodash",
+		ComponentVersion:  "4.17.20",
+		Severity:          "Moderate",
+		Status:            "Unremediated",
+		ResolutionReason:  &reason,
+		Complexity:        "Standard",
+		SubmittedDate:     now,
+		LastUpdated:       now,
+		LtwlsuptTicketIDs: []string{},
+		PublishedVersions: []string{},
+	}}
+	opts := dao.ListLightwellVulnerabilitiesOptions{
+		CustomerID: "demo-customer-1",
+		Stages:     []string{"Unremediated"},
+		Limit:      100,
+	}
+	suite.reg.LightwellVulnerability.On("List", test.MockCtx(), opts).Return(
+		rows,
+		dao.LightwellVulnerabilityAggregates{TotalCount: 1},
+		[]dao.LightwellVulnerabilityStageCount{{Stage: "Unremediated", Count: 1}},
+		int64(1),
+		nil,
+	)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1&status=Unremediated", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellVulnerabilityCollectionResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	require.Len(suite.T(), resp.Data, 1)
+	assert.Equal(suite.T(), "Unremediated", resp.Data[0].Status)
+	require.NotNil(suite.T(), resp.Data[0].ResolutionReason)
+	assert.Equal(suite.T(), reason, *resp.Data[0].ResolutionReason)
+	assert.Contains(suite.T(), string(body), `"resolution_reason":"The package's license is not in the list of software licenses Lightwell will ship."`)
+	assert.Equal(suite.T(), int64(1), resp.Meta.StatusCounts["Unremediated"])
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListEmptyPublishedVersionsSerializesAsArray() {

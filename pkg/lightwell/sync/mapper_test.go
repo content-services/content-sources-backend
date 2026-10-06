@@ -114,13 +114,69 @@ func TestMapVulnerabilityRejectsMissingTimestamp(t *testing.T) {
 }
 
 func TestDiscardedResolution(t *testing.T) {
-	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Not a bug"}`)))
 	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Duplicate"}`)))
-	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Won't do"}`)))
-	assert.True(t, discardedResolution(json.RawMessage(`{"name":" won't do "}`)))
+	assert.True(t, discardedResolution(json.RawMessage(`{"name":" duplicate "}`)))
+	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Obsolete"}`)))
+	assert.False(t, discardedResolution(json.RawMessage(`{"name":"Not a bug"}`)))
+	assert.False(t, discardedResolution(json.RawMessage(`{"name":"Won't do"}`)))
 	assert.False(t, discardedResolution(json.RawMessage(`{"name":"Done"}`)))
 	assert.False(t, discardedResolution(json.RawMessage(`null`)))
 	assert.False(t, discardedResolution(nil))
+}
+
+func TestClosedResolutionStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		want string
+	}{
+		{name: "Won't do", want: "Unremediated"},
+		{name: "Won’t Do", want: "Unremediated"},
+		{name: "Not a bug", want: "Unremediated"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			raw, err := json.Marshal(map[string]string{"name": tt.name})
+			require.NoError(t, err)
+			got, ok := closedResolutionStatus(raw)
+			require.True(t, ok)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	for _, name := range []string{"Done", "Duplicate", "Obsolete", "Cannot reproduce", "Won't Fix"} {
+		_, ok := closedResolutionStatus(json.RawMessage(`{"name":"` + name + `"}`))
+		assert.False(t, ok, name)
+	}
+}
+
+func TestMapVulnerabilityStoresClosureSelection(t *testing.T) {
+	issue := validJiraIssue("LTWL-9")
+	issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+	issue.Fields["resolution"] = json.RawMessage(`{"name":"Won't Do"}`)
+	issue.Fields[fieldClosureReason] = json.RawMessage(`{"value":"Invalid License"}`)
+	issue.Fields["description"] = json.RawMessage(`"Resolution reason: this free text is not the reason"`)
+
+	vulnerability, err := mapVulnerability(issue)
+	require.NoError(t, err)
+	assert.Equal(t, "Unremediated", vulnerability.Stage)
+	require.NotNil(t, vulnerability.ResolutionReason)
+	assert.Equal(t, "Invalid License", *vulnerability.ResolutionReason)
+
+	issue.Fields["resolution"] = json.RawMessage(`{"name":"Not a Bug"}`)
+	issue.Fields[fieldVEXJustification] = json.RawMessage(`{"value":"Component not Present"}`)
+	vulnerability, err = mapVulnerability(issue)
+	require.NoError(t, err)
+	assert.Equal(t, "Unremediated", vulnerability.Stage)
+	require.NotNil(t, vulnerability.ResolutionReason)
+	assert.Equal(t, "Component not Present", *vulnerability.ResolutionReason)
+}
+
+func TestBeaconDiscardsInternalClosure(t *testing.T) {
+	fields := map[string]json.RawMessage{
+		"resolution":       json.RawMessage(`{"name":"Won't Do"}`),
+		fieldClosureReason: json.RawMessage(`{"value":"Not a Customer"}`),
+	}
+	assert.True(t, beaconDiscarded(fields))
 }
 
 func TestLanguagePrefersLabelOverPURL(t *testing.T) {

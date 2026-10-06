@@ -333,7 +333,7 @@ func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
 }
 
 func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
-	for _, name := range []string{"Not a bug", "Duplicate", "Won't do"} {
+	for _, name := range []string{"Duplicate", "Obsolete"} {
 		t.Run(name, func(t *testing.T) {
 			issue := validJiraIssue("LTWL-1")
 			issue.Fields["resolution"] = resolutionJSON(name)
@@ -345,6 +345,50 @@ func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
 			assert.Equal(t, SyncSummary{}, summary)
 			assert.Empty(t, store.saved)
 			assert.Equal(t, []string{"LTWL-1"}, store.deleted)
+		})
+	}
+}
+
+func TestIngestorSkipsInternalWontDoReason(t *testing.T) {
+	issue := validJiraIssue("LTWL-1")
+	issue.Fields["resolution"] = resolutionJSON("Won't Do")
+	issue.Fields[fieldClosureReason] = json.RawMessage(`{"value":"Not a Customer"}`)
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, SyncSummary{}, summary)
+	assert.Empty(t, store.saved)
+	assert.Equal(t, []string{"LTWL-1"}, store.deleted)
+}
+
+func TestIngestorSavesClosedResolutions(t *testing.T) {
+	for _, tt := range []struct {
+		resolution string
+		status     string
+		field      string
+		selection  string
+	}{
+		{resolution: "Won't do", status: "Unremediated", field: fieldClosureReason, selection: "Invalid License"},
+		{resolution: "Not a bug", status: "Unremediated", field: fieldVEXJustification, selection: "Component not Present"},
+	} {
+		t.Run(tt.selection, func(t *testing.T) {
+			issue := validJiraIssue("LTWL-1")
+			issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+			issue.Fields["resolution"] = resolutionJSON(tt.resolution)
+			issue.Fields[tt.field] = json.RawMessage(`{"value":"` + tt.selection + `"}`)
+			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+			summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, SyncSummary{Inserted: 1}, summary)
+			assert.Empty(t, store.deleted)
+			require.Len(t, store.saved, 1)
+			assert.Equal(t, tt.status, store.saved[0].Stage)
+			require.NotNil(t, store.saved[0].ResolutionReason)
+			assert.Equal(t, tt.selection, *store.saved[0].ResolutionReason)
 		})
 	}
 }

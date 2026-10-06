@@ -91,7 +91,8 @@ func collectBreadcrumbPackages(issues []jira_client.JiraIssue) (map[PublicationP
 	requested := make(map[publicationPackageVersion]struct{})
 	byIssue := make(map[string][]publicationPackageVersion)
 	for _, issue := range issues {
-		if discardedResolution(issue.Fields["resolution"]) || stage(issue.Fields["status"]) != "Validation" {
+		_, closed := closedResolutionStatus(issue.Fields["resolution"])
+		if beaconDiscarded(issue.Fields) || closed || stage(issue.Fields["status"]) != "Validation" {
 			continue
 		}
 		for _, item := range fixedVersionPackages(issue.Fields["description"]) {

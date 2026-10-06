@@ -27,6 +27,8 @@ var vulnerabilityFields = []string{
 	fieldSeverity,
 	fieldCVSS,
 	fieldEmbargo,
+	fieldClosureReason,
+	fieldVEXJustification,
 }
 
 type SyncSummary struct {
@@ -136,7 +138,7 @@ func (i *Ingestor) prefetchRelationships(ctx context.Context, vulnerabilities []
 
 	batchKeys := make(map[string]struct{})
 	for _, vulnerability := range vulnerabilities {
-		if discardedResolution(vulnerability.Fields["resolution"]) {
+		if beaconDiscarded(vulnerability.Fields) {
 			continue
 		}
 		for _, key := range linkedIssueKeys(vulnerability, "relates to") {
@@ -304,7 +306,7 @@ func (i *Ingestor) syncIssue(
 	confirmedVersions []string,
 	summary *SyncSummary,
 ) error {
-	if discardedResolution(issue.Fields["resolution"]) {
+	if beaconDiscarded(issue.Fields) {
 		return i.deleteDiscardedIssue(ctx, issue.Key, summary)
 	}
 
@@ -369,6 +371,7 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 		ReproducerIncluded: vulnerability.ReproducerIncluded,
 		CustomerPriority:   vulnerability.CustomerPriority,
 		Stage:              vulnerability.Stage,
+		ResolutionReason:   vulnerability.ResolutionReason,
 		Language:           vulnerability.Language,
 		Complexity:         vulnerability.Complexity,
 		SubmittedDate:      vulnerability.SubmittedDate,

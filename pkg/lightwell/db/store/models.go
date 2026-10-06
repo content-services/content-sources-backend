@@ -94,6 +94,7 @@ type LightwellVulnerability struct {
 	Embargo            bool      `json:"embargo"`
 	Duplicate          bool      `json:"duplicate"`
 	DuplicateOf        *string   `json:"duplicate_of"`
+	ResolutionReason   *string   `json:"resolution_reason"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
