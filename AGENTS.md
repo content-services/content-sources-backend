@@ -85,4 +85,5 @@ Generated files (`api/docs.go`, `api/openapi.json`, sqlc output in `pkg/lightwel
 ## Commit guidelines
 
 - PR titles should reference the tracking ticket: `<JIRA Number>: description`
+- Always include code and its corresponding tests in the same commit.
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
