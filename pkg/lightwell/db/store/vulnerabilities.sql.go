@@ -165,7 +165,7 @@ func (q *Queries) DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg Delet
 }
 
 const getVulnerabilityByKey = `-- name: GetVulnerabilityByKey :one
-SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, created_at, updated_at
+SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason, created_at, updated_at
 FROM lightwell_vulnerabilities
 WHERE vulnerability_key = $1
 `
@@ -198,6 +198,7 @@ func (q *Queries) GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey st
 		&i.Embargo,
 		&i.Duplicate,
 		&i.DuplicateOf,
+		&i.ResolutionReason,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -298,6 +299,7 @@ SELECT
     v.embargo,
     v.duplicate,
     v.duplicate_of,
+    v.resolution_reason,
     ARRAY(
         SELECT t.ticket_id
         FROM lightwell_vulnerability_support_tickets t
@@ -356,6 +358,7 @@ type ListVulnerabilitiesRow struct {
 	Embargo            bool      `json:"embargo"`
 	Duplicate          bool      `json:"duplicate"`
 	DuplicateOf        *string   `json:"duplicate_of"`
+	ResolutionReason   *string   `json:"resolution_reason"`
 	LtwlsuptTicketIds  []string  `json:"ltwlsupt_ticket_ids"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
@@ -404,6 +407,7 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 			&i.Embargo,
 			&i.Duplicate,
 			&i.DuplicateOf,
+			&i.ResolutionReason,
 			&i.LtwlsuptTicketIds,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -422,14 +426,14 @@ const upsertVulnerability = `-- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
     uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,
     severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage,
-    language, complexity, submitted_date, last_updated, embargo, duplicate
+    language, complexity, submitted_date, last_updated, embargo, duplicate, resolution_reason
 ) VALUES (
     $1, $2, $3, $4, $5,
     $6, COALESCE($7::text[], '{}'::text[]), $8, $9, $10,
     $11, $12, $13, $14,
     $15, $16, $17,
     $18, $19, $20, $21,
-    $22, $23
+    $22, $23, $24
 )
 ON CONFLICT (vulnerability_key) DO UPDATE SET
     vulnerability_id = EXCLUDED.vulnerability_id,
@@ -457,6 +461,7 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
     last_updated = EXCLUDED.last_updated,
     embargo = EXCLUDED.embargo,
     duplicate = EXCLUDED.duplicate,
+    resolution_reason = EXCLUDED.resolution_reason,
     updated_at = NOW()
 WHERE (
     lightwell_vulnerabilities.vulnerability_id, lightwell_vulnerabilities.purl,
@@ -469,7 +474,8 @@ WHERE (
     lightwell_vulnerabilities.customer_priority, lightwell_vulnerabilities.stage,
     lightwell_vulnerabilities.language, lightwell_vulnerabilities.complexity,
     lightwell_vulnerabilities.submitted_date, lightwell_vulnerabilities.last_updated,
-    lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate
+    lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate,
+    lightwell_vulnerabilities.resolution_reason
 ) IS DISTINCT FROM (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
     EXCLUDED.component_version, EXCLUDED.published_versions, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
@@ -481,7 +487,7 @@ WHERE (
         ELSE EXCLUDED.stage
     END,
     EXCLUDED.language, EXCLUDED.complexity, EXCLUDED.submitted_date, EXCLUDED.last_updated,
-    EXCLUDED.embargo, EXCLUDED.duplicate
+    EXCLUDED.embargo, EXCLUDED.duplicate, EXCLUDED.resolution_reason
 )
 RETURNING uuid, (xmax = 0) AS inserted
 `
@@ -510,6 +516,7 @@ type UpsertVulnerabilityParams struct {
 	LastUpdated        time.Time `json:"last_updated"`
 	Embargo            bool      `json:"embargo"`
 	Duplicate          bool      `json:"duplicate"`
+	ResolutionReason   *string   `json:"resolution_reason"`
 }
 
 type UpsertVulnerabilityRow struct {
@@ -542,6 +549,7 @@ func (q *Queries) UpsertVulnerability(ctx context.Context, arg UpsertVulnerabili
 		arg.LastUpdated,
 		arg.Embargo,
 		arg.Duplicate,
+		arg.ResolutionReason,
 	)
 	var i UpsertVulnerabilityRow
 	err := row.Scan(&i.Uuid, &i.Inserted)

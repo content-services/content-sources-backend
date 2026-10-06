@@ -5829,12 +5829,16 @@ const docTemplate = `{
                     "description": "Whether a reproducer is included",
                     "type": "boolean"
                 },
+                "resolution_reason": {
+                    "description": "Explanation when a vulnerability is closed without a shipped fix",
+                    "type": "string"
+                },
                 "severity": {
                     "description": "Severity (Critical, Important, Moderate, Low)",
                     "type": "string"
                 },
                 "status": {
-                    "description": "Workflow status",
+                    "description": "Workflow status. A closure without a shipped fix is Unremediated",
                     "type": "string"
                 },
                 "submitted_date": {

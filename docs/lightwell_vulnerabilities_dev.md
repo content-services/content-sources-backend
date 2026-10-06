@@ -54,6 +54,36 @@ With the API running, authenticated clients can call:
 
 `customer_id` is required on the list and `ltwlsupt-ticket-ids` endpoints. Filters (`severity`, `status`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo` and `duplicate` (OR). `search` requires at least 2 characters when provided.
 
+## Beacon status mapping
+
+Jira workflow status is stored as a Beacon status. A published fix promotes **Validation** to **Lightwell Network**. Once stored, Lightwell Network stays Lightwell Network if a later sync would only move it back to Validation.
+
+| Jira status | Stored as |
+| --- | --- |
+| New | Submitted |
+| Backlog | Classified |
+| To Do | Classified |
+| In Progress | Fix in Progress |
+| Review | Fix in Progress |
+| On Hold | Fix in Progress |
+| Verified | Validation |
+| Release Pending | Validation |
+| Released | Validation |
+| Closed | Validation |
+| Anything else | Submitted |
+
+Jira resolution can override that, or drop the issue. Won't Do and Not a Bug are stored as **Unremediated** with `resolution_reason` set to the explanation. The database keeps the Jira selection; the list API returns the explanation sentence. Those resolution names are not stored.
+
+| Jira resolution | Result |
+| --- | --- |
+| Done | Stored from the workflow status above. No explanation. |
+| Won't Do | Stored as Unremediated. Explanation comes from Lightwell Closure Reasoning Context. Selection **Not a Customer** is ignored and the issue is deleted. |
+| Not a Bug | Stored as Unremediated. Explanation comes from VEX Justification. |
+| Duplicate | Ignored. Deleted if it was stored before. |
+| Obsolete | Ignored. Deleted if it was stored before. |
+| Cannot Reproduce | Stored from the workflow status above. No explanation. |
+| Won't Fix | Stored from the workflow status above. No explanation. |
+
 ## Run tests
 
 Integration tests use the configured database and roll back per test:

@@ -19,11 +19,13 @@ import (
 )
 
 const (
-	fieldPURL     = "customfield_10632"
-	fieldCWE      = "customfield_10630"
-	fieldSeverity = "customfield_10840"
-	fieldCVSS     = "customfield_10859"
-	fieldEmbargo  = "customfield_10860"
+	fieldPURL             = "customfield_10632"
+	fieldCWE              = "customfield_10630"
+	fieldSeverity         = "customfield_10840"
+	fieldCVSS             = "customfield_10859"
+	fieldEmbargo          = "customfield_10860"
+	fieldClosureReason    = "customfield_10818" // Lightwell Closure Reasoning Context
+	fieldVEXJustification = "customfield_10873" // VEX Justification
 )
 
 var cveBackportPattern = regexp.MustCompile(`\bCVE-\d{4}-\d{4,}\b`)
@@ -45,6 +47,7 @@ type Vulnerability struct {
 	ReproducerIncluded bool
 	CustomerPriority   *string
 	Stage              string
+	ResolutionReason   *string
 	Language           *string
 	Complexity         string
 	SubmittedDate      time.Time
@@ -100,6 +103,12 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 
 	description := flattenADF(issue.Fields["description"])
 	customerPriority := descriptionValue(description, "customer priority")
+	workflowStage := stage(issue.Fields["status"])
+	var resolutionReason *string
+	if closed, ok := closedResolutionStatus(issue.Fields["resolution"]); ok {
+		workflowStage = closed
+		resolutionReason = optionalString(closureSelection(issue.Fields))
+	}
 	cvss, vector := parseCVSS(issue.Fields[fieldCVSS])
 	purl := packageURL(issue.Fields[fieldPURL], description)
 	var parsedPURL *utils.PURL
@@ -120,7 +129,8 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		CVSS:             cvss,
 		CVSSVector:       vector,
 		CustomerPriority: optionalString(customerPriority),
-		Stage:            stage(issue.Fields["status"]),
+		Stage:            workflowStage,
+		ResolutionReason: resolutionReason,
 		Language:         language(issue.Fields["labels"], parsedPURL),
 		Complexity:       "",
 		SubmittedDate:    created.UTC(),
@@ -328,23 +338,74 @@ func mapSeverityName(value string) string {
 }
 
 var discardedResolutions = map[string]struct{}{
-	"not a bug": {},
 	"duplicate": {},
-	"won't do":  {},
+	"obsolete":  {},
 }
 
-func discardedResolution(raw json.RawMessage) bool {
+// Customer closures are stored as Unremediated. The Jira resolution only selects which reason field to read.
+var closedResolutionStatuses = map[string]string{
+	"won't do":  "Unremediated",
+	"not a bug": "Unremediated",
+}
+
+func resolutionName(raw json.RawMessage) string {
 	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
-		return false
+		return ""
 	}
 	var resolution struct {
 		Name string `json:"name"`
 	}
 	if json.Unmarshal(raw, &resolution) != nil {
-		return false
+		return ""
 	}
-	_, ok := discardedResolutions[strings.ToLower(strings.TrimSpace(resolution.Name))]
+	return strings.TrimSpace(resolution.Name)
+}
+
+func normalizeResolutionName(name string) string {
+	name = strings.ToLower(strings.TrimSpace(name))
+	return strings.NewReplacer("\u2019", "'", "\u2018", "'", "`", "'").Replace(name)
+}
+
+func discardedResolution(raw json.RawMessage) bool {
+	_, ok := discardedResolutions[normalizeResolutionName(resolutionName(raw))]
 	return ok
+}
+
+func beaconDiscarded(fields map[string]json.RawMessage) bool {
+	if discardedResolution(fields["resolution"]) {
+		return true
+	}
+	// "Not a Customer" is an internal reason with no customer message.
+	return strings.EqualFold(closureSelection(fields), "Not a Customer")
+}
+
+func closureSelection(fields map[string]json.RawMessage) string {
+	switch normalizeResolutionName(resolutionName(fields["resolution"])) {
+	case "won't do":
+		return optionValue(fields[fieldClosureReason])
+	case "not a bug":
+		return optionValue(fields[fieldVEXJustification])
+	default:
+		return ""
+	}
+}
+
+func optionValue(raw json.RawMessage) string {
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return ""
+	}
+	var option struct {
+		Value string `json:"value"`
+	}
+	if json.Unmarshal(raw, &option) == nil && strings.TrimSpace(option.Value) != "" {
+		return strings.TrimSpace(option.Value)
+	}
+	return rawString(raw)
+}
+
+func closedResolutionStatus(raw json.RawMessage) (string, bool) {
+	status, ok := closedResolutionStatuses[normalizeResolutionName(resolutionName(raw))]
+	return status, ok
 }
 
 func stage(raw json.RawMessage) string {

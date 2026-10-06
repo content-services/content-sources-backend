@@ -20,7 +20,8 @@ type LightwellVulnerabilityResponse struct {
 	ExploitTested      bool      `json:"exploit_tested"`              // Whether an exploit was tested
 	ReproducerIncluded bool      `json:"reproducer_included"`         // Whether a reproducer is included
 	CustomerPriority   *string   `json:"customer_priority,omitempty"` // Customer priority
-	Status             string    `json:"status"`                      // Workflow status
+	Status             string    `json:"status"`                      // Workflow status. A closure without a shipped fix is Unremediated
+	ResolutionReason   *string   `json:"resolution_reason,omitempty"` // Explanation when a vulnerability is closed without a shipped fix
 	Ecosystem          *string   `json:"ecosystem,omitempty"`         // Derived ecosystem (java, python, javascript, csharp)
 	Complexity         string    `json:"complexity"`                  // Standard, Complex, or Extensive
 	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
