@@ -8,7 +8,12 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/rs/zerolog/log"
 )
+
+// ignoredResolutionLog is the stable message for resolutions that are incorrect
+// Beacon data. Grep this string to report them.
+const ignoredResolutionLog = "beacon_ignored_resolution"
 
 // VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
 const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
@@ -306,7 +311,8 @@ func (i *Ingestor) syncIssue(
 	confirmedVersions []string,
 	summary *SyncSummary,
 ) error {
-	if beaconDiscarded(issue.Fields) {
+	if resolution, detail, discarded := beaconDiscardReason(issue.Fields); discarded {
+		logIgnoredResolution(issue.Key, resolution, detail)
 		return i.deleteDiscardedIssue(ctx, issue.Key, summary)
 	}
 
@@ -335,6 +341,14 @@ func (i *Ingestor) syncIssue(
 		summary.Unchanged++
 	}
 	return nil
+}
+
+func logIgnoredResolution(key, resolution, detail string) {
+	event := log.Warn().Str("issue", key).Str("resolution", resolution)
+	if detail != "" {
+		event = event.Str("detail", detail)
+	}
+	event.Msg(ignoredResolutionLog)
 }
 
 func (i *Ingestor) deleteDiscardedIssue(ctx context.Context, key string, summary *SyncSummary) error {

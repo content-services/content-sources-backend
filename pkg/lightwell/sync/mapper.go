@@ -374,11 +374,22 @@ func discardedResolution(raw json.RawMessage) bool {
 }
 
 func beaconDiscarded(fields map[string]json.RawMessage) bool {
-	if discardedResolution(fields["resolution"]) {
-		return true
+	_, _, discarded := beaconDiscardReason(fields)
+	return discarded
+}
+
+// beaconDiscardReason reports a resolution that must not be stored.
+// detail is set when the resolution itself is valid but its selection is internal.
+func beaconDiscardReason(fields map[string]json.RawMessage) (resolution, detail string, discarded bool) {
+	name := resolutionName(fields["resolution"])
+	if _, ok := discardedResolutions[normalizeResolutionName(name)]; ok {
+		return name, "", true
 	}
 	// "Not a Customer" is an internal reason with no customer message.
-	return strings.EqualFold(closureSelection(fields), "Not a Customer")
+	if strings.EqualFold(closureSelection(fields), "Not a Customer") {
+		return name, "Not a Customer", true
+	}
+	return "", "", false
 }
 
 func closureSelection(fields map[string]json.RawMessage) string {
