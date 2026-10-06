@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/tang/pkg/tangy"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -335,6 +338,7 @@ func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
 func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
 	for _, name := range []string{"Duplicate", "Obsolete", "Cannot Reproduce", "Won't Fix"} {
 		t.Run(name, func(t *testing.T) {
+			logs := captureLogs(t)
 			issue := validJiraIssue("LTWL-1")
 			issue.Fields["resolution"] = resolutionJSON(name)
 			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
@@ -345,11 +349,15 @@ func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
 			assert.Equal(t, SyncSummary{}, summary)
 			assert.Empty(t, store.saved)
 			assert.Equal(t, []string{"LTWL-1"}, store.deleted)
+			assert.Contains(t, logs.String(), ignoredResolutionLog)
+			assert.Contains(t, logs.String(), `"issue":"LTWL-1"`)
+			assert.Contains(t, logs.String(), `"resolution":"`+name+`"`)
 		})
 	}
 }
 
 func TestIngestorSkipsInternalWontDoReason(t *testing.T) {
+	logs := captureLogs(t)
 	issue := validJiraIssue("LTWL-1")
 	issue.Fields["resolution"] = resolutionJSON("Won't Do")
 	issue.Fields[fieldClosureReason] = json.RawMessage(`{"value":"Not a Customer"}`)
@@ -361,6 +369,18 @@ func TestIngestorSkipsInternalWontDoReason(t *testing.T) {
 	assert.Equal(t, SyncSummary{}, summary)
 	assert.Empty(t, store.saved)
 	assert.Equal(t, []string{"LTWL-1"}, store.deleted)
+	assert.Contains(t, logs.String(), ignoredResolutionLog)
+	assert.Contains(t, logs.String(), `"resolution":"Won't Do"`)
+	assert.Contains(t, logs.String(), `"detail":"Not a Customer"`)
+}
+
+func captureLogs(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	original := log.Logger
+	log.Logger = zerolog.New(&buf)
+	t.Cleanup(func() { log.Logger = original })
+	return &buf
 }
 
 func TestIngestorSavesClosedResolutions(t *testing.T) {

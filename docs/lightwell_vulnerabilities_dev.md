@@ -84,6 +84,8 @@ Jira resolution can override that, or drop the issue. Won't Do and Not a Bug are
 | Cannot Reproduce | Ignored. Deleted if it was stored before. |
 | Won't Fix | Ignored. Deleted if it was stored before. |
 
+Ignored resolutions are logged at warning level with the message `beacon_ignored_resolution`, plus `issue`, `resolution`, and `detail` when the selection is Not a Customer.
+
 ## Run tests
 
 Integration tests use the configured database and roll back per test:
