@@ -181,8 +181,10 @@ type FeatureService struct {
 }
 
 type TermsService struct {
-	Server         string `mapstructure:"server"`
-	ClientCert     string `mapstructure:"client_cert"`
+	Server         string   `mapstructure:"server"`
+	Site           string   `mapstructure:"site"`
+	Events         []string `mapstructure:"events"`
+	ClientCert     string   `mapstructure:"client_cert"`
 	ClientKey      string `mapstructure:"client_key"`
 	CACert         string `mapstructure:"ca_cert"`
 	ClientCertPath string `mapstructure:"client_cert_path"`

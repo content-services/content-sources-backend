@@ -19,6 +19,8 @@ type TermsServiceClient interface {
 type termsServiceImpl struct {
 	client  http.Client
 	baseURL string
+	site    string
+	events  []string
 }
 
 func NewTermsServiceClient() (TermsServiceClient, error) {
@@ -26,15 +28,23 @@ func NewTermsServiceClient() (TermsServiceClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	ts := config.Get().Clients.TermsService
 	return &termsServiceImpl{
 		client:  httpClient,
-		baseURL: config.Get().Clients.TermsService.Server,
+		baseURL: ts.Server,
+		site:    ts.Site,
+		events:  ts.Events,
 	}, nil
 }
 
 func (t *termsServiceImpl) IsTermsAcceptanceRequired(ctx context.Context, login string) (bool, error) {
-	reqURL := fmt.Sprintf("%s/svcrest/terms/presentation/isrequired?login=%s&site=FIEnrollment&event=FITerms",
-		t.baseURL, url.QueryEscape(login))
+	params := url.Values{}
+	params.Set("login", login)
+	params.Set("site", t.site)
+	for _, event := range t.events {
+		params.Add("event", event)
+	}
+	reqURL := fmt.Sprintf("%s/svcrest/terms/presentation/isrequired?%s", t.baseURL, params.Encode())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
