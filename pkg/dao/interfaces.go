@@ -297,6 +297,7 @@ type LightwellAdvisoryDao interface {
 	ListAdvisories(ctx context.Context, opts ListLightwellAdvisoriesOptions) ([]api.LightwellAdvisoryResponse, int64, error)
 	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]LightwellAdvisoryCveMatch, error)
 	CountAdvisoriesByRepo(ctx context.Context, repoConfigUUID uuid.UUID) (int64, error)
+	ListRemediatedAdvisories(ctx context.Context, orgID string) ([]RemediatedAdvisory, error)
 }
 
 type LightwellVulnerabilityDao interface {

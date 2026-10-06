@@ -131,10 +131,29 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 	s.mockJavaCatalog(ctx, "commons-io", "commons-io", "2.11.0")
 	s.mockPythonCatalog(ctx, "flask", "3.0.3")
 
-	s.mockDaoRegistry.CoverageReport.On("SaveCoverageAnalysis", ctx, reportUUID, mock.Anything).Return(nil).Once()
+	s.mockDaoRegistry.LightwellAdvisory.On("ListRemediatedAdvisories", ctx, config.LightwellOrg).Return([]dao.RemediatedAdvisory{
+		{ContentType: config.ContentTypeMaven, PackageName: "commons-io:commons-io", AdvisoryID: "CVE-1", SeverityScore: 9.8},
+	}, nil).Once()
+
+	var savedParams dao.SaveCoverageAnalysisParams
+	s.mockDaoRegistry.CoverageReport.On("SaveCoverageAnalysis", ctx, reportUUID, mock.Anything).
+		Run(func(args mock.Arguments) {
+			params, ok := args.Get(2).(dao.SaveCoverageAnalysisParams)
+			require.True(s.T(), ok)
+			savedParams = params
+		}).Return(nil).Once()
 
 	err := s.newTask(ctx, &payload).Run()
 	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), 1, savedParams.CveSummary.Critical)
+	require.Len(s.T(), savedParams.PackageCVEs, len(savedParams.Results))
+	byName := map[string]int{}
+	for i, result := range savedParams.Results {
+		byName[result.Name] = savedParams.PackageCVEs[i].Count.Critical
+	}
+	assert.Equal(s.T(), 1, byName["commons-io"], "the java package should carry the remediated-repo CVE")
+	assert.Equal(s.T(), 0, byName["flask"])
 }
 
 func (s *CoverageAnalysisSuite) TestCoverageAnalysisVerifyManifest() {

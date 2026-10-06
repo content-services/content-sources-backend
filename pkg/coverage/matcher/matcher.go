@@ -105,7 +105,7 @@ func MatchCatalog(catalog, parsedPackages []Package, snapshotAt time.Time) ([]Ma
 }
 
 func matchPackage(pkg Package, catalogedNames, catalogedNameVersions map[string]struct{}) string {
-	nameKey := normalizeKey(pkg)
+	nameKey := NormalizeKey(pkg)
 
 	if pkg.Version != "" {
 		versionKey := nameKey + ":" + pkg.Version
@@ -126,7 +126,7 @@ func buildIndex(catalog []Package) (catalogedNames, catalogedNameVersions map[st
 	catalogedNameVersions = make(map[string]struct{}, len(catalog))
 
 	for _, pkg := range catalog {
-		key := normalizeKey(pkg)
+		key := NormalizeKey(pkg)
 		catalogedNames[key] = struct{}{}
 		if pkg.Version != "" {
 			catalogedNameVersions[key+":"+pkg.Version] = struct{}{}
@@ -136,7 +136,9 @@ func buildIndex(catalog []Package) (catalogedNames, catalogedNameVersions map[st
 	return catalogedNames, catalogedNameVersions
 }
 
-func normalizeKey(pkg Package) string {
+// NormalizeKey returns the canonical lookup key for a package: PEP 503-normalized
+// name for Python, lowercased "namespace:name" for Java.
+func NormalizeKey(pkg Package) string {
 	switch pkg.Ecosystem {
 	case EcosystemPython:
 		return normalizePythonName(pkg.Name)

@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/coverage/catalog"
+	"github.com/content-services/content-sources-backend/pkg/coverage/cve"
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	"github.com/content-services/content-sources-backend/pkg/coverage/parser"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -155,15 +156,53 @@ func (c *CoverageAnalysis) Run() error {
 
 	results, summary := matcher.MatchCatalog(validatedCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
 
+	advisories, err := c.daoReg.LightwellAdvisory.ListRemediatedAdvisories(c.ctx, config.LightwellOrg)
+	if err != nil {
+		return fmt.Errorf("failed to load remediated advisories: %w", err)
+	}
+	packageCVEs, cveSummary := cve.Enrich(results, toCVEAdvisories(advisories))
+
 	err = c.daoReg.CoverageReport.SaveCoverageAnalysis(c.ctx, c.payload.CoverageReportUUID, dao.SaveCoverageAnalysisParams{
 		InputFormat: parsedPackages.InputFormat,
 		Results:     results,
+		PackageCVEs: packageCVEs,
+		CveSummary:  cveSummary,
 		Summary:     summary,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save coverage analysis: %w", err)
 	}
 	return nil
+}
+
+// toCVEAdvisories converts remediated advisories into the enricher's input, mapping the
+// repository content type to the matcher ecosystem used for package-name normalization.
+func toCVEAdvisories(advisories []dao.RemediatedAdvisory) []cve.Advisory {
+	out := make([]cve.Advisory, 0, len(advisories))
+	for _, advisory := range advisories {
+		ecosystem := ecosystemForContentType(advisory.ContentType)
+		if ecosystem == "" {
+			continue
+		}
+		out = append(out, cve.Advisory{
+			Ecosystem:     ecosystem,
+			PackageName:   advisory.PackageName,
+			AdvisoryID:    advisory.AdvisoryID,
+			SeverityScore: advisory.SeverityScore,
+		})
+	}
+	return out
+}
+
+func ecosystemForContentType(contentType string) string {
+	switch contentType {
+	case config.ContentTypeMaven:
+		return matcher.EcosystemJava
+	case config.ContentTypePython:
+		return matcher.EcosystemPython
+	default:
+		return ""
+	}
 }
 
 func toMatcherPackages(pkgs []parser.Package) []matcher.Package {

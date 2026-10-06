@@ -14,8 +14,23 @@ type CoverageReportResponse struct {
 	PartialMatches           int                        `json:"partial_matches"`               // Number of packages with name found but not version
 	Unmatched                int                        `json:"unmatched"`                     // Number of packages with name not found
 	EcosystemCoverageSummary []EcosystemCoverageSummary `json:"ecosystem_coverage_summary"`    // Per-ecosystem breakdown
+	CveSummary               CveCount                   `json:"cve_summary"`                   // Count of CVEs fixed in remediated repos across covered packages, by severity
 	AnalysisTaskError        string                     `json:"analysis_task_error,omitempty"` // Error if coverage analysis task failed
 	AnalysisTaskUUID         string                     `json:"analysis_task_uuid"`            // UUID of the coverage analysis task
+}
+
+// CveCount represents a count of CVEs bucketed by severity
+type CveCount struct {
+	Critical int `json:"critical"`
+	High     int `json:"high"`
+	Medium   int `json:"medium"`
+	Low      int `json:"low"`
+}
+
+// CveRange represents the min and max CVSS severity scores across a package's CVEs
+type CveRange struct {
+	Low  float32 `json:"low"`  // Lowest CVSS severity score among the package's CVEs
+	High float32 `json:"high"` // Highest CVSS severity score among the package's CVEs
 }
 
 // EcosystemCoverageSummary represents the ecosystem breakdown in a coverage report
@@ -35,6 +50,9 @@ type CoverageReportPackageResponse struct {
 	Ecosystem   string `json:"ecosystem"`    // Ecosystem of the package
 	Covered     bool   `json:"covered"`      // Whether the package is covered (true = exact or partial match)
 	MatchStatus string `json:"match_status"` // Match status of the package (exact, partial, none)
+
+	CveCount CveCount  `json:"cve_count"`           // Count of CVEs fixed in remediated repos for this package, by severity
+	CveRange *CveRange `json:"cve_range,omitempty"` // Min/max CVSS severity score across this package's CVEs; omitted when the package has no CVEs
 }
 
 // CoverageReportPackageCollectionResponse represents the paginated response for packages in a coverage report

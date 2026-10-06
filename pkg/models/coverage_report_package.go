@@ -21,6 +21,13 @@ type CoverageReportPackage struct {
 	Version            string  `json:"version" gorm:"not null"`
 	Namespace          *string `json:"namespace,omitempty"`
 	MatchStatus        string  `json:"match_status" gorm:"not null"`
+
+	CveCritical  int      `json:"cve_critical" gorm:"not null;default:0"`
+	CveHigh      int      `json:"cve_high" gorm:"not null;default:0"`
+	CveMedium    int      `json:"cve_medium" gorm:"not null;default:0"`
+	CveLow       int      `json:"cve_low" gorm:"not null;default:0"`
+	CveRangeLow  *float32 `json:"cve_range_low,omitempty"`
+	CveRangeHigh *float32 `json:"cve_range_high,omitempty"`
 }
 
 func (*CoverageReportPackage) TableName() string {

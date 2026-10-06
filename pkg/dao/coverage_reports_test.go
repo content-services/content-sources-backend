@@ -8,6 +8,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/coverage/cve"
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -449,6 +450,55 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 	assert.Equal(s.T(), models.CoverageDemandMatchStatusNone, signals[1].MatchStatus)
 	assert.Equal(s.T(), "flask", signals[2].Name)
 	assert.Equal(s.T(), models.CoverageDemandMatchStatusPartial, signals[2].MatchStatus)
+}
+
+func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsCVEData() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusRunning)
+
+	err := s.dao().SaveCoverageAnalysis(context.Background(), report.UUID, SaveCoverageAnalysisParams{
+		InputFormat: "csv",
+		Results: []matcher.MatchResult{
+			{Package: matcher.Package{Ecosystem: "Java", Name: "spring-core", Version: "6.1.0", Namespace: "org.springframework"}, MatchStatus: matcher.MatchStatusExact},
+			{Package: matcher.Package{Ecosystem: "Python", Name: "flask", Version: "2.0.0"}, MatchStatus: matcher.MatchStatusNone},
+		},
+		PackageCVEs: []cve.PackageCVE{
+			{Count: cve.Count{Critical: 1, High: 3, Medium: 6, Low: 20}, Range: &cve.Range{Low: 1.2, High: 9.8}},
+			{},
+		},
+		CveSummary: cve.Count{Critical: 1, High: 3, Medium: 6, Low: 20},
+		Summary: matcher.MatchSummary{
+			Total:             2,
+			ExactMatches:      1,
+			Unmatched:         1,
+			CatalogSnapshotAt: time.Now().UTC(),
+		},
+	})
+	require.NoError(s.T(), err)
+
+	// Report-level cve_summary is surfaced by Fetch.
+	resp, err := s.dao().Fetch(context.Background(), orgID, report.UUID)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), api.CveCount{Critical: 1, High: 3, Medium: 6, Low: 20}, resp.CveSummary)
+
+	// Per-package cve_count and cve_range are surfaced by ListPackages.
+	pkgResp, _, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
+		api.PaginationData{Limit: 100, Offset: 0}, api.ListCoverageReportPackagesRequest{})
+	require.NoError(s.T(), err)
+	byName := map[string]api.CoverageReportPackageResponse{}
+	for _, p := range pkgResp.Data {
+		byName[p.Name] = p
+	}
+
+	spring := byName["spring-core"]
+	assert.Equal(s.T(), api.CveCount{Critical: 1, High: 3, Medium: 6, Low: 20}, spring.CveCount)
+	require.NotNil(s.T(), spring.CveRange)
+	assert.Equal(s.T(), float32(1.2), spring.CveRange.Low)
+	assert.Equal(s.T(), float32(9.8), spring.CveRange.High)
+
+	flask := byName["flask"]
+	assert.Equal(s.T(), api.CveCount{}, flask.CveCount)
+	assert.Nil(s.T(), flask.CveRange, "a package with no CVEs should have no cve_range")
 }
 
 func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisNotFound() {

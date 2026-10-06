@@ -5194,6 +5194,22 @@ const docTemplate = `{
                     "description": "Whether the package is covered (true = exact or partial match)",
                     "type": "boolean"
                 },
+                "cve_count": {
+                    "description": "Count of CVEs fixed in remediated repos for this package, by severity",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.CveCount"
+                        }
+                    ]
+                },
+                "cve_range": {
+                    "description": "Min/max CVSS severity score across this package's CVEs; omitted when the package has no CVEs",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.CveRange"
+                        }
+                    ]
+                },
                 "ecosystem": {
                     "description": "Ecosystem of the package",
                     "type": "string"
@@ -5230,6 +5246,14 @@ const docTemplate = `{
                 "created_at": {
                     "description": "Timestamp when the report was created",
                     "type": "string"
+                },
+                "cve_summary": {
+                    "description": "Count of CVEs fixed in remediated repos across covered packages, by severity",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.CveCount"
+                        }
+                    ]
                 },
                 "ecosystem_coverage_summary": {
                     "description": "Per-ecosystem breakdown",
@@ -5291,6 +5315,36 @@ const docTemplate = `{
                 "size": {
                     "description": "Size of the upload in bytes",
                     "type": "integer"
+                }
+            }
+        },
+        "api.CveCount": {
+            "type": "object",
+            "properties": {
+                "critical": {
+                    "type": "integer"
+                },
+                "high": {
+                    "type": "integer"
+                },
+                "low": {
+                    "type": "integer"
+                },
+                "medium": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.CveRange": {
+            "type": "object",
+            "properties": {
+                "high": {
+                    "description": "Highest CVSS severity score among the package's CVEs",
+                    "type": "number"
+                },
+                "low": {
+                    "description": "Lowest CVSS severity score among the package's CVEs",
+                    "type": "number"
                 }
             }
         },
