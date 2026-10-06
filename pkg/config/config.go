@@ -185,11 +185,11 @@ type TermsService struct {
 	Site           string   `mapstructure:"site"`
 	Events         []string `mapstructure:"events"`
 	ClientCert     string   `mapstructure:"client_cert"`
-	ClientKey      string `mapstructure:"client_key"`
-	CACert         string `mapstructure:"ca_cert"`
-	ClientCertPath string `mapstructure:"client_cert_path"`
-	ClientKeyPath  string `mapstructure:"client_key_path"`
-	CACertPath     string `mapstructure:"ca_cert_path"`
+	ClientKey      string   `mapstructure:"client_key"`
+	CACert         string   `mapstructure:"ca_cert"`
+	ClientCertPath string   `mapstructure:"client_cert_path"`
+	ClientKeyPath  string   `mapstructure:"client_key_path"`
+	CACertPath     string   `mapstructure:"ca_cert_path"`
 }
 
 type PulpLogParser struct {
