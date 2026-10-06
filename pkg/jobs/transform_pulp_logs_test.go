@@ -84,6 +84,26 @@ func (s *TransformPulpLogsSuite) TestParsePulpLogMessage() {
 	assert.Equal(s.T(), "mydomain", event.DomainName)
 }
 
+func (s *TransformPulpLogsSuite) TestCsvGzipWriterStreamsIncrementally() {
+	eventA := PulpLogEvent{Timestamp: 0, Path: "/a", FileSize: "1", OrgId: "123", UserAgent: "ua-a", DomainName: ".com", RequestOrgId: "456"}
+	eventB := PulpLogEvent{Timestamp: 1, Path: "/b", FileSize: "2", OrgId: "789", UserAgent: "ua-b", DomainName: ".net", RequestOrgId: "012"}
+
+	// Write the two events across two separate "pages" without ever holding
+	// both in a single slice.
+	w := newCsvGzipWriter()
+	require.NoError(s.T(), w.writeEvents([]PulpLogEvent{eventA}))
+	require.NoError(s.T(), w.writeEvents([]PulpLogEvent{eventB}))
+	streamed, err := w.finish()
+	require.NoError(s.T(), err)
+
+	g, err := gzip.NewReader(streamed)
+	require.NoError(s.T(), err)
+	data, err := io.ReadAll(g)
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), "0,456,123,.com,/a,ua-a,1\n1,012,789,.net,/b,ua-b,2\n", string(data))
+}
+
 func (s *TransformPulpLogsSuite) TestExtractDomainName() {
 	path := "/api/pulp-content/mydomain/gaudi-rhel-9.4/repodata/ff044ba6207abde56d0539134f6c371f49f74ad78d22331303d244fa72171da9-primary.xml.gz"
 	domain := domainNameFromPath(path)
