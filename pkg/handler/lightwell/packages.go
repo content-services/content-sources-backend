@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
-	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
@@ -24,13 +23,12 @@ type LightwellPackageHandler struct {
 	PackageHandler handler.PackageHandler
 }
 
-func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient, fsClient *feature_service_client.FeatureServiceClient) {
+func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient) {
 	h := LightwellPackageHandler{
 		LightwellPackagesHandler: handler.LightwellPackagesHandler{
-			DaoRegistry:          *daoReg,
-			TangClient:           tangClient,
-			PulpClient:           pulpClient,
-			FeatureServiceClient: *fsClient,
+			DaoRegistry: *daoReg,
+			TangClient:  tangClient,
+			PulpClient:  pulpClient,
 		},
 		PackageHandler: handler.PackageHandler{
 			DaoRegistry: *daoReg,
