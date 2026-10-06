@@ -148,19 +148,14 @@ func ProcessForDate(startTime time.Time) (success bool, messageCount int, err er
 	}
 	endTime := startTime.Add(24 * time.Hour)
 
-	// Step 1: Get logs from CloudWatch, transform into PulpLogEvents
-	events, err := job.getLogEvents(startTime.UnixMilli(), endTime.UnixMilli())
+	// Step 1: Stream logs from CloudWatch, transforming and compressing each
+	// page as it arrives so the full day's events are never held in memory at once.
+	gzipFile, messageCount, err := job.getLogEventsCsv(startTime.UnixMilli(), endTime.UnixMilli())
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get log events")
 		return false, 0, err
 	}
-	log.Info().Msgf("Parsed %v log events", len(events))
-
-	// Gzip the PulpLogEvents
-	gzipFile, err := convertToCsv(events)
-	if err != nil {
-		return false, 0, fmt.Errorf("failed to compress log events: %w", err)
-	}
+	log.Info().Msgf("Parsed %v log events", messageCount)
 
 	// Upload to s3
 	err = job.uploadGzipToS3(gzipFile, startTime)
@@ -169,7 +164,7 @@ func ProcessForDate(startTime time.Time) (success bool, messageCount int, err er
 	}
 
 	// Return success and message count
-	return true, len(events), nil
+	return true, messageCount, nil
 }
 
 func checkCloudwatchConfig(cw config.Cloudwatch) {
@@ -184,8 +179,54 @@ func checkCloudwatchConfig(cw config.Cloudwatch) {
 	}
 }
 
-// Gets logs from Cloudwatch and transform into PulpLogEvents
-func (t TransformPulpLogsJob) getLogEvents(startTime, endTime int64) (pulpEvents []PulpLogEvent, err error) {
+// csvGzipWriter incrementally encodes PulpLogEvents to gzipped CSV. Events can
+// be written page-by-page so the full set never needs to be held in memory.
+type csvGzipWriter struct {
+	buf        *bytes.Buffer
+	gzipWriter *gzip.Writer
+	csvWriter  *csv.Writer
+}
+
+func newCsvGzipWriter() *csvGzipWriter {
+	buf := &bytes.Buffer{}
+	gzipWriter := gzip.NewWriter(buf)
+	return &csvGzipWriter{
+		buf:        buf,
+		gzipWriter: gzipWriter,
+		csvWriter:  csv.NewWriter(gzipWriter),
+	}
+}
+
+// writeEvents writes a batch of events to the underlying csv/gzip writers.
+func (w *csvGzipWriter) writeEvents(logs []PulpLogEvent) error {
+	for i := 0; i < len(logs); i++ {
+		event := logs[i]
+		err := w.csvWriter.Write([]string{strconv.FormatInt(event.Timestamp, 10), event.RequestOrgId, event.OrgId, event.DomainName, event.Path, event.UserAgent, event.FileSize})
+		if err != nil {
+			return fmt.Errorf("failed to write log event: %w", err)
+		}
+	}
+	return nil
+}
+
+// finish flushes the csv writer, closes the gzip writer and returns the
+// compressed buffer.
+func (w *csvGzipWriter) finish() (*bytes.Buffer, error) {
+	w.csvWriter.Flush()
+	if err := w.csvWriter.Error(); err != nil {
+		return w.buf, fmt.Errorf("failed to flush csv writer: %w", err)
+	}
+	if err := w.gzipWriter.Close(); err != nil {
+		return w.buf, fmt.Errorf("failed to close gzip writer: %w", err)
+	}
+	return w.buf, nil
+}
+
+// Gets logs from Cloudwatch, transforms them into PulpLogEvents and streams them
+// into a gzipped CSV buffer. Each CloudWatch page is transformed and written
+// before the next page is fetched, so the full day's events are never all held
+// in memory at once.
+func (t TransformPulpLogsJob) getLogEventsCsv(startTime, endTime int64) (compressedData *bytes.Buffer, messageCount int, err error) {
 	cfg := config.Get().Clients.PulpLogParser.Cloudwatch
 	checkCloudwatchConfig(cfg)
 
@@ -203,42 +244,45 @@ func (t TransformPulpLogsJob) getLogEvents(startTime, endTime int64) (pulpEvents
 		FilterPattern: &LogFilter,
 	}
 
+	writer := newCsvGzipWriter()
+
+	writePage := func(events []types.FilteredLogEvent) error {
+		pulpEvents := t.transformLogs(events)
+		messageCount += len(pulpEvents)
+		return writer.writeEvents(pulpEvents)
+	}
+
 	resp, err := cwClient.FilterLogEvents(t.ctx, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch logs: %w", err)
+		return nil, 0, fmt.Errorf("failed to fetch logs: %w", err)
 	}
-	pulpEvents = append(pulpEvents, t.transformLogs(resp.Events)...)
+	if err = writePage(resp.Events); err != nil {
+		return nil, 0, err
+	}
 	for resp.NextToken != nil {
 		params.NextToken = resp.NextToken
 		resp, err = cwClient.FilterLogEvents(t.ctx, params)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch logs: %w", err)
+			return nil, 0, fmt.Errorf("failed to fetch logs: %w", err)
 		}
-		pulpEvents = append(pulpEvents, t.transformLogs(resp.Events)...)
+		if err = writePage(resp.Events); err != nil {
+			return nil, 0, err
+		}
 	}
 
-	return pulpEvents, nil
+	compressedData, err = writer.finish()
+	if err != nil {
+		return compressedData, messageCount, fmt.Errorf("failed to compress log events: %w", err)
+	}
+	return compressedData, messageCount, nil
 }
 
 func convertToCsv(logs []PulpLogEvent) (compressedData *bytes.Buffer, err error) {
-	compressedData = &bytes.Buffer{}
-	// Compress the log data using Gzip
-	gzipWriter := gzip.NewWriter(compressedData)
-	csvWriter := csv.NewWriter(gzipWriter)
-
-	for i := 0; i < len(logs); i++ {
-		event := logs[i]
-		err = csvWriter.Write([]string{strconv.FormatInt(event.Timestamp, 10), event.RequestOrgId, event.OrgId, event.DomainName, event.Path, event.UserAgent, event.FileSize})
-		if err != nil {
-			return compressedData, fmt.Errorf("failed to write log event: %w", err)
-		}
+	writer := newCsvGzipWriter()
+	if err = writer.writeEvents(logs); err != nil {
+		return writer.buf, err
 	}
-	csvWriter.Flush()
-	err = gzipWriter.Close()
-	if err != nil {
-		return compressedData, fmt.Errorf("failed to close gzip writer: %w", err)
-	}
-	return compressedData, nil
+	return writer.finish()
 }
 
 func (t TransformPulpLogsJob) uploadGzipToS3(compressedData *bytes.Buffer, date time.Time) (err error) {
