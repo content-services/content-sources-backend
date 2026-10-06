@@ -10,9 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestClient(t *testing.T, server *httptest.Server) *termsServiceImpl {
+func newTestClient(t *testing.T, server *httptest.Server, site string, events []string) *termsServiceImpl {
 	t.Helper()
-	return &termsServiceImpl{client: *server.Client(), baseURL: server.URL}
+	return &termsServiceImpl{
+		client:  *server.Client(),
+		baseURL: server.URL,
+		site:    site,
+		events:  events,
+	}
 }
 
 func TestIsTermsAcceptanceRequired_True(t *testing.T) {
@@ -20,14 +25,14 @@ func TestIsTermsAcceptanceRequired_True(t *testing.T) {
 		assert.Equal(t, http.MethodGet, r.Method)
 		assert.Contains(t, r.URL.Path, "/svcrest/terms/presentation/isrequired")
 		assert.Equal(t, "testuser", r.URL.Query().Get("login"))
-		assert.Equal(t, "FIEnrollment", r.URL.Query().Get("site"))
-		assert.Equal(t, "FITerms", r.URL.Query().Get("event"))
+		assert.Equal(t, "lightwell", r.URL.Query().Get("site"))
+		assert.Equal(t, []string{"network", "academic"}, r.URL.Query()["event"])
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("True"))
 	}))
 	defer server.Close()
 
-	client := newTestClient(t, server)
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	result, err := client.IsTermsAcceptanceRequired(context.Background(), "testuser")
 	require.NoError(t, err)
 	assert.True(t, result)
@@ -40,7 +45,7 @@ func TestIsTermsAcceptanceRequired_False(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestClient(t, server)
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	result, err := client.IsTermsAcceptanceRequired(context.Background(), "testuser")
 	require.NoError(t, err)
 	assert.False(t, result)
@@ -53,7 +58,7 @@ func TestIsTermsAcceptanceRequired_LowercaseTrue(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestClient(t, server)
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	result, err := client.IsTermsAcceptanceRequired(context.Background(), "testuser")
 	require.NoError(t, err)
 	assert.True(t, result)
@@ -66,7 +71,7 @@ func TestIsTermsAcceptanceRequired_Non200(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestClient(t, server)
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	_, err := client.IsTermsAcceptanceRequired(context.Background(), "testuser")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
@@ -79,7 +84,7 @@ func TestIsTermsAcceptanceRequired_MalformedBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newTestClient(t, server)
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	result, err := client.IsTermsAcceptanceRequired(context.Background(), "testuser")
 	require.NoError(t, err)
 	assert.False(t, result)

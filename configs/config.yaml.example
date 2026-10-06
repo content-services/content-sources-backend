@@ -177,6 +177,10 @@ clients:
   # For local dev, save the cert, key, and CA chain as PEM files and use the *_path fields.
   terms_service:
     server: #https://terms.stage.api.redhat.com
+    site: lightwell
+    events:
+      - network
+      - academic
     client_cert:
     client_key:
     ca_cert:
