@@ -8,6 +8,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/coverage/cve"
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -34,6 +35,8 @@ type coverageReportDaoImpl struct {
 type SaveCoverageAnalysisParams struct {
 	InputFormat string
 	Results     []matcher.MatchResult
+	PackageCVEs []cve.PackageCVE // aligned 1:1 with Results; empty when CVE data is unavailable
+	CveSummary  cve.Count
 	Summary     matcher.MatchSummary
 }
 
@@ -108,6 +111,15 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 			Ecosystem:   pkg.Ecosystem,
 			Covered:     pkg.MatchStatus != models.CoverageMatchStatusNone,
 			MatchStatus: pkg.MatchStatus,
+			CveCount: api.CveCount{
+				Critical: pkg.CveCritical,
+				High:     pkg.CveHigh,
+				Medium:   pkg.CveMedium,
+				Low:      pkg.CveLow,
+			},
+		}
+		if pkg.CveRangeLow != nil && pkg.CveRangeHigh != nil {
+			items[i].CveRange = &api.CveRange{Low: *pkg.CveRangeLow, High: *pkg.CveRangeHigh}
 		}
 	}
 
@@ -159,19 +171,31 @@ func (d coverageReportDaoImpl) UpdateCoverageReportStatus(ctx context.Context, r
 func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportUUID string, params SaveCoverageAnalysisParams) error {
 	packages := make([]models.CoverageReportPackage, 0, len(params.Results))
 	demandSignals := make([]models.CoverageDemandSignal, 0)
-	for _, result := range params.Results {
+	for i, result := range params.Results {
 		var namespace *string
 		if result.Namespace != "" {
 			namespace = utils.Ptr(result.Namespace)
 		}
-		packages = append(packages, models.CoverageReportPackage{
+		pkg := models.CoverageReportPackage{
 			CoverageReportUUID: reportUUID,
 			Ecosystem:          result.Ecosystem,
 			Name:               result.Name,
 			Version:            result.Version,
 			Namespace:          namespace,
 			MatchStatus:        result.MatchStatus,
-		})
+		}
+		if i < len(params.PackageCVEs) {
+			pkgCVE := params.PackageCVEs[i]
+			pkg.CveCritical = pkgCVE.Count.Critical
+			pkg.CveHigh = pkgCVE.Count.High
+			pkg.CveMedium = pkgCVE.Count.Medium
+			pkg.CveLow = pkgCVE.Count.Low
+			if pkgCVE.Range != nil {
+				pkg.CveRangeLow = utils.Ptr(pkgCVE.Range.Low)
+				pkg.CveRangeHigh = utils.Ptr(pkgCVE.Range.High)
+			}
+		}
+		packages = append(packages, pkg)
 		if result.MatchStatus == matcher.MatchStatusNone || result.MatchStatus == matcher.MatchStatusPartial {
 			demandSignals = append(demandSignals, models.CoverageDemandSignal{
 				Ecosystem:   result.Ecosystem,
@@ -210,6 +234,10 @@ func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportU
 		report.PartialMatches = utils.Ptr(params.Summary.PartialMatches)
 		report.Unmatched = utils.Ptr(params.Summary.Unmatched)
 		report.EcosystemCoverageSummary = &ecosystemSummary
+		report.CveCritical = params.CveSummary.Critical
+		report.CveHigh = params.CveSummary.High
+		report.CveMedium = params.CveSummary.Medium
+		report.CveLow = params.CveSummary.Low
 		report.CatalogSnapshotAt = utils.Ptr(params.Summary.CatalogSnapshotAt)
 		report.CompletedAt = &now
 
@@ -265,6 +293,12 @@ func (d coverageReportDaoImpl) modelToResponse(r models.CoverageReport) api.Cove
 	}
 	if r.Unmatched != nil {
 		resp.Unmatched = *r.Unmatched
+	}
+	resp.CveSummary = api.CveCount{
+		Critical: r.CveCritical,
+		High:     r.CveHigh,
+		Medium:   r.CveMedium,
+		Low:      r.CveLow,
 	}
 	if r.AnalysisTaskError != nil {
 		resp.AnalysisTaskError = *r.AnalysisTaskError

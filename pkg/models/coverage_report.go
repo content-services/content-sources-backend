@@ -60,6 +60,10 @@ type CoverageReport struct {
 	PartialMatches           *int                      `json:"partial_matches,omitempty"`
 	Unmatched                *int                      `json:"unmatched,omitempty"`
 	EcosystemCoverageSummary *EcosystemCoverageSummary `json:"ecosystem_coverage_summary,omitempty" gorm:"type:jsonb"`
+	CveCritical              int                       `json:"cve_critical" gorm:"not null;default:0"`
+	CveHigh                  int                       `json:"cve_high" gorm:"not null;default:0"`
+	CveMedium                int                       `json:"cve_medium" gorm:"not null;default:0"`
+	CveLow                   int                       `json:"cve_low" gorm:"not null;default:0"`
 	CatalogSnapshotAt        *time.Time                `json:"catalog_snapshot_at,omitempty"`
 	AnalysisTaskError        *string                   `json:"analysis_task_error,omitempty"`
 	AnalysisTaskUUID         *string                   `json:"analysis_task_uuid,omitempty"`
@@ -89,6 +93,10 @@ func (cr *CoverageReport) MapForUpdate() map[string]interface{} {
 	forUpdate["partial_matches"] = cr.PartialMatches
 	forUpdate["unmatched"] = cr.Unmatched
 	forUpdate["ecosystem_coverage_summary"] = cr.EcosystemCoverageSummary
+	forUpdate["cve_critical"] = cr.CveCritical
+	forUpdate["cve_high"] = cr.CveHigh
+	forUpdate["cve_medium"] = cr.CveMedium
+	forUpdate["cve_low"] = cr.CveLow
 	forUpdate["catalog_snapshot_at"] = cr.CatalogSnapshotAt
 	forUpdate["completed_at"] = cr.CompletedAt
 	return forUpdate

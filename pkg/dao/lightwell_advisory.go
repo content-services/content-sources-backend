@@ -37,6 +37,18 @@ type LightwellAdvisoryInput struct {
 	Summary        string
 }
 
+// securityLevelRemediated is the Repository.SecurityLevel value for remediated repos
+// (derived from a "<ecosystem>/remediated" published distribution base path).
+const securityLevelRemediated = "remediated"
+
+// RemediatedAdvisory is a CVE that fixes a package in a remediated repository.
+type RemediatedAdvisory struct {
+	ContentType   string  `gorm:"column:content_type"`
+	PackageName   string  `gorm:"column:package_name"`
+	AdvisoryID    string  `gorm:"column:advisory_id"`
+	SeverityScore float32 `gorm:"column:severity_score"`
+}
+
 type LightwellNotificationData struct {
 	PackageName   string
 	AdvisoryID    string
@@ -400,4 +412,26 @@ func (d lightwellAdvisoryDaoImpl) CountAdvisoriesByRepo(ctx context.Context, rep
 		return 0, fmt.Errorf("failed to count advisories for repo %s: %w", repoConfigUUID, err)
 	}
 	return count, nil
+}
+
+// ListRemediatedAdvisories returns the advisories for an org that fix a package in a
+// remediated repository (security level "remediated"). Only advisories with at least
+// one fixed version are returned, since those represent CVEs actually fixed there.
+func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, orgID string) ([]RemediatedAdvisory, error) {
+	var advisories []RemediatedAdvisory
+	err := d.db.WithContext(ctx).
+		Table("lightwell_advisories la").
+		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score").
+		Joins("JOIN repository_configurations rc ON rc.uuid = la.repository_configuration_uuid").
+		Joins("JOIN repositories r ON r.uuid = rc.repository_uuid").
+		Where("rc.org_id = ?", orgID).
+		Where("rc.deleted_at IS NULL").
+		Where("r.security_level = ?", securityLevelRemediated).
+		Where("la.package_name <> ''").
+		Where("cardinality(la.fixed_versions) > 0").
+		Scan(&advisories).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to list remediated advisories: %w", err)
+	}
+	return advisories, nil
 }

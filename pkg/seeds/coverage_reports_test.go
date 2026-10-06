@@ -38,4 +38,23 @@ func (s *SeedSuite) TestSeedCoverageReport() {
 	assert.Equal(s.T(), 5, *completedReport.ExactMatches)
 	assert.Equal(s.T(), 2, *completedReport.PartialMatches)
 	assert.Equal(s.T(), 2, *completedReport.Unmatched)
+
+	// Report-level CVE counts aggregate the per-package counts.
+	assert.Equal(s.T(), 2, completedReport.CveCritical)
+	assert.Equal(s.T(), 6, completedReport.CveHigh)
+	assert.Equal(s.T(), 10, completedReport.CveMedium)
+	assert.Equal(s.T(), 22, completedReport.CveLow)
+
+	// Unmatched packages carry no CVE data; matched packages with CVEs get a range.
+	var noneCVE models.CoverageReportPackage
+	require.NoError(s.T(), s.tx.Where("coverage_report_uuid = ? AND name = ?", completedReport.UUID, "netty-codec-http").First(&noneCVE).Error)
+	assert.Zero(s.T(), noneCVE.CveCritical+noneCVE.CveHigh+noneCVE.CveMedium+noneCVE.CveLow)
+	assert.Nil(s.T(), noneCVE.CveRangeLow)
+	assert.Nil(s.T(), noneCVE.CveRangeHigh)
+
+	var jackson models.CoverageReportPackage
+	require.NoError(s.T(), s.tx.Where("coverage_report_uuid = ? AND name = ?", completedReport.UUID, "jackson-databind").First(&jackson).Error)
+	assert.Equal(s.T(), 1, jackson.CveCritical)
+	require.NotNil(s.T(), jackson.CveRangeHigh)
+	assert.Equal(s.T(), float32(9.8), *jackson.CveRangeHigh)
 }

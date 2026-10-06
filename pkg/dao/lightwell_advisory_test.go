@@ -750,6 +750,68 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestRelease() {
 	s.ElementsMatch([]string{"x_RHLW-CVE-2015-0004-1.2.3", "x_RHLW-CVE-2015-0005-1.2.3"}, ids)
 }
 
+func (s *LightwellAdvisorySuite) createLightwellRepoConfigWithSecurity(name, contentType, securityLevel string) string {
+	repo := models.Repository{
+		Origin:                  config.OriginLightwell,
+		ContentType:             contentType,
+		SecurityLevel:           securityLevel,
+		LastIntrospectionStatus: config.StatusValid,
+	}
+	err := s.tx.Create(&repo).Error
+	s.Require().NoError(err)
+
+	repoConfig := models.RepositoryConfiguration{
+		Name:           name,
+		OrgID:          config.LightwellOrg,
+		RepositoryUUID: repo.UUID,
+		FeatureName:    "lightwell-network",
+	}
+	err = s.tx.Create(&repoConfig).Error
+	s.Require().NoError(err)
+	return repoConfig.UUID
+}
+
+func (s *LightwellAdvisorySuite) TestListRemediatedAdvisories() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	suffix := time.Now().UnixNano()
+	remediatedUUID := s.createLightwellRepoConfigWithSecurity(fmt.Sprintf("lightwell/java/remediated-%d", suffix), config.ContentTypeMaven, "remediated")
+	validatedUUID := s.createLightwellRepoConfigWithSecurity(fmt.Sprintf("lightwell/java/validated-%d", suffix), config.ContentTypeMaven, "validated")
+
+	includedID := fmt.Sprintf("CVE-INCLUDED-%d", suffix)
+	noFixID := fmt.Sprintf("CVE-NOFIX-%d", suffix)
+	validatedID := fmt.Sprintf("CVE-VALIDATED-%d", suffix)
+
+	err := dao.SyncForRepository(context.Background(), remediatedUUID, "lightwell/java/remediated", []LightwellAdvisoryInput{
+		{AdvisoryID: includedID, PackageName: "com.example:lib", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "rem1"},
+		{AdvisoryID: noFixID, PackageName: "com.example:lib", Severity: "7.0", FixedVersions: []string{}, Checksum: "rem2"},
+	})
+	s.Require().NoError(err)
+
+	err = dao.SyncForRepository(context.Background(), validatedUUID, "lightwell/java/validated", []LightwellAdvisoryInput{
+		{AdvisoryID: validatedID, PackageName: "com.example:lib", Severity: "5.0", FixedVersions: []string{"2.0.0"}, Checksum: "val1"},
+	})
+	s.Require().NoError(err)
+
+	rows, err := dao.ListRemediatedAdvisories(context.Background(), config.LightwellOrg)
+	s.Require().NoError(err)
+
+	byID := map[string]RemediatedAdvisory{}
+	for _, r := range rows {
+		byID[r.AdvisoryID] = r
+	}
+
+	included, ok := byID[includedID]
+	s.Require().True(ok, "advisory fixed in a remediated repo should be returned")
+	s.Equal("com.example:lib", included.PackageName)
+	s.Equal(float32(9.8), included.SeverityScore)
+	s.Equal(config.ContentTypeMaven, included.ContentType)
+
+	_, hasNoFix := byID[noFixID]
+	s.False(hasNoFix, "advisory with no fixed versions should be excluded")
+	_, hasValidated := byID[validatedID]
+	s.False(hasValidated, "advisory in a non-remediated repo should be excluded")
+}
+
 func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesMultipleFixedVersions() {
 	dao := GetLightwellAdvisoryDao(s.tx)
 	repoConfigUUID := s.createLightwellRepoConfig("lightwell/notif/multi-versions")
