@@ -72,6 +72,9 @@ func (s *LightwellTermsSuite) serveRouter(req *http.Request) (int, []byte, error
 func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 	t := s.T()
 
+	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
+	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
+
 	s.tsMock.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
 		Return(true, nil)
 
@@ -86,6 +89,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 	var resp api.TermsRequiredResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
 	assert.True(t, resp.Required)
+	assert.Equal(t, "lightwell", resp.Site)
+	assert.Equal(t, []string{"network", "academic"}, resp.Events)
 }
 
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
@@ -105,6 +110,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	var resp api.TermsRequiredResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
 	assert.False(t, resp.Required)
+	assert.Empty(t, resp.Site)
+	assert.Empty(t, resp.Events)
 }
 
 func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
