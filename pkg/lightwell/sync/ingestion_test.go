@@ -333,7 +333,7 @@ func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
 }
 
 func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
-	for _, name := range []string{"Duplicate", "Obsolete"} {
+	for _, name := range []string{"Duplicate", "Obsolete", "Cannot Reproduce", "Won't Fix"} {
 		t.Run(name, func(t *testing.T) {
 			issue := validJiraIssue("LTWL-1")
 			issue.Fields["resolution"] = resolutionJSON(name)

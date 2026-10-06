@@ -338,8 +338,10 @@ func mapSeverityName(value string) string {
 }
 
 var discardedResolutions = map[string]struct{}{
-	"duplicate": {},
-	"obsolete":  {},
+	"duplicate":        {},
+	"obsolete":         {},
+	"cannot reproduce": {},
+	"won't fix":        {},
 }
 
 // Customer closures are stored as Unremediated. The Jira resolution only selects which reason field to read.

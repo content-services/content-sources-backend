@@ -81,8 +81,8 @@ Jira resolution can override that, or drop the issue. Won't Do and Not a Bug are
 | Not a Bug | Stored as Unremediated. Explanation comes from VEX Justification. |
 | Duplicate | Ignored. Deleted if it was stored before. |
 | Obsolete | Ignored. Deleted if it was stored before. |
-| Cannot Reproduce | Stored from the workflow status above. No explanation. |
-| Won't Fix | Stored from the workflow status above. No explanation. |
+| Cannot Reproduce | Ignored. Deleted if it was stored before. |
+| Won't Fix | Ignored. Deleted if it was stored before. |
 
 ## Run tests
 
