@@ -57,7 +57,7 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 		}
 	}
 	if config.Tang != nil {
-		RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient)
+		RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient)
 	}
 }
 

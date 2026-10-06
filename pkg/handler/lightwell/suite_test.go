@@ -42,7 +42,7 @@ func (s *LightwellSuite) serveRouter(req *http.Request) (int, []byte, error) {
 	var fsClient feature_service_client.FeatureServiceClient = s.fsClient
 
 	RegisterLightwellRepositoryRoutes(pathPrefix, s.reg.ToDaoRegistry())
-	RegisterLightwellPackageRoutes(pathPrefix, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient, &fsClient)
+	RegisterLightwellPackageRoutes(pathPrefix, s.reg.ToDaoRegistry(), s.tangClient, s.pulpClient)
 	RegisterLightwellAdvisoryRoutes(pathPrefix, s.reg.ToDaoRegistry(), &fsClient)
 
 	rr := httptest.NewRecorder()
