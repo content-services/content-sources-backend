@@ -166,7 +166,7 @@ func CheckLightwellBeaconAccessible(ctx context.Context) (err error) {
 	}
 }
 
-func CheckLightwellTermsAccessible(ctx context.Context) (err error) {
+func CheckLightwellTermsEnabled(ctx context.Context) (err error) {
 	if !config.Get().Features.LightwellTerms.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot check Lightwell terms",
 			"Lightwell Terms feature is disabled.")

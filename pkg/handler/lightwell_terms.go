@@ -50,12 +50,14 @@ func getLogin(c echo.Context) string {
 func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	if err := CheckLightwellTermsAccessible(ctx); err != nil {
+	if err := CheckLightwellTermsEnabled(ctx); err != nil {
+		log.Ctx(ctx).Info().Err(err).Msg("lightwell terms feature not enabled, returning required=false")
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
 	login := getLogin(c)
 	if login == "" {
+		log.Ctx(ctx).Warn().Msg("no login found in request identity, returning required=false")
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
