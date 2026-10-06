@@ -1,0 +1,8 @@
+---
+description: Keep code and its tests in the same commit
+alwaysApply: true
+---
+
+# Colocate Code and Tests in the Same Commit
+
+When changing production code that has corresponding tests, or when writing new code that needs tests, always include both the implementation and the test changes in the **same commit**. This makes it easier to follow changes during review and ensures tests stay in sync with the code they cover.
