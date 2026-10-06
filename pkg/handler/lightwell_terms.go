@@ -5,6 +5,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
@@ -67,5 +68,12 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error checking terms requirement", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: required})
+	resp := api.TermsRequiredResponse{Required: required}
+	if required {
+		ts := config.Get().Clients.TermsService
+		resp.Site = ts.Site
+		resp.Events = ts.Events
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
