@@ -167,7 +167,10 @@ func sendAdvisoryNotifications(
 				}
 			}
 			checksumRequests := buildChecksumRequests(bridgeInputs)
-			contentBaseURL := buildContentBaseURL(entry)
+			contentBaseURL, urlErr := buildContentBaseURL(entry)
+			if urlErr != nil {
+				logger.Warn().Err(urlErr).Msg("skipping checksum fetch")
+			}
 			checksums := event.FetchArtifactChecksums(
 				ctx, httpClient, contentBaseURL, entry.Type,
 				checksumRequests,
@@ -341,16 +344,16 @@ func buildChecksumRequests(inputs []event.LightwellNotificationInput) []event.Ar
 	return requests
 }
 
-func buildContentBaseURL(entry external_repos.LightwellAllowlistEntry) string {
+func buildContentBaseURL(entry external_repos.LightwellAllowlistEntry) (string, error) {
 	hostname := config.Get().Clients.Pulp.LightwellContentOrigin
 	if hostname == "" {
 		hostname = config.Get().Clients.Pulp.ContentOrigin
 	}
 	base, err := url.JoinPath(hostname, config.Get().Clients.Pulp.ContentPathPrefix, entry.BasePath)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("error constructing content base URL for %q: %w", entry.Name, err)
 	}
-	return strings.TrimRight(base, "/")
+	return strings.TrimRight(base, "/"), nil
 }
 
 func httpGet(ctx context.Context, client *http.Client, reqURL string) ([]byte, error) {

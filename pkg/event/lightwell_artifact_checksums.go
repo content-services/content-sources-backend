@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -120,6 +121,7 @@ func mavenSidecarURL(contentBaseURL, packageName, version string) (filename, url
 }
 
 const maxSidecarBytes = 256
+const sidecarFetchTimeout = 10 * time.Second
 
 func fetchSidecar(
 	ctx context.Context,
@@ -127,6 +129,9 @@ func fetchSidecar(
 	url, authUser, authPassword string,
 	logger zerolog.Logger,
 ) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, sidecarFetchTimeout)
+	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", fmt.Errorf("error creating request: %w", err)
