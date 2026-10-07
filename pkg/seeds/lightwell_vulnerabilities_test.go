@@ -35,7 +35,7 @@ func (s *SeedSuite) TestSeedLightwellVulnerabilities() {
 	var total int64
 	err = s.tx.Raw("SELECT COUNT(*) FROM lightwell_vulnerabilities WHERE uuid::text LIKE '00000000-0000-4000-8000-%'").Scan(&total).Error
 	require.NoError(t, err)
-	assert.Equal(t, int64(52), total)
+	assert.Equal(t, int64(56), total)
 
 	var tickets []string
 	err = s.tx.Raw(`

@@ -18,7 +18,7 @@ make test-db-migrations
 
 ## Apply dev seed data
 
-The seed script loads 52 mock vulnerabilities from `lightwell-vulnerabilities-2026-08-18.json` into two demo customers (`demo-customer-1`, `demo-customer-2`). Two rows set `duplicate_of` to a canonical `vulnerability_id` (not present in the mock):
+The seed script loads 52 mock vulnerabilities from `lightwell-vulnerabilities-2026-08-18.json` into two demo customers (`demo-customer-1`, `demo-customer-2`). Two rows set `duplicate_of` to a canonical `vulnerability_id` (not present in the mock). Four more rows are **Unremediated**, two for each demo customer, with `resolution_reason` set to `Invalid License`, `Red Hat Package`, `Component not Present`, and `Vulnerable code not present`:
 
 ```bash
 psql "sslmode=disable dbname=content user=content host=localhost port=5433 password=content" -f db/seeds/lightwell_vulnerabilities.sql
