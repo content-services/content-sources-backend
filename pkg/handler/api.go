@@ -123,7 +123,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		}
 		if config.Tang != nil {
 			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
-			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient)
+			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient)
 		}
 	}
 
