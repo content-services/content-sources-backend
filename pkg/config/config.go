@@ -476,6 +476,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.feature_service.ca_cert_path", "")
 
 	v.SetDefault("clients.terms_service.server", "")
+	v.SetDefault("clients.terms_service.site", "")
+	v.SetDefault("clients.terms_service.events", nil)
 	v.SetDefault("clients.terms_service.client_cert", "")
 	v.SetDefault("clients.terms_service.client_key", "")
 	v.SetDefault("clients.terms_service.ca_cert", "")
