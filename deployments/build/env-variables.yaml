@@ -213,6 +213,10 @@ env:
         optional: true
   - name: CLIENTS_TERMS_SERVICE_SERVER
     value: ${CLIENTS_TERMS_SERVICE_SERVER}
+  - name: CLIENTS_TERMS_SERVICE_SITE
+    value: ${CLIENTS_TERMS_SERVICE_SITE}
+  - name: CLIENTS_TERMS_SERVICE_EVENTS
+    value: ${CLIENTS_TERMS_SERVICE_EVENTS}
   - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
     valueFrom:
       secretKeyRef:
@@ -572,6 +576,12 @@ parameters:
   - name: CLIENTS_FEATURE_SERVICE_SERVER
     value: ''
   - name: CLIENTS_TERMS_SERVICE_SERVER
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_SITE
+    description: Terms service site identifier (e.g. lightwell)
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_EVENTS
+    description: Comma separated list of terms events to check (e.g. network,academic)
     value: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
