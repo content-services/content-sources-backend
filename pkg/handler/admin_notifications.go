@@ -166,7 +166,7 @@ func enrichBridgeEventsWithChecksums(ctx context.Context, events []event.Notific
 						payload.Releases[j].ArtifactChecksums = merged
 					}
 				}
-				events[i].Payload = payload
+				events[i].Payload = payload //nolint:gosec // i is from range over events, always in bounds
 				break
 			}
 		}
