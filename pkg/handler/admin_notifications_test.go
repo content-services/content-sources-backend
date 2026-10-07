@@ -2,7 +2,9 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
@@ -17,6 +20,7 @@ import (
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -160,4 +164,62 @@ func (suite *AdminNotificationsSuite) TestSendTestNotificationNoClient() {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, code)
 	assert.Contains(t, string(respBody), "notifications client is not configured")
+}
+
+func TestPackageEcosystemType(t *testing.T) {
+	assert.Equal(t, "maven", packageEcosystemType("org.example:lib-a"))
+	assert.Equal(t, "maven", packageEcosystemType("ch.qos.logback:logback-classic"))
+	assert.Equal(t, "python", packageEcosystemType("requests"))
+	assert.Equal(t, "python", packageEcosystemType("django-rest-framework"))
+}
+
+func TestEnrichBridgeEventsWithChecksums(t *testing.T) {
+	const testSHA = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expected := "/java/remediated/com/example/lib-a/1.0.1.rhlw-00001/lib-a-1.0.1.rhlw-00001.jar.sha256"
+		if r.URL.Path == expected {
+			fmt.Fprint(w, testSHA)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	origOrigin := config.Get().Clients.Pulp.ContentOrigin
+	origPrefix := config.Get().Clients.Pulp.ContentPathPrefix
+	origUser := config.Get().Clients.Lightwell.Username
+	origPass := config.Get().Clients.Lightwell.Password
+	config.Get().Clients.Pulp.ContentOrigin = srv.URL
+	config.Get().Clients.Pulp.ContentPathPrefix = ""
+	config.Get().Clients.Lightwell.Username = ""
+	config.Get().Clients.Lightwell.Password = ""
+	defer func() {
+		config.Get().Clients.Pulp.ContentOrigin = origOrigin
+		config.Get().Clients.Pulp.ContentPathPrefix = origPrefix
+		config.Get().Clients.Lightwell.Username = origUser
+		config.Get().Clients.Lightwell.Password = origPass
+	}()
+
+	events := []event.NotificationEvent{
+		{
+			Metadata: map[string]any{},
+			Payload: event.LightwellPackagePayload{
+				PackageName: "com.example:lib-a",
+				Releases: []event.LightwellReleasePayload{
+					{
+						ReleaseNames: []event.LightwellReleaseName{{Name: "1.0.1.rhlw-00001"}},
+						RelatedCVE:   []event.LightwellCVEPayload{{CVE: "CVE-2026-0001"}},
+					},
+				},
+			},
+		},
+	}
+
+	enrichBridgeEventsWithChecksums(context.Background(), events)
+
+	payload, ok := events[0].Payload.(event.LightwellPackagePayload)
+	require.True(t, ok)
+	require.NotEmpty(t, payload.Releases)
+	assert.Equal(t, testSHA, payload.Releases[0].ArtifactChecksums["lib-a-1.0.1.rhlw-00001.jar"])
 }
