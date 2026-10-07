@@ -9773,8 +9773,8 @@ func (_c *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call) RunAndReturn(run 
 }
 
 // ListRemediatedAdvisories provides a mock function for the type MockLightwellAdvisoryDao
-func (_mock *MockLightwellAdvisoryDao) ListRemediatedAdvisories(ctx context.Context, orgID string) ([]RemediatedAdvisory, error) {
-	ret := _mock.Called(ctx, orgID)
+func (_mock *MockLightwellAdvisoryDao) ListRemediatedAdvisories(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error) {
+	ret := _mock.Called(ctx, orgID, filter)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListRemediatedAdvisories")
@@ -9782,18 +9782,18 @@ func (_mock *MockLightwellAdvisoryDao) ListRemediatedAdvisories(ctx context.Cont
 
 	var r0 []RemediatedAdvisory
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]RemediatedAdvisory, error)); ok {
-		return returnFunc(ctx, orgID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error)); ok {
+		return returnFunc(ctx, orgID, filter)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []RemediatedAdvisory); ok {
-		r0 = returnFunc(ctx, orgID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, RemediatedAdvisoryFilter) []RemediatedAdvisory); ok {
+		r0 = returnFunc(ctx, orgID, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]RemediatedAdvisory)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, orgID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, RemediatedAdvisoryFilter) error); ok {
+		r1 = returnFunc(ctx, orgID, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -9808,11 +9808,12 @@ type MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call struct {
 // ListRemediatedAdvisories is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockLightwellAdvisoryDao_Expecter) ListRemediatedAdvisories(ctx interface{}, orgID interface{}) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
-	return &MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call{Call: _e.mock.On("ListRemediatedAdvisories", ctx, orgID)}
+//   - filter RemediatedAdvisoryFilter
+func (_e *MockLightwellAdvisoryDao_Expecter) ListRemediatedAdvisories(ctx interface{}, orgID interface{}, filter interface{}) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
+	return &MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call{Call: _e.mock.On("ListRemediatedAdvisories", ctx, orgID, filter)}
 }
 
-func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Run(run func(ctx context.Context, orgID string)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
+func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Run(run func(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -9822,9 +9823,14 @@ func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Run(run func(c
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 RemediatedAdvisoryFilter
+		if args[2] != nil {
+			arg2 = args[2].(RemediatedAdvisoryFilter)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -9835,7 +9841,7 @@ func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Return(remedia
 	return _c
 }
 
-func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) RunAndReturn(run func(ctx context.Context, orgID string) ([]RemediatedAdvisory, error)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
+func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) RunAndReturn(run func(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
 	_c.Call.Return(run)
 	return _c
 }

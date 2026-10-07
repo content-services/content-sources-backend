@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/suite"
@@ -792,7 +793,8 @@ func (s *LightwellAdvisorySuite) TestListRemediatedAdvisories() {
 	})
 	s.Require().NoError(err)
 
-	rows, err := dao.ListRemediatedAdvisories(context.Background(), config.LightwellOrg)
+	filter := RemediatedAdvisoryFilter{MavenPackageKeys: []string{"com.example:lib"}}
+	rows, err := dao.ListRemediatedAdvisories(context.Background(), config.LightwellOrg, filter)
 	s.Require().NoError(err)
 
 	byID := map[string]RemediatedAdvisory{}
@@ -810,6 +812,81 @@ func (s *LightwellAdvisorySuite) TestListRemediatedAdvisories() {
 	s.False(hasNoFix, "advisory with no fixed versions should be excluded")
 	_, hasValidated := byID[validatedID]
 	s.False(hasValidated, "advisory in a non-remediated repo should be excluded")
+}
+
+func (s *LightwellAdvisorySuite) TestListRemediatedAdvisoriesFiltersByPackage() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	suffix := time.Now().UnixNano()
+	remediatedUUID := s.createLightwellRepoConfigWithSecurity(fmt.Sprintf("lightwell/java/remediated-%d", suffix), config.ContentTypeMaven, "remediated")
+
+	wantedID := fmt.Sprintf("CVE-WANTED-%d", suffix)
+	otherID := fmt.Sprintf("CVE-OTHER-%d", suffix)
+	err := dao.SyncForRepository(context.Background(), remediatedUUID, "lightwell/java/remediated", []LightwellAdvisoryInput{
+		{AdvisoryID: wantedID, PackageName: "com.example:wanted", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "w1"},
+		{AdvisoryID: otherID, PackageName: "com.example:other", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "o1"},
+	})
+	s.Require().NoError(err)
+
+	filter := RemediatedAdvisoryFilter{MavenPackageKeys: []string{"com.example:wanted"}}
+	rows, err := dao.ListRemediatedAdvisories(context.Background(), config.LightwellOrg, filter)
+	s.Require().NoError(err)
+
+	s.Require().Len(rows, 1, "only the advisory for the requested package should be returned")
+	s.Equal(wantedID, rows[0].AdvisoryID)
+}
+
+func (s *LightwellAdvisorySuite) TestListRemediatedAdvisoriesEmptyFilter() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	suffix := time.Now().UnixNano()
+	remediatedUUID := s.createLightwellRepoConfigWithSecurity(fmt.Sprintf("lightwell/java/remediated-%d", suffix), config.ContentTypeMaven, "remediated")
+	err := dao.SyncForRepository(context.Background(), remediatedUUID, "lightwell/java/remediated", []LightwellAdvisoryInput{
+		{AdvisoryID: fmt.Sprintf("CVE-%d", suffix), PackageName: "com.example:lib", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "c1"},
+	})
+	s.Require().NoError(err)
+
+	rows, err := dao.ListRemediatedAdvisories(context.Background(), config.LightwellOrg, RemediatedAdvisoryFilter{})
+	s.Require().NoError(err)
+	s.Empty(rows, "an empty filter matches no packages and returns no advisories")
+}
+
+// TestListRemediatedAdvisoriesNormalizationMatchesMatcher guards against drift between the
+// SQL package-name normalization and matcher.NormalizeKey: advisories are stored with
+// awkwardly-cased/punctuated names, then fetched using the keys the Go matcher produces for
+// the equivalent packages. If the SQL and Go normalizations diverge, the rows go missing.
+func (s *LightwellAdvisorySuite) TestListRemediatedAdvisoriesNormalizationMatchesMatcher() {
+	dao := GetLightwellAdvisoryDao(s.tx)
+	suffix := time.Now().UnixNano()
+	mavenUUID := s.createLightwellRepoConfigWithSecurity(fmt.Sprintf("lightwell/java/remediated-%d", suffix), config.ContentTypeMaven, "remediated")
+	pythonUUID := s.createLightwellRepoConfigWithSecurity(fmt.Sprintf("lightwell/python/remediated-%d", suffix), config.ContentTypePython, "remediated")
+
+	mavenID := fmt.Sprintf("CVE-MVN-%d", suffix)
+	pythonID := fmt.Sprintf("CVE-PY-%d", suffix)
+	err := dao.SyncForRepository(context.Background(), mavenUUID, "lightwell/java/remediated", []LightwellAdvisoryInput{
+		{AdvisoryID: mavenID, PackageName: "Com.Example:Demo-Lib", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "m1"},
+	})
+	s.Require().NoError(err)
+	err = dao.SyncForRepository(context.Background(), pythonUUID, "lightwell/python/remediated", []LightwellAdvisoryInput{
+		{AdvisoryID: pythonID, PackageName: "Flask__Cors.Ext", Severity: "7.5", FixedVersions: []string{"1.0.1"}, Checksum: "p1"},
+	})
+	s.Require().NoError(err)
+
+	// Derive filter keys the same way the production caller does, via the Go matcher.
+	mavenKey := matcher.NormalizeKey(matcher.Package{Ecosystem: matcher.EcosystemJava, Namespace: "Com.Example", Name: "Demo-Lib"})
+	pythonKey := matcher.NormalizeKey(matcher.Package{Ecosystem: matcher.EcosystemPython, Name: "Flask__Cors.Ext"})
+	filter := RemediatedAdvisoryFilter{
+		MavenPackageKeys:  []string{mavenKey},
+		PythonPackageKeys: []string{pythonKey},
+	}
+
+	rows, err := dao.ListRemediatedAdvisories(context.Background(), config.LightwellOrg, filter)
+	s.Require().NoError(err)
+
+	byID := map[string]RemediatedAdvisory{}
+	for _, r := range rows {
+		byID[r.AdvisoryID] = r
+	}
+	s.Contains(byID, mavenID, "maven SQL normalization must match matcher.NormalizeKey")
+	s.Contains(byID, pythonID, "python SQL normalization must match matcher.NormalizeKey")
 }
 
 func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesMultipleFixedVersions() {
