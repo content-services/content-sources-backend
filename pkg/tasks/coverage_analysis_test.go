@@ -136,7 +136,7 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 		PythonPackageKeys: []string{"flask"},
 	}
 	s.mockDaoRegistry.LightwellAdvisory.On("ListRemediatedAdvisories", ctx, config.LightwellOrg, expectedFilter).Return([]dao.RemediatedAdvisory{
-		{ContentType: config.ContentTypeMaven, PackageName: "commons-io:commons-io", AdvisoryID: "CVE-1", SeverityScore: 9.8, FixedVersions: []string{"2.11.0"}},
+		{ContentType: config.ContentTypeMaven, PackageName: "commons-io:commons-io", AdvisoryID: "CVE-1", SeverityScore: 9.8, PackageVersion: "2.11.0"},
 	}, nil).Once()
 
 	var savedParams dao.SaveCoverageAnalysisParams

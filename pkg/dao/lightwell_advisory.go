@@ -43,12 +43,14 @@ type LightwellAdvisoryInput struct {
 const securityLevelRemediated = "remediated"
 
 // RemediatedAdvisory is a CVE that fixes a package in a remediated repository.
+// PackageVersion is the upstream package version the advisory applies to (the version as
+// found in a customer's manifest), not the Red Hat-specific fixed version.
 type RemediatedAdvisory struct {
-	ContentType   string         `gorm:"column:content_type"`
-	PackageName   string         `gorm:"column:package_name"`
-	AdvisoryID    string         `gorm:"column:advisory_id"`
-	SeverityScore float32        `gorm:"column:severity_score"`
-	FixedVersions pq.StringArray `gorm:"column:fixed_versions;type:text[]"`
+	ContentType    string  `gorm:"column:content_type"`
+	PackageName    string  `gorm:"column:package_name"`
+	AdvisoryID     string  `gorm:"column:advisory_id"`
+	SeverityScore  float32 `gorm:"column:severity_score"`
+	PackageVersion string  `gorm:"column:package_version"`
 }
 
 // RemediatedAdvisoryFilter restricts ListRemediatedAdvisories to advisories whose
@@ -447,7 +449,7 @@ func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, 
 	var advisories []RemediatedAdvisory
 	err := d.db.WithContext(ctx).
 		Table("lightwell_advisories la").
-		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score, la.fixed_versions AS fixed_versions").
+		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score, la.package_version AS package_version").
 		Joins("JOIN repository_configurations rc ON rc.uuid = la.repository_configuration_uuid").
 		Joins("JOIN repositories r ON r.uuid = rc.repository_uuid").
 		Where("rc.org_id = ?", orgID).

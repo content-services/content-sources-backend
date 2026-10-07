@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Helpers build packages at version 1.0.0; advisories in these tests fix 1.0.0 unless noted.
+// Helpers build packages at version 1.0.0; advisories in these tests apply to 1.0.0 unless noted.
 func javaResult(namespace, name, status string) matcher.MatchResult {
 	return matcher.MatchResult{
 		Package:     matcher.Package{Ecosystem: matcher.EcosystemJava, Namespace: namespace, Name: name, Version: "1.0.0"},
@@ -24,7 +24,7 @@ func pythonResult(name, status string) matcher.MatchResult {
 }
 
 func javaAdvisory(id string, score float32) Advisory {
-	return Advisory{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: id, SeverityScore: score, FixedVersions: []string{"1.0.0"}}
+	return Advisory{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: id, SeverityScore: score, PackageVersion: "1.0.0"}
 }
 
 func TestEnrichBucketsBySeverityThresholds(t *testing.T) {
@@ -101,13 +101,13 @@ func TestEnrichExcludesPartialMatches(t *testing.T) {
 func TestEnrichScopesByVersion(t *testing.T) {
 	results := []matcher.MatchResult{javaResult("com.example", "lib", matcher.MatchStatusExact)}
 	advisories := []Advisory{
-		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: "CVE-1", SeverityScore: 9.8, FixedVersions: []string{"2.0.0"}},
+		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: "CVE-1", SeverityScore: 9.8, PackageVersion: "2.0.0"},
 	}
 
 	perPackage, summary := Enrich(results, advisories)
 
 	require.Len(t, perPackage, 1)
-	assert.Equal(t, Count{}, perPackage[0].Count, "an advisory that fixes a different version must not apply")
+	assert.Equal(t, Count{}, perPackage[0].Count, "an advisory for a different version must not apply")
 	assert.Nil(t, perPackage[0].Range)
 	assert.Equal(t, Count{}, summary)
 }
@@ -131,7 +131,8 @@ func TestEnrichDedupesSummaryAcrossPackageVersions(t *testing.T) {
 		{Package: matcher.Package{Ecosystem: matcher.EcosystemJava, Namespace: "com.example", Name: "lib", Version: "2.0.0"}, MatchStatus: matcher.MatchStatusExact},
 	}
 	advisories := []Advisory{
-		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: "CVE-1", SeverityScore: 9.8, FixedVersions: []string{"1.0.0", "2.0.0"}},
+		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: "CVE-1", SeverityScore: 9.8, PackageVersion: "1.0.0"},
+		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:lib", AdvisoryID: "CVE-1", SeverityScore: 9.8, PackageVersion: "2.0.0"},
 	}
 
 	perPackage, summary := Enrich(results, advisories)
@@ -155,7 +156,7 @@ func TestEnrichMatchesJavaCaseInsensitively(t *testing.T) {
 func TestEnrichMatchesPythonWithNormalization(t *testing.T) {
 	results := []matcher.MatchResult{pythonResult("flask-login", matcher.MatchStatusExact)}
 	advisories := []Advisory{
-		{Ecosystem: matcher.EcosystemPython, PackageName: "Flask_Login", AdvisoryID: "CVE-1", SeverityScore: 7.5, FixedVersions: []string{"1.0.0"}},
+		{Ecosystem: matcher.EcosystemPython, PackageName: "Flask_Login", AdvisoryID: "CVE-1", SeverityScore: 7.5, PackageVersion: "1.0.0"},
 	}
 
 	perPackage, _ := Enrich(results, advisories)
@@ -171,8 +172,8 @@ func TestEnrichAggregatesAcrossPackages(t *testing.T) {
 	}
 	advisories := []Advisory{
 		javaAdvisory("CVE-1", 9.8),
-		{Ecosystem: matcher.EcosystemPython, PackageName: "flask", AdvisoryID: "CVE-2", SeverityScore: 7.5, FixedVersions: []string{"1.0.0"}},
-		{Ecosystem: matcher.EcosystemPython, PackageName: "flask", AdvisoryID: "CVE-3", SeverityScore: 4.0, FixedVersions: []string{"1.0.0"}},
+		{Ecosystem: matcher.EcosystemPython, PackageName: "flask", AdvisoryID: "CVE-2", SeverityScore: 7.5, PackageVersion: "1.0.0"},
+		{Ecosystem: matcher.EcosystemPython, PackageName: "flask", AdvisoryID: "CVE-3", SeverityScore: 4.0, PackageVersion: "1.0.0"},
 	}
 
 	perPackage, summary := Enrich(results, advisories)
