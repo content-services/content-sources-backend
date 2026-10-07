@@ -193,3 +193,49 @@ func TestEnrichPackageWithNoAdvisories(t *testing.T) {
 	assert.Nil(t, perPackage[0].Range)
 	assert.Equal(t, Count{}, summary)
 }
+
+func TestExactMatchKeysGroupsNormalizedKeysByEcosystem(t *testing.T) {
+	results := []matcher.MatchResult{
+		javaResult("com.Example", "Lib", matcher.MatchStatusExact),
+		pythonResult("Flask_Cors", matcher.MatchStatusExact),
+	}
+
+	keys := ExactMatchKeys(results)
+
+	assert.Equal(t, []string{"com.example:lib"}, keys[matcher.EcosystemJava], "java keys should be lowercased")
+	assert.Equal(t, []string{"flask-cors"}, keys[matcher.EcosystemPython], "python keys should be PEP 503 normalized")
+}
+
+func TestExactMatchKeysExcludesNonExactMatches(t *testing.T) {
+	results := []matcher.MatchResult{
+		javaResult("com.example", "exact", matcher.MatchStatusExact),
+		javaResult("com.example", "partial", matcher.MatchStatusPartial),
+		javaResult("com.example", "none", matcher.MatchStatusNone),
+	}
+
+	keys := ExactMatchKeys(results)
+
+	assert.Equal(t, []string{"com.example:exact"}, keys[matcher.EcosystemJava], "only exact matches contribute keys")
+}
+
+func TestExactMatchKeysDedupesAndSorts(t *testing.T) {
+	results := []matcher.MatchResult{
+		javaResult("com.example", "beta", matcher.MatchStatusExact),
+		javaResult("com.example", "alpha", matcher.MatchStatusExact),
+		javaResult("com.Example", "Alpha", matcher.MatchStatusExact), // same normalized key as alpha
+	}
+
+	keys := ExactMatchKeys(results)
+
+	assert.Equal(t, []string{"com.example:alpha", "com.example:beta"}, keys[matcher.EcosystemJava])
+}
+
+func TestExactMatchKeysOmitsUnsupportedEcosystems(t *testing.T) {
+	results := []matcher.MatchResult{
+		{Package: matcher.Package{Ecosystem: "npm", Name: "left-pad", Version: "1.0.0"}, MatchStatus: matcher.MatchStatusExact},
+	}
+
+	keys := ExactMatchKeys(results)
+
+	assert.Empty(t, keys, "ecosystems the catalog cannot match should be omitted")
+}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	csdb "github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
@@ -48,6 +49,16 @@ type RemediatedAdvisory struct {
 	AdvisoryID    string         `gorm:"column:advisory_id"`
 	SeverityScore float32        `gorm:"column:severity_score"`
 	FixedVersions pq.StringArray `gorm:"column:fixed_versions;type:text[]"`
+}
+
+// RemediatedAdvisoryFilter restricts ListRemediatedAdvisories to advisories whose
+// normalized package name matches one of the given keys. Keys must already be normalized
+// the same way the CVE matcher normalizes a package: maven keys are lowercased
+// "groupId:artifactId"; python keys are lowercased and PEP 503-collapsed. The DAO applies
+// the equivalent normalization to the stored package name per repository content type.
+type RemediatedAdvisoryFilter struct {
+	MavenPackageKeys  []string
+	PythonPackageKeys []string
 }
 
 type LightwellNotificationData struct {
@@ -415,10 +426,24 @@ func (d lightwellAdvisoryDaoImpl) CountAdvisoriesByRepo(ctx context.Context, rep
 	return count, nil
 }
 
+// pythonPackageNameExpr normalizes a stored python package name to match the CVE
+// matcher's PEP 503 key: lowercased with runs of '-', '_' and '.' collapsed to a single
+// '-'. It must stay equivalent to matcher.normalizePythonName (guarded by a DAO test).
+const pythonPackageNameExpr = "lower(regexp_replace(la.package_name, '[-_.]+', '-', 'g'))"
+
 // ListRemediatedAdvisories returns the advisories for an org that fix a package in a
 // remediated repository (security level "remediated"). Only advisories with at least
 // one fixed version are returned, since those represent CVEs actually fixed there.
-func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, orgID string) ([]RemediatedAdvisory, error) {
+//
+// The filter restricts results to advisories whose normalized package name matches a key
+// in the filter, so callers fetch only the advisories relevant to a given set of packages
+// instead of the whole catalog. When the filter is empty no advisory can match, so an
+// empty result is returned without querying.
+func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error) {
+	if len(filter.MavenPackageKeys) == 0 && len(filter.PythonPackageKeys) == 0 {
+		return nil, nil
+	}
+
 	var advisories []RemediatedAdvisory
 	err := d.db.WithContext(ctx).
 		Table("lightwell_advisories la").
@@ -430,9 +455,31 @@ func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, 
 		Where("r.security_level = ?", securityLevelRemediated).
 		Where("la.package_name <> ''").
 		Where("cardinality(la.fixed_versions) > 0").
+		Where(d.remediatedPackageFilter(filter)).
 		Scan(&advisories).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to list remediated advisories: %w", err)
 	}
 	return advisories, nil
+}
+
+// remediatedPackageFilter builds the grouped-OR condition matching each repository content
+// type's normalized package name against the corresponding filter keys. At least one key
+// slice is guaranteed non-empty by the caller.
+func (d lightwellAdvisoryDaoImpl) remediatedPackageFilter(filter RemediatedAdvisoryFilter) *gorm.DB {
+	cond := d.db
+	hasMaven := len(filter.MavenPackageKeys) > 0
+	if hasMaven {
+		cond = cond.Where("r.content_type = ? AND lower(la.package_name) = ANY(?)",
+			config.ContentTypeMaven, pq.Array(filter.MavenPackageKeys))
+	}
+	if len(filter.PythonPackageKeys) > 0 {
+		pythonCond := "r.content_type = ? AND " + pythonPackageNameExpr + " = ANY(?)"
+		if hasMaven {
+			cond = cond.Or(pythonCond, config.ContentTypePython, pq.Array(filter.PythonPackageKeys))
+		} else {
+			cond = cond.Where(pythonCond, config.ContentTypePython, pq.Array(filter.PythonPackageKeys))
+		}
+	}
+	return cond
 }

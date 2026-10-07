@@ -161,7 +161,8 @@ func (c *CoverageAnalysis) Run() error {
 	// the per-package and summary CVE counts at their zero defaults.
 	var packageCVEs []cve.PackageCVE
 	var cveSummary cve.Count
-	advisories, err := c.daoReg.LightwellAdvisory.ListRemediatedAdvisories(c.ctx, config.LightwellOrg)
+	advisoryFilter := toRemediatedAdvisoryFilter(cve.ExactMatchKeys(results))
+	advisories, err := c.daoReg.LightwellAdvisory.ListRemediatedAdvisories(c.ctx, config.LightwellOrg, advisoryFilter)
 	if err != nil {
 		log.Ctx(c.ctx).Error().Err(err).Msg("failed to load remediated advisories; continuing without CVE data")
 	} else {
@@ -179,6 +180,15 @@ func (c *CoverageAnalysis) Run() error {
 		return fmt.Errorf("failed to save coverage analysis: %w", err)
 	}
 	return nil
+}
+
+// toRemediatedAdvisoryFilter maps exact-match package keys (grouped by matcher ecosystem)
+// to the DAO filter so only advisories for those packages are fetched from the catalog.
+func toRemediatedAdvisoryFilter(keys map[string][]string) dao.RemediatedAdvisoryFilter {
+	return dao.RemediatedAdvisoryFilter{
+		MavenPackageKeys:  keys[matcher.EcosystemJava],
+		PythonPackageKeys: keys[matcher.EcosystemPython],
+	}
 }
 
 // toCVEAdvisories converts remediated advisories into the enricher's input, mapping the

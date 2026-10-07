@@ -1,6 +1,7 @@
 package cve
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
@@ -81,6 +82,45 @@ func Enrich(results []matcher.MatchResult, advisories []Advisory) ([]PackageCVE,
 		bucketScore(&summary, score)
 	}
 	return perPackage, summary
+}
+
+// ExactMatchKeys returns, grouped by ecosystem, the normalized package keys of the
+// exact-matched results. These are the only packages Enrich can ever enrich (it skips
+// non-exact matches and looks up advisories by normalized key), so a caller can use
+// this set to fetch just the advisories that could possibly match instead of the whole
+// catalog. Keys are deduplicated and sorted for deterministic output. Ecosystems the
+// catalog cannot match are omitted, since advisories only exist for supported ones.
+func ExactMatchKeys(results []matcher.MatchResult) map[string][]string {
+	sets := make(map[string]map[string]struct{})
+	for _, result := range results {
+		if result.MatchStatus != matcher.MatchStatusExact {
+			continue
+		}
+		if !matcher.IsSupportedEcosystem(result.Ecosystem) {
+			continue
+		}
+		key := matcher.NormalizeKey(result.Package)
+		if key == "" {
+			continue
+		}
+		set, ok := sets[result.Ecosystem]
+		if !ok {
+			set = make(map[string]struct{})
+			sets[result.Ecosystem] = set
+		}
+		set[key] = struct{}{}
+	}
+
+	out := make(map[string][]string, len(sets))
+	for ecosystem, set := range sets {
+		keys := make([]string, 0, len(set))
+		for key := range set {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		out[ecosystem] = keys
+	}
+	return out
 }
 
 // buildAdvisoryIndex maps a normalized package key to its fixed versions, and each fixed
