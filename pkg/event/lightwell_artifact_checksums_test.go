@@ -185,6 +185,47 @@ func TestFetchArtifactChecksumsDistinctPackagesSameVersion(t *testing.T) {
 		result[keyB]["lib-b-1.0.0.jar"])
 }
 
+func TestFetchArtifactChecksumsHashFilenameFormat(t *testing.T) {
+	const testSHA = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(testSHA + "  lib-a-1.0.0.jar\n"))
+	}))
+	defer srv.Close()
+
+	items := []ArtifactChecksumRequest{
+		{PackageName: "org.example:lib-a", Version: "1.0.0"},
+	}
+
+	result := FetchArtifactChecksums(
+		context.Background(), srv.Client(),
+		srv.URL+"/repo", "maven", items, "", "",
+	)
+
+	key := ArtifactChecksumKey("org.example:lib-a", "1.0.0")
+	require.Contains(t, result, key)
+	assert.Equal(t, testSHA, result[key]["lib-a-1.0.0.jar"])
+}
+
+func TestExtractSHA256(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"bare hex", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
+		{"hash with filename", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789  lib-a-1.0.0.jar", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
+		{"uppercase hex", "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"},
+		{"too short", "abcdef", ""},
+		{"empty", "", ""},
+		{"garbage", "not-a-hash", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, extractSHA256(tt.input))
+		})
+	}
+}
+
 func TestMavenSidecarURL(t *testing.T) {
 	tests := []struct {
 		name        string

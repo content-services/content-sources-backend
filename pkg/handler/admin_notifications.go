@@ -50,7 +50,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 	}
 
 	_, orgID := GetAccountIdOrgId(c)
-	log.Error().Msg(req.Topic)
+	log.Debug().Str("topic", req.Topic).Msg("test notification requested")
 	if req.Topic == config.Get().Options.LightwellBridgeTopic {
 		events := []event.NotificationEvent{}
 		err := json.Unmarshal([]byte(req.Notification), &events)
@@ -66,7 +66,7 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 		if err != nil {
 			return ce.NewErrorResponse(http.StatusBadRequest, "Error sending message", err.Error())
 		}
-		log.Error().Msg("Sent lightwell advisory created event")
+		log.Info().Msg("sent lightwell advisory-created test event")
 		return c.NoContent(http.StatusOK)
 	} else { // assume notification
 		var body struct {
@@ -84,9 +84,19 @@ func (h *AdminNotificationsHandler) sendTestNotification(c echo.Context) error {
 			return ce.NewErrorResponse(http.StatusInternalServerError,
 				"Error sending test notification", err.Error())
 		}
-		log.Error().Msg("Sent notification event")
+		log.Info().Msg("sent test notification event")
 		return c.JSONBlob(http.StatusOK, sent)
 	}
+}
+
+// packageEcosystemType returns "maven" or "python" based on the package name
+// format. Maven coordinates contain ":" (e.g. "org.example:lib-a"); Python
+// package names do not.
+func packageEcosystemType(packageName string) string {
+	if strings.Contains(packageName, ":") {
+		return "maven"
+	}
+	return "python"
 }
 
 func enrichBridgeEventsWithChecksums(ctx context.Context, events []event.NotificationEvent) {
@@ -94,11 +104,6 @@ func enrichBridgeEventsWithChecksums(ctx context.Context, events []event.Notific
 	if err != nil {
 		log.Warn().Err(err).Msg("cannot load allowlist for checksum enrichment")
 		return
-	}
-
-	entryByName := make(map[string]external_repos.LightwellAllowlistEntry, len(entries))
-	for _, e := range entries {
-		entryByName[e.Name] = e
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
@@ -114,7 +119,12 @@ func enrichBridgeEventsWithChecksums(ctx context.Context, events []event.Notific
 			payload = p
 		}
 
+		ecosystemType := packageEcosystemType(payload.PackageName)
+
 		for _, entry := range entries {
+			if entry.Type != ecosystemType {
+				continue
+			}
 			if event.LightwellEventType(entry.Name) == "" {
 				continue
 			}
