@@ -201,11 +201,11 @@ func toCVEAdvisories(advisories []dao.RemediatedAdvisory) []cve.Advisory {
 			continue
 		}
 		out = append(out, cve.Advisory{
-			Ecosystem:     ecosystem,
-			PackageName:   advisory.PackageName,
-			AdvisoryID:    advisory.AdvisoryID,
-			SeverityScore: advisory.SeverityScore,
-			FixedVersions: advisory.FixedVersions,
+			Ecosystem:      ecosystem,
+			PackageName:    advisory.PackageName,
+			AdvisoryID:     advisory.AdvisoryID,
+			SeverityScore:  advisory.SeverityScore,
+			PackageVersion: advisory.PackageVersion,
 		})
 	}
 	return out

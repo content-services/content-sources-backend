@@ -783,7 +783,7 @@ func (s *LightwellAdvisorySuite) TestListRemediatedAdvisories() {
 	validatedID := fmt.Sprintf("CVE-VALIDATED-%d", suffix)
 
 	err := dao.SyncForRepository(context.Background(), remediatedUUID, "lightwell/java/remediated", []LightwellAdvisoryInput{
-		{AdvisoryID: includedID, PackageName: "com.example:lib", Severity: "9.8", FixedVersions: []string{"1.0.1"}, Checksum: "rem1"},
+		{AdvisoryID: includedID, PackageName: "com.example:lib", Severity: "9.8", PackageVersion: "1.0.0", FixedVersions: []string{"1.0.1"}, Checksum: "rem1"},
 		{AdvisoryID: noFixID, PackageName: "com.example:lib", Severity: "7.0", FixedVersions: []string{}, Checksum: "rem2"},
 	})
 	s.Require().NoError(err)
@@ -807,6 +807,7 @@ func (s *LightwellAdvisorySuite) TestListRemediatedAdvisories() {
 	s.Equal("com.example:lib", included.PackageName)
 	s.Equal(float32(9.8), included.SeverityScore)
 	s.Equal(config.ContentTypeMaven, included.ContentType)
+	s.Equal("1.0.0", included.PackageVersion, "the upstream package version should be returned, not the fixed version")
 
 	_, hasNoFix := byID[noFixID]
 	s.False(hasNoFix, "advisory with no fixed versions should be excluded")

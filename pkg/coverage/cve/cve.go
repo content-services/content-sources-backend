@@ -19,11 +19,11 @@ const (
 
 // Advisory is a CVE fixed in a remediated repository for a package.
 type Advisory struct {
-	Ecosystem     string   // matcher.EcosystemJava or matcher.EcosystemPython
-	PackageName   string   // Java: "groupId:artifactId"; Python: PyPI project name
-	AdvisoryID    string   // CVE / advisory identifier (used to de-duplicate)
-	SeverityScore float32  // CVSS base score
-	FixedVersions []string // package versions in which the advisory is fixed
+	Ecosystem      string  // matcher.EcosystemJava or matcher.EcosystemPython
+	PackageName    string  // Java: "groupId:artifactId"; Python: PyPI project name
+	AdvisoryID     string  // CVE / advisory identifier (used to de-duplicate)
+	SeverityScore  float32 // CVSS base score
+	PackageVersion string  // upstream package version the advisory applies to (as found in the manifest)
 }
 
 // Count is a per-severity count of CVEs.
@@ -48,7 +48,7 @@ type PackageCVE struct {
 
 // Enrich computes per-package CVE data for exact-matched packages and an aggregate
 // summary. CVE data is version-scoped: an advisory only applies to a package when the
-// package's version is one of the advisory's fixed versions. Only exact matches (name +
+// package's version matches the advisory's upstream package version. Only exact matches (name +
 // version) are enriched, since a version-scoped advisory cannot be tied to a package
 // whose version was not matched in the catalog.
 //
@@ -123,8 +123,8 @@ func ExactMatchKeys(results []matcher.MatchResult) map[string][]string {
 	return out
 }
 
-// buildAdvisoryIndex maps a normalized package key to its fixed versions, and each fixed
-// version to the set of distinct advisory IDs (and their scores) fixed in that version.
+// buildAdvisoryIndex maps a normalized package key to each upstream package version, and
+// each version to the set of distinct advisory IDs (and their scores) that apply to it.
 func buildAdvisoryIndex(advisories []Advisory) map[string]map[string]map[string]float32 {
 	index := make(map[string]map[string]map[string]float32)
 	for _, advisory := range advisories {
@@ -132,22 +132,21 @@ func buildAdvisoryIndex(advisories []Advisory) map[string]map[string]map[string]
 		if key == "" {
 			continue
 		}
+		version := advisory.PackageVersion
+		if version == "" {
+			continue
+		}
 		byVersion, ok := index[key]
 		if !ok {
 			byVersion = make(map[string]map[string]float32)
 			index[key] = byVersion
 		}
-		for _, version := range advisory.FixedVersions {
-			if version == "" {
-				continue
-			}
-			byID, ok := byVersion[version]
-			if !ok {
-				byID = make(map[string]float32)
-				byVersion[version] = byID
-			}
-			byID[advisory.AdvisoryID] = advisory.SeverityScore
+		byID, ok := byVersion[version]
+		if !ok {
+			byID = make(map[string]float32)
+			byVersion[version] = byID
 		}
+		byID[advisory.AdvisoryID] = advisory.SeverityScore
 	}
 	return index
 }
