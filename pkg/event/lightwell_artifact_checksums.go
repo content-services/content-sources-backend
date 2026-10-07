@@ -14,6 +14,23 @@ import (
 
 var validSHA256 = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
+// extractSHA256 handles two common sidecar formats:
+//   - bare hex:          "c8f6dc3b…"
+//   - BSD/GNU style:     "c8f6dc3b…  filename.jar"
+//
+// Returns the lowercase hex digest, or "" if the input is not valid.
+func extractSHA256(s string) string {
+	fields := strings.Fields(s)
+	if len(fields) == 0 {
+		return ""
+	}
+	candidate := strings.ToLower(fields[0])
+	if validSHA256.MatchString(candidate) {
+		return candidate
+	}
+	return ""
+}
+
 // ArtifactChecksumRequest identifies a single artifact whose SHA-256 sidecar
 // should be fetched from the Pulp content server.
 type ArtifactChecksumRequest struct {
@@ -134,9 +151,9 @@ func fetchSidecar(
 		return "", fmt.Errorf("error reading response: %w", err)
 	}
 
-	sha := strings.TrimSpace(string(body))
-	if !validSHA256.MatchString(sha) {
-		return "", fmt.Errorf("invalid SHA-256 format: %q", sha)
+	sha := extractSHA256(strings.TrimSpace(string(body)))
+	if sha == "" {
+		return "", fmt.Errorf("invalid SHA-256 format: %q", string(body))
 	}
 
 	return sha, nil
