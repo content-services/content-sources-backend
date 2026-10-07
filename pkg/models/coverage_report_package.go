@@ -23,8 +23,8 @@ type CoverageReportPackage struct {
 	MatchStatus        string  `json:"match_status" gorm:"not null"`
 
 	CveCritical  int      `json:"cve_critical" gorm:"not null;default:0"`
-	CveHigh      int      `json:"cve_high" gorm:"not null;default:0"`
-	CveMedium    int      `json:"cve_medium" gorm:"not null;default:0"`
+	CveImportant int      `json:"cve_important" gorm:"not null;default:0"`
+	CveModerate  int      `json:"cve_moderate" gorm:"not null;default:0"`
 	CveLow       int      `json:"cve_low" gorm:"not null;default:0"`
 	CveRangeLow  *float32 `json:"cve_range_low,omitempty"`
 	CveRangeHigh *float32 `json:"cve_range_high,omitempty"`

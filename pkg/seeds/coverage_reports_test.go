@@ -41,14 +41,14 @@ func (s *SeedSuite) TestSeedCoverageReport() {
 
 	// Report-level CVE counts aggregate the per-package counts.
 	assert.Equal(s.T(), 2, completedReport.CveCritical)
-	assert.Equal(s.T(), 6, completedReport.CveHigh)
-	assert.Equal(s.T(), 10, completedReport.CveMedium)
-	assert.Equal(s.T(), 22, completedReport.CveLow)
+	assert.Equal(s.T(), 5, completedReport.CveImportant)
+	assert.Equal(s.T(), 10, completedReport.CveModerate)
+	assert.Equal(s.T(), 21, completedReport.CveLow)
 
 	// Unmatched packages carry no CVE data; matched packages with CVEs get a range.
 	var noneCVE models.CoverageReportPackage
 	require.NoError(s.T(), s.tx.Where("coverage_report_uuid = ? AND name = ?", completedReport.UUID, "netty-codec-http").First(&noneCVE).Error)
-	assert.Zero(s.T(), noneCVE.CveCritical+noneCVE.CveHigh+noneCVE.CveMedium+noneCVE.CveLow)
+	assert.Zero(s.T(), noneCVE.CveCritical+noneCVE.CveImportant+noneCVE.CveModerate+noneCVE.CveLow)
 	assert.Nil(s.T(), noneCVE.CveRangeLow)
 	assert.Nil(s.T(), noneCVE.CveRangeHigh)
 

@@ -43,10 +43,11 @@ const securityLevelRemediated = "remediated"
 
 // RemediatedAdvisory is a CVE that fixes a package in a remediated repository.
 type RemediatedAdvisory struct {
-	ContentType   string  `gorm:"column:content_type"`
-	PackageName   string  `gorm:"column:package_name"`
-	AdvisoryID    string  `gorm:"column:advisory_id"`
-	SeverityScore float32 `gorm:"column:severity_score"`
+	ContentType   string         `gorm:"column:content_type"`
+	PackageName   string         `gorm:"column:package_name"`
+	AdvisoryID    string         `gorm:"column:advisory_id"`
+	SeverityScore float32        `gorm:"column:severity_score"`
+	FixedVersions pq.StringArray `gorm:"column:fixed_versions;type:text[]"`
 }
 
 type LightwellNotificationData struct {
@@ -421,7 +422,7 @@ func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, 
 	var advisories []RemediatedAdvisory
 	err := d.db.WithContext(ctx).
 		Table("lightwell_advisories la").
-		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score").
+		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score, la.fixed_versions AS fixed_versions").
 		Joins("JOIN repository_configurations rc ON rc.uuid = la.repository_configuration_uuid").
 		Joins("JOIN repositories r ON r.uuid = rc.repository_uuid").
 		Where("rc.org_id = ?", orgID).

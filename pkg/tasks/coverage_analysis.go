@@ -156,11 +156,17 @@ func (c *CoverageAnalysis) Run() error {
 
 	results, summary := matcher.MatchCatalog(validatedCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
 
+	// CVE enrichment is best-effort: a failure to load advisories should not fail the
+	// whole analysis. On error we persist the coverage results without CVE data, leaving
+	// the per-package and summary CVE counts at their zero defaults.
+	var packageCVEs []cve.PackageCVE
+	var cveSummary cve.Count
 	advisories, err := c.daoReg.LightwellAdvisory.ListRemediatedAdvisories(c.ctx, config.LightwellOrg)
 	if err != nil {
-		return fmt.Errorf("failed to load remediated advisories: %w", err)
+		log.Ctx(c.ctx).Error().Err(err).Msg("failed to load remediated advisories; continuing without CVE data")
+	} else {
+		packageCVEs, cveSummary = cve.Enrich(results, toCVEAdvisories(advisories))
 	}
-	packageCVEs, cveSummary := cve.Enrich(results, toCVEAdvisories(advisories))
 
 	err = c.daoReg.CoverageReport.SaveCoverageAnalysis(c.ctx, c.payload.CoverageReportUUID, dao.SaveCoverageAnalysisParams{
 		InputFormat: parsedPackages.InputFormat,
@@ -189,6 +195,7 @@ func toCVEAdvisories(advisories []dao.RemediatedAdvisory) []cve.Advisory {
 			PackageName:   advisory.PackageName,
 			AdvisoryID:    advisory.AdvisoryID,
 			SeverityScore: advisory.SeverityScore,
+			FixedVersions: advisory.FixedVersions,
 		})
 	}
 	return out

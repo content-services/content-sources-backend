@@ -463,10 +463,10 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsCVEData() {
 			{Package: matcher.Package{Ecosystem: "Python", Name: "flask", Version: "2.0.0"}, MatchStatus: matcher.MatchStatusNone},
 		},
 		PackageCVEs: []cve.PackageCVE{
-			{Count: cve.Count{Critical: 1, High: 3, Medium: 6, Low: 20}, Range: &cve.Range{Low: 1.2, High: 9.8}},
+			{Count: cve.Count{Critical: 1, Important: 3, Moderate: 6, Low: 20}, Range: &cve.Range{Low: 1.2, High: 9.8}},
 			{},
 		},
-		CveSummary: cve.Count{Critical: 1, High: 3, Medium: 6, Low: 20},
+		CveSummary: cve.Count{Critical: 1, Important: 3, Moderate: 6, Low: 20},
 		Summary: matcher.MatchSummary{
 			Total:             2,
 			ExactMatches:      1,
@@ -479,7 +479,7 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsCVEData() {
 	// Report-level cve_summary is surfaced by Fetch.
 	resp, err := s.dao().Fetch(context.Background(), orgID, report.UUID)
 	require.NoError(s.T(), err)
-	assert.Equal(s.T(), api.CveCount{Critical: 1, High: 3, Medium: 6, Low: 20}, resp.CveSummary)
+	assert.Equal(s.T(), api.CveCount{Critical: 1, Important: 3, Moderate: 6, Low: 20}, resp.CveSummary)
 
 	// Per-package cve_count and cve_range are surfaced by ListPackages.
 	pkgResp, _, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
@@ -491,7 +491,7 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsCVEData() {
 	}
 
 	spring := byName["spring-core"]
-	assert.Equal(s.T(), api.CveCount{Critical: 1, High: 3, Medium: 6, Low: 20}, spring.CveCount)
+	assert.Equal(s.T(), api.CveCount{Critical: 1, Important: 3, Moderate: 6, Low: 20}, spring.CveCount)
 	require.NotNil(s.T(), spring.CveRange)
 	assert.Equal(s.T(), float32(1.2), spring.CveRange.Low)
 	assert.Equal(s.T(), float32(9.8), spring.CveRange.High)

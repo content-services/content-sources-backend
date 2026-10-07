@@ -5324,13 +5324,13 @@ const docTemplate = `{
                 "critical": {
                     "type": "integer"
                 },
-                "high": {
+                "important": {
                     "type": "integer"
                 },
                 "low": {
                     "type": "integer"
                 },
-                "medium": {
+                "moderate": {
                     "type": "integer"
                 }
             }

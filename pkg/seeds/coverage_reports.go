@@ -42,35 +42,33 @@ func SeedCoverageReport(db *gorm.DB, options CoverageReportSeedOptions) (*models
 	report.EcosystemCoverageSummary = &summary
 	// CVE counts aggregate the per-package counts seeded below.
 	report.CveCritical = 2
-	report.CveHigh = 6
-	report.CveMedium = 10
-	report.CveLow = 22
+	report.CveImportant = 5
+	report.CveModerate = 10
+	report.CveLow = 21
 	report.CatalogSnapshotAt = &now
 	report.CompletedAt = &now
 	if err := db.Save(&report).Error; err != nil {
 		return nil, fmt.Errorf("could not seed coverage report: %w", err)
 	}
 
-	// Per-package CVE counts are only seeded for matched (exact/partial) packages,
-	// mirroring the analyzer which skips unmatched packages. CveRange is the min/max
-	// CVSS base score across a package's CVEs.
+	// Per-package CVE counts are only seeded for exact matches, mirroring the analyzer
+	// which version-scopes advisories and skips non-exact packages. CveRange is the
+	// min/max CVSS base score across a package's CVEs.
 	packages := []models.CoverageReportPackage{
 		{CoverageReportUUID: options.UUID, Ecosystem: "Java", Name: "spring-web", Version: "6.1.5", Namespace: utils.Ptr("org.springframework"), MatchStatus: models.CoverageMatchStatusExact,
-			CveHigh: 1, CveMedium: 2, CveRangeLow: utils.Ptr(float32(5.3)), CveRangeHigh: utils.Ptr(float32(7.5))},
+			CveImportant: 1, CveModerate: 2, CveRangeLow: utils.Ptr(float32(5.3)), CveRangeHigh: utils.Ptr(float32(7.5))},
 		{CoverageReportUUID: options.UUID, Ecosystem: "Java", Name: "spring-core", Version: "6.1.5", Namespace: utils.Ptr("org.springframework"), MatchStatus: models.CoverageMatchStatusExact,
-			CveMedium: 1, CveRangeLow: utils.Ptr(float32(5.5)), CveRangeHigh: utils.Ptr(float32(5.5))},
-		{CoverageReportUUID: options.UUID, Ecosystem: "Java", Name: "spring-boot-starter-web", Version: "3.2.4", Namespace: utils.Ptr("org.springframework.boot"), MatchStatus: models.CoverageMatchStatusPartial,
-			CveHigh: 1, CveRangeLow: utils.Ptr(float32(7.5)), CveRangeHigh: utils.Ptr(float32(7.5))},
+			CveModerate: 1, CveRangeLow: utils.Ptr(float32(5.5)), CveRangeHigh: utils.Ptr(float32(5.5))},
+		{CoverageReportUUID: options.UUID, Ecosystem: "Java", Name: "spring-boot-starter-web", Version: "3.2.4", Namespace: utils.Ptr("org.springframework.boot"), MatchStatus: models.CoverageMatchStatusPartial},
 		{CoverageReportUUID: options.UUID, Ecosystem: "Java", Name: "jackson-databind", Version: "2.17.0", Namespace: utils.Ptr("com.fasterxml.jackson.core"), MatchStatus: models.CoverageMatchStatusExact,
-			CveCritical: 1, CveHigh: 3, CveMedium: 6, CveLow: 20, CveRangeLow: utils.Ptr(float32(2.0)), CveRangeHigh: utils.Ptr(float32(9.8))},
+			CveCritical: 1, CveImportant: 3, CveModerate: 6, CveLow: 20, CveRangeLow: utils.Ptr(float32(2.0)), CveRangeHigh: utils.Ptr(float32(9.8))},
 		{CoverageReportUUID: options.UUID, Ecosystem: "Java", Name: "netty-codec-http", Version: "4.1.108.Final", Namespace: utils.Ptr("io.netty"), MatchStatus: models.CoverageMatchStatusNone},
 		{CoverageReportUUID: options.UUID, Ecosystem: "Python", Name: "requests", Version: "2.31.0", MatchStatus: models.CoverageMatchStatusExact,
-			CveMedium: 1, CveLow: 1, CveRangeLow: utils.Ptr(float32(3.1)), CveRangeHigh: utils.Ptr(float32(5.3))},
+			CveModerate: 1, CveLow: 1, CveRangeLow: utils.Ptr(float32(3.1)), CveRangeHigh: utils.Ptr(float32(5.3))},
 		{CoverageReportUUID: options.UUID, Ecosystem: "Python", Name: "urllib3", Version: "2.0.7", MatchStatus: models.CoverageMatchStatusNone},
-		{CoverageReportUUID: options.UUID, Ecosystem: "Python", Name: "idna", Version: "3.7", MatchStatus: models.CoverageMatchStatusPartial,
-			CveLow: 1, CveRangeLow: utils.Ptr(float32(2.5)), CveRangeHigh: utils.Ptr(float32(2.5))},
+		{CoverageReportUUID: options.UUID, Ecosystem: "Python", Name: "idna", Version: "3.7", MatchStatus: models.CoverageMatchStatusPartial},
 		{CoverageReportUUID: options.UUID, Ecosystem: "Python", Name: "django", Version: "4.2.11", MatchStatus: models.CoverageMatchStatusExact,
-			CveCritical: 1, CveHigh: 1, CveRangeLow: utils.Ptr(float32(7.5)), CveRangeHigh: utils.Ptr(float32(9.1))},
+			CveCritical: 1, CveImportant: 1, CveRangeLow: utils.Ptr(float32(7.5)), CveRangeHigh: utils.Ptr(float32(9.1))},
 	}
 	if err := db.Create(&packages).Error; err != nil {
 		return nil, fmt.Errorf("could not seed coverage report packages: %w", err)
