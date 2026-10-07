@@ -21,10 +21,10 @@ type CoverageReportResponse struct {
 
 // CveCount represents a count of CVEs bucketed by severity
 type CveCount struct {
-	Critical int `json:"critical"`
-	High     int `json:"high"`
-	Medium   int `json:"medium"`
-	Low      int `json:"low"`
+	Critical  int `json:"critical"`
+	Important int `json:"important"`
+	Moderate  int `json:"moderate"`
+	Low       int `json:"low"`
 }
 
 // CveRange represents the min and max CVSS severity scores across a package's CVEs

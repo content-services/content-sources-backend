@@ -8,27 +8,29 @@ import (
 
 // CVSS base-score thresholds used to bucket a CVE into a severity level.
 // A score below lowThreshold (e.g. 0.0 / unscored) is excluded entirely.
+// Severity labels mirror the rest of the service (critical/important/moderate/low).
 const (
-	criticalThreshold = 9.0
-	highThreshold     = 7.0
-	mediumThreshold   = 4.0
-	lowThreshold      = 0.1
+	criticalThreshold  = 9.0
+	importantThreshold = 7.0
+	moderateThreshold  = 4.0
+	lowThreshold       = 0.1
 )
 
 // Advisory is a CVE fixed in a remediated repository for a package.
 type Advisory struct {
-	Ecosystem     string  // matcher.EcosystemJava or matcher.EcosystemPython
-	PackageName   string  // Java: "groupId:artifactId"; Python: PyPI project name
-	AdvisoryID    string  // CVE / advisory identifier (used to de-duplicate)
-	SeverityScore float32 // CVSS base score
+	Ecosystem     string   // matcher.EcosystemJava or matcher.EcosystemPython
+	PackageName   string   // Java: "groupId:artifactId"; Python: PyPI project name
+	AdvisoryID    string   // CVE / advisory identifier (used to de-duplicate)
+	SeverityScore float32  // CVSS base score
+	FixedVersions []string // package versions in which the advisory is fixed
 }
 
 // Count is a per-severity count of CVEs.
 type Count struct {
-	Critical int
-	High     int
-	Medium   int
-	Low      int
+	Critical  int
+	Important int
+	Moderate  int
+	Low       int
 }
 
 // Range is the min/max CVSS severity score across a set of CVEs.
@@ -43,49 +45,69 @@ type PackageCVE struct {
 	Range *Range // nil when the package has no counted CVEs
 }
 
-// Enrich computes per-package CVE data for matched (exact or partial) packages and an
-// aggregate summary. The returned slice is aligned 1:1 with results; unmatched packages
-// and packages with no CVEs get a zero Count and a nil Range. CVEs are de-duplicated by
-// AdvisoryID per package and bucketed by CVSS score; CVEs scoring below lowThreshold are
-// excluded from both the counts and the range.
+// Enrich computes per-package CVE data for exact-matched packages and an aggregate
+// summary. CVE data is version-scoped: an advisory only applies to a package when the
+// package's version is one of the advisory's fixed versions. Only exact matches (name +
+// version) are enriched, since a version-scoped advisory cannot be tied to a package
+// whose version was not matched in the catalog.
+//
+// The returned slice is aligned 1:1 with results; packages that are not exact matches,
+// or that have no matching advisories, get a zero Count and a nil Range. Within a package
+// CVEs are de-duplicated by AdvisoryID, and the summary de-duplicates by (package,
+// AdvisoryID) so a CVE spanning multiple versions of the same package is counted once.
+// CVEs scoring below lowThreshold are excluded from both the counts and the range.
 func Enrich(results []matcher.MatchResult, advisories []Advisory) ([]PackageCVE, Count) {
 	index := buildAdvisoryIndex(advisories)
 
 	perPackage := make([]PackageCVE, len(results))
-	var summary Count
+	summaryScores := make(map[string]float32)
 	for i, result := range results {
-		if result.MatchStatus == matcher.MatchStatusNone {
+		if result.MatchStatus != matcher.MatchStatusExact {
 			continue
 		}
-		scores := index[matcher.NormalizeKey(result.Package)]
+		key := matcher.NormalizeKey(result.Package)
+		scores := index[key][result.Version]
 		if len(scores) == 0 {
 			continue
 		}
-		pkgCVE := computePackageCVE(scores)
-		perPackage[i] = pkgCVE
-		summary.Critical += pkgCVE.Count.Critical
-		summary.High += pkgCVE.Count.High
-		summary.Medium += pkgCVE.Count.Medium
-		summary.Low += pkgCVE.Count.Low
+		perPackage[i] = computePackageCVE(scores)
+		for advisoryID, score := range scores {
+			summaryScores[key+"\x00"+advisoryID] = score
+		}
+	}
+
+	var summary Count
+	for _, score := range summaryScores {
+		bucketScore(&summary, score)
 	}
 	return perPackage, summary
 }
 
-// buildAdvisoryIndex maps a normalized package key to the set of distinct advisory
-// IDs (and their scores) that apply to it.
-func buildAdvisoryIndex(advisories []Advisory) map[string]map[string]float32 {
-	index := make(map[string]map[string]float32)
+// buildAdvisoryIndex maps a normalized package key to its fixed versions, and each fixed
+// version to the set of distinct advisory IDs (and their scores) fixed in that version.
+func buildAdvisoryIndex(advisories []Advisory) map[string]map[string]map[string]float32 {
+	index := make(map[string]map[string]map[string]float32)
 	for _, advisory := range advisories {
 		key := advisoryKey(advisory.Ecosystem, advisory.PackageName)
 		if key == "" {
 			continue
 		}
-		byID, ok := index[key]
+		byVersion, ok := index[key]
 		if !ok {
-			byID = make(map[string]float32)
-			index[key] = byID
+			byVersion = make(map[string]map[string]float32)
+			index[key] = byVersion
 		}
-		byID[advisory.AdvisoryID] = advisory.SeverityScore
+		for _, version := range advisory.FixedVersions {
+			if version == "" {
+				continue
+			}
+			byID, ok := byVersion[version]
+			if !ok {
+				byID = make(map[string]float32)
+				byVersion[version] = byID
+			}
+			byID[advisory.AdvisoryID] = advisory.SeverityScore
+		}
 	}
 	return index
 }
@@ -108,16 +130,7 @@ func computePackageCVE(scores map[string]float32) PackageCVE {
 	var count Count
 	var rng *Range
 	for _, score := range scores {
-		switch {
-		case score >= criticalThreshold:
-			count.Critical++
-		case score >= highThreshold:
-			count.High++
-		case score >= mediumThreshold:
-			count.Medium++
-		case score >= lowThreshold:
-			count.Low++
-		default:
+		if !bucketScore(&count, score) {
 			// Unscored / below the low threshold: excluded from counts and range.
 			continue
 		}
@@ -131,4 +144,22 @@ func computePackageCVE(scores map[string]float32) PackageCVE {
 		}
 	}
 	return PackageCVE{Count: count, Range: rng}
+}
+
+// bucketScore increments the matching severity bucket for a CVSS score and reports
+// whether the score was counted (false when it falls below the low threshold).
+func bucketScore(count *Count, score float32) bool {
+	switch {
+	case score >= criticalThreshold:
+		count.Critical++
+	case score >= importantThreshold:
+		count.Important++
+	case score >= moderateThreshold:
+		count.Moderate++
+	case score >= lowThreshold:
+		count.Low++
+	default:
+		return false
+	}
+	return true
 }

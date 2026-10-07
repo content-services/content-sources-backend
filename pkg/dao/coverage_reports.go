@@ -112,10 +112,10 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 			Covered:     pkg.MatchStatus != models.CoverageMatchStatusNone,
 			MatchStatus: pkg.MatchStatus,
 			CveCount: api.CveCount{
-				Critical: pkg.CveCritical,
-				High:     pkg.CveHigh,
-				Medium:   pkg.CveMedium,
-				Low:      pkg.CveLow,
+				Critical:  pkg.CveCritical,
+				Important: pkg.CveImportant,
+				Moderate:  pkg.CveModerate,
+				Low:       pkg.CveLow,
 			},
 		}
 		if pkg.CveRangeLow != nil && pkg.CveRangeHigh != nil {
@@ -187,8 +187,8 @@ func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportU
 		if i < len(params.PackageCVEs) {
 			pkgCVE := params.PackageCVEs[i]
 			pkg.CveCritical = pkgCVE.Count.Critical
-			pkg.CveHigh = pkgCVE.Count.High
-			pkg.CveMedium = pkgCVE.Count.Medium
+			pkg.CveImportant = pkgCVE.Count.Important
+			pkg.CveModerate = pkgCVE.Count.Moderate
 			pkg.CveLow = pkgCVE.Count.Low
 			if pkgCVE.Range != nil {
 				pkg.CveRangeLow = utils.Ptr(pkgCVE.Range.Low)
@@ -235,8 +235,8 @@ func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportU
 		report.Unmatched = utils.Ptr(params.Summary.Unmatched)
 		report.EcosystemCoverageSummary = &ecosystemSummary
 		report.CveCritical = params.CveSummary.Critical
-		report.CveHigh = params.CveSummary.High
-		report.CveMedium = params.CveSummary.Medium
+		report.CveImportant = params.CveSummary.Important
+		report.CveModerate = params.CveSummary.Moderate
 		report.CveLow = params.CveSummary.Low
 		report.CatalogSnapshotAt = utils.Ptr(params.Summary.CatalogSnapshotAt)
 		report.CompletedAt = &now
@@ -295,10 +295,10 @@ func (d coverageReportDaoImpl) modelToResponse(r models.CoverageReport) api.Cove
 		resp.Unmatched = *r.Unmatched
 	}
 	resp.CveSummary = api.CveCount{
-		Critical: r.CveCritical,
-		High:     r.CveHigh,
-		Medium:   r.CveMedium,
-		Low:      r.CveLow,
+		Critical:  r.CveCritical,
+		Important: r.CveImportant,
+		Moderate:  r.CveModerate,
+		Low:       r.CveLow,
 	}
 	if r.AnalysisTaskError != nil {
 		resp.AnalysisTaskError = *r.AnalysisTaskError
