@@ -15,6 +15,7 @@ type Querier interface {
 	CountAdvisoriesByRepo(ctx context.Context, repositoryConfigUuid uuid.UUID) (int64, error)
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
+	CountClearinghouseUploads(ctx context.Context, orgID *string) (int64, error)
 	CreateClearinghouseUpload(ctx context.Context, arg CreateClearinghouseUploadParams) (ClearinghouseUpload, error)
 	CreateClearinghouseUploadFile(ctx context.Context, arg CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)
 	DeleteVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (int64, error)
@@ -22,12 +23,15 @@ type Querier interface {
 	DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg DeleteVulnerabilityTicketsNotInParams) error
 	GetBeaconSync(ctx context.Context) (time.Time, error)
 	GetClearinghouseUpload(ctx context.Context, argUuid uuid.UUID) (ClearinghouseUpload, error)
+	GetClearinghouseUploadFileByName(ctx context.Context, arg GetClearinghouseUploadFileByNameParams) (ClearinghouseUploadFile, error)
 	GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (LightwellVulnerability, error)
 	InsertVulnerabilityCustomer(ctx context.Context, arg InsertVulnerabilityCustomerParams) error
 	ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) ([]ListAdvisoriesRow, error)
 	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]ListAdvisoriesByCveIDRow, error)
 	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
 	ListClearinghouseUploadFiles(ctx context.Context, clearinghouseUploadUuid uuid.UUID) ([]ClearinghouseUploadFile, error)
+	ListClearinghouseUploadFilesByUploads(ctx context.Context, uploadUuids []uuid.UUID) ([]ClearinghouseUploadFile, error)
+	ListClearinghouseUploads(ctx context.Context, arg ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLightwellPackageVersions(ctx context.Context, arg ListLightwellPackageVersionsParams) ([]ListLightwellPackageVersionsRow, error)
 	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)

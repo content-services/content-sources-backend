@@ -247,12 +247,12 @@ features:
     enabled: false
   lightwell:
     enabled: false
-  lightwell_intake:
+  lightwell_clearinghouse:
     enabled: false
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
-  lightwell_intake_read:
+  lightwell_clearinghouse_read:
     enabled: false
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]

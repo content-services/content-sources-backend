@@ -11,6 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+const countClearinghouseUploads = `-- name: CountClearinghouseUploads :one
+SELECT COUNT(*)::bigint
+FROM clearinghouse_uploads
+WHERE $1::text IS NULL OR org_id = $1::text
+`
+
+func (q *Queries) CountClearinghouseUploads(ctx context.Context, orgID *string) (int64, error) {
+	row := q.db.QueryRow(ctx, countClearinghouseUploads, orgID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createClearinghouseUpload = `-- name: CreateClearinghouseUpload :one
 INSERT INTO clearinghouse_uploads (
     uuid,
@@ -121,6 +134,30 @@ func (q *Queries) GetClearinghouseUpload(ctx context.Context, argUuid uuid.UUID)
 	return i, err
 }
 
+const getClearinghouseUploadFileByName = `-- name: GetClearinghouseUploadFileByName :one
+SELECT uuid, clearinghouse_upload_uuid, filename, filepath
+FROM clearinghouse_upload_files
+WHERE clearinghouse_upload_uuid = $1
+    AND filename = $2
+`
+
+type GetClearinghouseUploadFileByNameParams struct {
+	ClearinghouseUploadUuid uuid.UUID `json:"clearinghouse_upload_uuid"`
+	Filename                string    `json:"filename"`
+}
+
+func (q *Queries) GetClearinghouseUploadFileByName(ctx context.Context, arg GetClearinghouseUploadFileByNameParams) (ClearinghouseUploadFile, error) {
+	row := q.db.QueryRow(ctx, getClearinghouseUploadFileByName, arg.ClearinghouseUploadUuid, arg.Filename)
+	var i ClearinghouseUploadFile
+	err := row.Scan(
+		&i.Uuid,
+		&i.ClearinghouseUploadUuid,
+		&i.Filename,
+		&i.Filepath,
+	)
+	return i, err
+}
+
 const listClearinghouseUploadFiles = `-- name: ListClearinghouseUploadFiles :many
 SELECT uuid, clearinghouse_upload_uuid, filename, filepath
 FROM clearinghouse_upload_files
@@ -142,6 +179,80 @@ func (q *Queries) ListClearinghouseUploadFiles(ctx context.Context, clearinghous
 			&i.ClearinghouseUploadUuid,
 			&i.Filename,
 			&i.Filepath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listClearinghouseUploadFilesByUploads = `-- name: ListClearinghouseUploadFilesByUploads :many
+SELECT uuid, clearinghouse_upload_uuid, filename, filepath
+FROM clearinghouse_upload_files
+WHERE clearinghouse_upload_uuid = ANY($1::uuid[])
+ORDER BY clearinghouse_upload_uuid, filename
+`
+
+func (q *Queries) ListClearinghouseUploadFilesByUploads(ctx context.Context, uploadUuids []uuid.UUID) ([]ClearinghouseUploadFile, error) {
+	rows, err := q.db.Query(ctx, listClearinghouseUploadFilesByUploads, uploadUuids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ClearinghouseUploadFile{}
+	for rows.Next() {
+		var i ClearinghouseUploadFile
+		if err := rows.Scan(
+			&i.Uuid,
+			&i.ClearinghouseUploadUuid,
+			&i.Filename,
+			&i.Filepath,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listClearinghouseUploads = `-- name: ListClearinghouseUploads :many
+SELECT uuid, created_at, org_id, account_id, vulnerability_count, status, error_message
+FROM clearinghouse_uploads
+WHERE $1::text IS NULL OR org_id = $1::text
+ORDER BY created_at DESC, uuid DESC
+LIMIT $3 OFFSET $2
+`
+
+type ListClearinghouseUploadsParams struct {
+	OrgID      *string `json:"org_id"`
+	PageOffset int32   `json:"page_offset"`
+	PageLimit  int32   `json:"page_limit"`
+}
+
+func (q *Queries) ListClearinghouseUploads(ctx context.Context, arg ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error) {
+	rows, err := q.db.Query(ctx, listClearinghouseUploads, arg.OrgID, arg.PageOffset, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ClearinghouseUpload{}
+	for rows.Next() {
+		var i ClearinghouseUpload
+		if err := rows.Scan(
+			&i.Uuid,
+			&i.CreatedAt,
+			&i.OrgID,
+			&i.AccountID,
+			&i.VulnerabilityCount,
+			&i.Status,
+			&i.ErrorMessage,
 		); err != nil {
 			return nil, err
 		}

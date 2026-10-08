@@ -154,14 +154,26 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 	}
 }
 
-func CheckLightwellIntakeReadAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.LightwellIntakeRead.Enabled {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read Lightwell intake uploads",
-			"Lightwell intake read is disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellIntakeRead) {
+func CheckLightwellClearinghouseAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellClearinghouse.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot upload a clearinghouse submission",
+			"Clearinghouse uploads are disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellClearinghouse) {
 		return nil
 	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read Lightwell intake uploads",
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot upload a clearinghouse submission",
+			"Neither the user nor account is allowed.")
+	}
+}
+
+func CheckLightwellClearinghouseReadAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellClearinghouseRead.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read clearinghouse submissions",
+			"Clearinghouse read is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellClearinghouseRead) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read clearinghouse submissions",
 			"Neither the user nor account is allowed.")
 	}
 }

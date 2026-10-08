@@ -40,3 +40,27 @@ SELECT *
 FROM clearinghouse_upload_files
 WHERE clearinghouse_upload_uuid = sqlc.arg(clearinghouse_upload_uuid)
 ORDER BY filename;
+
+-- name: ListClearinghouseUploadFilesByUploads :many
+SELECT *
+FROM clearinghouse_upload_files
+WHERE clearinghouse_upload_uuid = ANY(sqlc.arg(upload_uuids)::uuid[])
+ORDER BY clearinghouse_upload_uuid, filename;
+
+-- name: GetClearinghouseUploadFileByName :one
+SELECT *
+FROM clearinghouse_upload_files
+WHERE clearinghouse_upload_uuid = sqlc.arg(clearinghouse_upload_uuid)
+    AND filename = sqlc.arg(filename);
+
+-- name: ListClearinghouseUploads :many
+SELECT *
+FROM clearinghouse_uploads
+WHERE sqlc.narg(org_id)::text IS NULL OR org_id = sqlc.narg(org_id)::text
+ORDER BY created_at DESC, uuid DESC
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: CountClearinghouseUploads :one
+SELECT COUNT(*)::bigint
+FROM clearinghouse_uploads
+WHERE sqlc.narg(org_id)::text IS NULL OR org_id = sqlc.narg(org_id)::text;
