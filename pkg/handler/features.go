@@ -154,6 +154,18 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 	}
 }
 
+func CheckLightwellIntakeReadAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.LightwellIntakeRead.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read Lightwell intake uploads",
+			"Lightwell intake read is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellIntakeRead) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read Lightwell intake uploads",
+			"Neither the user nor account is allowed.")
+	}
+}
+
 func CheckLightwellBeaconAccessible(ctx context.Context) (err error) {
 	if !config.Get().Features.LightwellBeacon.Enabled {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Beacon",
