@@ -335,7 +335,7 @@ func TestPackagesFromEffective(t *testing.T) {
 				GroupID: "org.transitive", ArtifactID: "from-bom", Version: "4.5.6",
 			},
 		},
-	})
+	}, new(int))
 	assert.Equal(t, []Package{
 		{Ecosystem: EcosystemJava, Namespace: "org.slf4j", Name: "slf4j-api", Version: "1.7.36"},
 		{Ecosystem: EcosystemJava, Namespace: "junit", Name: "junit", Version: "4.13.2"},
