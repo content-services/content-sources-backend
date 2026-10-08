@@ -38,8 +38,8 @@ func (s *LightwellTermsSuite) SetupTest() {
 func (s *LightwellTermsSuite) TestTermsRequiredRoute() {
 	t := s.T()
 
-	s.tsClient.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(false, nil)
+	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{}, nil)
 
 	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -55,8 +55,8 @@ func (s *LightwellTermsSuite) TestTermsRequiredRoute() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 	t := s.T()
 
-	s.tsClient.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(true, nil)
+	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{"network", "academic"}, nil)
 
 	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -74,8 +74,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	t := s.T()
 
-	s.tsClient.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(false, nil)
+	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{}, nil)
 
 	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -111,8 +111,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 	t := s.T()
 
-	s.tsClient.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(false, fmt.Errorf("connection refused"))
+	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string(nil), fmt.Errorf("connection refused"))
 
 	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
 	req := httptest.NewRequest(http.MethodGet, path, nil)

@@ -14,6 +14,7 @@ import (
 
 type TermsServiceClient interface {
 	IsTermsAcceptanceRequired(ctx context.Context, login string) (bool, error)
+	GetRequiredEvents(ctx context.Context, login string) ([]string, error)
 }
 
 type termsServiceImpl struct {
@@ -71,4 +72,53 @@ func (t *termsServiceImpl) IsTermsAcceptanceRequired(ctx context.Context, login 
 	// Wire format unconfirmed — see open items.
 	trimmed := strings.TrimSpace(string(body))
 	return strings.EqualFold(trimmed, "true"), nil
+}
+
+// isEventRequired checks a single event for the given user.
+func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, event string) (bool, error) {
+	params := url.Values{}
+	params.Set("login", login)
+	params.Set("site", t.site)
+	params.Set("event", event)
+	reqURL := fmt.Sprintf("%s/svcrest/terms/presentation/isrequired?%s", t.baseURL, params.Encode())
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return false, fmt.Errorf("building isrequired request for event %q: %w", event, err)
+	}
+
+	resp, err := t.client.Do(req)
+	if err != nil {
+		log.Ctx(ctx).Error().Err(err).Str("event", event).Msg("terms service isrequired call failed")
+		return false, fmt.Errorf("terms service isrequired for event %q: %w", event, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("reading isrequired response for event %q: %w", event, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("terms service isrequired for event %q returned %d: %s", event, resp.StatusCode, string(body))
+	}
+
+	trimmed := strings.TrimSpace(string(body))
+	return strings.EqualFold(trimmed, "true"), nil
+}
+
+// GetRequiredEvents checks each configured event individually and returns only
+// those that still require acceptance by the given user.
+func (t *termsServiceImpl) GetRequiredEvents(ctx context.Context, login string) ([]string, error) {
+	var required []string
+	for _, event := range t.events {
+		ok, err := t.isEventRequired(ctx, login, event)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			required = append(required, event)
+		}
+	}
+	return required, nil
 }

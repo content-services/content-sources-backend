@@ -60,7 +60,7 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
-	required, err := h.TermsServiceClient.IsTermsAcceptanceRequired(ctx, login)
+	events, err := h.TermsServiceClient.GetRequiredEvents(ctx, login)
 	if err != nil {
 		// Fail open: if the terms service is unreachable, allow the user
 		// through rather than blocking access to content.
@@ -68,11 +68,11 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
-	resp := api.TermsRequiredResponse{Required: required}
-	if required {
+	resp := api.TermsRequiredResponse{Required: len(events) > 0}
+	if resp.Required {
 		ts := config.Get().Clients.TermsService
 		resp.Site = ts.Site
-		resp.Events = ts.Events
+		resp.Events = events
 	}
 
 	return c.JSON(http.StatusOK, resp)

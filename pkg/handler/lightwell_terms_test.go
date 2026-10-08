@@ -75,8 +75,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
 	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
-	s.tsMock.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(true, nil)
+	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{"network", "academic"}, nil)
 
 	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -93,11 +93,35 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 	assert.Equal(t, []string{"network", "academic"}, resp.Events)
 }
 
+func (s *LightwellTermsSuite) TestGetTermsRequired_PartiallyRequired() {
+	t := s.T()
+
+	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
+	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
+
+	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{"academic"}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.True(t, resp.Required)
+	assert.Equal(t, "lightwell", resp.Site)
+	assert.Equal(t, []string{"academic"}, resp.Events, "should only return events the user still needs to accept")
+}
+
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	t := s.T()
 
-	s.tsMock.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(false, nil)
+	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{}, nil)
 
 	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -135,8 +159,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 	t := s.T()
 
-	s.tsMock.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
-		Return(false, fmt.Errorf("connection refused"))
+	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string(nil), fmt.Errorf("connection refused"))
 
 	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
 	req := httptest.NewRequest(http.MethodGet, path, nil)
