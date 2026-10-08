@@ -11,7 +11,7 @@ import (
 func TestParseRequirements_VersionOperators(t *testing.T) {
 	data := []byte("django==5.0.4\nrequests>=2.31.0\nscipy~=1.13\nnumpy<=1.26.4\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 4)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -32,7 +32,7 @@ func TestParseRequirements_VersionOperators(t *testing.T) {
 func TestParseRequirements_SkipsFlags(t *testing.T) {
 	data := []byte("# comment line\n-r other.txt\n--index-url https://pypi.org/simple\nflask==2.3.0  # web framework\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 1)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -44,7 +44,7 @@ func TestParseRequirements_SkipsFlags(t *testing.T) {
 func TestParseRequirements_EnvironmentMarkers(t *testing.T) {
 	data := []byte("requests==2.31.0 ; python_version >= '3.8'\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 1)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -56,7 +56,7 @@ func TestParseRequirements_EnvironmentMarkers(t *testing.T) {
 func TestParseRequirements_Extras(t *testing.T) {
 	data := []byte("requests[security]==2.31.0\nurllib3[socks]==2.0.4\nmatplotlib[security==1.0.0\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 3)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -76,7 +76,7 @@ func TestParseRequirements_Extras(t *testing.T) {
 func TestParseRequirements_LineContinuation(t *testing.T) {
 	data := []byte("requests==2.31.0 \\\n    --hash=sha256:abc123\nflask==2.3.0\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 2)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -92,7 +92,7 @@ func TestParseRequirements_LineContinuation(t *testing.T) {
 func TestParseRequirements_DirectURL(t *testing.T) {
 	data := []byte("urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/1.26.8.zip\nflask==2.3.0\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 2)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -108,7 +108,7 @@ func TestParseRequirements_DirectURL(t *testing.T) {
 func TestParseRequirements_CommaVersionSpecifiers(t *testing.T) {
 	data := []byte("pydantic>=2.0,<3.0,!=2.5.0\ncelery>=5.3.0,<6.0\n")
 
-	pkgs, err := parseRequirements(bytes.NewReader(data))
+	pkgs, err := parseRequirements(bytes.NewReader(data), new(int))
 	require.NoError(t, err)
 	assert.Len(t, pkgs, 2)
 	assert.Equal(t, EcosystemPython, pkgs[0].Ecosystem)
@@ -123,7 +123,18 @@ func TestParseRequirements_CommaVersionSpecifiers(t *testing.T) {
 func TestParseRequirements_TrailingContinuationError(t *testing.T) {
 	data := []byte("flask==2.3.0\nrequests==2.31.0 \\")
 
-	_, err := parseRequirements(bytes.NewReader(data))
+	_, err := parseRequirements(bytes.NewReader(data), new(int))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected end of file")
+}
+
+func TestParseRequirements_SkippedCountPreservesExtraction(t *testing.T) {
+	data := []byte("# comment\n\n-r other.txt\n--index-url https://example.com\nhttps://example.com/archive.zip\nnot a valid name\n==2\n-e ./local\n")
+	var skipped int
+	pkgs, err := parseRequirements(bytes.NewReader(data), &skipped)
+	require.NoError(t, err)
+	require.Len(t, pkgs, 2)
+	assert.Equal(t, "https://example.com/archive.zip", pkgs[0].Name)
+	assert.Equal(t, "not a valid name", pkgs[1].Name)
+	assert.Equal(t, 2, skipped) // Empty package name and the already-ignored editable entry.
 }
