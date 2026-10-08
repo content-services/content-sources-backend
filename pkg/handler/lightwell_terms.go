@@ -6,7 +6,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
-	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -46,7 +45,6 @@ func getLogin(c echo.Context) string {
 // @Tags         lightwell
 // @Produce      json
 // @Success      200 {object} api.TermsRequiredResponse
-// @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/terms/required [get]
 func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -64,8 +62,10 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 
 	required, err := h.TermsServiceClient.IsTermsAcceptanceRequired(ctx, login)
 	if err != nil {
-		log.Ctx(ctx).Error().Err(err).Msg("error checking terms acceptance requirement")
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error checking terms requirement", err.Error())
+		// Fail open: if the terms service is unreachable, allow the user
+		// through rather than blocking access to content.
+		log.Ctx(ctx).Warn().Err(err).Msg("terms service unavailable, failing open (required=false)")
+		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
 	resp := api.TermsRequiredResponse{Required: required}

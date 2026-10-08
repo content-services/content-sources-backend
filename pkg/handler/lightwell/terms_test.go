@@ -108,7 +108,7 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 	assert.False(t, resp.Required)
 }
 
-func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError() {
+func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 	t := s.T()
 
 	s.tsClient.On("IsTermsAcceptanceRequired", test.MockCtx(), "user").
@@ -118,7 +118,11 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := s.serveRouter(req)
+	code, body, err := s.serveRouter(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, code)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.False(t, resp.Required, "should fail open when terms service is unavailable")
 }
