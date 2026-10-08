@@ -57,7 +57,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	case FormatCSV:
 		packages, err = parseCSV(br, &skippedEntries)
 	case FormatRequirements:
-		packages, err = parseRequirements(br)
+		packages, err = parseRequirements(br, &skippedEntries)
 	case FormatPOM:
 		packages, err = parsePOMs(br)
 	case FormatCycloneDX:
