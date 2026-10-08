@@ -145,6 +145,13 @@ clients:
         access_key: minio
         secret_key: minio
         region: minio
+      clearinghouse_uploads:
+        url:
+        name:
+        access_key:
+        secret_key:
+        region:
+        file_prefix:
   pulp_log_parser:
     cloudwatch:
       key:
