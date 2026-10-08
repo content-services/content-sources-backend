@@ -82,8 +82,6 @@ github.com/content-services/caliri/release/v4 v4.8.1 h1:ttaBJkDrjxt89Efgzws0P5jq
 github.com/content-services/caliri/release/v4 v4.8.1/go.mod h1:lFbop4Wy5Z7tLmj5XoMqMep1rOEz1Od4VG9Z7cq+Xs0=
 github.com/content-services/lecho/v3 v3.5.2 h1:lNGYoG/6RnPtnGtWkKSUwO2Huw6lxDrW1Ogz1Ct2jT0=
 github.com/content-services/lecho/v3 v3.5.2/go.mod h1:hALn6ZuFGV3AIYlkhZDU1C5JoWM4TeIx//VO2xt8oZA=
-github.com/content-services/tang v0.0.30 h1:t/d6tYTKaq5nU0Qc9v4VW79OrJO2i8oxWSt4JGn1hLM=
-github.com/content-services/tang v0.0.30/go.mod h1:Z969TdEJaoRHxhpZ89Gi25RFVj1dBjEiFzhsGppyz8g=
 github.com/content-services/yummy v1.0.20 h1:+RI0EeeERuQKpFu+ylYi41ypKZCViyqNwG/mSbRFPTU=
 github.com/content-services/yummy v1.0.20/go.mod h1:8XM71AH0KRrTIXbP6ySTURlsrCs/TbtpPX4uQJfYn/c=
 github.com/content-services/zest/release/v2026 v2026.9.1790681838 h1:RAFnMRW4dl9Saw2bV8Sx1P/BHb4WIhOHNb5Q+eTZ64Q=
@@ -350,6 +348,8 @@ github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWD
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
 github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8=
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
+github.com/swadeley/tang v0.0.0-20261002185337-cd57a125af7f h1:HfwcKDneeOA28moAWVSiQNw0IfkOBJHQhrXhlTfDOf4=
+github.com/swadeley/tang v0.0.0-20261002185337-cd57a125af7f/go.mod h1:Z969TdEJaoRHxhpZ89Gi25RFVj1dBjEiFzhsGppyz8g=
 github.com/swaggo/swag v1.16.6 h1:qBNcx53ZaX+M5dxVyTrgQ0PJ/ACK+NzhwcbieTt+9yI=
 github.com/swaggo/swag v1.16.6/go.mod h1:ngP2etMK5a0P3QBizic5MEwpRmluJZPHjXcMoj4Xesg=
 github.com/tidwall/gjson v1.18.0 h1:FIDeeyB800efLX89e5a8Y0BNH+LOngJyGrIWxG2FKQY=

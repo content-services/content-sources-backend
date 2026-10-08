@@ -177,3 +177,6 @@ require (
 	golang.org/x/tools v0.49.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
+
+// Temporary until content-services/tang#46 is merged and tagged; then bump require and drop replace.
+replace github.com/content-services/tang => github.com/swadeley/tang v0.0.0-20261002185337-cd57a125af7f
