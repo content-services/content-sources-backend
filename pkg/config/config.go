@@ -109,6 +109,7 @@ type FeatureSet struct {
 	AdminNotifications                    Feature `mapstructure:"admin_notifications"`
 	LightwellBeacon                       Feature `mapstructure:"lightwell_beacon"`
 	LightwellIntake                       Feature `mapstructure:"lightwell_intake"`
+	LightwellIntakeRead                   Feature `mapstructure:"lightwell_intake_read"`
 	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
 	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
@@ -531,6 +532,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.lightwell_intake.accounts", nil)
 	v.SetDefault("features.lightwell_intake.organizations", nil)
 	v.SetDefault("features.lightwell_intake.users", nil)
+	v.SetDefault("features.lightwell_intake_read.enabled", false)
+	v.SetDefault("features.lightwell_intake_read.accounts", nil)
+	v.SetDefault("features.lightwell_intake_read.organizations", nil)
+	v.SetDefault("features.lightwell_intake_read.users", nil)
 	v.SetDefault("features.lightwell_lens.enabled", false)
 	v.SetDefault("features.lightwell_lens.accounts", nil)
 	v.SetDefault("features.lightwell_lens.organizations", nil)

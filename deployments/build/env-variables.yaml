@@ -65,6 +65,14 @@ env:
     value: ${FEATURES_LIGHTWELL_INTAKE_ORGANIZATIONS}
   - name: FEATURES_LIGHTWELL_INTAKE_USERS
     value: ${FEATURES_LIGHTWELL_INTAKE_USERS}
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_ENABLED
+    value: ${FEATURES_LIGHTWELL_INTAKE_READ_ENABLED}
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_ACCOUNTS
+    value: ${FEATURES_LIGHTWELL_INTAKE_READ_ACCOUNTS}
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_ORGANIZATIONS
+    value: ${FEATURES_LIGHTWELL_INTAKE_READ_ORGANIZATIONS}
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_USERS
+    value: ${FEATURES_LIGHTWELL_INTAKE_READ_USERS}
   - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
     value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED}
   - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
@@ -453,6 +461,15 @@ parameters:
     description: Comma separated list of org ids that can access the feature
   - name: FEATURES_LIGHTWELL_INTAKE_USERS
     description: Comma separated list of usernames that can access the feature
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_ENABLED
+    description: Whether reading Lightwell intake uploads should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_ACCOUNTS
+    description: Comma separated list of account numbers that can read intake uploads
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_ORGANIZATIONS
+    description: Comma separated list of org ids that can read intake uploads
+  - name: FEATURES_LIGHTWELL_INTAKE_READ_USERS
+    description: Comma separated list of usernames that can read intake uploads
   - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
     description: Whether the Lightwell Notifications feature should be turned on
     value: 'false'

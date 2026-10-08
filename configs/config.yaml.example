@@ -252,6 +252,11 @@ features:
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
+  lightwell_intake_read:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
   lightwell_notifications:
     enabled: false
     accounts: #["lightwellNotifAccount"]
