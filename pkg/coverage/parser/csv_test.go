@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -85,4 +86,21 @@ CVE-002,pkg:pypi/flask@3.0.3,Flask
 	assert.Equal(t, "flask", pkgs[0].Name)
 	assert.Equal(t, "3.0.3", pkgs[0].Version)
 	assert.Empty(t, pkgs[0].Namespace)
+}
+
+func TestParseCsvSkippedEntries(t *testing.T) {
+	tests := []struct {
+		name, filename, content string
+		skipped, packages       int
+	}{
+		{"CSV", "packages.csv", "metadata\npackageurl,name\npkg:pypi/flask@1,valid\npkg:pypi/flask@1,duplicate\n,missing\ninvalid,bad\n", 2, 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Parse(tt.filename, strings.NewReader(tt.content))
+			require.NoError(t, err)
+			assert.Equal(t, tt.skipped, result.SkippedEntries)
+			assert.Len(t, result.Packages, tt.packages)
+		})
+	}
 }

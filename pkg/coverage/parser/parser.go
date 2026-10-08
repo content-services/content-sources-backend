@@ -36,7 +36,7 @@ type ParseResult struct {
 	Packages    []Package
 	InputFormat string
 	// SkippedEntries counts package entries (CSV rows, logical requirement lines,
-	// SBOM components, or POM dependencies/projects) that yield no usable identity.
+	// SBOM components, or POM dependencies) that yield no usable identity.
 	// Headers, comments, configuration, and valid duplicates are excluded.
 	SkippedEntries int
 }
