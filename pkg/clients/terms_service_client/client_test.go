@@ -89,3 +89,74 @@ func TestIsTermsAcceptanceRequired_MalformedBody(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, result)
 }
+
+// --- GetRequiredEvents tests ---
+
+func TestGetRequiredEvents_BothRequired(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "testuser", r.URL.Query().Get("login"))
+		assert.Equal(t, "lightwell", r.URL.Query().Get("site"))
+		// Each call should have exactly one event
+		events := r.URL.Query()["event"]
+		assert.Len(t, events, 1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("True"))
+	}))
+	defer server.Close()
+
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
+	events, err := client.GetRequiredEvents(context.Background(), "testuser")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"network", "academic"}, events)
+}
+
+func TestGetRequiredEvents_OnlyOneRequired(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		event := r.URL.Query().Get("event")
+		w.WriteHeader(http.StatusOK)
+		if event == "academic" {
+			_, _ = w.Write([]byte("True"))
+		} else {
+			_, _ = w.Write([]byte("False"))
+		}
+	}))
+	defer server.Close()
+
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
+	events, err := client.GetRequiredEvents(context.Background(), "testuser")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"academic"}, events)
+}
+
+func TestGetRequiredEvents_NoneRequired(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("False"))
+	}))
+	defer server.Close()
+
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
+	events, err := client.GetRequiredEvents(context.Background(), "testuser")
+	require.NoError(t, err)
+	assert.Empty(t, events)
+}
+
+func TestGetRequiredEvents_ErrorPropagates(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("False"))
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte("error"))
+		}
+	}))
+	defer server.Close()
+
+	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
+	events, err := client.GetRequiredEvents(context.Background(), "testuser")
+	assert.Error(t, err)
+	assert.Nil(t, events)
+}

@@ -102,3 +102,71 @@ func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) RunAndReturn(ru
 	_c.Call.Return(run)
 	return _c
 }
+
+// GetRequiredEvents provides a mock function for the type MockTermsServiceClient
+func (_mock *MockTermsServiceClient) GetRequiredEvents(ctx context.Context, login string) ([]string, error) {
+	ret := _mock.Called(ctx, login)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRequiredEvents")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]string, error)); ok {
+		return returnFunc(ctx, login)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []string); ok {
+		r0 = returnFunc(ctx, login)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, login)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTermsServiceClient_GetRequiredEvents_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequiredEvents'
+type MockTermsServiceClient_GetRequiredEvents_Call struct {
+	*mock.Call
+}
+
+// GetRequiredEvents is a helper method to define mock.On call
+//   - ctx context.Context
+//   - login string
+func (_e *MockTermsServiceClient_Expecter) GetRequiredEvents(ctx any, login any) *MockTermsServiceClient_GetRequiredEvents_Call {
+	return &MockTermsServiceClient_GetRequiredEvents_Call{Call: _e.mock.On("GetRequiredEvents", ctx, login)}
+}
+
+func (_c *MockTermsServiceClient_GetRequiredEvents_Call) Run(run func(ctx context.Context, login string)) *MockTermsServiceClient_GetRequiredEvents_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTermsServiceClient_GetRequiredEvents_Call) Return(events []string, err error) *MockTermsServiceClient_GetRequiredEvents_Call {
+	_c.Call.Return(events, err)
+	return _c
+}
+
+func (_c *MockTermsServiceClient_GetRequiredEvents_Call) RunAndReturn(run func(ctx context.Context, login string) ([]string, error)) *MockTermsServiceClient_GetRequiredEvents_Call {
+	_c.Call.Return(run)
+	return _c
+}
