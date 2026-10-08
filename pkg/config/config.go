@@ -152,7 +152,8 @@ type Lightwell struct {
 }
 
 type S3 struct {
-	CoverageUploads ObjectStore `mapstructure:"coverage_uploads"`
+	CoverageUploads      ObjectStore `mapstructure:"coverage_uploads"`
+	ClearinghouseUploads ObjectStore `mapstructure:"clearinghouse_uploads"`
 }
 
 type Candlepin struct {
@@ -206,6 +207,7 @@ type KesselAuth struct {
 
 const RepoClowderBucketName = "content-sources-central-pulp-s3"
 const LightwellCoverageUploadsBucketName = "lightwell-ui-coverage-uploads"
+const LightwellClearinghouseUploadsBucketName = "lightwell-ui-clearinghouse-uploads"
 
 type ObjectStore struct {
 	URL        string
@@ -484,6 +486,13 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.lightwell.s3.coverage_uploads.region", "")
 	v.SetDefault("clients.lightwell.s3.coverage_uploads.file_prefix", "")
 
+	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.url", "")
+	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.name", "")
+	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.access_key", "")
+	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.secret_key", "")
+	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.region", "")
+	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.file_prefix", "")
+
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
 	v.SetDefault("tasking.pgx_logging", true)
@@ -652,6 +661,30 @@ func Load() {
 					log.Error().Msg("Object store Access Key is empty or nil!")
 				} else {
 					v.Set("clients.lightwell.s3.coverage_uploads.access_key", lightwellBucket.AccessKey)
+				}
+			}
+
+			clearinghouseBucket, ok := clowder.ObjectBuckets[LightwellClearinghouseUploadsBucketName]
+			if !ok {
+				log.Logger.Error().Msgf("Expected S3 Bucket named %v but not found", LightwellClearinghouseUploadsBucketName)
+			} else {
+				v.Set("clients.lightwell.s3.clearinghouse_uploads.url", ClowderS3Url(*clowder.LoadedConfig.ObjectStore))
+				v.Set("clients.lightwell.s3.clearinghouse_uploads.name", clearinghouseBucket.Name)
+				log.Logger.Warn().Msgf("Bucket name: %v", clearinghouseBucket.Name)
+				if clearinghouseBucket.Region == nil || *clearinghouseBucket.Region == "" {
+					v.Set("clients.lightwell.s3.clearinghouse_uploads.region", "DummyRegion")
+				} else {
+					v.Set("clients.lightwell.s3.clearinghouse_uploads.region", clearinghouseBucket.Region)
+				}
+				if clearinghouseBucket.SecretKey == nil || *clearinghouseBucket.SecretKey == "" {
+					log.Error().Msg("Object store secret Key is empty or nil!")
+				} else {
+					v.Set("clients.lightwell.s3.clearinghouse_uploads.secret_key", *clearinghouseBucket.SecretKey)
+				}
+				if clearinghouseBucket.AccessKey == nil || *clearinghouseBucket.AccessKey == "" {
+					log.Error().Msg("Object store Access Key is empty or nil!")
+				} else {
+					v.Set("clients.lightwell.s3.clearinghouse_uploads.access_key", clearinghouseBucket.AccessKey)
 				}
 			}
 		}

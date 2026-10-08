@@ -7555,6 +7555,7 @@ objects:
       objectStore:
         - content-sources-central-pulp-s3
         - lightwell-ui-coverage-uploads
+        - lightwell-ui-clearinghouse-uploads
   - apiVersion: v1
     kind: Service
     metadata:
