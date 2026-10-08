@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -368,7 +369,8 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 	snapshotAt := time.Now().UTC().Truncate(time.Microsecond)
 
 	err := s.dao().SaveCoverageAnalysis(context.Background(), report.UUID, SaveCoverageAnalysisParams{
-		InputFormat: "csv",
+		InputFormat:    "csv",
+		SkippedEntries: 9,
 		Results: []matcher.MatchResult{
 			{Package: matcher.Package{Ecosystem: "Java", Name: "spring-core", Version: "6.1.0", Namespace: "org.springframework"}, MatchStatus: matcher.MatchStatusExact},
 			{Package: matcher.Package{Ecosystem: "Python", Name: "flask", Version: "2.0.0"}, MatchStatus: matcher.MatchStatusPartial},
@@ -394,6 +396,11 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 	err = s.tx.Where("uuid = ?", report.UUID).First(&readReport).Error
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), config.TaskStatusCompleted, readReport.Status)
+	require.NotNil(s.T(), readReport.SkippedEntries)
+	assert.Equal(s.T(), 9, *readReport.SkippedEntries)
+	response := s.dao().modelToResponse(readReport)
+	require.NotNil(s.T(), response.SkippedEntries)
+	assert.Equal(s.T(), 9, *response.SkippedEntries)
 	require.NotNil(s.T(), readReport.InputFormat)
 	assert.Equal(s.T(), "csv", *readReport.InputFormat)
 	require.NotNil(s.T(), readReport.Total)
@@ -511,4 +518,21 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisNotFound() {
 	ok := errors.As(err, &daoErr)
 	require.True(s.T(), ok)
 	assert.True(s.T(), daoErr.NotFound)
+}
+
+func TestCoverageReportSkippedEntriesResponse(t *testing.T) {
+	for _, count := range []*int{nil, utils.Ptr(0), utils.Ptr(9)} {
+		response := (coverageReportDaoImpl{}).modelToResponse(models.CoverageReport{SkippedEntries: count})
+		payload, err := json.Marshal(response)
+		require.NoError(t, err)
+		var fields map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(payload, &fields))
+		if count == nil {
+			assert.NotContains(t, fields, "skipped_entries")
+		} else {
+			var got int
+			require.NoError(t, json.Unmarshal(fields["skipped_entries"], &got))
+			assert.Equal(t, *count, got)
+		}
+	}
 }

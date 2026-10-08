@@ -136,8 +136,8 @@ func (c *CoverageAnalysis) Run() error {
 		if parsedPackages.SkippedEntries > 0 {
 			//nolint:staticcheck // ST1005: user-facing message persisted verbatim to AnalysisTaskError and rendered in the UI; never wrapped further
 			return fmt.Errorf(
-				"None of the %d package entries in the uploaded %s manifest include a Package URL (PURL).\n"+
-					"Coverage analysis requires PURLs to identify packages — consider regenerating the SBOM with a PURL-aware tool such as Syft.",
+				"None of the %d package entries in the uploaded %s manifest could be identified using a Package URL (PURL) or supported package metadata.\n"+
+					"Coverage analysis requires identifiable packages — consider regenerating the SBOM with a PURL-aware tool such as Syft.",
 				parsedPackages.SkippedEntries, parsedPackages.InputFormat,
 			)
 		}
@@ -170,11 +170,12 @@ func (c *CoverageAnalysis) Run() error {
 	}
 
 	err = c.daoReg.CoverageReport.SaveCoverageAnalysis(c.ctx, c.payload.CoverageReportUUID, dao.SaveCoverageAnalysisParams{
-		InputFormat: parsedPackages.InputFormat,
-		Results:     results,
-		PackageCVEs: packageCVEs,
-		CveSummary:  cveSummary,
-		Summary:     summary,
+		InputFormat:    parsedPackages.InputFormat,
+		SkippedEntries: parsedPackages.SkippedEntries,
+		Results:        results,
+		PackageCVEs:    packageCVEs,
+		CveSummary:     cveSummary,
+		Summary:        summary,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save coverage analysis: %w", err)

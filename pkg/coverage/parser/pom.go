@@ -138,7 +138,6 @@ func parsePOMs(r io.Reader, skipped *int) ([]Package, error) {
 	for i, project := range projects {
 		parsed, err := parsePOM(bytes.NewReader(project), skipped)
 		if err != nil {
-			*skipped++
 			parseErrors = append(parseErrors, fmt.Errorf("project %d: %w", i+1, err))
 			continue
 		}
