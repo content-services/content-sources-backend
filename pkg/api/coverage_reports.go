@@ -4,6 +4,7 @@ import "time"
 
 // CoverageReportResponse represents the coverage report
 type CoverageReportResponse struct {
+	SkippedEntries           *int                       `json:"skipped_entries,omitempty"` // Package entries skipped because no usable identity could be extracted; absent for older reports
 	UUID                     string                     `json:"uuid"`
 	Status                   string                     `json:"status"`                        // Coverage analysis task status
 	InputFormat              string                     `json:"input_format"`                  // Detected manifest format

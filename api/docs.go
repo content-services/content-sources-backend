@@ -5274,6 +5274,10 @@ const docTemplate = `{
                     "description": "Number of packages with name found but not version",
                     "type": "integer"
                 },
+                "skipped_entries": {
+                    "description": "Package entries skipped because no usable identity could be extracted; absent for older reports",
+                    "type": "integer"
+                },
                 "status": {
                     "description": "Coverage analysis task status",
                     "type": "string"

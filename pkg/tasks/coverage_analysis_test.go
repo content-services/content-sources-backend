@@ -124,7 +124,7 @@ func (s *CoverageAnalysisSuite) mockPythonCatalog(ctx context.Context, name, ver
 func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 	ctx := context.Background()
 	reportUUID := uuid.NewString()
-	manifest := []byte("packageurl\npkg:maven/commons-io/commons-io@2.11.0\npkg:pypi/flask@3.0.3\n")
+	manifest := []byte("packageurl\npkg:maven/commons-io/commons-io@2.11.0\npkg:pypi/flask@3.0.3\ninvalid\n")
 	payload := s.mockFetchManifest(ctx, reportUUID, "manifest.csv", manifest)
 	s.mockDaoRegistry.CoverageReport.On("UpdateCoverageReportStatus", ctx, reportUUID, config.TaskStatusRunning, (*string)(nil)).Return(nil).Once()
 	s.mockCatalogRepos(ctx)
@@ -156,6 +156,7 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 	for i, result := range savedParams.Results {
 		byName[result.Name] = savedParams.PackageCVEs[i].Count.Critical
 	}
+	assert.Equal(s.T(), 1, savedParams.SkippedEntries)
 	assert.Equal(s.T(), 1, byName["commons-io"], "the java package should carry the remediated-repo CVE")
 	assert.Equal(s.T(), 0, byName["flask"])
 }
