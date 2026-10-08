@@ -57,6 +57,14 @@ env:
     value: ${FEATURES_ADMIN_TASKS_ORGANIZATIONS}
   - name: FEATURES_LIGHTWELL_ENABLED
     value: ${FEATURES_LIGHTWELL_ENABLED}
+  - name: FEATURES_LIGHTWELL_INTAKE_ENABLED
+    value: ${FEATURES_LIGHTWELL_INTAKE_ENABLED}
+  - name: FEATURES_LIGHTWELL_INTAKE_ACCOUNTS
+    value: ${FEATURES_LIGHTWELL_INTAKE_ACCOUNTS}
+  - name: FEATURES_LIGHTWELL_INTAKE_ORGANIZATIONS
+    value: ${FEATURES_LIGHTWELL_INTAKE_ORGANIZATIONS}
+  - name: FEATURES_LIGHTWELL_INTAKE_USERS
+    value: ${FEATURES_LIGHTWELL_INTAKE_USERS}
   - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
     value: ${FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED}
   - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ACCOUNTS
@@ -436,6 +444,15 @@ parameters:
     description: Whether the extended relaese repos should be snapshotted
   - name: FEATURES_LIGHTWELL_ENABLED
     value: 'false'
+  - name: FEATURES_LIGHTWELL_INTAKE_ENABLED
+    description: Whether Lightwell intake should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_INTAKE_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_LIGHTWELL_INTAKE_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_INTAKE_USERS
+    description: Comma separated list of usernames that can access the feature
   - name: FEATURES_LIGHTWELL_NOTIFICATIONS_ENABLED
     description: Whether the Lightwell Notifications feature should be turned on
     value: 'false'

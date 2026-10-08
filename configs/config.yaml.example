@@ -247,6 +247,11 @@ features:
     enabled: false
   lightwell:
     enabled: false
+  lightwell_intake:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
   lightwell_notifications:
     enabled: false
     accounts: #["lightwellNotifAccount"]
