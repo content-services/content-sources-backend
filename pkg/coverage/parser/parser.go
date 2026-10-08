@@ -61,7 +61,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	case FormatPOM:
 		packages, err = parsePOMs(br, &skippedEntries)
 	case FormatCycloneDX:
-		packages, err = parseCycloneDX(br)
+		packages, err = parseCycloneDX(br, &skippedEntries)
 	case FormatSPDX:
 		packages, skippedEntries, err = parseSPDX(br)
 	default:
