@@ -299,8 +299,8 @@ github.com/pingcap/errors v0.11.4/go.mod h1:Oi8TUi2kEtXXLMJk9l1cGmz20kV3TaQ0usTw
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/project-kessel/kessel-sdk-go v1.12.0 h1:g649k0XuODZ6DsLW3jkf6akN5ANzeRJrfm1c2ebu4Fw=
-github.com/project-kessel/kessel-sdk-go v1.12.0/go.mod h1:5nmwwq8L1JUVR6SUYAjCs0RHxUeU96vkXjmi3aipGkw=
+github.com/project-kessel/kessel-sdk-go v1.13.0 h1:dOhnb93n5wiETJhfLt+vWyCM59e7KA0fXsS6g/lOB5w=
+github.com/project-kessel/kessel-sdk-go v1.13.0/go.mod h1:5nmwwq8L1JUVR6SUYAjCs0RHxUeU96vkXjmi3aipGkw=
 github.com/prometheus/client_golang v1.24.1 h1:JnJkREXzWxUdCuPFpIWZiPispT9xVV59uiuyR2bPlnU=
 github.com/prometheus/client_golang v1.24.1/go.mod h1:F+oSRECHg4sse5ucfYpYDeIv/hu68Zo0uoHKetWnzcE=
 github.com/prometheus/client_model v0.6.2 h1:oBsgwpGs7iVziMvrGhE53c/GrLUsZdHnqNwqPLxwZyk=
