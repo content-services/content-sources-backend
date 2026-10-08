@@ -55,7 +55,7 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	var skippedEntries int
 	switch format {
 	case FormatCSV:
-		packages, err = parseCSV(br)
+		packages, err = parseCSV(br, &skippedEntries)
 	case FormatRequirements:
 		packages, err = parseRequirements(br)
 	case FormatPOM:
