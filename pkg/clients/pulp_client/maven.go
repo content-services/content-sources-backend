@@ -9,6 +9,7 @@ import (
 )
 
 const mavenPackageContentPageSize int32 = 300
+const mavenFlatPackagePageSize int32 = 300
 
 // zestHrefPathParam strips a leading slash so zest does not request
 // {server}//api/pulp/... (Pulp hrefs are already absolute paths).
@@ -45,6 +46,62 @@ func (r *pulpDaoImpl) ListMavenPackages(ctx context.Context, repoHref string, se
 	}
 	if resp.Results == nil {
 		resp.Results = []zest.MavenRepositoryPackageResponse{}
+	}
+	return *resp, nil
+}
+
+// ListMavenFlatPackages lists one row per stored Maven version from packages/flat/.
+func (r *pulpDaoImpl) ListMavenFlatPackages(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error) {
+	var empty zest.PaginatedMavenRepositoryFlatPackageResponseList
+	if repoHref == "" {
+		return empty, fmt.Errorf("maven repository href is required")
+	}
+
+	var all []zest.MavenRepositoryFlatPackageResponse
+	var offset int32
+	var count int32
+	for {
+		page, err := r.listMavenFlatPackagesPage(ctx, repoHref, offset, mavenFlatPackagePageSize)
+		if err != nil {
+			return empty, err
+		}
+		if offset == 0 {
+			count = page.Count
+		}
+		all = append(all, page.Results...)
+		if len(page.Results) == 0 || int64(len(all)) >= int64(count) {
+			break
+		}
+		offset += mavenFlatPackagePageSize
+	}
+	if all == nil {
+		all = []zest.MavenRepositoryFlatPackageResponse{}
+	}
+	return zest.PaginatedMavenRepositoryFlatPackageResponseList{Count: count, Results: all}, nil
+}
+
+func (r *pulpDaoImpl) listMavenFlatPackagesPage(ctx context.Context, repoHref string, offset, limit int32) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error) {
+	var empty zest.PaginatedMavenRepositoryFlatPackageResponseList
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return empty, err
+	}
+
+	resp, httpResp, err := client.RepositoriesMavenAPI.RepositoriesMavenMavenPackagesFlat(ctx, zestHrefPathParam(repoHref)).
+		Limit(limit).
+		Offset(offset).
+		Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return empty, errorWithResponseBody("error listing maven flat packages", httpResp, err)
+	}
+	if resp == nil {
+		return empty, fmt.Errorf("empty maven flat packages response")
+	}
+	if resp.Results == nil {
+		resp.Results = []zest.MavenRepositoryFlatPackageResponse{}
 	}
 	return *resp, nil
 }

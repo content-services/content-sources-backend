@@ -125,3 +125,44 @@ func TestMavenZestCallsDoNotDoubleSlashHref(t *testing.T) {
 		})
 	}
 }
+
+func TestListMavenFlatPackagesPagesByOffset(t *testing.T) {
+	repoHref := "/api/pulp/lightwell/api/v3/repositories/maven/maven/01a0b664-ece5-70ed-b095-ee51f9515234/"
+	var offsets []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		assert.Equal(t, "300", r.URL.Query().Get("limit"))
+		offsets = append(offsets, r.URL.Query().Get("offset"))
+		switch r.URL.Query().Get("offset") {
+		case "0":
+			_, _ = w.Write([]byte(`{"count":2,"next":null,"previous":null,"results":[{"group_id":"org.apache","artifact_id":"commons","version":"1.2.3","last_updated":"2020-01-01T00:00:00Z","description":"upstream","licenses":[{"name":"Apache-2.0","url":""}]}]}`))
+		case "300":
+			_, _ = w.Write([]byte(`{"count":2,"next":null,"previous":null,"results":[{"group_id":"org.apache","artifact_id":"commons","version":"1.2.3.rhlw-00001","last_updated":"2020-02-01T00:00:00Z","description":"rebuild","licenses":[]}]}`))
+		default:
+			http.Error(w, "unexpected offset", http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	pulp := &config.Get().Clients.Pulp
+	orig := *pulp
+	t.Cleanup(func() { config.Get().Clients.Pulp = orig })
+	pulp.Server = srv.URL
+	pulp.Username = "admin"
+	pulp.Password = "password"
+	pulp.ClientCert = ""
+	pulp.ClientKey = ""
+	pulp.CACert = ""
+	pulp.ClientCertPath = ""
+	pulp.ClientKeyPath = ""
+	pulp.CACertPath = ""
+
+	impl := getPulpImpl()
+	resp, err := impl.ListMavenFlatPackages(context.Background(), repoHref)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"0", "300"}, offsets)
+	require.Len(t, resp.Results, 2)
+	assert.Equal(t, "1.2.3", resp.Results[0].Version)
+	assert.Equal(t, "1.2.3.rhlw-00001", resp.Results[1].Version)
+	assert.Equal(t, int32(2), resp.Count)
+}

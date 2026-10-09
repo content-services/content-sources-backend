@@ -123,6 +123,38 @@ func TestIsMavenCentralPomNotFound(t *testing.T) {
 	assert.False(t, isMavenCentralPomNotFound(nil))
 }
 
+func TestIsMavenCentralNotFound(t *testing.T) {
+	assert.True(t, IsMavenCentralNotFound(fmt.Errorf("POM not found: https://example.com/foo.pom")))
+	assert.False(t, IsMavenCentralNotFound(fmt.Errorf("connection refused")))
+	assert.False(t, IsMavenCentralNotFound(nil))
+}
+
+func TestFetchMavenCentralMetadataCopiesDescription(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`<?xml version="1.0"?>
+<project>
+  <description>The Apache Commons IO library</description>
+  <url>https://commons.apache.org/proper/commons-io/</url>
+  <organization><name>The Apache Software Foundation</name></organization>
+  <licenses><license><name>Apache License, Version 2.0</name></license></licenses>
+</project>`))
+	}))
+	defer server.Close()
+
+	originalBaseURL := mavenCentralBaseURL
+	mavenCentralBaseURL = server.URL
+	t.Cleanup(func() { mavenCentralBaseURL = originalBaseURL })
+
+	metadata, err := FetchMavenCentralMetadata(context.Background(), "commons-io", "commons-io", "2.11.0")
+	require.NoError(t, err)
+	assert.Equal(t, "The Apache Commons IO library", metadata.Summary)
+	assert.Equal(t, "The Apache Commons IO library", metadata.Description)
+	assert.Equal(t, "https://commons.apache.org/proper/commons-io/", metadata.ProjectURL)
+	assert.Equal(t, "Apache License, Version 2.0", metadata.License)
+	assert.Equal(t, "The Apache Software Foundation", metadata.Author)
+	assert.Equal(t, "", metadata.AuthorEmail)
+}
+
 func TestValidMavenCoordinates(t *testing.T) {
 	assert.True(t, isValid("commons-io"))
 	assert.True(t, isValid("org.apache.commons"))
