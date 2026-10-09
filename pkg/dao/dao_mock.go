@@ -1067,8 +1067,8 @@ func (_c *MockRepositoryConfigDao_InternalOnly_IncrementFailedSnapshotCount_Call
 }
 
 // InternalOnly_ListLightwellReposToImport provides a mock function for the type MockRepositoryConfigDao
-func (_mock *MockRepositoryConfigDao) InternalOnly_ListLightwellReposToImport(ctx context.Context) ([]LightwellRepoToImport, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockRepositoryConfigDao) InternalOnly_ListLightwellReposToImport(ctx context.Context, filter LightwellRepoImportFilter) ([]LightwellRepoToImport, error) {
+	ret := _mock.Called(ctx, filter)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InternalOnly_ListLightwellReposToImport")
@@ -1076,18 +1076,18 @@ func (_mock *MockRepositoryConfigDao) InternalOnly_ListLightwellReposToImport(ct
 
 	var r0 []LightwellRepoToImport
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]LightwellRepoToImport, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LightwellRepoImportFilter) ([]LightwellRepoToImport, error)); ok {
+		return returnFunc(ctx, filter)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []LightwellRepoToImport); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, LightwellRepoImportFilter) []LightwellRepoToImport); ok {
+		r0 = returnFunc(ctx, filter)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]LightwellRepoToImport)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, LightwellRepoImportFilter) error); ok {
+		r1 = returnFunc(ctx, filter)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1101,18 +1101,24 @@ type MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call struct
 
 // InternalOnly_ListLightwellReposToImport is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_ListLightwellReposToImport(ctx interface{}) *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call {
-	return &MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call{Call: _e.mock.On("InternalOnly_ListLightwellReposToImport", ctx)}
+//   - filter LightwellRepoImportFilter
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_ListLightwellReposToImport(ctx interface{}, filter interface{}) *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call {
+	return &MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call{Call: _e.mock.On("InternalOnly_ListLightwellReposToImport", ctx, filter)}
 }
 
-func (_c *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call) Run(run func(ctx context.Context)) *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call {
+func (_c *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call) Run(run func(ctx context.Context, filter LightwellRepoImportFilter)) *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 LightwellRepoImportFilter
+		if args[1] != nil {
+			arg1 = args[1].(LightwellRepoImportFilter)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -1123,7 +1129,7 @@ func (_c *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call) 
 	return _c
 }
 
-func (_c *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call) RunAndReturn(run func(ctx context.Context) ([]LightwellRepoToImport, error)) *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call {
+func (_c *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call) RunAndReturn(run func(ctx context.Context, filter LightwellRepoImportFilter) ([]LightwellRepoToImport, error)) *MockRepositoryConfigDao_InternalOnly_ListLightwellReposToImport_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1438,16 +1444,16 @@ func (_c *MockRepositoryConfigDao_InternalOnly_ResetFailedSnapshotCount_Call) Ru
 }
 
 // InternalOnly_UpdateLastImportRepositoryVersion provides a mock function for the type MockRepositoryConfigDao
-func (_mock *MockRepositoryConfigDao) InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string) error {
-	ret := _mock.Called(ctx, repoConfigUUID, versionHref)
+func (_mock *MockRepositoryConfigDao) InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string, forceRequest string) error {
+	ret := _mock.Called(ctx, repoConfigUUID, versionHref, forceRequest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InternalOnly_UpdateLastImportRepositoryVersion")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, repoConfigUUID, versionHref)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, versionHref, forceRequest)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1463,11 +1469,12 @@ type MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call
 //   - ctx context.Context
 //   - repoConfigUUID string
 //   - versionHref string
-func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_UpdateLastImportRepositoryVersion(ctx interface{}, repoConfigUUID interface{}, versionHref interface{}) *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call {
-	return &MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call{Call: _e.mock.On("InternalOnly_UpdateLastImportRepositoryVersion", ctx, repoConfigUUID, versionHref)}
+//   - forceRequest string
+func (_e *MockRepositoryConfigDao_Expecter) InternalOnly_UpdateLastImportRepositoryVersion(ctx interface{}, repoConfigUUID interface{}, versionHref interface{}, forceRequest interface{}) *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call {
+	return &MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call{Call: _e.mock.On("InternalOnly_UpdateLastImportRepositoryVersion", ctx, repoConfigUUID, versionHref, forceRequest)}
 }
 
-func (_c *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call) Run(run func(ctx context.Context, repoConfigUUID string, versionHref string)) *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call {
+func (_c *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call) Run(run func(ctx context.Context, repoConfigUUID string, versionHref string, forceRequest string)) *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1481,10 +1488,15 @@ func (_c *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -1495,7 +1507,7 @@ func (_c *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion
 	return _c
 }
 
-func (_c *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, versionHref string) error) *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call {
+func (_c *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, versionHref string, forceRequest string) error) *MockRepositoryConfigDao_InternalOnly_UpdateLastImportRepositoryVersion_Call {
 	_c.Call.Return(run)
 	return _c
 }

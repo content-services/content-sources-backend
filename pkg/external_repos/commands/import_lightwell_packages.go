@@ -30,13 +30,22 @@ var loadMavenCentralMetadata = handler.FetchMavenCentralMetadata
 
 func ImportLightwellPackagesAction(c *cli.Context) error {
 	ctx := c.Context
+	ecosystems, err := parseLightwellImportEcosystems(c.String("ecosystem"))
+	if err != nil {
+		return err
+	}
+	filter := dao.LightwellRepoImportFilter{Ecosystems: ecosystems, Name: c.String("repository")}
 	force := c.Bool("force")
+	forceRequest, err := lightwellPackageForceRequest()
+	if err != nil {
+		return err
+	}
 	if config.Tang == nil {
 		if err := config.ConfigureTang(); err != nil {
 			return fmt.Errorf("failed to configure tang: %w", err)
 		}
 	}
-	if err := importLightwellPackages(ctx, db.DB, force); err != nil {
+	if err := importLightwellPackages(ctx, db.DB, force, filter, forceRequest); err != nil {
 		log.Error().Err(err).Msg("Failed to import lightwell packages")
 		return err
 	}
@@ -44,9 +53,35 @@ func ImportLightwellPackagesAction(c *cli.Context) error {
 	return nil
 }
 
-func importLightwellPackages(ctx context.Context, database *gorm.DB, force bool) error {
+func lightwellPackageForceRequest() (string, error) {
+	raw := strings.TrimSpace(config.Get().Options.LightwellPackageImportForceAt)
+	if raw == "" {
+		return "", nil
+	}
+	if _, err := time.Parse(time.RFC3339, raw); err != nil {
+		return "", fmt.Errorf("options.lightwell_package_import_force_at must be an RFC3339 timestamp or empty: %w", err)
+	}
+	return raw, nil
+}
+
+func parseLightwellImportEcosystems(ecosystem string) ([]string, error) {
+	if ecosystem == "" {
+		return nil, nil
+	}
+	switch ecosystem {
+	case config.ContentTypeMaven, config.ContentTypePython, config.ContentTypeNpm:
+		return []string{ecosystem}, nil
+	default:
+		return nil, fmt.Errorf("invalid ecosystem %q: must be maven, python, or npm", ecosystem)
+	}
+}
+
+func importLightwellPackages(ctx context.Context, database *gorm.DB, force bool, filter dao.LightwellRepoImportFilter, forceRequest string) error {
+	if forceRequest != "" {
+		log.Info().Str("force_at", forceRequest).Msg("Lightwell package import force request is set")
+	}
 	daoReg := dao.GetDaoRegistry(database)
-	repos, err := daoReg.RepositoryConfig.InternalOnly_ListLightwellReposToImport(ctx)
+	repos, err := daoReg.RepositoryConfig.InternalOnly_ListLightwellReposToImport(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("error listing lightwell repos: %w", err)
 	}
@@ -70,7 +105,7 @@ func importLightwellPackages(ctx context.Context, database *gorm.DB, force bool)
 			}
 			pulpClient := pulp_client.GetPulpClientWithDomain(domain)
 
-			if err := importRepo(ctx, daoReg, pulpClient, r, force); err != nil {
+			if err := importRepo(ctx, daoReg, pulpClient, r, force, forceRequest); err != nil {
 				log.Error().Err(err).Str("repo", r.Name).Msg("Failed to import lightwell repo, continuing")
 				errsByIdx[idx] = fmt.Errorf("repo %s: %w", r.Name, err)
 			}
@@ -89,10 +124,10 @@ func importLightwellPackages(ctx context.Context, database *gorm.DB, force bool)
 
 // ImportLightwellRepo imports one Lightwell repository into the package mirror.
 func ImportLightwellRepo(ctx context.Context, database *gorm.DB, pulpClient pulp_client.PulpClient, repo dao.LightwellRepoToImport, force bool) error {
-	return importRepo(ctx, dao.GetDaoRegistry(database), pulpClient, repo, force)
+	return importRepo(ctx, dao.GetDaoRegistry(database), pulpClient, repo, force, "")
 }
 
-func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_client.PulpClient, repo dao.LightwellRepoToImport, force bool) error {
+func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_client.PulpClient, repo dao.LightwellRepoToImport, force bool, forceRequest string) error {
 	if repo.BasePath == "" {
 		return nil
 	}
@@ -110,7 +145,10 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 	if err != nil {
 		return err
 	}
-	if !shouldImport(currentVersion, repo.LastImportRepositoryVersion, force) {
+	// A new options.lightwell_package_import_force_at value forces this repository once.
+	// The stored value is that request, so the same value does not force it again.
+	requested := forceRequest != "" && repo.PackageImportForcedAt != forceRequest
+	if !shouldImport(currentVersion, repo.LastImportRepositoryVersion, force || requested) {
 		return nil
 	}
 
@@ -121,7 +159,7 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 	if err := daoReg.LightwellPackage.SyncPackagesForRepository(ctx, repo.RepoConfigUUID, pkgs); err != nil {
 		return err
 	}
-	return daoReg.RepositoryConfig.InternalOnly_UpdateLastImportRepositoryVersion(ctx, repo.RepoConfigUUID, *currentVersion)
+	return daoReg.RepositoryConfig.InternalOnly_UpdateLastImportRepositoryVersion(ctx, repo.RepoConfigUUID, *currentVersion, forceRequest)
 }
 
 func shouldImport(current *string, last string, force bool) bool {

@@ -36,6 +36,7 @@ type RepositoryConfiguration struct {
 	FailedSnapshotCount         int64          `json:"failed_snapshot_count" gorm:"default:0"`
 	FeatureName                 string         `json:"feature_name" gorm:"default:null"` // Comma-separated; entitlement matches any token
 	LastImportRepositoryVersion string         `json:"last_import_repository_version" gorm:"default:null"`
+	PackageImportForcedAt       string         `json:"package_import_forced_at" gorm:"not null;default:''"`
 	ExtendedRelease             string         `json:"extended_release" gorm:"default:null"`
 	ExtendedReleaseVersion      string         `json:"extended_release_version" gorm:"default:null"`
 	Partner                     bool           `json:"partner" gorm:"default:false"`
