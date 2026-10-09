@@ -87,6 +87,11 @@ func importLightwellPackages(ctx context.Context, database *gorm.DB, force bool)
 	return errors.Join(errs...)
 }
 
+// ImportLightwellRepo imports one Lightwell repository into the package mirror.
+func ImportLightwellRepo(ctx context.Context, database *gorm.DB, pulpClient pulp_client.PulpClient, repo dao.LightwellRepoToImport, force bool) error {
+	return importRepo(ctx, dao.GetDaoRegistry(database), pulpClient, repo, force)
+}
+
 func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_client.PulpClient, repo dao.LightwellRepoToImport, force bool) error {
 	if repo.BasePath == "" {
 		return nil
