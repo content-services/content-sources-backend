@@ -8,6 +8,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/tang/pkg/tangy"
 	zest "github.com/content-services/zest/release/v2026"
 	"github.com/stretchr/testify/assert"
@@ -50,19 +51,42 @@ func TestMapMavenPackageInputs(t *testing.T) {
 }
 
 func TestMapPythonPackageInputs(t *testing.T) {
-	resp := tangy.PythonPackageListResponse{
-		Results: []tangy.PythonPackageListItem{{
+	resp := tangy.PythonPackageDetailListResponse{
+		Results: []tangy.PythonPackageDetailListItem{{
 			NameNormalized: "requests",
-			Versions:       []string{"2.0"},
-			LatestVersions: []tangy.PythonVersionInfo{{Version: "2.0", CreatedAt: "2021-01-01T00:00:00Z"}},
+			Versions: []tangy.PythonPackageVersionDetail{{
+				Version:           "1.2.3+rhlw.1",
+				LastUpdated:       "2021-01-01T00:00:00Z",
+				Summary:           "HTTP library",
+				Description:       "HTTP library for humans",
+				LicenseExpression: "Apache-2.0",
+				License:           "Apache Software License",
+				Author:            "Kenneth",
+				AuthorEmail:       "kenneth@example.com",
+				ProjectURL:        "https://example.com/requests",
+			}},
 		}},
 	}
 	got := mapPythonPackageInputs(resp)
 	assert.Len(t, got, 1)
 	assert.Equal(t, "requests", got[0].Name)
 	assert.Equal(t, "", got[0].Group)
-	assert.Equal(t, "pkg:pypi/requests@2.0", got[0].Versions[0].Purl)
-	assert.Equal(t, "2021-01-01T00:00:00Z", got[0].Versions[0].PublishedAt)
+	assert.Len(t, got[0].Versions, 1)
+	ver := got[0].Versions[0]
+	assert.Equal(t, "1.2.3+rhlw.1", ver.Version)
+	upstream, release := rhlw.SplitVersion(ver.Version)
+	assert.Equal(t, "1.2.3", upstream)
+	assert.Equal(t, "rhlw.1", release)
+	assert.Equal(t, "pkg:pypi/requests@1.2.3+rhlw.1", ver.Purl)
+	assert.Equal(t, "2021-01-01T00:00:00Z", ver.PublishedAt)
+	if assert.NotNil(t, ver.Details) {
+		assert.Equal(t, "HTTP library", ver.Details.Summary)
+		assert.Equal(t, "HTTP library for humans", ver.Details.Description)
+		assert.Equal(t, "Apache-2.0", ver.Details.License)
+		assert.Equal(t, "Kenneth", ver.Details.Author)
+		assert.Equal(t, "kenneth@example.com", ver.Details.AuthorEmail)
+		assert.Equal(t, "https://example.com/requests", ver.Details.ProjectURL)
+	}
 }
 
 func TestMapNpmPackageInputs(t *testing.T) {
@@ -78,6 +102,7 @@ func TestMapNpmPackageInputs(t *testing.T) {
 	assert.Equal(t, "node", got[0].Name)
 	assert.Equal(t, "@types", got[0].Group)
 	assert.Equal(t, "pkg:npm/%40types/node@20.0.0", got[0].Versions[0].Purl)
+	assert.Nil(t, got[0].Versions[0].Details)
 	_ = config.ContentTypeNpm
 }
 
