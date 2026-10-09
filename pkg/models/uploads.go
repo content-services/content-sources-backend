@@ -8,20 +8,34 @@ import (
 )
 
 type Upload struct {
-	UploadUUID string
-	CreatedAt  time.Time
-	OrgID      string
-	ChunkSize  int64
-	Size       int64
-	Sha256     string
-	ChunkList  pq.StringArray `gorm:"type:text[]"`
+	UploadUUID    string
+	CreatedAt     time.Time
+	OrgID         string
+	ChunkSize     int64
+	Size          int64
+	Sha256        string
+	ChunkList     pq.StringArray      `gorm:"type:text[]"`
+	ChunkMetadata UploadChunkMetadata `gorm:"serializer:json;type:jsonb;not null;default:'{}'"`
 }
+
+type UploadChunkMetadataEntry struct {
+	Size   int64  `json:"size"`
+	Sha256 string `json:"sha256"`
+}
+
+// Keys are the starting offsets (start of the content range)
+type UploadChunkMetadata map[string]UploadChunkMetadataEntry
 
 // BeforeCreate perform validations and sets UUID of Upload
 func (t *Upload) BeforeCreate(tx *gorm.DB) error {
 	if err := t.validate(); err != nil {
 		return err
 	}
+
+	if t.ChunkMetadata == nil {
+		t.ChunkMetadata = UploadChunkMetadata{}
+	}
+
 	return nil
 }
 

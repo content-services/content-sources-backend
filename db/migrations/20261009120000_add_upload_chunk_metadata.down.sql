@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE uploads DROP COLUMN IF EXISTS chunk_metadata;
+
+COMMIT;
