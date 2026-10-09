@@ -147,8 +147,10 @@ func fetchRepoPackages(ctx context.Context, pulpClient pulp_client.PulpClient, c
 		}
 		var all []dao.LightwellPackageInput
 		offset := 0
+		// PythonPackageDetailList rejects a limit above its max. Pagination is by package.
+		limit := tangy.PythonPackageDetailListMaxLimit
 		for {
-			resp, err := (*config.Tang).PythonPackageList(ctx, repoHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: offset, Limit: importPageSize})
+			resp, err := (*config.Tang).PythonPackageDetailList(ctx, repoHref, tangy.PageOptions{Offset: offset, Limit: limit})
 			if err != nil {
 				return nil, err
 			}
@@ -206,19 +208,27 @@ func mapMavenPackageInputs(resp zest.PaginatedMavenRepositoryPackageListResponse
 	return out
 }
 
-func mapPythonPackageInputs(resp tangy.PythonPackageListResponse) []dao.LightwellPackageInput {
+func mapPythonPackageInputs(resp tangy.PythonPackageDetailListResponse) []dao.LightwellPackageInput {
 	out := make([]dao.LightwellPackageInput, 0, len(resp.Results))
 	for _, item := range resp.Results {
-		created := make(map[string]string, len(item.LatestVersions))
-		for _, v := range item.LatestVersions {
-			created[v.Version] = v.CreatedAt
-		}
 		versions := make([]dao.LightwellPackageVersionInput, 0, len(item.Versions))
 		for _, v := range item.Versions {
+			license := v.LicenseExpression
+			if license == "" {
+				license = v.License
+			}
 			versions = append(versions, dao.LightwellPackageVersionInput{
-				Version:     v,
-				PublishedAt: created[v],
-				Purl:        coords.BuildPURL(config.ContentTypePython, "", item.NameNormalized, v),
+				Version:     v.Version,
+				PublishedAt: v.LastUpdated,
+				Purl:        coords.BuildPURL(config.ContentTypePython, "", item.NameNormalized, v.Version),
+				Details: &dao.LightwellPackageVersionDetailsInput{
+					ProjectURL:  v.ProjectURL,
+					License:     license,
+					Summary:     v.Summary,
+					Description: v.Description,
+					Author:      v.Author,
+					AuthorEmail: v.AuthorEmail,
+				},
 			})
 		}
 		out = append(out, dao.LightwellPackageInput{Name: item.NameNormalized, Group: "", Versions: versions})
