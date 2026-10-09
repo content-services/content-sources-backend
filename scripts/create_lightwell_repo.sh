@@ -682,7 +682,7 @@ echo ""
 echo "==> Importing repositories into the application..."
 
 import_err=0
-(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true go run ./cmd/external-repos/main.go import) || import_err=$?
+(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true CLIENTS_PULP_USERNAME="${PULP_USER}" CLIENTS_PULP_PASSWORD="${PULP_PASS}" go run ./cmd/external-repos/main.go import) || import_err=$?
 
 if [[ "$import_err" -ne 0 ]]; then
   echo "ERROR: import failed (exit code ${import_err})" >&2
@@ -690,7 +690,7 @@ if [[ "$import_err" -ne 0 ]]; then
 fi
 
 import_err=0
-(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true go run ./cmd/external-repos/main.go import-lightwell-packages) || import_err=$?
+(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true CLIENTS_PULP_USERNAME="${PULP_USER}" CLIENTS_PULP_PASSWORD="${PULP_PASS}" go run ./cmd/external-repos/main.go import-lightwell-packages) || import_err=$?
 
 if [[ "$import_err" -ne 0 ]]; then
   echo "ERROR: import packages failed (exit code ${import_err})" >&2
