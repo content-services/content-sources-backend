@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Creates Maven and Python repositories in Pulp and imports them into the
-# application as lightwell repositories.
+# application as lightwell repositories, then loads the local vulnerability,
+# advisory, and package-mirror seed onto those repositories.
 #
 # Reads both lightwell_repos.json and lightwell_demo_repos.json, creates
 # the corresponding Pulp remotes, repositories, and distributions under
@@ -10,6 +11,8 @@
 # Idempotent: existing distributions (matched by base_path) are reused;
 # Maven catalog seed (if empty) and the CS import always run. Python
 # remediated fixture files are uploaded only if missing from the repository.
+# The vulnerability seed is skipped when those rows already exist. Advisories
+# and the package mirror are refreshed on every run.
 #
 # Intended for local development against the Pulp instance started via docker-compose.
 # Maven catalogs are seeded with uploaded POM + repository modify (pull-through
@@ -697,13 +700,23 @@ if [[ "$import_err" -ne 0 ]]; then
   exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# Step 4: Seed vulnerabilities, advisories, and the package mirror
+# ---------------------------------------------------------------------------
+# Pulp still holds the catalog used by the endpoints that read Pulp directly.
+# This replaces the mirror rows for the four org -3 repositories so the list
+# endpoints match the advisory fixed_versions.
+
+echo ""
+echo "==> Seeding lightwell vulnerabilities, advisories, and package mirror..."
+"${REPO_DIR}/scripts/seed_lightwell_dev.sh"
 
 # ---------------------------------------------------------------------------
 # Done
 # ---------------------------------------------------------------------------
 
 echo ""
-echo "Done! Repositories created in Pulp and imported into the application."
+echo "Done! Repositories created in Pulp, imported into the application, and seeded."
 echo ""
 echo "  Auth mode:    $(if [[ -n "$PULP_CLIENT_CERT" ]]; then echo "cert"; else echo "basic"; fi)"
 echo "  Domain:       ${DOMAIN} ($(jq length "${LIGHTWELL_JSON}") repos)"

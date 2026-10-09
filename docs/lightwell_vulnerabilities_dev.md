@@ -32,16 +32,10 @@ docker compose exec -T postgres-content psql "sslmode=disable dbname=content use
 
 Adjust connection parameters to match your `configs/config.yaml` if they differ from the compose defaults.
 
-Advisories for those vulnerabilities are a second script, applied locally after the vulnerability seed. It inserts one advisory (and a release row per `published_versions` entry) only for seed rows whose stage is `Lightwell Network`, using the vulnerability purl as `package_name` and `component_version` as `package_version`:
+Advisories and the package mirror are loaded by `scripts/create_lightwell_repo.sh` after it creates the Pulp repositories and imports them. That script inserts one advisory (and a release row per `published_versions` entry) only for seed rows whose stage is `Lightwell Network`, using the vulnerability purl as `package_name` and `component_version` as `package_version`. Java advisories are attached to `lightwell/java/remediated` and Python advisories to `lightwell/python/remediated`. JavaScript and C# stay on `lightwell/seed`. See [Lightwell packages](lightwell_packages_dev.md):
 
 ```bash
-psql "sslmode=disable dbname=content user=content host=localhost port=5433 password=content" -f db/seeds/lightwell_advisories.sql
-```
-
-Or through the compose postgres container:
-
-```bash
-docker compose exec -T postgres-content psql "sslmode=disable dbname=content user=content host=localhost port=5432 password=content" -f - < db/seeds/lightwell_advisories.sql
+./scripts/create_lightwell_repo.sh
 ```
 
 ## Read API
