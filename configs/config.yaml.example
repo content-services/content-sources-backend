@@ -136,12 +136,11 @@ clients:
     password:
     s3:
       coverage_uploads:
-        url:
-        name:
-        access_key:
-        secret_key:
-        region:
-        file_prefix:
+        url: http://localhost:9002
+        name: lens-coverage-uploads
+        access_key: minio
+        secret_key: minio
+        region: minio
   pulp_log_parser:
     cloudwatch:
       key:
