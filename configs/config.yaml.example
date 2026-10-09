@@ -181,6 +181,9 @@ clients:
     events:
       - network
       - academic
+    event_feature_map:
+      network: lightwell-network
+      academic: lightwell-research-institutions
     client_cert:
     client_key:
     ca_cert:

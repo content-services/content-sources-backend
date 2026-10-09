@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -17,13 +18,17 @@ type LightwellTermsHandler struct {
 	handler.LightwellTermsHandler
 }
 
-func RegisterLightwellTermsRoutes(engine *echo.Group, tsClient *terms_service_client.TermsServiceClient) {
+func RegisterLightwellTermsRoutes(engine *echo.Group, tsClient *terms_service_client.TermsServiceClient, fsClient *feature_service_client.FeatureServiceClient) {
 	if tsClient == nil {
 		panic("tsClient is nil")
 	}
+	if fsClient == nil {
+		panic("fsClient is nil")
+	}
 	h := LightwellTermsHandler{
 		LightwellTermsHandler: handler.LightwellTermsHandler{
-			TermsServiceClient: *tsClient,
+			TermsServiceClient:   *tsClient,
+			FeatureServiceClient: *fsClient,
 		},
 	}
 	addLightwellRoute(engine, http.MethodGet, "/terms/required", h.getTermsRequired, rbac.RbacVerbRead)

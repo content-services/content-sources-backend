@@ -123,7 +123,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client, &fsClient)
 		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
 		if config.TermsServiceConfigured() {
-			RegisterLightwellTermsRoutes(group, &tsClient)
+			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
 		}
 
 		pulpClient := pulp_client.GetPulpClientWithDomain("")

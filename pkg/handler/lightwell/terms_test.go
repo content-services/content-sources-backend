@@ -31,6 +31,10 @@ func (s *LightwellTermsSuite) SetupTest() {
 
 	config.LoadedConfig.Loaded = true
 	config.LoadedConfig.Features.LightwellTerms = config.Feature{Enabled: true}
+	config.LoadedConfig.Clients.TermsService.EventFeatureMap = map[string]string{
+		"network":  "lightwell-network",
+		"academic": "lightwell-research-institutions",
+	}
 }
 
 // --- Route registration ---
@@ -57,6 +61,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 
 	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"network", "academic"}, nil)
+	s.fsClient.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network", "lightwell-research-institutions"}, nil)
 
 	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -88,6 +94,28 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	var resp api.TermsRequiredResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
 	assert.False(t, resp.Required)
+}
+
+func (s *LightwellTermsSuite) TestGetTermsRequired_FilteredByEntitlement() {
+	t := s.T()
+
+	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
+		Return([]string{"network", "academic"}, nil)
+	s.fsClient.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil)
+
+	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.True(t, resp.Required)
+	assert.Equal(t, []string{"network"}, resp.Events, "should only return network for network-entitled org")
 }
 
 func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {

@@ -49,7 +49,8 @@ func (s *LightwellSuite) serveRouter(req *http.Request) (int, []byte, error) {
 	RegisterLightwellAdvisoryRoutes(pathPrefix, s.reg.ToDaoRegistry(), &fsClient)
 
 	var tsClient terms_service_client.TermsServiceClient = s.tsClient
-	RegisterLightwellTermsRoutes(pathPrefix, &tsClient)
+	var fsClientForTerms feature_service_client.FeatureServiceClient = s.fsClient
+	RegisterLightwellTermsRoutes(pathPrefix, &tsClient, &fsClientForTerms)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
