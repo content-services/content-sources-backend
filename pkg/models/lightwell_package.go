@@ -24,6 +24,13 @@ type LightwellPackageVersion struct {
 	Release                     string `json:"release" gorm:"not null;default:''"`
 	PublishedAt                 string `json:"published_at" gorm:"not null;default:''"`
 	Purl                        string `json:"purl" gorm:"not null;default:''"`
+	UpstreamVersion             string `json:"upstream_version" gorm:"not null;default:''"`
+	ProjectURL                  string `json:"project_url" gorm:"not null;default:''"`
+	License                     string `json:"license" gorm:"not null;default:''"`
+	Summary                     string `json:"summary" gorm:"not null;default:''"`
+	Description                 string `json:"description" gorm:"not null;default:''"`
+	Author                      string `json:"author" gorm:"not null;default:''"`
+	AuthorEmail                 string `json:"author_email" gorm:"not null;default:''"`
 }
 
 func (LightwellPackageVersion) TableName() string { return TableNameLightwellPackageVersion }
