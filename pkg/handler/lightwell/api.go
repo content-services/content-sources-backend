@@ -56,7 +56,7 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 		if err != nil {
 			panic(err)
 		}
-		RegisterLightwellTermsRoutes(group, &tsClient)
+		RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
 	}
 
 	pulpClient := pulp_client.GetPulpClientWithDomain("")
