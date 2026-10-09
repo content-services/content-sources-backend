@@ -281,6 +281,7 @@ func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {
 	assert.Empty(s.T(), rows[0].Versions, "Versions should be empty slice, not ['']")
 	assert.Empty(s.T(), rows[0].Releases, "Releases should be empty slice, not ['']")
 	assert.Empty(s.T(), rows[0].PublishedAts, "PublishedAts should be empty slice, not ['']")
+	assert.Empty(s.T(), rows[0].UpstreamVersions, "UpstreamVersions should be empty slice, not ['']")
 	assert.Len(s.T(), rows[0].Versions, 0, "Versions length should be 0")
 }
 
@@ -310,6 +311,7 @@ func (s *LightwellPackageSuite) TestListPackagesNameFilterCaseInsensitive() {
 	s.NoError(err)
 	assert.Len(s.T(), rows, 1)
 	assert.Equal(s.T(), "com.example:commons-lib", rows[0].Name)
+	assert.Equal(s.T(), []string{""}, rows[0].UpstreamVersions)
 }
 
 func (s *LightwellPackageSuite) TestListPackagesSecurityLevelFilterCaseInsensitive() {
@@ -425,6 +427,8 @@ func (s *LightwellPackageSuite) TestListPackageVersionsReturnsPurlAndCount() {
 	s.Require().Len(vrows, 2)
 	assert.NotEmpty(s.T(), vrows[0].Purl)
 	assert.Contains(s.T(), vrows[0].Purl, "pkg:maven/com.example/commons-lib")
+	assert.Equal(s.T(), "", vrows[0].UpstreamVersion)
+	assert.Equal(s.T(), "", vrows[1].UpstreamVersion)
 }
 
 // TestListPackageVersionsDemoFilter verifies the package_versions query excludes
