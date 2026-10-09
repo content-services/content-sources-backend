@@ -72,8 +72,9 @@ type LightwellPackagePayload struct {
 }
 
 type LightwellReleasePayload struct {
-	RelatedCVE   []LightwellCVEPayload  `json:"related_cve"`
-	ReleaseNames []LightwellReleaseName `json:"release_names"`
+	RelatedCVE        []LightwellCVEPayload  `json:"related_cve"`
+	ReleaseNames      []LightwellReleaseName `json:"release_names"`
+	ArtifactChecksums map[string]string      `json:"artifact_checksums,omitempty"`
 }
 
 type LightwellCVEPayload struct {
@@ -86,19 +87,25 @@ type LightwellReleaseName struct {
 	Name string `json:"name"`
 }
 
+// NotificationBuildOptions carries optional data for enriching notification
+// events. Pass nil to omit all optional enrichment.
+type NotificationBuildOptions struct {
+	// ArtifactChecksums maps ArtifactChecksumKey(package, version) → (filename → sha256).
+	// When non-nil, the builder attaches matching checksums to each release.
+	ArtifactChecksums map[string]map[string]string
+}
+
 // BuildLightwellNotificationEvents transforms a flat list of advisory data into notification events, one event per unique package.
-func BuildLightwellNotificationEvents(repoName string, advisories []LightwellNotificationInput) []NotificationEvent {
+func BuildLightwellNotificationEvents(repoName string, advisories []LightwellNotificationInput, opts *NotificationBuildOptions) []NotificationEvent {
 	grouped := groupByPackage(advisories)
 
 	events := make([]NotificationEvent, 0, len(grouped))
 
-	// For each package (event), we must build the payload
-	// Each payload contains a package link, name, and a releases list
 	for pkgName, inputs := range grouped {
 		payload := LightwellPackagePayload{
 			PackageLink: LightwellPackageLink(repoName, pkgName),
 			PackageName: pkgName,
-			Releases:    buildReleases(inputs),
+			Releases:    buildReleases(inputs, opts),
 		}
 		events = append(events, NotificationEvent{
 			Metadata: map[string]any{},
@@ -119,15 +126,28 @@ func groupByPackage(advisories []LightwellNotificationInput) map[string][]Lightw
 }
 
 // buildReleases groups advisories by their fixed versions into release payloads.
-func buildReleases(inputs []LightwellNotificationInput) []LightwellReleasePayload {
+func buildReleases(inputs []LightwellNotificationInput, opts *NotificationBuildOptions) []LightwellReleasePayload {
 	grouped := groupByFixedVersions(inputs)
 
 	releases := make([]LightwellReleasePayload, 0, len(grouped))
 	for _, group := range grouped {
-		releases = append(releases, LightwellReleasePayload{
+		rel := LightwellReleasePayload{
 			RelatedCVE:   buildCVEPayloads(group),
 			ReleaseNames: buildReleaseNames(group[0].FixedVersions),
-		})
+		}
+		if opts != nil && opts.ArtifactChecksums != nil {
+			merged := make(map[string]string)
+			for _, v := range group[0].FixedVersions {
+				key := ArtifactChecksumKey(group[0].PackageName, v)
+				for filename, sha := range opts.ArtifactChecksums[key] {
+					merged[filename] = sha
+				}
+			}
+			if len(merged) > 0 {
+				rel.ArtifactChecksums = merged
+			}
+		}
+		releases = append(releases, rel)
 	}
 	return releases
 }
