@@ -250,12 +250,12 @@ features:
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
   lightwell_beacon:
-    enabled: false
+    enabled: true
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
   lightwell_lens:
-    enabled: false
+    enabled: true
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
