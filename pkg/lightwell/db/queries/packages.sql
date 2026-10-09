@@ -9,6 +9,7 @@ SELECT
     array_agg(pv.version ORDER BY pv.version) AS versions,
     array_agg(pv.release ORDER BY pv.version) AS releases,
     array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
+    array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
     COUNT(*) OVER() AS total_count
 FROM lightwell_packages p
 JOIN repository_configurations rc ON rc.uuid = p.repository_configuration_uuid
@@ -43,6 +44,7 @@ SELECT
     pv.version,
     pv.release,
     pv.published_at,
+    pv.upstream_version,
     pv.purl,
     COUNT(*) OVER() AS total_count
 FROM lightwell_package_versions pv

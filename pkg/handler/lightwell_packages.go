@@ -116,9 +116,17 @@ func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 }
 
 func mapRowToLightwellPackage(row dao.LightwellPackageRow) api.LightwellPackageResponse {
+	versions := make([]string, len(row.Versions))
 	releases := make([]api.ReleaseInfo, 0, len(row.Versions))
-	for i, v := range row.Versions {
-		ri := api.ReleaseInfo{Version: v}
+	for i, stored := range row.Versions {
+		upstream := ""
+		if i < len(row.UpstreamVersions) {
+			upstream = row.UpstreamVersions[i]
+		}
+		// v0.1 clients read version as the upstream part. The mirror stores the full version string.
+		version := lightwellAPIVersion(stored, upstream)
+		versions[i] = version
+		ri := api.ReleaseInfo{Version: version}
 		if i < len(row.Releases) {
 			ri.Release = row.Releases[i]
 		}
@@ -133,9 +141,18 @@ func mapRowToLightwellPackage(row dao.LightwellPackageRow) api.LightwellPackageR
 		Ecosystem:      row.Ecosystem,
 		Repository:     row.RepositoryName,
 		RepositoryUUID: row.RepositoryConfigurationUUID,
-		Versions:       row.Versions,
+		Versions:       versions,
 		LatestReleases: releases,
 	}
+}
+
+// lightwellAPIVersion is the version field on the v0.1 list responses.
+// Rows imported before the split have an empty upstream version and already store the v0.1 version.
+func lightwellAPIVersion(stored, upstream string) string {
+	if upstream != "" {
+		return upstream
+	}
+	return stored
 }
 
 // listLightwellPackageVersions godoc
@@ -222,7 +239,7 @@ func (h *LightwellPackagesHandler) ListPackageVersions(c echo.Context) error {
 		data = append(data, api.LightwellPackageVersionResponse{
 			Name:           row.Name,
 			Group:          row.Group,
-			Version:        row.Version,
+			Version:        lightwellAPIVersion(row.Version, row.UpstreamVersion),
 			Ecosystem:      row.Ecosystem,
 			Repository:     row.RepositoryName,
 			RepositoryUUID: row.RepositoryConfigurationUUID,

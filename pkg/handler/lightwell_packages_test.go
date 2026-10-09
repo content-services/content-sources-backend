@@ -83,9 +83,10 @@ func (s *LightwellPackagesSuite) TestListPackages() {
 			Ecosystem:                   config.ContentTypeMaven,
 			Name:                        "jackson-databind",
 			Group:                       "com.fasterxml.jackson.core",
-			Versions:                    []string{"2.15.3", "2.14.2"},
+			Versions:                    []string{"2.15.3.rhlw-00001", "2.14.2"},
 			Releases:                    []string{"rhlw-00001", "rhlw-00001"},
 			PublishedAts:                []string{"2024-06-01T12:00:00Z", "2024-05-01T12:00:00Z"},
+			UpstreamVersions:            []string{"2.15.3", "2.14.2"},
 			TotalCount:                  1,
 		},
 	}
@@ -119,6 +120,7 @@ func (s *LightwellPackagesSuite) TestListPackages() {
 	assert.Equal(t, "2.15.3", resp.Data[0].LatestReleases[0].Version)
 	assert.Equal(t, "rhlw-00001", resp.Data[0].LatestReleases[0].Release)
 	assert.Equal(t, "2024-06-01T12:00:00Z", resp.Data[0].LatestReleases[0].CreatedAt)
+	assert.NotContains(t, string(body), `"upstream_version"`)
 }
 
 func (s *LightwellPackagesSuite) TestListPackagesWithFilters() {
@@ -284,9 +286,10 @@ func (s *LightwellPackagesSuite) TestListPackageVersions() {
 			Ecosystem:                   config.ContentTypeMaven,
 			Name:                        "jackson-databind",
 			Group:                       "com.fasterxml.jackson.core",
-			Version:                     "2.15.3",
+			Version:                     "2.15.3.rhlw-00001",
 			Release:                     "rhlw-00001",
 			PublishedAt:                 "2024-06-01T12:00:00Z",
+			UpstreamVersion:             "2.15.3",
 			Purl:                        "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.3",
 			TotalCount:                  1,
 		},
@@ -314,6 +317,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersions() {
 	assert.Equal(t, "jackson-databind", resp.Data[0].Name)
 	assert.Equal(t, "com.fasterxml.jackson.core", resp.Data[0].Group)
 	assert.Equal(t, "2.15.3", resp.Data[0].Version)
+	assert.NotContains(t, string(body), `"upstream_version"`)
 	assert.Equal(t, config.ContentTypeMaven, resp.Data[0].Ecosystem)
 	assert.Equal(t, "lightwell/maven/remediated", resp.Data[0].Repository)
 	assert.Equal(t, "repo-uuid-1", resp.Data[0].RepositoryUUID)

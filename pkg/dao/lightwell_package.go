@@ -47,6 +47,7 @@ type LightwellPackageRow struct {
 	Versions                    []string
 	Releases                    []string
 	PublishedAts                []string
+	UpstreamVersions            []string
 	TotalCount                  int64
 }
 
@@ -59,6 +60,7 @@ type LightwellPackageVersionRow struct {
 	Version                     string
 	Release                     string
 	PublishedAt                 string
+	UpstreamVersion             string
 	Purl                        string
 	TotalCount                  int64
 }
@@ -130,6 +132,7 @@ func (d lightwellPackageDaoImpl) ListPackages(ctx context.Context, opts ListLigh
 			Versions:                    interfaceToStringSlice(row.Versions),
 			Releases:                    interfaceToStringSlice(row.Releases),
 			PublishedAts:                interfaceToStringSlice(row.PublishedAts),
+			UpstreamVersions:            interfaceToStringSlice(row.UpstreamVersions),
 			TotalCount:                  row.TotalCount,
 		})
 	}
@@ -172,6 +175,7 @@ func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts L
 			Version:                     row.Version,
 			Release:                     row.Release,
 			PublishedAt:                 row.PublishedAt,
+			UpstreamVersion:             row.UpstreamVersion,
 			Purl:                        row.Purl,
 			TotalCount:                  row.TotalCount,
 		})
