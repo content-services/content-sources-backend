@@ -81,8 +81,9 @@ func TestParse_SPDX2JSON_ClairStyle_NoPURLs(t *testing.T) {
 	assert.ElementsMatch(t, []Package{
 		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
 		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+		{Ecosystem: EcosystemGo, Namespace: "github.com/foo", Name: "bar", Version: "v1.2.3"},
 	}, result.Packages)
-	assert.Equal(t, 2, result.SkippedEntries)
+	assert.Equal(t, 1, result.SkippedEntries)
 }
 
 // TestParse_SPDX2JSON_PURLTakesPrecedence ensures a valid PURL is preferred over field inference.
@@ -107,6 +108,8 @@ func TestParse_SPDXTagValue_ClairStyle_NoPURLs(t *testing.T) {
 		"PackageFileName: maven:usr/share/app/spring-core-5.3.20.jar\n" +
 		"PackageName: flask\nPackageVersion: 3.0.3\n" +
 		"PackageFileName: python:usr/lib/python3.11/site-packages/flask\n" +
+		"PackageName: github.com/foo/bar\nPackageVersion: v1.2.3\n" +
+		"PackageFileName: go:usr/bin/app\n" +
 		"PackageName: bash\nPackageVersion: 5.1.8-9.el9\n" +
 		"PackageFileName: sqlite:var/lib/rpm/rpmdb.sqlite\n"
 	result, err := Parse("bom.spdx", strings.NewReader(data))
@@ -114,6 +117,7 @@ func TestParse_SPDXTagValue_ClairStyle_NoPURLs(t *testing.T) {
 	assert.ElementsMatch(t, []Package{
 		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
 		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+		{Ecosystem: EcosystemGo, Namespace: "github.com/foo", Name: "bar", Version: "v1.2.3"},
 	}, result.Packages)
 	assert.Equal(t, 1, result.SkippedEntries)
 }
@@ -155,11 +159,60 @@ func TestInferFromSPDX2Fields(t *testing.T) {
 			want:            nil,
 		},
 		{
-			name:            "go is skipped",
+			name:            "jar is skipped",
+			pkgName:         "checker-qual",
+			version:         "3.43.0",
+			packageFileName: "jar:usr/share/app/checker-qual.jar",
+			want:            nil,
+		},
+		{
+			name:            "file is skipped",
+			pkgName:         "oro",
+			version:         "2.0.8",
+			packageFileName: "file:usr/share/app/oro.jar",
+			want:            nil,
+		},
+		{
+			name:            "go",
 			pkgName:         "github.com/foo/bar",
 			version:         "v1.2.3",
 			packageFileName: "go:usr/bin/app",
-			want:            nil,
+			want:            &Package{Ecosystem: EcosystemGo, Namespace: "github.com/foo", Name: "bar", Version: "v1.2.3"},
+		},
+		{
+			name:            "go without slash",
+			pkgName:         "stdlib",
+			version:         "1.26.3",
+			packageFileName: "golang:usr/bin/app",
+			want:            &Package{Ecosystem: EcosystemGo, Name: "stdlib", Version: "1.26.3"},
+		},
+		{
+			name:            "npm",
+			pkgName:         "express",
+			version:         "4.18.2",
+			packageFileName: "npm:usr/lib/node_modules/express",
+			want:            &Package{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
+		},
+		{
+			name:            "scoped npm",
+			pkgName:         "@angular/core",
+			version:         "15.0.0",
+			packageFileName: "npm:usr/lib/node_modules/@angular/core",
+			want:            &Package{Ecosystem: EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "15.0.0"},
+		},
+		{
+			name:            "nuget",
+			pkgName:         "Newtonsoft.Json",
+			version:         "13.0.1",
+			packageFileName: "nuget:usr/lib/Newtonsoft.Json",
+			want:            &Package{Ecosystem: EcosystemCSharp, Name: "Newtonsoft.Json", Version: "13.0.1"},
+		},
+		{
+			name:            "cargo",
+			pkgName:         "serde",
+			version:         "1.0.0",
+			packageFileName: "cargo:usr/lib/serde",
+			want:            &Package{Ecosystem: EcosystemRust, Name: "serde", Version: "1.0.0"},
 		},
 		{
 			name:            "missing version is skipped",
