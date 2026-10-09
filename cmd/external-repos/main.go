@@ -110,7 +110,15 @@ func main() {
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
 						Name:  "force",
-						Usage: "Re-import all lightwell repos regardless of repository version",
+						Usage: "Re-import matching lightwell repos regardless of repository version",
+					},
+					&cli.StringFlag{
+						Name:  "ecosystem",
+						Usage: "Limit to one ecosystem: maven, python, or npm. Default is all three",
+					},
+					&cli.StringFlag{
+						Name:  "repository",
+						Usage: "Limit to one repository configuration name",
 					},
 				},
 			},

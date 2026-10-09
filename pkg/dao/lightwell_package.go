@@ -6,17 +6,30 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/jackc/pgx/v5/pgtype"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
+// LightwellPackageVersionDetailsInput is metadata stored on the version row.
+// A nil Details leaves project_url, license, summary, description, author, and author_email unchanged.
+type LightwellPackageVersionDetailsInput struct {
+	ProjectURL  string
+	License     string
+	Summary     string
+	Description string
+	Author      string
+	AuthorEmail string
+}
+
 type LightwellPackageVersionInput struct {
 	Version     string
 	Release     string
 	PublishedAt string
 	Purl        string
+	Details     *LightwellPackageVersionDetailsInput
 }
 
 type LightwellPackageInput struct {
@@ -34,6 +47,7 @@ type LightwellPackageRow struct {
 	Versions                    []string
 	Releases                    []string
 	PublishedAts                []string
+	UpstreamVersions            []string
 	TotalCount                  int64
 }
 
@@ -46,6 +60,7 @@ type LightwellPackageVersionRow struct {
 	Version                     string
 	Release                     string
 	PublishedAt                 string
+	UpstreamVersion             string
 	Purl                        string
 	TotalCount                  int64
 }
@@ -117,6 +132,7 @@ func (d lightwellPackageDaoImpl) ListPackages(ctx context.Context, opts ListLigh
 			Versions:                    interfaceToStringSlice(row.Versions),
 			Releases:                    interfaceToStringSlice(row.Releases),
 			PublishedAts:                interfaceToStringSlice(row.PublishedAts),
+			UpstreamVersions:            interfaceToStringSlice(row.UpstreamVersions),
 			TotalCount:                  row.TotalCount,
 		})
 	}
@@ -159,6 +175,7 @@ func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts L
 			Version:                     row.Version,
 			Release:                     row.Release,
 			PublishedAt:                 row.PublishedAt,
+			UpstreamVersion:             row.UpstreamVersion,
 			Purl:                        row.Purl,
 			TotalCount:                  row.TotalCount,
 		})
@@ -189,18 +206,30 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 			keepPkgUUIDs = append(keepPkgUUIDs, pkg.UUID)
 
 			for _, v := range in.Versions {
+				upstream, release := rhlw.SplitVersion(v.Version)
 				ver := models.LightwellPackageVersion{
 					LightwellPackageUUID:        pkg.UUID,
 					RepositoryConfigurationUUID: repoConfigUUID,
 					Version:                     v.Version,
-					Release:                     v.Release,
+					Release:                     release,
 					PublishedAt:                 v.PublishedAt,
 					Purl:                        v.Purl,
+					UpstreamVersion:             upstream,
+				}
+				updates := []string{"release", "published_at", "purl", "upstream_version", "updated_at"}
+				if v.Details != nil {
+					ver.ProjectURL = v.Details.ProjectURL
+					ver.License = v.Details.License
+					ver.Summary = v.Details.Summary
+					ver.Description = v.Details.Description
+					ver.Author = v.Details.Author
+					ver.AuthorEmail = v.Details.AuthorEmail
+					updates = append(updates, "project_url", "license", "summary", "description", "author", "author_email")
 				}
 				if err := tx.Clauses(
 					clause.OnConflict{
 						Columns:   []clause.Column{{Name: "lightwell_package_uuid"}, {Name: "version"}},
-						DoUpdates: clause.AssignmentColumns([]string{"release", "published_at", "purl", "updated_at"}),
+						DoUpdates: clause.AssignmentColumns(updates),
 					},
 					clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
 				).Create(&ver).Error; err != nil {

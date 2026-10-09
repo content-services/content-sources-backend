@@ -281,6 +281,7 @@ func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {
 	assert.Empty(s.T(), rows[0].Versions, "Versions should be empty slice, not ['']")
 	assert.Empty(s.T(), rows[0].Releases, "Releases should be empty slice, not ['']")
 	assert.Empty(s.T(), rows[0].PublishedAts, "PublishedAts should be empty slice, not ['']")
+	assert.Empty(s.T(), rows[0].UpstreamVersions, "UpstreamVersions should be empty slice, not ['']")
 	assert.Len(s.T(), rows[0].Versions, 0, "Versions length should be 0")
 }
 
@@ -310,6 +311,7 @@ func (s *LightwellPackageSuite) TestListPackagesNameFilterCaseInsensitive() {
 	s.NoError(err)
 	assert.Len(s.T(), rows, 1)
 	assert.Equal(s.T(), "com.example:commons-lib", rows[0].Name)
+	assert.Equal(s.T(), []string{""}, rows[0].UpstreamVersions)
 }
 
 func (s *LightwellPackageSuite) TestListPackagesSecurityLevelFilterCaseInsensitive() {
@@ -425,6 +427,8 @@ func (s *LightwellPackageSuite) TestListPackageVersionsReturnsPurlAndCount() {
 	s.Require().Len(vrows, 2)
 	assert.NotEmpty(s.T(), vrows[0].Purl)
 	assert.Contains(s.T(), vrows[0].Purl, "pkg:maven/com.example/commons-lib")
+	assert.Equal(s.T(), "", vrows[0].UpstreamVersion)
+	assert.Equal(s.T(), "", vrows[1].UpstreamVersion)
 }
 
 // TestListPackageVersionsDemoFilter verifies the package_versions query excludes
@@ -576,6 +580,94 @@ func (s *LightwellPackageSuite) TestSyncPackagesForRepositoryUpsertAndDeleteDiff
 	var ver models.LightwellPackageVersion
 	s.tx.Where("lightwell_package_uuid = ?", after.UUID).First(&ver)
 	assert.Equal(t, "pkg:maven/org.apache/commons@2.0-updated", ver.Purl) // updated in place
+	assert.Equal(t, "2.0", ver.UpstreamVersion)
+	assert.Equal(t, "", ver.Release)
+}
+
+func (s *LightwellPackageSuite) TestSyncPackagesStoresVersionMetadata() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetLightwellPackageDao(s.tx)
+	rcUUID := s.seedLightwellRepoConfig("maven", "validated", "lightwell-maven-details")
+
+	details := &LightwellPackageVersionDetailsInput{
+		ProjectURL:  "https://example.com/commons",
+		License:     "Apache-2.0",
+		Summary:     "commons summary",
+		Description: "commons description",
+		Author:      "Apache",
+	}
+	err := dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "commons", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "1.2.3", Purl: "pkg:maven/org.apache/commons@1.2.3", Details: details},
+			{Version: "1.2.3.rhlw-00001", Purl: "pkg:maven/org.apache/commons@1.2.3.rhlw-00001", Details: details},
+			{Version: "5.3.18.lw-1", Purl: "pkg:maven/org.apache/commons@5.3.18.lw-1"},
+		}},
+	})
+	require.NoError(t, err)
+
+	var versions []models.LightwellPackageVersion
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ?", rcUUID).Order("version").Find(&versions).Error)
+	require.Len(t, versions, 3)
+	byVersion := map[string]models.LightwellPackageVersion{}
+	for _, ver := range versions {
+		byVersion[ver.Version] = ver
+	}
+	assert.Equal(t, "1.2.3", byVersion["1.2.3"].UpstreamVersion)
+	assert.Equal(t, "", byVersion["1.2.3"].Release)
+	assert.Equal(t, "1.2.3", byVersion["1.2.3.rhlw-00001"].UpstreamVersion)
+	assert.Equal(t, "rhlw-00001", byVersion["1.2.3.rhlw-00001"].Release)
+	assert.Equal(t, "5.3.18.lw-1", byVersion["5.3.18.lw-1"].UpstreamVersion)
+	assert.Equal(t, "", byVersion["5.3.18.lw-1"].Release)
+
+	assert.Equal(t, "Apache", byVersion["1.2.3"].Author)
+	assert.Equal(t, "commons summary", byVersion["1.2.3"].Summary)
+	assert.Equal(t, "", byVersion["1.2.3"].AuthorEmail)
+	assert.Equal(t, "Apache", byVersion["1.2.3.rhlw-00001"].Author)
+	assert.Equal(t, "commons description", byVersion["1.2.3.rhlw-00001"].Description)
+	assert.Equal(t, "", byVersion["5.3.18.lw-1"].Summary)
+	upstreamUUID := byVersion["1.2.3"].UUID
+
+	err = dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "commons", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "1.2.3", Purl: "pkg:maven/org.apache/commons@1.2.3", Details: &LightwellPackageVersionDetailsInput{
+				Summary: "updated summary",
+				Author:  "Apache",
+			}},
+		}},
+	})
+	require.NoError(t, err)
+
+	var verCount int64
+	s.tx.Model(&models.LightwellPackageVersion{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&verCount)
+	assert.Equal(t, int64(1), verCount)
+
+	var remaining models.LightwellPackageVersion
+	require.NoError(t, s.tx.Where("uuid = ?", upstreamUUID).First(&remaining).Error)
+	assert.Equal(t, "1.2.3", remaining.UpstreamVersion)
+	assert.Equal(t, "updated summary", remaining.Summary)
+	assert.Equal(t, "Apache", remaining.Author)
+
+	err = dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "commons", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "1.2.3", Purl: "pkg:maven/org.apache/commons@1.2.3"},
+		}},
+	})
+	require.NoError(t, err)
+	var kept models.LightwellPackageVersion
+	require.NoError(t, s.tx.Where("uuid = ?", upstreamUUID).First(&kept).Error)
+	assert.Equal(t, "updated summary", kept.Summary)
+
+	err = dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "commons", Group: "org.apache", Versions: []LightwellPackageVersionInput{
+			{Version: "9.0", Purl: "pkg:maven/org.apache/commons@9.0"},
+		}},
+	})
+	require.NoError(t, err)
+	var nine models.LightwellPackageVersion
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ? AND version = ?", rcUUID, "9.0").First(&nine).Error)
+	assert.Equal(t, "", nine.Summary)
+	assert.Equal(t, "", nine.Author)
 }
 
 func (s *LightwellPackageSuite) TestSyncPackagesEmptyDeletesAll() {

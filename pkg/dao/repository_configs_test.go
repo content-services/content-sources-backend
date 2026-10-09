@@ -4563,9 +4563,9 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport(
 	).Error
 	require.NoError(t, err)
 	err = suite.tx.Exec(`
-		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label, last_import_repository_version)
-		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?, ?)`,
-		pythonRepoConfigUUID, "python-test", config.LightwellDemoOrg, pythonRepoUUID, "lightwell-python", "python-test", "/versions/3/",
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label, last_import_repository_version, package_import_forced_at)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?, ?, ?)`,
+		pythonRepoConfigUUID, "python-test", config.LightwellDemoOrg, pythonRepoUUID, "lightwell-python", "python-test", "/versions/3/", "2026-10-09T12:00:00Z",
 	).Error
 	require.NoError(t, err)
 
@@ -4591,7 +4591,7 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport(
 	})
 
 	dao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
-	repos, err := dao.InternalOnly_ListLightwellReposToImport(ctx)
+	repos, err := dao.InternalOnly_ListLightwellReposToImport(ctx, LightwellRepoImportFilter{})
 	require.NoError(t, err)
 
 	// Only the two Lightwell maven/python repos, each with BasePath + ContentType populated
@@ -4615,6 +4615,7 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport(
 	assert.Equal(t, "maven-test", mavenRepo.Name)
 	assert.Equal(t, "/maven/repo", mavenRepo.BasePath)
 	assert.Equal(t, "", mavenRepo.LastImportRepositoryVersion)
+	assert.Equal(t, "", mavenRepo.PackageImportForcedAt)
 
 	require.NotNil(t, pythonRepo)
 	assert.Equal(t, pythonRepoConfigUUID, pythonRepo.RepoConfigUUID)
@@ -4622,11 +4623,28 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport(
 	assert.Equal(t, "python-test", pythonRepo.Name)
 	assert.Equal(t, "/python/repo", pythonRepo.BasePath)
 	assert.Equal(t, "/versions/3/", pythonRepo.LastImportRepositoryVersion)
+	assert.Equal(t, "2026-10-09T12:00:00Z", pythonRepo.PackageImportForcedAt)
 
-	// Update + read back
-	err = dao.InternalOnly_UpdateLastImportRepositoryVersion(ctx, mavenRepoConfigUUID, "/versions/5/")
+	mavenOnly, err := dao.InternalOnly_ListLightwellReposToImport(ctx, LightwellRepoImportFilter{
+		Ecosystems: []string{config.ContentTypeMaven},
+		Name:       "maven-test",
+	})
+	require.NoError(t, err)
+	require.Len(t, mavenOnly, 1)
+	assert.Equal(t, mavenRepoConfigUUID, mavenOnly[0].RepoConfigUUID)
+
+	none, err := dao.InternalOnly_ListLightwellReposToImport(ctx, LightwellRepoImportFilter{
+		Ecosystems: []string{config.ContentTypeNpm},
+		Name:       "maven-test",
+	})
+	require.NoError(t, err)
+	assert.Empty(t, none)
+
+	// A successful import stores the version and the force request it completed.
+	err = dao.InternalOnly_UpdateLastImportRepositoryVersion(ctx, mavenRepoConfigUUID, "/versions/5/", "2026-10-09T13:00:00Z")
 	require.NoError(t, err)
 	var rc models.RepositoryConfiguration
 	suite.tx.Where("uuid = ?", mavenRepoConfigUUID).First(&rc)
 	assert.Equal(t, "/versions/5/", rc.LastImportRepositoryVersion)
+	assert.Equal(t, "2026-10-09T13:00:00Z", rc.PackageImportForcedAt)
 }

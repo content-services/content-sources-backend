@@ -121,8 +121,15 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 	SetPartnerRepo(ctx context.Context, repoConfigUUID string, partner bool) error
 	InternalOnly_FetchRepoConfigByName(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error)
-	InternalOnly_ListLightwellReposToImport(ctx context.Context) ([]LightwellRepoToImport, error)
-	InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string) error
+	InternalOnly_ListLightwellReposToImport(ctx context.Context, filter LightwellRepoImportFilter) ([]LightwellRepoToImport, error)
+	InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string, forceRequest string) error
+}
+
+// LightwellRepoImportFilter selects Lightwell repositories for an import or a force request.
+// Empty Ecosystems means maven, python, and npm. Empty Name means every repository name.
+type LightwellRepoImportFilter struct {
+	Ecosystems []string
+	Name       string
 }
 
 type LightwellRepoToImport struct {
@@ -132,6 +139,7 @@ type LightwellRepoToImport struct {
 	ContentType                 string `gorm:"column:content_type"`
 	BasePath                    string `gorm:"column:base_path"`
 	LastImportRepositoryVersion string `gorm:"column:last_import_repository_version"`
+	PackageImportForcedAt       string `gorm:"column:package_import_forced_at"`
 }
 
 type ModuleStreamDao interface {
