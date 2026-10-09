@@ -176,3 +176,43 @@ func fetchMavenCentralMetadata(ctx context.Context, httpClient *http.Client, gro
 func isMavenCentralPomNotFound(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "POM not found")
 }
+
+// MavenCentralMetadata is the POM text copied onto a Lightwell Maven version row.
+// Author is the organization name. AuthorEmail stays empty. Summary and Description
+// are both the POM description.
+type MavenCentralMetadata struct {
+	ProjectURL  string
+	License     string
+	Summary     string
+	Description string
+	Author      string
+	AuthorEmail string
+}
+
+// FetchMavenCentralMetadata loads POM text for one upstream version.
+func FetchMavenCentralMetadata(ctx context.Context, groupID, artifactID, version string) (MavenCentralMetadata, error) {
+	metadata, err := fetchMavenCentralMetadata(ctx, nil, groupID, artifactID, version)
+	if err != nil {
+		return MavenCentralMetadata{}, err
+	}
+	description := ptrString(metadata.Summary)
+	return MavenCentralMetadata{
+		ProjectURL:  ptrString(metadata.ProjectURL),
+		License:     ptrString(metadata.License),
+		Summary:     description,
+		Description: description,
+		Author:      ptrString(metadata.Author),
+	}, nil
+}
+
+// IsMavenCentralNotFound reports a missing POM. Other Central errors are not this case.
+func IsMavenCentralNotFound(err error) bool {
+	return isMavenCentralPomNotFound(err)
+}
+
+func ptrString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}

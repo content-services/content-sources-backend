@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/coords"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/tang/pkg/tangy"
 	zest "github.com/content-services/zest/release/v2026"
 	"github.com/rs/zerolog/log"
@@ -22,6 +24,9 @@ import (
 
 const importMaxConcurrentRepos = 10
 const importPageSize = 300
+
+// loadMavenCentralMetadata is replaced in tests so the import does not call Maven Central.
+var loadMavenCentralMetadata = handler.FetchMavenCentralMetadata
 
 func ImportLightwellPackagesAction(c *cli.Context) error {
 	ctx := c.Context
@@ -104,7 +109,7 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 		return nil
 	}
 
-	pkgs, err := fetchRepoPackages(ctx, pulpClient, repo.ContentType, *repoHref)
+	pkgs, err := fetchRepoPackages(ctx, daoReg.MavenPackages, pulpClient, repo.ContentType, *repoHref)
 	if err != nil {
 		return err
 	}
@@ -124,23 +129,14 @@ func shouldImport(current *string, last string, force bool) bool {
 	return *current != last
 }
 
-func fetchRepoPackages(ctx context.Context, pulpClient pulp_client.PulpClient, contentType, repoHref string) ([]dao.LightwellPackageInput, error) {
+func fetchRepoPackages(ctx context.Context, packages dao.MavenPackagesDao, pulpClient pulp_client.PulpClient, contentType, repoHref string) ([]dao.LightwellPackageInput, error) {
 	switch contentType {
 	case config.ContentTypeMaven:
-		var all []dao.LightwellPackageInput
-		offset := 0
-		for {
-			resp, err := pulpClient.ListMavenPackages(ctx, repoHref, "", importPageSize, offset)
-			if err != nil {
-				return nil, err
-			}
-			all = append(all, mapMavenPackageInputs(resp)...)
-			offset += len(resp.Results)
-			if len(resp.Results) == 0 || int64(offset) >= resp.Count {
-				break
-			}
+		resp, err := pulpClient.ListMavenFlatPackages(ctx, repoHref)
+		if err != nil {
+			return nil, err
 		}
-		return all, nil
+		return mapMavenFlatPackageInputs(resp.Results, newMavenCentralLookup(ctx, packages, loadMavenCentralMetadata)), nil
 	case config.ContentTypePython:
 		if config.Tang == nil {
 			return nil, fmt.Errorf("tang is not configured")
@@ -184,26 +180,157 @@ func fetchRepoPackages(ctx context.Context, pulpClient pulp_client.PulpClient, c
 	}
 }
 
-func mapMavenPackageInputs(resp zest.PaginatedMavenRepositoryPackageListResponse) []dao.LightwellPackageInput {
-	out := make([]dao.LightwellPackageInput, 0, len(resp.Results))
-	for _, item := range resp.Results {
-		rel := make(map[string]zest.MavenPackageReleaseResponse, len(item.LatestReleases))
-		for _, r := range item.LatestReleases {
-			rel[r.Version] = r
+type mavenCentralLookup struct {
+	ctx      context.Context
+	packages dao.MavenPackagesDao
+	load     func(context.Context, string, string, string) (handler.MavenCentralMetadata, error)
+	cache    map[string]*dao.LightwellPackageVersionDetailsInput
+	// local is keyed by group and artifact. maven_packages has one row per coordinate, not per version.
+	local map[string]cachedMavenPackage
+}
+
+type cachedMavenPackage struct {
+	found   bool
+	details *dao.LightwellPackageVersionDetailsInput
+}
+
+func newMavenCentralLookup(ctx context.Context, packages dao.MavenPackagesDao, load func(context.Context, string, string, string) (handler.MavenCentralMetadata, error)) *mavenCentralLookup {
+	return &mavenCentralLookup{
+		ctx:      ctx,
+		packages: packages,
+		load:     load,
+		cache:    map[string]*dao.LightwellPackageVersionDetailsInput{},
+		local:    map[string]cachedMavenPackage{},
+	}
+}
+
+// details loads text for one group, artifact, and upstream version.
+// Request-path reads still fill maven_packages and fall through to Maven Central.
+// That path will be removed, and Maven Central will be called only from this sync.
+// Until then, use a maven_packages row when one exists and call Central only when it does not.
+// A read error is logged and treated as a miss. A missing POM falls back to the flat row.
+// Any other Central error writes empty text.
+func (l *mavenCentralLookup) details(group, artifact, upstream string, row zest.MavenRepositoryFlatPackageResponse) *dao.LightwellPackageVersionDetailsInput {
+	key := group + "\x00" + artifact + "\x00" + upstream
+	if got, ok := l.cache[key]; ok {
+		return got
+	}
+
+	if l.packages != nil {
+		if local := l.mavenPackageDetails(group, artifact); local != nil {
+			l.cache[key] = local
+			return local
 		}
-		versions := make([]dao.LightwellPackageVersionInput, 0, len(item.Versions))
-		for _, v := range item.Versions {
-			in := dao.LightwellPackageVersionInput{
-				Version: v,
-				Purl:    coords.BuildPURL(config.ContentTypeMaven, item.GroupId, item.ArtifactId, v),
-			}
-			if r, ok := rel[v]; ok {
-				in.Release = r.Release
-				in.PublishedAt = r.CreatedAt.Format(time.RFC3339)
-			}
-			versions = append(versions, in)
+	}
+
+	var details *dao.LightwellPackageVersionDetailsInput
+	meta, err := l.load(l.ctx, group, artifact, upstream)
+	switch {
+	case err == nil:
+		details = &dao.LightwellPackageVersionDetailsInput{
+			ProjectURL:  meta.ProjectURL,
+			License:     meta.License,
+			Summary:     meta.Summary,
+			Description: meta.Description,
+			Author:      meta.Author,
+			AuthorEmail: meta.AuthorEmail,
 		}
-		out = append(out, dao.LightwellPackageInput{Name: item.ArtifactId, Group: item.GroupId, Versions: versions})
+	case handler.IsMavenCentralNotFound(err):
+		details = &dao.LightwellPackageVersionDetailsInput{
+			Summary:     row.Description,
+			Description: row.Description,
+			License:     joinMavenLicenseNames(row.Licenses),
+		}
+	default:
+		log.Warn().Err(err).Str("group_id", group).Str("artifact_id", artifact).Str("upstream_version", upstream).Msg("failed to fetch maven central metadata")
+		details = &dao.LightwellPackageVersionDetailsInput{}
+	}
+	l.cache[key] = details
+	return details
+}
+
+// mavenPackageDetails returns the cached maven_packages row for a group and artifact.
+// A second call for the same coordinate does not read the table again.
+// The table stores the POM description in summary, so both summary and description get that text.
+// A read error is logged once for this coordinate and then treated as a miss.
+func (l *mavenCentralLookup) mavenPackageDetails(group, artifact string) *dao.LightwellPackageVersionDetailsInput {
+	key := group + "\x00" + artifact
+	if got, ok := l.local[key]; ok {
+		if !got.found {
+			return nil
+		}
+		return got.details
+	}
+
+	existing, err := l.packages.Fetch(l.ctx, group, artifact)
+	if err != nil {
+		log.Warn().Err(err).Str("group_id", group).Str("artifact_id", artifact).Msg("failed to read maven_packages, falling back to maven central")
+		l.local[key] = cachedMavenPackage{}
+		return nil
+	}
+	if existing == nil {
+		l.local[key] = cachedMavenPackage{}
+		return nil
+	}
+
+	summary := stringOrEmpty(existing.Summary)
+	details := &dao.LightwellPackageVersionDetailsInput{
+		ProjectURL:  stringOrEmpty(existing.ProjectURL),
+		License:     stringOrEmpty(existing.License),
+		Summary:     summary,
+		Description: summary,
+		Author:      stringOrEmpty(existing.Author),
+	}
+	l.local[key] = cachedMavenPackage{found: true, details: details}
+	return details
+}
+
+func stringOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func joinMavenLicenseNames(licenses []zest.MavenPackageLicenseResponse) string {
+	names := make([]string, 0, len(licenses))
+	for _, lic := range licenses {
+		if name := strings.TrimSpace(lic.Name); name != "" {
+			names = append(names, name)
+		}
+	}
+	return strings.Join(names, ", ")
+}
+
+func mapMavenFlatPackageInputs(rows []zest.MavenRepositoryFlatPackageResponse, lookup *mavenCentralLookup) []dao.LightwellPackageInput {
+	type packageKey struct {
+		group    string
+		artifact string
+	}
+	order := make([]packageKey, 0)
+	grouped := make(map[packageKey][]zest.MavenRepositoryFlatPackageResponse)
+	for _, row := range rows {
+		key := packageKey{group: row.GroupId, artifact: row.ArtifactId}
+		if _, ok := grouped[key]; !ok {
+			order = append(order, key)
+		}
+		grouped[key] = append(grouped[key], row)
+	}
+
+	out := make([]dao.LightwellPackageInput, 0, len(order))
+	for _, key := range order {
+		groupRows := grouped[key]
+		versions := make([]dao.LightwellPackageVersionInput, 0, len(groupRows))
+		for _, row := range groupRows {
+			upstream, _ := rhlw.SplitVersion(row.Version)
+			versions = append(versions, dao.LightwellPackageVersionInput{
+				Version:     row.Version,
+				PublishedAt: row.LastUpdated.UTC().Format(time.RFC3339),
+				Purl:        coords.BuildPURL(config.ContentTypeMaven, row.GroupId, row.ArtifactId, row.Version),
+				Details:     lookup.details(row.GroupId, row.ArtifactId, upstream, row),
+			})
+		}
+		out = append(out, dao.LightwellPackageInput{Name: key.artifact, Group: key.group, Versions: versions})
 	}
 	return out
 }
