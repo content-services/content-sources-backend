@@ -2907,6 +2907,69 @@ func (_c *MockPulpClient_ListMavenPackages_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// ListMavenFlatPackages provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListMavenFlatPackages(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error) {
+	ret := _mock.Called(ctx, repoHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListMavenFlatPackages")
+	}
+
+	var r0 zest.PaginatedMavenRepositoryFlatPackageResponseList
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)); ok {
+		return returnFunc(ctx, repoHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) zest.PaginatedMavenRepositoryFlatPackageResponseList); ok {
+		r0 = returnFunc(ctx, repoHref)
+	} else {
+		r0 = ret.Get(0).(zest.PaginatedMavenRepositoryFlatPackageResponseList)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ListMavenFlatPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListMavenFlatPackages'
+type MockPulpClient_ListMavenFlatPackages_Call struct {
+	*mock.Call
+}
+
+// ListMavenFlatPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoHref string
+func (_e *MockPulpClient_Expecter) ListMavenFlatPackages(ctx interface{}, repoHref interface{}) *MockPulpClient_ListMavenFlatPackages_Call {
+	return &MockPulpClient_ListMavenFlatPackages_Call{Call: _e.mock.On("ListMavenFlatPackages", ctx, repoHref)}
+}
+
+func (_c *MockPulpClient_ListMavenFlatPackages_Call) Run(run func(ctx context.Context, repoHref string)) *MockPulpClient_ListMavenFlatPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(arg0, arg1)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListMavenFlatPackages_Call) Return(paginatedMavenRepositoryFlatPackageListResponse zest.PaginatedMavenRepositoryFlatPackageResponseList, err error) *MockPulpClient_ListMavenFlatPackages_Call {
+	_c.Call.Return(paginatedMavenRepositoryFlatPackageListResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListMavenFlatPackages_Call) RunAndReturn(run func(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)) *MockPulpClient_ListMavenFlatPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListVersionAllPackages provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) ListVersionAllPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
 	ret := _mock.Called(ctx, versionHref)
