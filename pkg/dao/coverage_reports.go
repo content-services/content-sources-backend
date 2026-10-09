@@ -33,11 +33,12 @@ type coverageReportDaoImpl struct {
 }
 
 type SaveCoverageAnalysisParams struct {
-	InputFormat string
-	Results     []matcher.MatchResult
-	PackageCVEs []cve.PackageCVE // aligned 1:1 with Results; empty when CVE data is unavailable
-	CveSummary  cve.Count
-	Summary     matcher.MatchSummary
+	SkippedEntries int
+	InputFormat    string
+	Results        []matcher.MatchResult
+	PackageCVEs    []cve.PackageCVE // aligned 1:1 with Results; empty when CVE data is unavailable
+	CveSummary     cve.Count
+	Summary        matcher.MatchSummary
 }
 
 func (d coverageReportDaoImpl) Create(ctx context.Context, reportParams CreateCoverageReportParams, uploadParams CreateCoverageUploadParams) (api.CoverageReportResponse, error) {
@@ -229,6 +230,7 @@ func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportU
 
 		report.Status = config.TaskStatusCompleted
 		report.InputFormat = utils.Ptr(params.InputFormat)
+		report.SkippedEntries = utils.Ptr(params.SkippedEntries)
 		report.Total = utils.Ptr(params.Summary.Total)
 		report.ExactMatches = utils.Ptr(params.Summary.ExactMatches)
 		report.PartialMatches = utils.Ptr(params.Summary.PartialMatches)
@@ -274,10 +276,11 @@ func (d coverageReportDaoImpl) coverageReportCreateParamsToModels(report CreateC
 
 func (d coverageReportDaoImpl) modelToResponse(r models.CoverageReport) api.CoverageReportResponse {
 	resp := api.CoverageReportResponse{
-		UUID:        r.UUID,
-		Status:      r.Status,
-		CreatedAt:   r.CreatedAt,
-		CompletedAt: r.CompletedAt,
+		SkippedEntries: r.SkippedEntries,
+		UUID:           r.UUID,
+		Status:         r.Status,
+		CreatedAt:      r.CreatedAt,
+		CompletedAt:    r.CompletedAt,
 	}
 	if r.InputFormat != nil {
 		resp.InputFormat = *r.InputFormat

@@ -8,7 +8,7 @@ import (
 )
 
 // parseRequirements streams a pip requirements file; only ==/=== specifiers produce a pinned version.
-func parseRequirements(r io.Reader) ([]Package, error) {
+func parseRequirements(r io.Reader, skipped *int) ([]Package, error) {
 	var packages []Package
 	var continuation strings.Builder
 	scanner := bufio.NewScanner(r)
@@ -32,8 +32,12 @@ func parseRequirements(r io.Reader) ([]Package, error) {
 		}
 		line = strings.TrimSpace(line)
 
-		// Skip blank lines and pip flags (-r, -c, -e, --index-url, etc.)
+		// Skip blank lines and pip flags (-r, -c, -e, --index-url, etc.).
 		if line == "" || strings.HasPrefix(line, "-") {
+			// Editable requirements represent package entries, unlike configuration flags.
+			if strings.HasPrefix(line, "-e ") || strings.HasPrefix(line, "--editable ") || strings.HasPrefix(line, "--editable=") {
+				*skipped++
+			}
 			continue
 		}
 
@@ -73,6 +77,7 @@ func parseRequirements(r io.Reader) ([]Package, error) {
 		pkgName = strings.TrimSpace(pkgName)
 
 		if pkgName == "" {
+			*skipped++
 			continue
 		}
 

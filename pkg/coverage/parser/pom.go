@@ -127,7 +127,7 @@ func requireXMLEnd(dec *xml.Decoder) error {
 }
 
 // parsePOMs parses every project in a POM document and keeps results from successful projects.
-func parsePOMs(r io.Reader) ([]Package, error) {
+func parsePOMs(r io.Reader, skipped *int) ([]Package, error) {
 	projects, err := splitPOMs(r)
 	if err != nil {
 		return nil, err
@@ -136,8 +136,9 @@ func parsePOMs(r io.Reader) ([]Package, error) {
 	var packages []Package
 	parseErrors := make([]error, 0, len(projects))
 	for i, project := range projects {
-		parsed, err := parsePOM(bytes.NewReader(project))
+		parsed, err := parsePOM(bytes.NewReader(project), skipped)
 		if err != nil {
+			*skipped++
 			parseErrors = append(parseErrors, fmt.Errorf("project %d: %w", i+1, err))
 			continue
 		}
@@ -150,7 +151,7 @@ func parsePOMs(r io.Reader) ([]Package, error) {
 }
 
 // parsePOM uses git-pkgs/pom to parse the file, then resolve parents and BOM imports.
-func parsePOM(r io.Reader) ([]Package, error) {
+func parsePOM(r io.Reader, skipped *int) ([]Package, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, wrapParse("POM", err)
@@ -168,11 +169,12 @@ func parsePOM(r io.Reader) ([]Package, error) {
 	if err != nil {
 		return nil, wrapParse("POM", err)
 	}
-	return packagesFromEffective(parsed, ep), nil
+	return packagesFromEffective(parsed, ep, skipped), nil
 }
 
-func packagesFromEffective(parsed *gitpom.POM, ep *gitpom.EffectivePOM) []Package {
+func packagesFromEffective(parsed *gitpom.POM, ep *gitpom.EffectivePOM, skipped *int) []Package {
 	collector := newPOMPackageCollector()
+	collector.skipped = skipped
 
 	for _, d := range ep.Dependencies {
 		if strings.EqualFold(d.Scope, "import") {
@@ -203,6 +205,7 @@ func packagesFromEffective(parsed *gitpom.POM, ep *gitpom.EffectivePOM) []Packag
 }
 
 type pomPackageCollector struct {
+	skipped            *int
 	packages           []Package
 	seenGAVs           map[string]struct{}
 	versionedGAs       map[string]struct{}
@@ -220,6 +223,9 @@ func newPOMPackageCollector() *pomPackageCollector {
 func (c *pomPackageCollector) add(groupID, artifactID, version string) {
 	if groupID == "" || artifactID == "" ||
 		strings.Contains(groupID, "${") || strings.Contains(artifactID, "${") {
+		if c.skipped != nil {
+			*c.skipped++
+		}
 		return
 	}
 	if strings.Contains(version, "${") {

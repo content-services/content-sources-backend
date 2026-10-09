@@ -33,8 +33,11 @@ type Package struct {
 }
 
 type ParseResult struct {
-	Packages       []Package
-	InputFormat    string
+	Packages    []Package
+	InputFormat string
+	// SkippedEntries counts package entries (CSV rows, logical requirement lines,
+	// SBOM components, or POM dependencies/projects) that yield no usable identity.
+	// Headers, comments, configuration, and valid duplicates are excluded.
 	SkippedEntries int
 }
 
@@ -52,13 +55,13 @@ func Parse(filename string, r io.Reader) (*ParseResult, error) {
 	var skippedEntries int
 	switch format {
 	case FormatCSV:
-		packages, err = parseCSV(br)
+		packages, err = parseCSV(br, &skippedEntries)
 	case FormatRequirements:
-		packages, err = parseRequirements(br)
+		packages, err = parseRequirements(br, &skippedEntries)
 	case FormatPOM:
-		packages, err = parsePOMs(br)
+		packages, err = parsePOMs(br, &skippedEntries)
 	case FormatCycloneDX:
-		packages, err = parseCycloneDX(br)
+		packages, err = parseCycloneDX(br, &skippedEntries)
 	case FormatSPDX:
 		packages, skippedEntries, err = parseSPDX(br)
 	default:
