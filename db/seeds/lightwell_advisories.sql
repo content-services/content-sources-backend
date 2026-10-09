@@ -1,9 +1,12 @@
 -- Dev seed for lightwell advisories.
--- Apply db/seeds/lightwell_vulnerabilities.sql first. This script reads that
--- seed and inserts one advisory per vulnerability whose stage is
--- 'Lightwell Network' (the only stage that can have an advisory).
--- package_name comes from the vulnerability purl, package_version is
--- component_version, and release rows follow published_versions.
+-- Apply db/seeds/lightwell_vulnerabilities.sql first, and create the
+-- Lightwell repositories with scripts/create_lightwell_repo.sh. This script
+-- reads the vulnerability seed and inserts one advisory per vulnerability
+-- whose stage is 'Lightwell Network'. package_name comes from the
+-- vulnerability purl, package_version is component_version, and release rows
+-- follow published_versions.
+-- Java advisories belong to lightwell/java/remediated and Python advisories
+-- to lightwell/python/remediated. JavaScript and C# stay on lightwell/seed.
 BEGIN;
 
 INSERT INTO repositories (
@@ -46,6 +49,41 @@ INSERT INTO repository_configurations (
 )
 ON CONFLICT (uuid) DO NOTHING;
 
+DO $$
+BEGIN
+    IF (
+        SELECT count(*) FROM repository_configurations
+        WHERE org_id = '-3'
+            AND deleted_at IS NULL
+            AND name IN (
+                'lightwell/java/validated',
+                'lightwell/java/remediated',
+                'lightwell/python/validated',
+                'lightwell/python/remediated'
+            )
+    ) < 4 THEN
+        RAISE EXCEPTION
+            'Missing Lightwell repositories in org -3. Run scripts/create_lightwell_repo.sh first.';
+    END IF;
+END $$;
+
+-- Drop the standalone seed repos from an earlier version of this script.
+-- Advisories and packages on them cascade away and are recreated below.
+DELETE FROM repository_configurations
+WHERE uuid IN (
+    '00000000-0000-4000-8000-0000000000c1'::uuid,
+    '00000000-0000-4000-8000-0000000000c2'::uuid,
+    '00000000-0000-4000-8000-0000000000c3'::uuid,
+    '00000000-0000-4000-8000-0000000000c4'::uuid
+);
+DELETE FROM repositories
+WHERE uuid IN (
+    '00000000-0000-4000-8000-0000000000b1'::uuid,
+    '00000000-0000-4000-8000-0000000000b2'::uuid,
+    '00000000-0000-4000-8000-0000000000b3'::uuid,
+    '00000000-0000-4000-8000-0000000000b4'::uuid
+);
+
 INSERT INTO lightwell_advisories (
     uuid,
     repo_name,
@@ -69,8 +107,8 @@ INSERT INTO lightwell_advisories (
 SELECT
     overlay(v.uuid::text placing 'a' from 15 for 1)::uuid,
     CASE v.language
-        WHEN 'java' THEN 'lightwell/seed/java'
-        WHEN 'python' THEN 'lightwell/seed/python'
+        WHEN 'java' THEN 'lightwell/java/remediated'
+        WHEN 'python' THEN 'lightwell/python/remediated'
         WHEN 'javascript' THEN 'lightwell/seed/npm'
         WHEN 'csharp' THEN 'lightwell/seed/nuget'
         ELSE 'lightwell/seed'
@@ -89,7 +127,17 @@ SELECT
     END,
     v.component_version,
     v.published_versions,
-    '00000000-0000-4000-8000-0000000000c0'::uuid,
+    CASE v.language
+        WHEN 'java' THEN (
+            SELECT rc.uuid FROM repository_configurations rc
+            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/java/remediated' AND rc.deleted_at IS NULL
+        )
+        WHEN 'python' THEN (
+            SELECT rc.uuid FROM repository_configurations rc
+            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/python/remediated' AND rc.deleted_at IS NULL
+        )
+        ELSE '00000000-0000-4000-8000-0000000000c0'::uuid
+    END,
     'seed-' || v.vulnerability_id,
     v.last_updated,
     v.last_updated,
@@ -100,7 +148,9 @@ SELECT
 FROM lightwell_vulnerabilities v
 WHERE v.stage = 'Lightwell Network'
     AND v.uuid::text LIKE '00000000-0000-4000-8000-%'
-ON CONFLICT (uuid) DO NOTHING;
+ON CONFLICT (uuid) DO UPDATE SET
+    repo_name = EXCLUDED.repo_name,
+    repository_configuration_uuid = EXCLUDED.repository_configuration_uuid;
 
 INSERT INTO lightwell_advisory_releases (
     advisory_uuid,
