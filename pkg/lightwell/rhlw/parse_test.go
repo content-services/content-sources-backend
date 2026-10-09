@@ -44,6 +44,35 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestSplitVersion(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		in       string
+		upstream string
+		release  string
+	}{
+		{"dot marker", "1.2.3.rhlw-00001", "1.2.3", "rhlw-00001"},
+		{"qualifier before marker", "1.2.3.Final-rhlw-00001", "1.2.3.Final", "rhlw-00001"},
+		{"plus marker", "1.2.3+rhlw.1", "1.2.3", "rhlw.1"},
+		{"marker with novel tail", "1.2.3.rhlw-00001-n0001", "1.2.3", "rhlw-00001-n0001"},
+		{"uppercase marker", "1.2.3.RHLW-00001", "1.2.3", "RHLW-00001"},
+		{"non-rhlw suffix", "5.3.18.lw-1", "5.3.18.lw-1", ""},
+		{"no marker", "1.2.3", "1.2.3", ""},
+		{"empty", "", "", ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			upstream, release := SplitVersion(tc.in)
+			assert.Equal(t, tc.upstream, upstream)
+			assert.Equal(t, tc.release, release)
+		})
+	}
+}
+
 func TestReleasesDedupesRankAndUsesAdvisoryIDFallback(t *testing.T) {
 	t.Parallel()
 
