@@ -5,8 +5,9 @@
 -- whose stage is 'Lightwell Network'. package_name comes from the
 -- vulnerability purl, package_version is component_version, and release rows
 -- follow published_versions.
--- Java advisories belong to lightwell/java/remediated and Python advisories
--- to lightwell/python/remediated. JavaScript and C# stay on lightwell/seed.
+-- Java advisories belong to lightwell/java/remediated or lightwell/java/predisclosure
+-- and Python advisories to lightwell/python/remediated or lightwell/python/predisclosure.
+-- JavaScript and C# stay on lightwell/seed.
 BEGIN;
 
 INSERT INTO repositories (
@@ -58,10 +59,12 @@ BEGIN
             AND name IN (
                 'lightwell/java/validated',
                 'lightwell/java/remediated',
+                'lightwell/java/predisclosure',
                 'lightwell/python/validated',
-                'lightwell/python/remediated'
+                'lightwell/python/remediated',
+                'lightwell/python/predisclosure'
             )
-    ) < 4 THEN
+    ) < 6 THEN
         RAISE EXCEPTION
             'Missing Lightwell repositories in org -3. Run scripts/create_lightwell_repo.sh first.';
     END IF;
@@ -106,11 +109,13 @@ INSERT INTO lightwell_advisories (
 )
 SELECT
     overlay(v.uuid::text placing 'a' from 15 for 1)::uuid,
-    CASE v.language
-        WHEN 'java' THEN 'lightwell/java/remediated'
-        WHEN 'python' THEN 'lightwell/python/remediated'
-        WHEN 'javascript' THEN 'lightwell/seed/npm'
-        WHEN 'csharp' THEN 'lightwell/seed/nuget'
+    CASE
+        WHEN v.vulnerability_id LIKE 'LWL-2026-36%' AND v.language = 'java' THEN 'lightwell/java/predisclosure'
+        WHEN v.vulnerability_id LIKE 'LWL-2026-36%' AND v.language = 'python' THEN 'lightwell/python/predisclosure'
+        WHEN v.language = 'java' THEN 'lightwell/java/remediated'
+        WHEN v.language = 'python' THEN 'lightwell/python/remediated'
+        WHEN v.language = 'javascript' THEN 'lightwell/seed/npm'
+        WHEN v.language = 'csharp' THEN 'lightwell/seed/nuget'
         ELSE 'lightwell/seed'
     END,
     v.vulnerability_id,
@@ -127,12 +132,20 @@ SELECT
     END,
     v.component_version,
     v.published_versions,
-    CASE v.language
-        WHEN 'java' THEN (
+    CASE
+        WHEN v.vulnerability_id LIKE 'LWL-2026-36%' AND v.language = 'java' THEN (
+            SELECT rc.uuid FROM repository_configurations rc
+            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/java/predisclosure' AND rc.deleted_at IS NULL
+        )
+        WHEN v.vulnerability_id LIKE 'LWL-2026-36%' AND v.language = 'python' THEN (
+            SELECT rc.uuid FROM repository_configurations rc
+            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/python/predisclosure' AND rc.deleted_at IS NULL
+        )
+        WHEN v.language = 'java' THEN (
             SELECT rc.uuid FROM repository_configurations rc
             WHERE rc.org_id = '-3' AND rc.name = 'lightwell/java/remediated' AND rc.deleted_at IS NULL
         )
-        WHEN 'python' THEN (
+        WHEN v.language = 'python' THEN (
             SELECT rc.uuid FROM repository_configurations rc
             WHERE rc.org_id = '-3' AND rc.name = 'lightwell/python/remediated' AND rc.deleted_at IS NULL
         )

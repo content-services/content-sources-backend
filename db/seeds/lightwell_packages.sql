@@ -1,9 +1,10 @@
--- Dev seed for the Lightwell package mirror.
--- Apply db/seeds/lightwell_advisories.sql first. Packages are written onto
--- the repositories created by scripts/create_lightwell_repo.sh.
+-- Dev seed for Lightwell package coordinates (and a temporary mirror fill).
+-- Apply db/seeds/lightwell_advisories.sql first. create_lightwell_repo.sh uses
+-- these rows to seed Pulp, then import-lightwell-packages replaces the mirror.
 --
--- Remediated versions are the advisory fixed_versions strings, including rhlw.
--- Validated versions are the upstream part of those strings, with an empty release.
+-- Remediated versions are the advisory fixed_versions strings, including rhlw,
+-- excluding predisclosure seed IDs (LWL-2026-36xx).
+-- Validated versions are catalog upstream builds (see validated_catalog below).
 -- Maven name is the artifact id and package_group is the group id. The
 -- group:artifact coordinate stays on the advisory and is not stored in name.
 -- JavaScript and C# advisories stay on lightwell/seed, and there is no npm repo.
@@ -17,8 +18,10 @@ WHERE repository_configuration_uuid IN (
         AND name IN (
             'lightwell/java/validated',
             'lightwell/java/remediated',
+            'lightwell/java/predisclosure',
             'lightwell/python/validated',
-            'lightwell/python/remediated'
+            'lightwell/python/remediated',
+            'lightwell/python/predisclosure'
         )
 );
 
@@ -30,16 +33,17 @@ WHERE repository_configuration_uuid IN (
         AND name IN (
             'lightwell/java/validated',
             'lightwell/java/remediated',
+            'lightwell/java/predisclosure',
             'lightwell/python/validated',
-            'lightwell/python/remediated'
+            'lightwell/python/remediated',
+            'lightwell/python/predisclosure'
         )
 );
 
 CREATE TEMP TABLE seed_package_versions ON COMMIT DROP AS
 WITH seed_advisories AS (
     SELECT
-        la.repository_configuration_uuid AS remediated_uuid,
-        validated.uuid AS validated_uuid,
+        la.repository_configuration_uuid AS repo_uuid,
         r.content_type,
         CASE
             WHEN r.content_type = 'maven' THEN split_part(la.package_name, ':', 1)
@@ -54,22 +58,19 @@ WITH seed_advisories AS (
     FROM lightwell_advisories la
     JOIN repository_configurations rc ON rc.uuid = la.repository_configuration_uuid
     JOIN repositories r ON r.uuid = rc.repository_uuid
-    JOIN repository_configurations validated
-        ON validated.org_id = rc.org_id
-        AND validated.deleted_at IS NULL
-        AND validated.name = CASE rc.name
-            WHEN 'lightwell/java/remediated' THEN 'lightwell/java/validated'
-            WHEN 'lightwell/python/remediated' THEN 'lightwell/python/validated'
-        END
     CROSS JOIN LATERAL unnest(la.fixed_versions) AS ver
     WHERE rc.org_id = '-3'
         AND rc.deleted_at IS NULL
-        AND rc.name IN ('lightwell/java/remediated', 'lightwell/python/remediated')
+        AND rc.name IN (
+            'lightwell/java/remediated',
+            'lightwell/python/remediated',
+            'lightwell/java/predisclosure',
+            'lightwell/python/predisclosure'
+        )
 ),
 split_versions AS (
     SELECT
-        remediated_uuid,
-        validated_uuid,
+        repo_uuid,
         content_type,
         package_group,
         package_name,
@@ -86,21 +87,47 @@ split_versions AS (
     FROM seed_advisories
     WHERE package_name <> ''
 ),
+validated_catalog AS (
+    SELECT *
+    FROM (
+        VALUES
+            ('maven'::text, 'com.squareup.okhttp3', 'okhttp', '4.12.0'),
+            ('maven', 'net.minidev', 'json-smart', '2.5.0'),
+            ('maven', 'org.apache.poi', 'poi', '5.2.4'),
+            ('maven', 'org.apache.shiro', 'shiro-core', '1.11.0'),
+            ('maven', 'org.codehaus.plexus', 'plexus-utils', '3.5.0'),
+            ('maven', 'org.eclipse.jetty', 'jetty-server', '11.0.14'),
+            ('maven', 'org.hibernate', 'hibernate-core', '5.6.15.Final'),
+            ('maven', 'org.postgresql', 'postgresql', '42.5.2'),
+            ('python', '', 'certifi', '2023.1.10'),
+            ('python', '', 'jinja2', '3.1.3'),
+            ('python', '', 'lxml', '4.9.3'),
+            ('python', '', 'pyyaml', '6.0.1'),
+            ('python', '', 'setuptools', '67.1.0'),
+            ('python', '', 'werkzeug', '2.2.4')
+    ) AS v(content_type, package_group, package_name, version)
+),
 validated_rows AS (
-    SELECT DISTINCT ON (validated_uuid, package_group, package_name, upstream_version)
-        validated_uuid AS repo_uuid,
-        content_type,
-        package_group,
-        package_name,
-        upstream_version AS version,
+    SELECT
+        rc.uuid AS repo_uuid,
+        vc.content_type,
+        vc.package_group,
+        vc.package_name,
+        vc.version,
         ''::text AS release,
-        upstream_version,
-        published
-    FROM split_versions
-    ORDER BY validated_uuid, package_group, package_name, upstream_version, published
+        vc.version AS upstream_version,
+        TIMESTAMPTZ '2026-08-18 00:00:00+00' AS published
+    FROM validated_catalog vc
+    JOIN repository_configurations rc
+        ON rc.org_id = '-3'
+        AND rc.deleted_at IS NULL
+        AND rc.name = CASE vc.content_type
+            WHEN 'maven' THEN 'lightwell/java/validated'
+            WHEN 'python' THEN 'lightwell/python/validated'
+        END
 )
 SELECT
-    remediated_uuid AS repo_uuid,
+    repo_uuid,
     content_type,
     package_group,
     package_name,
