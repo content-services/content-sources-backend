@@ -18,6 +18,38 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestLightwellPackageForceRequest(t *testing.T) {
+	original := config.Get().Options.LightwellPackageImportForceAt
+	t.Cleanup(func() { config.Get().Options.LightwellPackageImportForceAt = original })
+
+	config.Get().Options.LightwellPackageImportForceAt = ""
+	got, err := lightwellPackageForceRequest()
+	assert.NoError(t, err)
+	assert.Empty(t, got)
+
+	config.Get().Options.LightwellPackageImportForceAt = "  2026-10-09T13:00:00Z  "
+	got, err = lightwellPackageForceRequest()
+	assert.NoError(t, err)
+	assert.Equal(t, "2026-10-09T13:00:00Z", got)
+
+	config.Get().Options.LightwellPackageImportForceAt = "tomorrow"
+	_, err = lightwellPackageForceRequest()
+	assert.Error(t, err)
+}
+
+func TestParseLightwellImportEcosystems(t *testing.T) {
+	got, err := parseLightwellImportEcosystems("")
+	assert.NoError(t, err)
+	assert.Nil(t, got)
+
+	got, err = parseLightwellImportEcosystems(config.ContentTypePython)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{config.ContentTypePython}, got)
+
+	_, err = parseLightwellImportEcosystems("rpm")
+	assert.Error(t, err)
+}
+
 func TestShouldImport(t *testing.T) {
 	v := "/versions/5/"
 	assert.True(t, shouldImport(&v, "/versions/4/", false))   // changed
@@ -256,7 +288,9 @@ func TestImportRepo(t *testing.T) {
 		currentVersion     *string
 		expectSyncCalled   bool
 		expectUpdateCalled bool
+		syncErr            bool
 		expectErr          bool
+		forceRequest       string
 	}{
 		{
 			name: "unresolved - distribution not found",
@@ -305,6 +339,75 @@ func TestImportRepo(t *testing.T) {
 			expectUpdateCalled: true,
 			expectErr:          false,
 		},
+		{
+			name: "force flag imports unchanged version",
+			repo: dao.LightwellRepoToImport{
+				RepoConfigUUID:              "uuid-4",
+				OrgID:                       "org1",
+				Name:                        "test-repo",
+				ContentType:                 config.ContentTypeMaven,
+				BasePath:                    "test/path",
+				LastImportRepositoryVersion: "/versions/5/",
+			},
+			force:              true,
+			repoHref:           strPtr("/repo/href/"),
+			currentVersion:     strPtr("/versions/5/"),
+			expectSyncCalled:   true,
+			expectUpdateCalled: true,
+			expectErr:          false,
+		},
+		{
+			name: "sync failure does not record the force request",
+			repo: dao.LightwellRepoToImport{
+				RepoConfigUUID:              "uuid-5",
+				OrgID:                       "org1",
+				Name:                        "test-repo",
+				ContentType:                 config.ContentTypeMaven,
+				BasePath:                    "test/path",
+				LastImportRepositoryVersion: "/versions/5/",
+			},
+			repoHref:           strPtr("/repo/href/"),
+			currentVersion:     strPtr("/versions/5/"),
+			expectSyncCalled:   true,
+			expectUpdateCalled: false,
+			syncErr:            true,
+			expectErr:          true,
+			forceRequest:       "2026-10-09T13:00:00Z",
+		},
+		{
+			name: "new force request imports unchanged version",
+			repo: dao.LightwellRepoToImport{
+				RepoConfigUUID:              "uuid-6",
+				OrgID:                       "org1",
+				Name:                        "test-repo",
+				ContentType:                 config.ContentTypeMaven,
+				BasePath:                    "test/path",
+				LastImportRepositoryVersion: "/versions/5/",
+				PackageImportForcedAt:       "2026-10-09T12:00:00Z",
+			},
+			repoHref:           strPtr("/repo/href/"),
+			currentVersion:     strPtr("/versions/5/"),
+			expectSyncCalled:   true,
+			expectUpdateCalled: true,
+			forceRequest:       "2026-10-09T13:00:00Z",
+		},
+		{
+			name: "completed force request does not import again",
+			repo: dao.LightwellRepoToImport{
+				RepoConfigUUID:              "uuid-7",
+				OrgID:                       "org1",
+				Name:                        "test-repo",
+				ContentType:                 config.ContentTypeMaven,
+				BasePath:                    "test/path",
+				LastImportRepositoryVersion: "/versions/5/",
+				PackageImportForcedAt:       "2026-10-09T13:00:00Z",
+			},
+			repoHref:           strPtr("/repo/href/"),
+			currentVersion:     strPtr("/versions/5/"),
+			expectSyncCalled:   false,
+			expectUpdateCalled: false,
+			forceRequest:       "2026-10-09T13:00:00Z",
+		},
 	}
 
 	for _, tt := range tests {
@@ -345,15 +448,19 @@ func TestImportRepo(t *testing.T) {
 					mockPulpClient.On("ListMavenFlatPackages", mock.Anything, *tt.repoHref).Return(mockResp, nil)
 					mockMavenPackages.On("Fetch", mock.Anything, "org.test", "test-artifact").Return(nil, nil)
 
-					// Mock SyncPackagesForRepository
-					mockLightwellPkgDao.On("SyncPackagesForRepository", mock.Anything, tt.repo.RepoConfigUUID, mock.Anything).Return(nil)
+					syncErr := error(nil)
+					if tt.syncErr {
+						syncErr = fmt.Errorf("sync failed")
+					}
+					mockLightwellPkgDao.On("SyncPackagesForRepository", mock.Anything, tt.repo.RepoConfigUUID, mock.Anything).Return(syncErr)
 
-					// Mock UpdateLastImportRepositoryVersion
-					mockRepoConfigDao.On("InternalOnly_UpdateLastImportRepositoryVersion", mock.Anything, tt.repo.RepoConfigUUID, *tt.currentVersion).Return(nil)
+					if tt.expectUpdateCalled {
+						mockRepoConfigDao.On("InternalOnly_UpdateLastImportRepositoryVersion", mock.Anything, tt.repo.RepoConfigUUID, *tt.currentVersion, tt.forceRequest).Return(nil)
+					}
 				}
 			}
 
-			err := importRepo(context.Background(), daoReg, mockPulpClient, tt.repo, tt.force)
+			err := importRepo(context.Background(), daoReg, mockPulpClient, tt.repo, tt.force, tt.forceRequest)
 
 			if tt.expectErr {
 				assert.Error(t, err)

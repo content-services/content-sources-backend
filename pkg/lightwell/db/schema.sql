@@ -8,7 +8,8 @@ CREATE TABLE repository_configurations (
     name VARCHAR(255) DEFAULT NULL,
     repository_uuid UUID DEFAULT NULL,
     feature_name VARCHAR(255) DEFAULT NULL,
-    last_import_repository_version TEXT DEFAULT NULL
+    last_import_repository_version TEXT DEFAULT NULL,
+    package_import_forced_at TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE repositories (

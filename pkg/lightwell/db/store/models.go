@@ -133,4 +133,5 @@ type RepositoryConfiguration struct {
 	RepositoryUuid              pgtype.UUID `json:"repository_uuid"`
 	FeatureName                 pgtype.Text `json:"feature_name"`
 	LastImportRepositoryVersion *string     `json:"last_import_repository_version"`
+	PackageImportForcedAt       string      `json:"package_import_forced_at"`
 }

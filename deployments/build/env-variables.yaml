@@ -293,6 +293,8 @@ env:
     value: ${OPTIONS_SEED_LIGHTWELL}
   - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
     value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+  - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+    value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
 
 # Only for transform-pulp-logs and hotfix-transform-pulp-logs-fix (reference floorist-bucket secret).
 env_transform_pulp_logs:
@@ -347,6 +349,10 @@ parameters:
     description: whether to suspend the import-lightwell-packages cronjob
     required: false
     value: 'false'
+  - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+    description: 'Example: 2026-10-09T13:00:00Z. A new value forces one package import.'
+    required: false
+    value: ""
   - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB
     value: "0 */2 * * *"
   - name: SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES

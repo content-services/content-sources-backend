@@ -70,6 +70,8 @@ options:
   internal_user: "internal-user"
   seed_lightwell: true
   seed_lightwell_coverage_reports: true
+  # Example: "2026-10-09T13:00:00Z". A new value forces one package import.
+  lightwell_package_import_force_at: ""
 metrics:
   path: "/metrics"
   port: 9000
