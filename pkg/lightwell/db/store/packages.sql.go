@@ -23,6 +23,7 @@ SELECT
     pv.version,
     pv.release,
     pv.published_at,
+    pv.upstream_version,
     pv.purl,
     COUNT(*) OVER() AS total_count
 FROM lightwell_package_versions pv
@@ -99,6 +100,7 @@ type ListLightwellPackageVersionsRow struct {
 	Version                     string      `json:"version"`
 	Release                     string      `json:"release"`
 	PublishedAt                 string      `json:"published_at"`
+	UpstreamVersion             string      `json:"upstream_version"`
 	Purl                        string      `json:"purl"`
 	TotalCount                  int64       `json:"total_count"`
 }
@@ -134,6 +136,7 @@ func (q *Queries) ListLightwellPackageVersions(ctx context.Context, arg ListLigh
 			&i.Version,
 			&i.Release,
 			&i.PublishedAt,
+			&i.UpstreamVersion,
 			&i.Purl,
 			&i.TotalCount,
 		); err != nil {
@@ -158,6 +161,7 @@ SELECT
     array_agg(pv.version ORDER BY pv.version) AS versions,
     array_agg(pv.release ORDER BY pv.version) AS releases,
     array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
+    array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
     COUNT(*) OVER() AS total_count
 FROM lightwell_packages p
 JOIN repository_configurations rc ON rc.uuid = p.repository_configuration_uuid
@@ -204,6 +208,7 @@ type ListLightwellPackagesRow struct {
 	Versions                    interface{} `json:"versions"`
 	Releases                    interface{} `json:"releases"`
 	PublishedAts                interface{} `json:"published_ats"`
+	UpstreamVersions            interface{} `json:"upstream_versions"`
 	TotalCount                  int64       `json:"total_count"`
 }
 
@@ -236,6 +241,7 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 			&i.Versions,
 			&i.Releases,
 			&i.PublishedAts,
+			&i.UpstreamVersions,
 			&i.TotalCount,
 		); err != nil {
 			return nil, err
