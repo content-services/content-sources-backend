@@ -25,6 +25,9 @@ type Release struct {
 // Does not match x_RHLW-CVE-… / x_RHLW-LW-… because those are not followed by digits.
 var rebuildRE = regexp.MustCompile(`(?i)rhlw[.+-](\d+)(?:[.+-]n[.+-]?(\d+))?(?:[.+-]hf[.+-]?(\d+))?`)
 
+// versionSplitRE matches the separator immediately before the first rhlw marker.
+var versionSplitRE = regexp.MustCompile(`(?i)[.+-]rhlw`)
+
 // Parse extracts a rebuild rank from a version or advisory id.
 // ok is false for upstream versions and for ids with no rebuild token.
 func Parse(version string) (Rank, bool) {
@@ -70,6 +73,18 @@ func Releases(fixedVersions []string, advisoryID string) []Release {
 	}
 	add(advisoryID)
 	return out
+}
+
+// SplitVersion splits version on the first case-insensitive "rhlw" marker
+// preceded by '.', '-', or '+'. upstream is the text before that separator.
+// release is the marker through the end of version, in the original case.
+// With no marker, upstream is version and release is empty.
+func SplitVersion(version string) (upstream, release string) {
+	loc := versionSplitRE.FindStringIndex(version)
+	if loc == nil {
+		return version, ""
+	}
+	return version[:loc[0]], version[loc[0]+1:]
 }
 
 func atoi(s string) int {
