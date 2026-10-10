@@ -774,6 +774,33 @@ const docTemplate = `{
                 }
             }
         },
+        "/lightwell/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms before access.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Check if Lightwell terms acceptance is required",
+                "operationId": "getLightwellTermsRequired",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsRequiredResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/module_streams/search": {
             "post": {
                 "description": "List modules and their streams for repositories",
@@ -8027,6 +8054,23 @@ const docTemplate = `{
                 "use_latest": {
                     "description": "Use latest snapshot for all repositories in the template",
                     "type": "boolean"
+                }
+            }
+        },
+        "api.TermsRequiredResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "site": {
+                    "type": "string"
                 }
             }
         },

@@ -19,7 +19,7 @@ func (c *cpClientImpl) ImportManifest(ctx context.Context, filename string) erro
 		return fmt.Errorf("could not open manifest %w", err)
 	}
 	defer file.Close()
-	asyncTask, httpResp, err := client.OwnerAPI.ImportManifestAsync(ctx, DevelOrgKey).Force([]string{"SIGNATURE_CONFLICT"}).Input(file).Execute()
+	asyncTask, httpResp, err := client.OwnerAPI.ImportManifestAsync(ctx, DevelOrgKey).Force([]string{"SIGNATURE_CONFLICT", "MANIFEST_SAME"}).Input(file).Execute()
 	if httpResp != nil {
 		defer httpResp.Body.Close()
 	}

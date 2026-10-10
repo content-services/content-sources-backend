@@ -2958,6 +2958,23 @@
                 },
                 "type": "object"
             },
+            "api.TermsRequiredResponse": {
+                "properties": {
+                    "events": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "site": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.UUIDListRequest": {
                 "properties": {
                     "uuids": {
@@ -4112,6 +4129,38 @@
                     }
                 },
                 "summary": "List Lightwell Packages (cross-repo)",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
+        "/lightwell/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms before access.",
+                "operationId": "getLightwellTermsRequired",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.TermsRequiredResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Check if Lightwell terms acceptance is required",
                 "tags": [
                     "lightwell"
                 ]

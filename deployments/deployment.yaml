@@ -183,6 +183,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -287,6 +295,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -536,6 +562,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -640,6 +674,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -855,6 +907,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -959,6 +1019,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -1162,6 +1240,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -1266,6 +1352,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -1472,6 +1576,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -1576,6 +1688,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -1783,6 +1913,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -1887,6 +2025,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -2096,6 +2252,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -2200,6 +2364,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -2407,6 +2589,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -2511,6 +2701,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -2715,6 +2923,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -2819,6 +3035,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -3637,6 +3871,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -3741,6 +3983,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -3945,6 +4205,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -4049,6 +4317,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -4276,6 +4562,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -4380,6 +4674,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -4585,6 +4897,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -4689,6 +5009,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -4911,6 +5249,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5015,6 +5361,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -5216,6 +5580,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5320,6 +5692,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -5521,6 +5911,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5625,6 +6023,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -5826,6 +6242,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5930,6 +6354,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -6131,6 +6573,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -6235,6 +6685,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -6436,6 +6904,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -6540,6 +7016,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -6741,6 +7235,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -6845,6 +7347,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -7046,6 +7566,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -7150,6 +7678,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -7351,6 +7897,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -7455,6 +8009,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENTS
+                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -7782,6 +8354,15 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+    description: Whether the Lightwell Terms feature should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_TERMS_USERS
+    description: Comma separated list of usernames that can access the feature
   - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
     description: Whether the Admin JFrog Upload feature should be turned on
     value: 'false'
@@ -7839,6 +8420,14 @@ parameters:
   - name: CLIENTS_CANDLEPIN_SERVER
     value: ''
   - name: CLIENTS_FEATURE_SERVICE_SERVER
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_SERVER
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_SITE
+    description: Terms service site identifier (e.g. lightwell)
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_EVENTS
+    description: Comma separated list of terms events to check (e.g. network,academic)
     value: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
