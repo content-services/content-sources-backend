@@ -19,11 +19,8 @@ type LightwellTermsHandler struct {
 }
 
 func RegisterLightwellTermsRoutes(engine *echo.Group, tsClient *terms_service_client.TermsServiceClient, fsClient *feature_service_client.FeatureServiceClient) {
-	if tsClient == nil {
-		panic("tsClient is nil")
-	}
-	if fsClient == nil {
-		panic("fsClient is nil")
+	if tsClient == nil || fsClient == nil {
+		return
 	}
 	h := LightwellTermsHandler{
 		LightwellTermsHandler: handler.LightwellTermsHandler{
