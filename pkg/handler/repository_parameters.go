@@ -226,9 +226,9 @@ func getFeatureLabel(featureName string) string {
 	case "RHEL-E4S-x86_64":
 		return "Red Hat Enterprise Linux for x86_64 (E4S)"
 	case "RHEL-EEUS-x86_64":
-		return "Red Hat Enterprise Linux Enterprise Update Support for x86_64"
+		return "Red Hat Enterprise Linux Enhanced Extended Update Support for x86_64"
 	case "RHEL-EEUS-aarch64":
-		return "Red Hat Enterprise Linux Enterprise Update Support for aarch64"
+		return "Red Hat Enterprise Linux Enhanced Extended Update Support for aarch64"
 	case "RHEL-SAP_Solutions-x86_64":
 		return "Red Hat Enterprise Linux SAP Solutions for x86_64"
 	case "RHEL-SAP-x86_64":
