@@ -245,7 +245,7 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	assert.Empty(t, resp.Events)
 }
 
-func (s *LightwellTermsSuite) TestGetTermsRequired_InternalRedHatOrg_SkipsTerms() {
+func (s *LightwellTermsSuite) TestGetTermsRequired_InternalUser_SkipsTerms() {
 	t := s.T()
 
 	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
@@ -253,11 +253,11 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_InternalRedHatOrg_SkipsTerms(
 
 	internalIdentity := identity.XRHID{
 		Identity: identity.Identity{
-			AccountNumber: "internal-account",
+			AccountNumber: "9999",
 			Internal: identity.Internal{
-				OrgID: config.RedHatOrg,
+				OrgID: "9999",
 			},
-			User: &identity.User{Username: "internal-user", UserID: "internal-user"},
+			User: &identity.User{Username: "internal-user", UserID: "internal-user", Internal: true},
 			Type: "User",
 		},
 	}
@@ -269,7 +269,7 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_InternalRedHatOrg_SkipsTerms(
 
 	var resp api.TermsRequiredResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
-	assert.False(t, resp.Required, "internal Red Hat org should never be required to accept terms")
+	assert.False(t, resp.Required, "internal Red Hat users should never be required to accept terms")
 	assert.Empty(t, resp.Events)
 }
 
