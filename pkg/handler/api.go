@@ -77,10 +77,13 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		panic(err)
 	}
 	var tsClient terms_service_client.TermsServiceClient
+	termsClientReady := false
 	if config.TermsServiceConfigured() {
 		tsClient, err = terms_service_client.NewTermsServiceClient()
 		if err != nil {
-			panic(err)
+			log.Error().Err(err).Msg("failed to create terms service client; terms routes will not be registered")
+		} else {
+			termsClientReady = true
 		}
 	}
 
@@ -122,7 +125,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
 		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client, &fsClient)
 		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
-		if config.TermsServiceConfigured() {
+		if termsClientReady {
 			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
 		}
 
