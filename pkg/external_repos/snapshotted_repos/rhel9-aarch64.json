@@ -6,7 +6,7 @@
         "distribution_arch": "aarch64",
         "distribution_version": "9",
         "selector": "arm",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -16,7 +16,7 @@
         "distribution_arch": "aarch64",
         "distribution_version": "9",
         "selector": "arm",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -26,7 +26,7 @@
         "distribution_arch": "aarch64",
         "distribution_version": "9",
         "selector": "arm,small",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -35,7 +35,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/supplementary/os",
         "distribution_arch": "aarch64",
         "distribution_version": "9",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -45,7 +45,7 @@
         "distribution_arch": "aarch64",
         "distribution_version": "9",
         "selector": "arm",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     }
 ]
