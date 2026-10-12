@@ -133,7 +133,11 @@ func enrichBridgeEventsWithChecksums(ctx context.Context, events []event.Notific
 			if hostname == "" {
 				hostname = config.Get().Clients.Pulp.ContentOrigin
 			}
-			contentBase, _ := url.JoinPath(hostname, config.Get().Clients.Pulp.ContentPathPrefix, entry.BasePath)
+			contentBase, err := url.JoinPath(hostname, config.Get().Clients.Pulp.ContentPathPrefix, entry.BasePath)
+			if err != nil {
+				log.Warn().Err(err).Str("entry", entry.Name).Msg("cannot construct content base URL")
+				continue
+			}
 			contentBase = strings.TrimRight(contentBase, "/")
 
 			var requests []event.ArtifactChecksumRequest

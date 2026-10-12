@@ -168,15 +168,17 @@ func sendAdvisoryNotifications(
 			}
 			checksumRequests := buildChecksumRequests(bridgeInputs)
 			contentBaseURL, urlErr := buildContentBaseURL(entry)
+			var checksums map[string]map[string]string
 			if urlErr != nil {
 				logger.Warn().Err(urlErr).Msg("skipping checksum fetch")
+			} else {
+				checksums = event.FetchArtifactChecksums(
+					ctx, httpClient, contentBaseURL, entry.Type,
+					checksumRequests,
+					config.Get().Clients.Lightwell.Username,
+					config.Get().Clients.Lightwell.Password,
+				)
 			}
-			checksums := event.FetchArtifactChecksums(
-				ctx, httpClient, contentBaseURL, entry.Type,
-				checksumRequests,
-				config.Get().Clients.Lightwell.Username,
-				config.Get().Clients.Lightwell.Password,
-			)
 			var opts *event.NotificationBuildOptions
 			if len(checksums) > 0 {
 				opts = &event.NotificationBuildOptions{ArtifactChecksums: checksums}
