@@ -691,12 +691,6 @@ const docTemplatelightwell = `{
                         "schema": {
                             "$ref": "#/definitions/api.TermsRequiredResponse"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
                     }
                 }
             }
@@ -1493,8 +1487,17 @@ const docTemplatelightwell = `{
         "api.TermsRequiredResponse": {
             "type": "object",
             "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "required": {
                     "type": "boolean"
+                },
+                "site": {
+                    "type": "string"
                 }
             }
         },

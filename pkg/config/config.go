@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -183,7 +184,6 @@ type FeatureService struct {
 type TermsService struct {
 	Server          string            `mapstructure:"server"`
 	Site            string            `mapstructure:"site"`
-	Events          []string          `mapstructure:"events"`
 	EventFeatureMap map[string]string `mapstructure:"event_feature_map"` // maps terms event → required entitled feature name
 	ClientCert      string            `mapstructure:"client_cert"`
 	ClientKey       string            `mapstructure:"client_key"`
@@ -191,6 +191,11 @@ type TermsService struct {
 	ClientCertPath  string            `mapstructure:"client_cert_path"`
 	ClientKeyPath   string            `mapstructure:"client_key_path"`
 	CACertPath      string            `mapstructure:"ca_cert_path"`
+}
+
+// Events returns the terms event names, derived from the keys of EventFeatureMap.
+func (ts TermsService) Events() []string {
+	return slices.Collect(maps.Keys(ts.EventFeatureMap))
 }
 
 type PulpLogParser struct {
@@ -478,7 +483,6 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("clients.terms_service.server", "")
 	v.SetDefault("clients.terms_service.site", "")
-	v.SetDefault("clients.terms_service.events", nil)
 	v.SetDefault("clients.terms_service.event_feature_map", nil)
 	v.SetDefault("clients.terms_service.client_cert", "")
 	v.SetDefault("clients.terms_service.client_key", "")

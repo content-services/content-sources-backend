@@ -81,7 +81,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
-	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"network", "academic"}, nil)
@@ -107,7 +106,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_PartiallyRequired() {
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
-	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"academic"}, nil)
@@ -133,7 +131,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FilteredByEntitlement_Network
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
-	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"network", "academic"}, nil)
@@ -159,7 +156,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FilteredByEntitlement_Academi
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
-	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"network", "academic"}, nil)
@@ -185,7 +181,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_NoEntitledFeatures() {
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
-	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"network", "academic"}, nil)
@@ -209,7 +204,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsOpen
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
-	config.LoadedConfig.Clients.TermsService.Events = []string{"network", "academic"}
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{"network", "academic"}, nil)
