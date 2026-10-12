@@ -178,9 +178,6 @@ clients:
   terms_service:
     server: #https://terms.stage.api.redhat.com
     site: lightwell
-    events:
-      - network
-      - academic
     event_feature_map:
       network: lightwell-network
       academic: lightwell-research-institutions

@@ -34,7 +34,7 @@ func NewTermsServiceClient() (TermsServiceClient, error) {
 		client:  httpClient,
 		baseURL: ts.Server,
 		site:    ts.Site,
-		events:  ts.Events,
+		events:  ts.Events(),
 	}, nil
 }
 

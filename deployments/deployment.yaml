@@ -301,8 +301,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -680,8 +680,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -1025,8 +1025,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -1358,8 +1358,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -1694,8 +1694,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -2031,8 +2031,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -2370,8 +2370,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -2707,8 +2707,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -3041,8 +3041,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -3255,6 +3255,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -3359,6 +3367,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -3563,6 +3589,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -3667,6 +3701,24 @@ objects:
                 valueFrom:
                   secretKeyRef:
                     name: content-sources-candlepin
+                    key: key
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
                     key: key
                     optional: true
               - name: CLIENTS_ROADMAP_SERVER
@@ -3989,8 +4041,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -4323,8 +4375,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -4680,8 +4732,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -5015,8 +5067,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -5367,8 +5419,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -5698,8 +5750,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -6029,8 +6081,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -6360,8 +6412,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -6691,8 +6743,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -7022,8 +7074,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -7353,8 +7405,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -7684,8 +7736,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -8015,8 +8067,8 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SERVER}
               - name: CLIENTS_TERMS_SERVICE_SITE
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
-              - name: CLIENTS_TERMS_SERVICE_EVENTS
-                value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -8426,8 +8478,9 @@ parameters:
   - name: CLIENTS_TERMS_SERVICE_SITE
     description: Terms service site identifier (e.g. lightwell)
     value: ''
-  - name: CLIENTS_TERMS_SERVICE_EVENTS
-    description: Comma separated list of terms events to check (e.g. network,academic)
+  - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+    description: JSON mapping of terms event to required entitled feature name (e.g.
+      {"network":"lightwell-network","academic":"lightwell-research-institutions"})
     value: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import

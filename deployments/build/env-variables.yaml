@@ -215,8 +215,8 @@ env:
     value: ${CLIENTS_TERMS_SERVICE_SERVER}
   - name: CLIENTS_TERMS_SERVICE_SITE
     value: ${CLIENTS_TERMS_SERVICE_SITE}
-  - name: CLIENTS_TERMS_SERVICE_EVENTS
-    value: ${CLIENTS_TERMS_SERVICE_EVENTS}
+  - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+    value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
   - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
     valueFrom:
       secretKeyRef:
@@ -580,8 +580,8 @@ parameters:
   - name: CLIENTS_TERMS_SERVICE_SITE
     description: Terms service site identifier (e.g. lightwell)
     value: ''
-  - name: CLIENTS_TERMS_SERVICE_EVENTS
-    description: Comma separated list of terms events to check (e.g. network,academic)
+  - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+    description: JSON mapping of terms event to required entitled feature name (e.g. {"network":"lightwell-network","academic":"lightwell-research-institutions"})
     value: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
