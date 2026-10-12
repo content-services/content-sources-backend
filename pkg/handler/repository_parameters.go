@@ -216,29 +216,37 @@ func getFeatureLabel(featureName string) string {
 	case "RHEL-OS-x86_64":
 		return "Red Hat Enterprise Linux for x86_64"
 	case "OPENSHIFT-OCP-x86_64":
-		return "Red Hat OpenShift Container Platform for x86_64"
+		return "Red Hat OpenShift Container Platform"
 	case "RHEL-HA-x86_64":
 		return "Red Hat Enterprise Linux High Availability for x86_64"
 	case "RHEL-EUS-x86_64":
-		return "Red Hat Enterprise Linux Extended Update Support for x86_64"
+		return "Red Hat Enterprise Linux for x86_64 - Extended Update Support"
 	case "RHEL-EUS-aarch64":
-		return "Red Hat Enterprise Linux Extended Update Support for aarch64"
+		// Nothing returned from candlepin
+		return "Red Hat Enterprise Linux for ARM 64 - Extended Update Support"
 	case "RHEL-E4S-x86_64":
-		return "Red Hat Enterprise Linux for x86_64 (E4S)"
+		return "Red Hat Enterprise Linux for x86_64 - Update Services for SAP Solutions"
 	case "RHEL-EEUS-x86_64":
-		return "Red Hat Enterprise Linux Enhanced Extended Update Support for x86_64"
+		// Nothing returned from candlepin
+		return "Red Hat Enterprise Linux for x86_64 - Enhanced Extended Update Support"
 	case "RHEL-EEUS-aarch64":
-		return "Red Hat Enterprise Linux Enhanced Extended Update Support for aarch64"
+		// Nothing returned from candlepin
+		return "Red Hat Enterprise Linux for ARM 64 - Enhanced Extended Update Support"
 	case "RHEL-SAP_Solutions-x86_64":
-		return "Red Hat Enterprise Linux SAP Solutions for x86_64"
+		return "Red Hat Enterprise Linux for SAP Solutions for x86_64"
 	case "RHEL-SAP-x86_64":
-		return "Red Hat Enterprise Linux SAP for x86_64"
+		return "Red Hat Enterprise Linux for SAP Applications for x86_64"
+
 	case "lightwell-network":
 		return "Lightwell Network"
 	case "lightwell-clearinghouse":
 		return "Lightwell Clearinghouse"
 	case "lightwell-research-institutions":
 		return "Lightwell Research Institutions"
+
+	case "RHEL-OS-aarch64":
+		return "Red Hat Enterprise Linux for ARM 64"
+
 	default:
 		return featureName
 	}
