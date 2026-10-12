@@ -14,11 +14,15 @@ import (
 // which mirrors OSIDB and renders OSV/VEX on demand. content-sources calls it
 // service-to-service in place of reading Lightwell OSV from static Pulp files.
 //
-// Scathan is internal-only (scathan.lightwell.redhat.com) and stays fail-closed
-// on embargoed flaws, so every data call forwards the caller's x-rh-identity so
-// Scathan can enforce the customer's entitlement/audience. The transport auth
-// (content-sources -> Scathan) is a separate concern and is either mTLS or an
-// OIDC service-account bearer token depending on config (see config.Scathan).
+// Scathan is reached as a public (internet-exposed) service secured by mTLS:
+// content-sources/console.dot runs outside the Red Hat network, so the
+// content-sources -> Scathan hop is authenticated with an mTLS client cert
+// (and can be locked to the consoledot CIDR list), while Scathan's own API auth
+// is a service-account bearer token — the same auth as the Lightwell network API.
+// Scathan stays fail-closed on embargoed flaws, so every data call forwards the
+// caller's x-rh-identity so Scathan can enforce the customer's entitlement/audience.
+// The transport auth is config-only: either mTLS or an OIDC service-account bearer
+// token depending on config (see config.Scathan).
 type ScathanClient interface {
 	// GetOSV fetches the OSV record for a single vulnerability id (a CVE or a
 	// Lightwell LW-* id): GET /osv/{id}.

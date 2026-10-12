@@ -189,11 +189,13 @@ clients:
     url: ""
     user: ""
     token: ""
-  # Scathan is the Lightwell Vulnerability Metadata Service (internal-only).
+  # Scathan is the Lightwell Vulnerability Metadata Service. content-sources/
+  # console.dot runs outside the Red Hat network, so Scathan is exposed as a
+  # public service secured by mTLS (optionally locked to the consoledot CIDR list).
   # Service-to-service auth is EITHER mTLS (leave auth.enabled unset/false and
   # set client_cert/*) OR an OIDC service account (set auth.enabled: true and the
-  # client_id/client_secret/oidc_issuer). Pick one; the mechanism is still being
-  # finalized with the content-sources team.
+  # client_id/client_secret/oidc_issuer) — the same service-account bearer auth as
+  # the Lightwell network API. Pick one.
   scathan:
     server: #https://scathan.lightwell.redhat.com
     auth:
