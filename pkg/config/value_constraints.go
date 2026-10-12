@@ -167,7 +167,7 @@ var ExtendedReleaseStreamNames = map[string]string{
 const LightwellClearinghouseFeature = "lightwell-clearinghouse"
 
 // Features that do not currently use a subscription check, available to all users
-var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", "", "lightwell-network-demo"}
+var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", "RHEL-OS-aarch64", "", "lightwell-network-demo"}
 
 // Memo Keys
 var MemoPulpLastSuccessfulPulpLogParse = "last_successful_pulp_log_date"
