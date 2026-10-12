@@ -62,9 +62,9 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
-	_, orgID := GetAccountIdOrgId(c)
-	if orgID == config.RedHatOrg {
-		log.Ctx(ctx).Debug().Msg("skipping terms check for internal Red Hat org")
+	id := identity.GetIdentity(c.Request().Context())
+	if id.Identity.User != nil && id.Identity.User.Internal {
+		log.Ctx(ctx).Debug().Msg("skipping terms check for internal Red Hat user")
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 

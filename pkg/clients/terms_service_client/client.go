@@ -12,6 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Terms responses are tiny booleans ("true"/"false"); keep a tight bound.
+const maxTermsResponseBytes = 1 << 10 // 1 KB
+
 type TermsServiceClient interface {
 	IsTermsAcceptanceRequired(ctx context.Context, login string) (bool, error)
 	GetRequiredEvents(ctx context.Context, login string) ([]string, error)
@@ -59,7 +62,7 @@ func (t *termsServiceImpl) IsTermsAcceptanceRequired(ctx context.Context, login 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxTermsResponseBytes))
 	if err != nil {
 		return false, fmt.Errorf("reading isrequired response: %w", err)
 	}
@@ -94,7 +97,7 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxTermsResponseBytes))
 	if err != nil {
 		return false, fmt.Errorf("reading isrequired response for event %q: %w", event, err)
 	}

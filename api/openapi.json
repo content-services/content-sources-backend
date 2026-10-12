@@ -4148,16 +4148,6 @@
                             }
                         },
                         "description": "OK"
-                    },
-                    "500": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/errors.ErrorResponse"
-                                }
-                            }
-                        },
-                        "description": "Internal Server Error"
                     }
                 },
                 "summary": "Check if Lightwell terms acceptance is required",

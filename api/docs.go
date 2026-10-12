@@ -791,12 +791,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/api.TermsRequiredResponse"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.ErrorResponse"
-                        }
                     }
                 }
             }
