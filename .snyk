@@ -2,4 +2,3 @@
 exclude:
   code:
     - "pkg/**/*_mock.go"
-    - "pkg/**/*_test.go"
