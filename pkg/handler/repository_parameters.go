@@ -89,6 +89,14 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
 	}
 
+	featureProducts := make([]api.FeatureProduct, len(features))
+	for i, feature := range features {
+		featureProducts[i] = api.FeatureProduct{
+			Name:  feature,
+			Label: getFeatureLabel(feature),
+		}
+	}
+
 	extendedReleaseStreams := buildExtendedReleaseStreams(features)
 
 	return c.JSON(200, api.RepositoryParameterResponse{
@@ -96,6 +104,7 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 		DistributionMinorVersions: config.DistributionMinorVersions[:],
 		DistributionArches:        config.DistributionArches[:],
 		ExtendedReleaseStreams:    extendedReleaseStreams,
+		FeatureProducts:           featureProducts,
 	})
 }
 
@@ -200,4 +209,37 @@ func (rph *RepositoryParameterHandler) validate(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, validationResponse)
+}
+
+func getFeatureLabel(featureName string) string {
+	switch featureName {
+	case "RHEL-OS-x86_64":
+		return "Red Hat Enterprise Linux for x86_64"
+	case "OPENSHIFT-OCP-x86_64":
+		return "Red Hat OpenShift Container Platform for x86_64"
+	case "RHEL-HA-x86_64":
+		return "Red Hat Enterprise Linux High Availability for x86_64"
+	case "RHEL-EUS-x86_64":
+		return "Red Hat Enterprise Linux Extended Update Support for x86_64"
+	case "RHEL-EUS-aarch64":
+		return "Red Hat Enterprise Linux Extended Update Support for aarch64"
+	case "RHEL-E4S-x86_64":
+		return "Red Hat Enterprise Linux for x86_64 (E4S)"
+	case "RHEL-EEUS-x86_64":
+		return "Red Hat Enterprise Linux Enterprise Update Support for x86_64"
+	case "RHEL-EEUS-aarch64":
+		return "Red Hat Enterprise Linux Enterprise Update Support for aarch64"
+	case "RHEL-SAP_Solutions-x86_64":
+		return "Red Hat Enterprise Linux SAP Solutions for x86_64"
+	case "RHEL-SAP-x86_64":
+		return "Red Hat Enterprise Linux SAP for x86_64"
+	case "lightwell-network":
+		return "Lightwell Network"
+	case "lightwell-clearinghouse":
+		return "Lightwell Clearinghouse"
+	case "lightwell-research-institutions":
+		return "Lightwell Research Institutions"
+	default:
+		return featureName
+	}
 }
