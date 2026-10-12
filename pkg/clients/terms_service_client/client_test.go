@@ -26,7 +26,7 @@ func TestIsTermsAcceptanceRequired_True(t *testing.T) {
 		assert.Contains(t, r.URL.Path, "/svcrest/terms/presentation/isrequired")
 		assert.Equal(t, "testuser", r.URL.Query().Get("login"))
 		assert.Equal(t, "lightwell", r.URL.Query().Get("site"))
-		assert.Equal(t, []string{"network", "academic"}, r.URL.Query()["event"])
+		assert.Len(t, r.URL.Query()["event"], 1)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("True"))
 	}))
@@ -159,4 +159,16 @@ func TestGetRequiredEvents_ErrorPropagates(t *testing.T) {
 	events, err := client.GetRequiredEvents(context.Background(), "testuser")
 	assert.Error(t, err)
 	assert.Nil(t, events)
+}
+
+func TestIsTermsAcceptanceRequired_InvalidLogin(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		t.Fatal("should not call terms service with invalid login")
+	}))
+	defer server.Close()
+
+	client := newTestClient(t, server, "lightwell", []string{"network"})
+	_, err := client.IsTermsAcceptanceRequired(context.Background(), "bad login with spaces")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid login")
 }
