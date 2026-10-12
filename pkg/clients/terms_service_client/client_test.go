@@ -12,11 +12,13 @@ import (
 
 func newTestClient(t *testing.T, server *httptest.Server, site string, events []string) *termsServiceImpl {
 	t.Helper()
+	endpointURL, err := buildEndpointURL(server.URL)
+	require.NoError(t, err)
 	return &termsServiceImpl{
-		client:  *server.Client(),
-		baseURL: server.URL,
-		site:    site,
-		events:  events,
+		client:      *server.Client(),
+		endpointURL: endpointURL,
+		site:        site,
+		events:      events,
 	}
 }
 
