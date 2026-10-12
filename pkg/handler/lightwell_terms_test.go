@@ -226,8 +226,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsOpen
 
 	var resp api.TermsRequiredResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
-	assert.True(t, resp.Required, "should return all events when feature service is unavailable")
-	assert.Equal(t, []string{"network", "academic"}, resp.Events)
+	assert.False(t, resp.Required, "should fail open when feature service is unavailable")
+	assert.Empty(t, resp.Events)
 }
 
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
@@ -248,6 +248,34 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	require.NoError(t, json.Unmarshal(body, &resp))
 	assert.False(t, resp.Required)
 	assert.Empty(t, resp.Site)
+	assert.Empty(t, resp.Events)
+}
+
+func (s *LightwellTermsSuite) TestGetTermsRequired_InternalRedHatOrg_SkipsTerms() {
+	t := s.T()
+
+	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+
+	internalIdentity := identity.XRHID{
+		Identity: identity.Identity{
+			AccountNumber: "internal-account",
+			Internal: identity.Internal{
+				OrgID: config.RedHatOrg,
+			},
+			User: &identity.User{Username: "internal-user", UserID: "internal-user"},
+			Type: "User",
+		},
+	}
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, internalIdentity))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.False(t, resp.Required, "internal Red Hat org should never be required to accept terms")
 	assert.Empty(t, resp.Events)
 }
 

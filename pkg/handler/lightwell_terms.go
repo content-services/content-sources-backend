@@ -62,6 +62,12 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
+	_, orgID := GetAccountIdOrgId(c)
+	if orgID == config.RedHatOrg {
+		log.Ctx(ctx).Debug().Msg("skipping terms check for internal Red Hat org")
+		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
+	}
+
 	login := getLogin(c)
 	if login == "" {
 		log.Ctx(ctx).Warn().Msg("no login found in request identity, returning required=false")
@@ -104,8 +110,10 @@ func (h *LightwellTermsHandler) filterEventsByEntitlement(c echo.Context, events
 
 	entitledFeatures, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
 	if err != nil {
-		log.Ctx(c.Request().Context()).Warn().Err(err).Msg("could not check entitled features for terms filtering, returning all events")
-		return events
+		// Fail open: if the feature service is unreachable, don't block
+		// users with terms for features they may not have access to.
+		log.Ctx(c.Request().Context()).Warn().Err(err).Msg("could not check entitled features for terms filtering, failing open (required=false)")
+		return nil
 	}
 
 	featureSet := make(map[string]bool, len(entitledFeatures))
