@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 const LightwellAPIPath = "/api/lightwell/v0.1"
@@ -54,9 +55,10 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 		var tsClient terms_service_client.TermsServiceClient
 		tsClient, err = terms_service_client.NewTermsServiceClient()
 		if err != nil {
-			panic(err)
+			log.Error().Err(err).Msg("failed to create terms service client; terms routes will not be registered")
+		} else {
+			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
 		}
-		RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
 	}
 
 	pulpClient := pulp_client.GetPulpClientWithDomain("")
