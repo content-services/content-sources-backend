@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,15 +90,8 @@ func (rh *RepositoryParameterHandler) listParameters(c echo.Context) error {
 		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
 	}
 
-	featureProducts := make([]api.FeatureProduct, len(features))
-	for i, feature := range features {
-		featureProducts[i] = api.FeatureProduct{
-			Name:  feature,
-			Label: getFeatureLabel(feature),
-		}
-	}
-
 	extendedReleaseStreams := buildExtendedReleaseStreams(features)
+	featureProducts := buildFeatureProducts(features)
 
 	return c.JSON(200, api.RepositoryParameterResponse{
 		DistributionVersions:      config.DistributionVersions[:],
@@ -140,6 +134,27 @@ func buildExtendedReleaseStreams(entitledFeatures []string) []api.ExtendedReleas
 	}
 
 	return streams
+}
+
+func buildFeatureProducts(entitledFeatures []string) []api.FeatureProduct {
+	seen := make(map[string]struct{}, len(entitledFeatures))
+	featureProducts := make([]api.FeatureProduct, 0, len(entitledFeatures))
+	for _, feature := range entitledFeatures {
+		// Filter out Lightwell features
+		if strings.HasPrefix(strings.ToLower(feature), "lightwell") {
+			continue
+		}
+		// Filter out duplicates
+		if _, ok := seen[feature]; ok {
+			continue
+		}
+		seen[feature] = struct{}{}
+		featureProducts = append(featureProducts, api.FeatureProduct{
+			Name:  feature,
+			Label: getFeatureLabel(feature),
+		})
+	}
+	return featureProducts
 }
 
 // ValidateRepositoryParameters godoc
@@ -215,38 +230,26 @@ func getFeatureLabel(featureName string) string {
 	switch featureName {
 	case "RHEL-OS-x86_64":
 		return "Red Hat Enterprise Linux for x86_64"
+	case "RHEL-OS-aarch64":
+		return "Red Hat Enterprise Linux for ARM 64"
 	case "OPENSHIFT-OCP-x86_64":
 		return "Red Hat OpenShift Container Platform"
 	case "RHEL-HA-x86_64":
 		return "Red Hat Enterprise Linux High Availability for x86_64"
-	case "RHEL-EUS-x86_64":
-		return "Red Hat Enterprise Linux for x86_64 - Extended Update Support"
-	case "RHEL-EUS-aarch64":
-		// Nothing returned from candlepin
-		return "Red Hat Enterprise Linux for ARM 64 - Extended Update Support"
-	case "RHEL-E4S-x86_64":
-		return "Red Hat Enterprise Linux for x86_64 - Update Services for SAP Solutions"
-	case "RHEL-EEUS-x86_64":
-		// Nothing returned from candlepin
-		return "Red Hat Enterprise Linux for x86_64 - Enhanced Extended Update Support"
-	case "RHEL-EEUS-aarch64":
-		// Nothing returned from candlepin
-		return "Red Hat Enterprise Linux for ARM 64 - Enhanced Extended Update Support"
 	case "RHEL-SAP_Solutions-x86_64":
 		return "Red Hat Enterprise Linux for SAP Solutions for x86_64"
 	case "RHEL-SAP-x86_64":
 		return "Red Hat Enterprise Linux for SAP Applications for x86_64"
-
-	case "lightwell-network":
-		return "Lightwell Network"
-	case "lightwell-clearinghouse":
-		return "Lightwell Clearinghouse"
-	case "lightwell-research-institutions":
-		return "Lightwell Research Institutions"
-
-	case "RHEL-OS-aarch64":
-		return "Red Hat Enterprise Linux for ARM 64"
-
+	case "RHEL-EUS-x86_64":
+		return "Red Hat Enterprise Linux for x86_64 - Extended Update Support"
+	case "RHEL-EUS-aarch64":
+		return "Red Hat Enterprise Linux for ARM 64 - Extended Update Support"
+	case "RHEL-EEUS-x86_64":
+		return "Red Hat Enterprise Linux for x86_64 - Enhanced Extended Update Support"
+	case "RHEL-EEUS-aarch64":
+		return "Red Hat Enterprise Linux for ARM 64 - Enhanced Extended Update Support"
+	case "RHEL-E4S-x86_64":
+		return "Red Hat Enterprise Linux for x86_64 - Update Services for SAP Solutions"
 	default:
 		return featureName
 	}
