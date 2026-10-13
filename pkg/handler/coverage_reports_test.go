@@ -20,6 +20,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
+	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
+	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
@@ -280,6 +282,63 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	assert.Equal(t, http.StatusCreated, code)
 	assert.Equal(t, expectedReport.Status, response.Status)
 	assert.Equal(t, expectedReport.UUID, response.UUID)
+}
+
+func (suite *CoverageReportSuite) TestCreateCoverageReportCatalogSourceDB() {
+	t := suite.T()
+	config.Get().Features.LightwellStoreUploads = config.Feature{Enabled: true}
+	reqBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(reqBody)
+	part, err := writer.CreateFormFile("file", "sbom.json")
+	require.NoError(t, err)
+	_, err = part.Write([]byte(`{"bomFormat":"CycloneDX"}`))
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("catalog_source", "db"))
+	require.NoError(t, writer.Close())
+
+	expectedReport := api.CoverageReportResponse{
+		UUID:      uuid.NewString(),
+		Status:    config.TaskStatusPending,
+		CreatedAt: time.Now(),
+	}
+	suite.reg.CoverageReport.On("Create", mock.Anything, mock.Anything, mock.Anything).
+		Return(expectedReport, nil)
+	suite.s3Mock.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	suite.tcMock.On("Enqueue", mock.MatchedBy(func(task queue.Task) bool {
+		payload, ok := task.Payload.(payloads.CoverageAnalysisPayload)
+		return ok && payload.CatalogSource == config.CatalogSourceDB
+	})).Return(uuid.New(), nil).Once()
+	suite.reg.CoverageReport.On("SetAnalysisTaskUUID", mock.Anything, expectedReport.UUID, mock.Anything).
+		Return(nil)
+
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, code)
+}
+
+func (suite *CoverageReportSuite) TestCreateCoverageReportInvalidCatalogSource() {
+	t := suite.T()
+	config.Get().Features.LightwellStoreUploads = config.Feature{Enabled: true}
+	reqBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(reqBody)
+	part, err := writer.CreateFormFile("file", "sbom.json")
+	require.NoError(t, err)
+	_, err = part.Write([]byte(`{"bomFormat":"CycloneDX"}`))
+	require.NoError(t, err)
+	require.NoError(t, writer.WriteField("catalog_source", "tang"))
+	require.NoError(t, writer.Close())
+
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/coverage_reports/", api.FullRootPath()), reqBody)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := suite.serveCoverageReportRouter(req, true, true)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
 }
 
 func (suite *CoverageReportSuite) TestCreateCoverageReportWithInternalEntitlement() {

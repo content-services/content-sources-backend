@@ -95,3 +95,20 @@ WHERE r.origin = 'lightwell'
     )
 ORDER BY p.package_group, p.name, pv.version
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: ListLensCatalog :many
+SELECT
+    r.content_type AS ecosystem,
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.upstream_version
+FROM lightwell_package_versions pv
+JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid
+JOIN repositories r ON r.uuid = rc.repository_uuid
+WHERE rc.org_id = sqlc.arg(org_id)::text
+    AND r.origin = 'lightwell'
+    AND r.content_type IN ('maven', 'python')
+    AND lower(r.security_level) IN ('validated', 'remediated')
+ORDER BY r.content_type, p.package_group, p.name, pv.version;

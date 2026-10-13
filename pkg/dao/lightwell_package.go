@@ -89,6 +89,14 @@ type ListLightwellPackageVersionsOptions struct {
 	Offset            int32
 }
 
+type LensCatalogPackageRow struct {
+	Ecosystem       string
+	Group           string
+	Name            string
+	Version         string
+	UpstreamVersion string
+}
+
 type lightwellPackageDaoImpl struct {
 	db      *gorm.DB
 	querier store.Querier
@@ -258,6 +266,29 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 		}
 		return nil
 	})
+}
+
+func (d lightwellPackageDaoImpl) InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error) {
+	if d.querier == nil {
+		return nil, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	rows, err := d.querier.ListLensCatalog(ctx, config.LightwellOrg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list lens catalog: %w", err)
+	}
+
+	out := make([]LensCatalogPackageRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, LensCatalogPackageRow{
+			Ecosystem:       row.Ecosystem,
+			Group:           row.PackageGroup,
+			Name:            row.Name,
+			Version:         row.Version,
+			UpstreamVersion: row.UpstreamVersion,
+		})
+	}
+	return out, nil
 }
 
 func pgtextToString(t pgtype.Text) string {

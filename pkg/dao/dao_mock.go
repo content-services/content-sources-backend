@@ -5324,6 +5324,69 @@ func (_c *MockSnapshotDao_SoftDelete_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// UpdateLastPublishTaskUUID provides a mock function for the type MockSnapshotDao
+func (_mock *MockSnapshotDao) UpdateLastPublishTaskUUID(ctx context.Context, snapshotUUID string, taskUUID string) error {
+	ret := _mock.Called(ctx, snapshotUUID, taskUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLastPublishTaskUUID")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, snapshotUUID, taskUUID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockSnapshotDao_UpdateLastPublishTaskUUID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLastPublishTaskUUID'
+type MockSnapshotDao_UpdateLastPublishTaskUUID_Call struct {
+	*mock.Call
+}
+
+// UpdateLastPublishTaskUUID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - snapshotUUID string
+//   - taskUUID string
+func (_e *MockSnapshotDao_Expecter) UpdateLastPublishTaskUUID(ctx interface{}, snapshotUUID interface{}, taskUUID interface{}) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
+	return &MockSnapshotDao_UpdateLastPublishTaskUUID_Call{Call: _e.mock.On("UpdateLastPublishTaskUUID", ctx, snapshotUUID, taskUUID)}
+}
+
+func (_c *MockSnapshotDao_UpdateLastPublishTaskUUID_Call) Run(run func(ctx context.Context, snapshotUUID string, taskUUID string)) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockSnapshotDao_UpdateLastPublishTaskUUID_Call) Return(err error) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockSnapshotDao_UpdateLastPublishTaskUUID_Call) RunAndReturn(run func(ctx context.Context, snapshotUUID string, taskUUID string) error) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdatePublishedStatus provides a mock function for the type MockSnapshotDao
 func (_mock *MockSnapshotDao) UpdatePublishedStatus(ctx context.Context, orgID string, published bool, repoConfigUUID string, snapshotUUID string) (api.SnapshotResponse, error) {
 	ret := _mock.Called(ctx, orgID, published, repoConfigUUID, snapshotUUID)
@@ -5404,69 +5467,6 @@ func (_c *MockSnapshotDao_UpdatePublishedStatus_Call) Return(snapshotResponse ap
 }
 
 func (_c *MockSnapshotDao_UpdatePublishedStatus_Call) RunAndReturn(run func(ctx context.Context, orgID string, published bool, repoConfigUUID string, snapshotUUID string) (api.SnapshotResponse, error)) *MockSnapshotDao_UpdatePublishedStatus_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UpdateLastPublishTaskUUID provides a mock function for the type MockSnapshotDao
-func (_mock *MockSnapshotDao) UpdateLastPublishTaskUUID(ctx context.Context, snapshotUUID string, taskUUID string) error {
-	ret := _mock.Called(ctx, snapshotUUID, taskUUID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpdateLastPublishTaskUUID")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, snapshotUUID, taskUUID)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockSnapshotDao_UpdateLastPublishTaskUUID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLastPublishTaskUUID'
-type MockSnapshotDao_UpdateLastPublishTaskUUID_Call struct {
-	*mock.Call
-}
-
-// UpdateLastPublishTaskUUID is a helper method to define mock.On call
-//   - ctx context.Context
-//   - snapshotUUID string
-//   - taskUUID string
-func (_e *MockSnapshotDao_Expecter) UpdateLastPublishTaskUUID(ctx interface{}, snapshotUUID interface{}, taskUUID interface{}) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
-	return &MockSnapshotDao_UpdateLastPublishTaskUUID_Call{Call: _e.mock.On("UpdateLastPublishTaskUUID", ctx, snapshotUUID, taskUUID)}
-}
-
-func (_c *MockSnapshotDao_UpdateLastPublishTaskUUID_Call) Run(run func(ctx context.Context, snapshotUUID string, taskUUID string)) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *MockSnapshotDao_UpdateLastPublishTaskUUID_Call) Return(err error) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockSnapshotDao_UpdateLastPublishTaskUUID_Call) RunAndReturn(run func(ctx context.Context, snapshotUUID string, taskUUID string) error) *MockSnapshotDao_UpdateLastPublishTaskUUID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -9784,80 +9784,6 @@ func (_c *MockLightwellAdvisoryDao_CountAdvisoriesByRepo_Call) RunAndReturn(run 
 	return _c
 }
 
-// ListRemediatedAdvisories provides a mock function for the type MockLightwellAdvisoryDao
-func (_mock *MockLightwellAdvisoryDao) ListRemediatedAdvisories(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error) {
-	ret := _mock.Called(ctx, orgID, filter)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListRemediatedAdvisories")
-	}
-
-	var r0 []RemediatedAdvisory
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error)); ok {
-		return returnFunc(ctx, orgID, filter)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, RemediatedAdvisoryFilter) []RemediatedAdvisory); ok {
-		r0 = returnFunc(ctx, orgID, filter)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]RemediatedAdvisory)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, RemediatedAdvisoryFilter) error); ok {
-		r1 = returnFunc(ctx, orgID, filter)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListRemediatedAdvisories'
-type MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call struct {
-	*mock.Call
-}
-
-// ListRemediatedAdvisories is a helper method to define mock.On call
-//   - ctx context.Context
-//   - orgID string
-//   - filter RemediatedAdvisoryFilter
-func (_e *MockLightwellAdvisoryDao_Expecter) ListRemediatedAdvisories(ctx interface{}, orgID interface{}, filter interface{}) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
-	return &MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call{Call: _e.mock.On("ListRemediatedAdvisories", ctx, orgID, filter)}
-}
-
-func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Run(run func(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 RemediatedAdvisoryFilter
-		if args[2] != nil {
-			arg2 = args[2].(RemediatedAdvisoryFilter)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Return(remediatedAdvisories []RemediatedAdvisory, err error) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
-	_c.Call.Return(remediatedAdvisories, err)
-	return _c
-}
-
-func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) RunAndReturn(run func(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // List provides a mock function for the type MockLightwellAdvisoryDao
 func (_mock *MockLightwellAdvisoryDao) List(ctx context.Context, offset int, limit int) ([]LightwellAdvisoryInput, int64, error) {
 	ret := _mock.Called(ctx, offset, limit)
@@ -10144,6 +10070,80 @@ func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) Return(lightwellAdviso
 }
 
 func (_c *MockLightwellAdvisoryDao_ListByRepository_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) ([]LightwellAdvisoryInput, error)) *MockLightwellAdvisoryDao_ListByRepository_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListRemediatedAdvisories provides a mock function for the type MockLightwellAdvisoryDao
+func (_mock *MockLightwellAdvisoryDao) ListRemediatedAdvisories(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error) {
+	ret := _mock.Called(ctx, orgID, filter)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListRemediatedAdvisories")
+	}
+
+	var r0 []RemediatedAdvisory
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error)); ok {
+		return returnFunc(ctx, orgID, filter)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, RemediatedAdvisoryFilter) []RemediatedAdvisory); ok {
+		r0 = returnFunc(ctx, orgID, filter)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]RemediatedAdvisory)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, RemediatedAdvisoryFilter) error); ok {
+		r1 = returnFunc(ctx, orgID, filter)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListRemediatedAdvisories'
+type MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call struct {
+	*mock.Call
+}
+
+// ListRemediatedAdvisories is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID string
+//   - filter RemediatedAdvisoryFilter
+func (_e *MockLightwellAdvisoryDao_Expecter) ListRemediatedAdvisories(ctx interface{}, orgID interface{}, filter interface{}) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
+	return &MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call{Call: _e.mock.On("ListRemediatedAdvisories", ctx, orgID, filter)}
+}
+
+func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Run(run func(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 RemediatedAdvisoryFilter
+		if args[2] != nil {
+			arg2 = args[2].(RemediatedAdvisoryFilter)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) Return(remediatedAdvisorys []RemediatedAdvisory, err error) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
+	_c.Call.Return(remediatedAdvisorys, err)
+	return _c
+}
+
+func (_c *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call) RunAndReturn(run func(ctx context.Context, orgID string, filter RemediatedAdvisoryFilter) ([]RemediatedAdvisory, error)) *MockLightwellAdvisoryDao_ListRemediatedAdvisories_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10453,6 +10453,68 @@ func (_c *MockLightwellVulnerabilityDao_DeleteByKey_Call) RunAndReturn(run func(
 	return _c
 }
 
+// LastProcessedAt provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) LastProcessedAt(ctx context.Context) (*time.Time, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LastProcessedAt")
+	}
+
+	var r0 *time.Time
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (*time.Time, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *time.Time); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*time.Time)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellVulnerabilityDao_LastProcessedAt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LastProcessedAt'
+type MockLightwellVulnerabilityDao_LastProcessedAt_Call struct {
+	*mock.Call
+}
+
+// LastProcessedAt is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockLightwellVulnerabilityDao_Expecter) LastProcessedAt(ctx interface{}) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	return &MockLightwellVulnerabilityDao_LastProcessedAt_Call{Call: _e.mock.On("LastProcessedAt", ctx)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) Run(run func(ctx context.Context)) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) Return(time1 *time.Time, err error) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	_c.Call.Return(time1, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) RunAndReturn(run func(ctx context.Context) (*time.Time, error)) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function for the type MockLightwellVulnerabilityDao
 func (_mock *MockLightwellVulnerabilityDao) List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error) {
 	ret := _mock.Called(ctx, opts)
@@ -10537,64 +10599,6 @@ func (_c *MockLightwellVulnerabilityDao_List_Call) Return(lightwellVulnerability
 }
 
 func (_c *MockLightwellVulnerabilityDao_List_Call) RunAndReturn(run func(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)) *MockLightwellVulnerabilityDao_List_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// LastProcessedAt provides a mock function for the type MockLightwellVulnerabilityDao
-func (_mock *MockLightwellVulnerabilityDao) LastProcessedAt(ctx context.Context) (*time.Time, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for LastProcessedAt")
-	}
-
-	var r0 *time.Time
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (*time.Time, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) *time.Time); ok {
-		r0 = returnFunc(ctx)
-	} else if ret.Get(0) != nil {
-		r0 = ret.Get(0).(*time.Time)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockLightwellVulnerabilityDao_LastProcessedAt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LastProcessedAt'
-type MockLightwellVulnerabilityDao_LastProcessedAt_Call struct {
-	*mock.Call
-}
-
-// LastProcessedAt is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockLightwellVulnerabilityDao_Expecter) LastProcessedAt(ctx interface{}) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
-	return &MockLightwellVulnerabilityDao_LastProcessedAt_Call{Call: _e.mock.On("LastProcessedAt", ctx)}
-}
-
-func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) Run(run func(ctx context.Context)) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(arg0)
-	})
-	return _c
-}
-
-func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) Return(at *time.Time, err error) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
-	_c.Call.Return(at, err)
-	return _c
-}
-
-func (_c *MockLightwellVulnerabilityDao_LastProcessedAt_Call) RunAndReturn(run func(ctx context.Context) (*time.Time, error)) *MockLightwellVulnerabilityDao_LastProcessedAt_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -10743,7 +10747,6 @@ func (_mock *MockLightwellVulnerabilityDao) RecordSuccessfulSync(ctx context.Con
 	} else {
 		r0 = ret.Error(0)
 	}
-
 	return r0
 }
 
@@ -10878,6 +10881,68 @@ type MockLightwellPackageDao_Expecter struct {
 
 func (_m *MockLightwellPackageDao) EXPECT() *MockLightwellPackageDao_Expecter {
 	return &MockLightwellPackageDao_Expecter{mock: &_m.Mock}
+}
+
+// InternalOnlyListLensCatalog provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnlyListLensCatalog")
+	}
+
+	var r0 []LensCatalogPackageRow
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]LensCatalogPackageRow, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []LensCatalogPackageRow); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]LensCatalogPackageRow)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_InternalOnlyListLensCatalog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnlyListLensCatalog'
+type MockLightwellPackageDao_InternalOnlyListLensCatalog_Call struct {
+	*mock.Call
+}
+
+// InternalOnlyListLensCatalog is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockLightwellPackageDao_Expecter) InternalOnlyListLensCatalog(ctx interface{}) *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call {
+	return &MockLightwellPackageDao_InternalOnlyListLensCatalog_Call{Call: _e.mock.On("InternalOnlyListLensCatalog", ctx)}
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call) Run(run func(ctx context.Context)) *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call) Return(lensCatalogPackageRows []LensCatalogPackageRow, err error) *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call {
+	_c.Call.Return(lensCatalogPackageRows, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call) RunAndReturn(run func(ctx context.Context) ([]LensCatalogPackageRow, error)) *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // ListPackageVersions provides a mock function for the type MockLightwellPackageDao

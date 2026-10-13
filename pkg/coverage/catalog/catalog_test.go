@@ -137,7 +137,7 @@ func (s *CatalogSuite) TestLoadCatalog() {
 			Offset: 0,
 		}, nil)
 
-	catalog, snapshotAt, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
+	catalog, snapshotAt, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
 	require.NoError(s.T(), err)
 	assert.False(s.T(), snapshotAt.IsZero())
 	assert.ElementsMatch(s.T(), []matcher.Package{
@@ -183,7 +183,7 @@ func (s *CatalogSuite) TestLoadCatalogPagination() {
 			},
 		}, nil)
 
-	catalog, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
+	catalog, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
 	require.NoError(s.T(), err)
 	assert.ElementsMatch(s.T(), []matcher.Package{
 		{Ecosystem: matcher.EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"},
@@ -206,7 +206,7 @@ func (s *CatalogSuite) TestLoadCatalogNoMatchingRepos() {
 	s.mockPulp.On("WithDomain", domainName).Return(s.mockPulp)
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
 
-	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
+	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "no validated or remediated")
 }
@@ -236,7 +236,7 @@ func (s *CatalogSuite) TestLoadCatalogMavenListError() {
 	s.mockPulp.On("ListMavenPackages", s.ctx, javaHref, "", mavenCatalogPageSize, 0).
 		Return(zest.PaginatedMavenRepositoryPackageListResponse{}, errors.New("pulp catalog unavailable"))
 
-	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
+	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "pulp catalog unavailable")
 }
@@ -257,7 +257,33 @@ func (s *CatalogSuite) TestLoadCatalogPulpError() {
 	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return(repos, nil)
 	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return((*string)(nil), errors.New("pulp unavailable"))
 
-	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang)
+	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "pulp unavailable")
+}
+
+func (s *CatalogSuite) TestLoadCatalogFromDB() {
+	s.mockDao.LightwellPackage.On("InternalOnlyListLensCatalog", s.ctx).
+		Return([]dao.LensCatalogPackageRow{
+			{Ecosystem: config.ContentTypeMaven, Group: "org.springframework", Name: "spring-core", Version: "6.1.0"},
+			{Ecosystem: config.ContentTypePython, Group: "", Name: "flask", Version: "3.0.3"},
+			{Ecosystem: "npm", Group: "", Name: "left-pad", Version: "1.0.0"}, // skipped
+		}, nil)
+
+	catalog, snapshotAt, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourceDB)
+	require.NoError(s.T(), err)
+	assert.False(s.T(), snapshotAt.IsZero())
+	assert.ElementsMatch(s.T(), []matcher.Package{
+		{Ecosystem: matcher.EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"},
+		{Ecosystem: matcher.EcosystemPython, Name: "flask", Version: "3.0.3"},
+	}, catalog)
+}
+
+func (s *CatalogSuite) TestLoadCatalogFromDBEmpty() {
+	s.mockDao.LightwellPackage.On("InternalOnlyListLensCatalog", s.ctx).
+		Return([]dao.LensCatalogPackageRow{}, nil)
+
+	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourceDB)
+	require.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "no validated or remediated catalog packages found")
 }

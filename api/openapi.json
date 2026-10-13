@@ -3192,6 +3192,11 @@
                         "multipart/form-data": {
                             "schema": {
                                 "properties": {
+                                    "catalog_source": {
+                                        "description": "Catalog source for analysis: pulp (default) or db",
+                                        "type": "string",
+                                        "x-formData-name": "catalog_source"
+                                    },
                                     "file": {
                                         "description": "Manifest file (CycloneDX, SPDX, etc.)",
                                         "format": "binary",

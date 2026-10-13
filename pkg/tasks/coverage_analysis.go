@@ -47,20 +47,29 @@ func CoverageAnalysisHandler(ctx context.Context, task *models.TaskInfo, _ *queu
 	ctxWithLogger := logger.WithContext(ctx)
 
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.LightwellOrg)
-	if err != nil {
-		return err
-	}
-
 	s3Client, err := s3_client.NewS3Client(config.Get().Clients.Lightwell.S3.CoverageUploads)
 	if err != nil {
 		return fmt.Errorf("failed to initialize s3 client: %w", err)
 	}
 
-	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	source := opts.CatalogSource
+	if source == "" {
+		source = config.CatalogSourcePulp
+	}
+	opts.CatalogSource = source
 
-	if config.Tang == nil {
-		return fmt.Errorf("no tang configuration present")
+	var pulpClient pulp_client.PulpClient
+	var tang tangy.Tangy
+	if source != config.CatalogSourceDB {
+		domainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.LightwellOrg)
+		if err != nil {
+			return err
+		}
+		pulpClient = pulp_client.GetPulpClientWithDomain(domainName)
+		if config.Tang == nil {
+			return fmt.Errorf("no tang configuration present")
+		}
+		tang = *config.Tang
 	}
 
 	ca := CoverageAnalysis{
@@ -69,7 +78,7 @@ func CoverageAnalysisHandler(ctx context.Context, task *models.TaskInfo, _ *queu
 		daoReg:     daoReg,
 		s3Client:   s3Client,
 		pulpClient: pulpClient,
-		tang:       *config.Tang,
+		tang:       tang,
 	}
 	err = ca.Run()
 	if err == nil {
@@ -149,12 +158,12 @@ func (c *CoverageAnalysis) Run() error {
 		return fmt.Errorf("failed to update coverage report status: %w", err)
 	}
 
-	validatedCatalog, snapshotAt, err := catalog.LoadCatalog(c.ctx, c.daoReg, c.pulpClient, c.tang)
+	lightwellCatalog, snapshotAt, err := catalog.LoadCatalog(c.ctx, c.daoReg, c.pulpClient, c.tang, c.payload.CatalogSource)
 	if err != nil {
 		return fmt.Errorf("failed to load catalog: %w", err)
 	}
 
-	results, summary := matcher.MatchCatalog(validatedCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
+	results, summary := matcher.MatchCatalog(lightwellCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
 
 	// CVE enrichment is best-effort: a failure to load advisories should not fail the
 	// whole analysis. On error we persist the coverage results without CVE data, leaving
