@@ -15,9 +15,10 @@ const (
 )
 
 const (
-	LightwellEventTypeJavaRemediated    = "java-remediated"
-	LightwellEventTypeJavaPredisclosure = "java-predisclosure"
-	LightwellEventTypePythonRemediated  = "python-remediated"
+	LightwellEventTypeJavaRemediated      = "java-remediated"
+	LightwellEventTypeJavaPredisclosure   = "java-predisclosure"
+	LightwellEventTypePythonRemediated    = "python-remediated"
+	LightwellEventTypePythonPredisclosure = "python-predisclosure"
 )
 
 const (
@@ -52,6 +53,8 @@ func LightwellEventType(repoName string) string {
 		return LightwellEventTypeJavaPredisclosure
 	case "lightwell/python/remediated":
 		return LightwellEventTypePythonRemediated
+	case "lightwell/python/predisclosure":
+		return LightwellEventTypePythonPredisclosure
 	default:
 		return ""
 	}
