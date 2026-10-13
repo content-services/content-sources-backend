@@ -11,6 +11,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ClearinghouseUpload struct {
+	Uuid               uuid.UUID `json:"uuid"`
+	CreatedAt          time.Time `json:"created_at"`
+	OrgID              string    `json:"org_id"`
+	AccountID          *string   `json:"account_id"`
+	VulnerabilityCount *int32    `json:"vulnerability_count"`
+	Status             string    `json:"status"`
+	ErrorMessage       *string   `json:"error_message"`
+}
+
+type ClearinghouseUploadFile struct {
+	Uuid                    uuid.UUID `json:"uuid"`
+	ClearinghouseUploadUuid uuid.UUID `json:"clearinghouse_upload_uuid"`
+	Filename                string    `json:"filename"`
+	Filepath                string    `json:"filepath"`
+}
+
 type LightwellAdvisory struct {
 	Uuid                        uuid.UUID  `json:"uuid"`
 	CreatedAt                   time.Time  `json:"created_at"`

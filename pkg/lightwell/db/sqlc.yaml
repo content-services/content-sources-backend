@@ -19,6 +19,18 @@ overrides:
         go_type:
           type: "float64"
           pointer: true
+      - db_type: "pg_catalog.int4"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "int32"
+          pointer: true
+      - db_type: "int4"
+        engine: "postgresql"
+        nullable: true
+        go_type:
+          type: "int32"
+          pointer: true
       - db_type: "date"
         engine: "postgresql"
         go_type:
