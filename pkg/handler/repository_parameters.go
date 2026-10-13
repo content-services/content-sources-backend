@@ -250,6 +250,14 @@ func getFeatureLabel(featureName string) string {
 		return "Red Hat Enterprise Linux for ARM 64 - Enhanced Extended Update Support"
 	case "RHEL-E4S-x86_64":
 		return "Red Hat Enterprise Linux for x86_64 - Update Services for SAP Solutions"
+	case "RHEL-SAP_SOLUTIONS-EUS-x86_64":
+		return "Red Hat Enterprise Linux for SAP Solutions for x86_64 - Extended Update Support"
+	case "RHEL-SAP-EUS-x86_64":
+		return "Red Hat Enterprise Linux for SAP Applications for x86_64 - Extended Update Support"
+	case "RHEL-SAP_SOLUTIONS-E4S-x86_64":
+		return "Red Hat Enterprise Linux for SAP Solutions for x86_64 - Update Services for SAP Solutions"
+	case "RHEL-SAP-E4S-x86_64":
+		return "Red Hat Enterprise Linux for SAP Applications for x86_64 - Update Services for SAP Solutions"
 	default:
 		return featureName
 	}
