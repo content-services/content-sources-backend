@@ -92,6 +92,16 @@ func TestTermsServiceConfigured(t *testing.T) {
 	c.Clients.TermsService.Server = ""
 }
 
+func TestParseEventFeatureMap(t *testing.T) {
+	assert.Equal(t, map[string]string{}, parseEventFeatureMap(""))
+	assert.Equal(t, map[string]string{}, parseEventFeatureMap("bad-entry,also-bad"))
+	assert.Equal(t, map[string]string{
+		"network":  "lightwell-network",
+		"academic": "lightwell-research-institutions",
+	}, parseEventFeatureMap("network:lightwell-network,academic:lightwell-research-institutions"))
+	assert.Equal(t, map[string]string{"network": "lightwell-network"}, parseEventFeatureMap("bad,network:lightwell-network"))
+}
+
 func TestTermsServiceCertUser(t *testing.T) {
 	c := Get()
 	c.Clients.TermsService.ClientCert = "test-cert"

@@ -8479,8 +8479,8 @@ parameters:
     description: Terms service site identifier (e.g. lightwell)
     value: ''
   - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
-    description: JSON mapping of terms event to required entitled feature name (e.g.
-      {"network":"lightwell-network","academic":"lightwell-research-institutions"})
+    description: Comma-separated mapping of terms event to required entitled feature
+      name (e.g. network:lightwell-network,academic:lightwell-research-institutions)
     value: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
