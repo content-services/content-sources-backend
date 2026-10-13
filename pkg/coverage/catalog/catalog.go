@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/rs/zerolog"
 )
@@ -22,9 +23,125 @@ const (
 )
 
 // LoadCatalog returns packages from the validated and remediated catalog and the time the catalog was fetched
-func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.PulpClient, tang tangy.Tangy) ([]matcher.Package, time.Time, error) {
-	logger := zerolog.Ctx(ctx)
+func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.PulpClient, tang tangy.Tangy, source string) ([]matcher.Package, time.Time, error) {
 	snapshotAt := time.Now().UTC()
+
+	if source == config.CatalogSourceDB {
+		return loadCatalogFromDB(ctx, daoReg, snapshotAt)
+	}
+	return loadCatalogFromPulp(ctx, daoReg, pulp, tang, snapshotAt)
+}
+
+const mavenCatalogPageSize = 500
+
+func listPackages(ctx context.Context, pulp pulp_client.PulpClient, tang tangy.Tangy, href string, contentType string) ([]matcher.Package, error) {
+	switch contentType {
+	case config.ContentTypeMaven:
+		return listMavenPackages(ctx, pulp, href)
+	case config.ContentTypePython:
+		return listPythonPackages(ctx, tang, href)
+	default:
+		return nil, fmt.Errorf("unsupported content type %q", contentType)
+	}
+}
+
+func listMavenPackages(ctx context.Context, pulp pulp_client.PulpClient, href string) ([]matcher.Package, error) {
+	var catalog []matcher.Package
+	for offset := 0; ; offset += mavenCatalogPageSize {
+		resp, err := pulp.ListMavenPackages(ctx, href, "", mavenCatalogPageSize, offset)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list maven packages: %w", err)
+		}
+		for _, item := range resp.Results {
+			for _, version := range item.Versions {
+				upstreamVersion, _ := rhlw.SplitVersion(version)
+				catalog = append(catalog, matcher.Package{
+					Ecosystem: matcher.EcosystemJava,
+					Namespace: item.GroupId,
+					Name:      item.ArtifactId,
+					Version:   upstreamVersion,
+				})
+			}
+		}
+		if len(resp.Results) == 0 || offset+len(resp.Results) >= int(resp.Count) {
+			break
+		}
+	}
+	return catalog, nil
+}
+
+func listPythonPackages(ctx context.Context, tang tangy.Tangy, href string) ([]matcher.Package, error) {
+	var catalog []matcher.Package
+	pageCount := 0
+	for offset := 0; ; offset += tangy.DefaultLimit {
+		resp, err := tang.PythonPackageList(ctx, href, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: offset, Limit: tangy.DefaultLimit})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list python packages: %w", err)
+		}
+		pageCount++
+		for _, item := range resp.Results {
+			for _, version := range item.Versions {
+				upstreamVersion, _ := rhlw.SplitVersion(version)
+				catalog = append(catalog, matcher.Package{
+					Ecosystem: matcher.EcosystemPython,
+					Name:      item.NameNormalized,
+					Version:   upstreamVersion,
+				})
+			}
+		}
+		if len(resp.Results) == 0 || offset+len(resp.Results) >= resp.Total {
+			break
+		}
+	}
+	return catalog, nil
+}
+
+func loadCatalogFromDB(ctx context.Context, daoReg *dao.DaoRegistry, snapshotAt time.Time) ([]matcher.Package, time.Time, error) {
+	logger := zerolog.Ctx(ctx)
+	start := time.Now()
+
+	rows, err := daoReg.LightwellPackage.InternalOnlyListLensCatalog(ctx)
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
+	catalog := make([]matcher.Package, 0, len(rows))
+	for _, row := range rows {
+		version := row.UpstreamVersion
+		if version == "" {
+			version, _ = rhlw.SplitVersion(row.Version)
+		}
+		pkg := matcher.Package{
+			Name:      row.Name,
+			Namespace: row.Group,
+			Version:   version,
+		}
+		switch row.Ecosystem {
+		case config.ContentTypeMaven:
+			pkg.Ecosystem = matcher.EcosystemJava
+		case config.ContentTypePython:
+			pkg.Ecosystem = matcher.EcosystemPython
+		default:
+			continue
+		}
+		catalog = append(catalog, pkg)
+	}
+
+	if len(catalog) == 0 {
+		return nil, time.Time{}, fmt.Errorf("no validated or remediated catalog packages found")
+	}
+
+	logger.Debug().
+		Int("packages", len(catalog)).
+		Float64("duration_seconds", time.Since(start).Seconds()).
+		Str("catalog_source", config.CatalogSourceDB).
+		Msg("loaded catalog packages")
+
+	return catalog, snapshotAt, nil
+}
+
+func loadCatalogFromPulp(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.PulpClient, tang tangy.Tangy, snapshotAt time.Time) ([]matcher.Package, time.Time, error) {
+	logger := zerolog.Ctx(ctx)
 
 	domain, err := daoReg.Domain.FetchOrCreateDomain(ctx, config.LightwellOrg)
 	if err != nil {
@@ -69,70 +186,10 @@ func LoadCatalog(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp_client.
 			Str("repo", repo.PublishedDistBasePath).
 			Int("packages", len(pkgs)).
 			Float64("duration_seconds", time.Since(start).Seconds()).
+			Str("catalog_source", config.CatalogSourcePulp).
 			Msg("loaded catalog packages")
 		catalog = append(catalog, pkgs...)
 	}
+
 	return catalog, snapshotAt, nil
-}
-
-const mavenCatalogPageSize = 500
-
-func listPackages(ctx context.Context, pulp pulp_client.PulpClient, tang tangy.Tangy, href string, contentType string) ([]matcher.Package, error) {
-	switch contentType {
-	case config.ContentTypeMaven:
-		return listMavenPackages(ctx, pulp, href)
-	case config.ContentTypePython:
-		return listPythonPackages(ctx, tang, href)
-	default:
-		return nil, fmt.Errorf("unsupported content type %q", contentType)
-	}
-}
-
-func listMavenPackages(ctx context.Context, pulp pulp_client.PulpClient, href string) ([]matcher.Package, error) {
-	var catalog []matcher.Package
-	for offset := 0; ; offset += mavenCatalogPageSize {
-		resp, err := pulp.ListMavenPackages(ctx, href, "", mavenCatalogPageSize, offset)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list maven packages: %w", err)
-		}
-		for _, item := range resp.Results {
-			for _, version := range item.Versions {
-				catalog = append(catalog, matcher.Package{
-					Ecosystem: matcher.EcosystemJava,
-					Namespace: item.GroupId,
-					Name:      item.ArtifactId,
-					Version:   version,
-				})
-			}
-		}
-		if len(resp.Results) == 0 || offset+len(resp.Results) >= int(resp.Count) {
-			break
-		}
-	}
-	return catalog, nil
-}
-
-func listPythonPackages(ctx context.Context, tang tangy.Tangy, href string) ([]matcher.Package, error) {
-	var catalog []matcher.Package
-	pageCount := 0
-	for offset := 0; ; offset += tangy.DefaultLimit {
-		resp, err := tang.PythonPackageList(ctx, href, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: offset, Limit: tangy.DefaultLimit})
-		if err != nil {
-			return nil, fmt.Errorf("failed to list python packages: %w", err)
-		}
-		pageCount++
-		for _, item := range resp.Results {
-			for _, version := range item.Versions {
-				catalog = append(catalog, matcher.Package{
-					Ecosystem: matcher.EcosystemPython,
-					Name:      item.NameNormalized,
-					Version:   version,
-				})
-			}
-		}
-		if len(resp.Results) == 0 || offset+len(resp.Results) >= resp.Total {
-			break
-		}
-	}
-	return catalog, nil
 }

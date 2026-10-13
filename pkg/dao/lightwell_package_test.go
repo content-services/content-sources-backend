@@ -59,14 +59,14 @@ func (s *LightwellPackageSuite) seedLightwellRepoConfig(contentType string, secu
 	return repoConfigUUID
 }
 
-func (s *LightwellPackageSuite) createLightwellRepoWithFeature(ctx context.Context, name string, featureName string, securityLevel string) (string, string) {
+func (s *LightwellPackageSuite) createLightwellRepoWithFeature(ctx context.Context, name string, featureName string, securityLevel string, contentType string) (string, string) {
 	repoUUID := uuid.New().String()
 	repoConfigUUID := uuid.New().String()
 
 	err := db.DB.WithContext(ctx).Exec(`
 		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, security_level)
 		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
-		repoUUID, config.OriginLightwell, config.ContentTypeMaven, securityLevel,
+		repoUUID, config.OriginLightwell, contentType, securityLevel,
 	).Error
 	s.Require().NoError(err)
 
@@ -182,10 +182,64 @@ func ptr(s string) *string {
 	return &s
 }
 
+func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
+	ctx, dao := s.dao()
+	suffix := time.Now().UnixNano()
+
+	javaUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("lens-java-%d", suffix),
+		"lightwell-maven",
+		"validated",
+		config.ContentTypeMaven,
+	)
+	pythonUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("lens-python-%d", suffix),
+		"lightwell-python",
+		"remediated",
+		config.ContentTypePython,
+	)
+	otherUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("lens-other-%d", suffix),
+		"lightwell-maven",
+		"predisclosure",
+		config.ContentTypeMaven,
+	)
+
+	s.createPackageWithVersions(
+		ctx, javaUUID, "spring-core", "org.springframework",
+		[]string{"6.1.0"}, []string{""}, []string{"pkg:maven/org.springframework/spring-core@6.1.0"},
+	)
+	s.createPackageWithVersions(
+		ctx, pythonUUID, "flask", "",
+		[]string{"3.0.3"}, []string{""}, []string{"pkg:pypi/flask@3.0.3"},
+	)
+	s.createPackageWithVersions(
+		ctx, otherUUID, "ignored", "com.example",
+		[]string{"1.0.0"}, []string{""}, []string{"pkg:maven/com.example/ignored@1.0.0"},
+	)
+
+	rows, err := dao.InternalOnlyListLensCatalog(ctx)
+	s.NoError(err)
+
+	found := map[string]LensCatalogPackageRow{}
+	for _, row := range rows {
+		found[row.Ecosystem+":"+row.Group+":"+row.Name+":"+row.Version] = row
+	}
+	_, hasJava := found["maven:org.springframework:spring-core:6.1.0"]
+	_, hasPython := found["python::flask:3.0.3"]
+	_, hasOther := found["maven:com.example:ignored:1.0.0"]
+	assert.True(s.T(), hasJava)
+	assert.True(s.T(), hasPython)
+	assert.False(s.T(), hasOther)
+}
+
 func (s *LightwellPackageSuite) TestListPackagesAggregatesVersions() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("agg-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -263,7 +317,7 @@ func (s *LightwellPackageSuite) TestListPackagesDemoFilter() {
 func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("zero-ver-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithoutVersions(ctx, repoConfigUUID, "com.example:no-versions", "com.example")
 
@@ -288,7 +342,7 @@ func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {
 func (s *LightwellPackageSuite) TestListPackagesNameFilterCaseInsensitive() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("name-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -317,7 +371,7 @@ func (s *LightwellPackageSuite) TestListPackagesNameFilterCaseInsensitive() {
 func (s *LightwellPackageSuite) TestListPackagesSecurityLevelFilterCaseInsensitive() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("sec-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -345,7 +399,7 @@ func (s *LightwellPackageSuite) TestListPackagesSecurityLevelFilterCaseInsensiti
 func (s *LightwellPackageSuite) TestListPackagesEntitlementExcludes() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("ent-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -376,7 +430,7 @@ func (s *LightwellPackageSuite) TestListPackagesEntitlementExcludes() {
 func (s *LightwellPackageSuite) TestListPackagesBlankFeatureNameHidden() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("blank-%d", time.Now().UnixNano())
-	repoConfigUUID1, _ := s.createLightwellRepoWithFeature(ctx, testID, "", "validated")
+	repoConfigUUID1, _ := s.createLightwellRepoWithFeature(ctx, testID, "", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -403,7 +457,7 @@ func (s *LightwellPackageSuite) TestListPackagesBlankFeatureNameHidden() {
 func (s *LightwellPackageSuite) TestListPackageVersionsReturnsPurlAndCount() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("purl-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -475,7 +529,7 @@ func (s *LightwellPackageSuite) TestListPackageVersionsDemoFilter() {
 func (s *LightwellPackageSuite) TestListPackageVersionsResolvesCveId() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("cve-res-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,
@@ -505,7 +559,7 @@ func (s *LightwellPackageSuite) TestListPackageVersionsResolvesCveId() {
 func (s *LightwellPackageSuite) TestListPackageVersionsVulnerableToCveId() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("cve-vuln-%d", time.Now().UnixNano())
-	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated", config.ContentTypeMaven)
 
 	s.createPackageWithVersions(
 		ctx,

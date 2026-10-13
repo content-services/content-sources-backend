@@ -322,6 +322,7 @@ type LightwellPackageDao interface {
 	ListPackages(ctx context.Context, opts ListLightwellPackagesOptions) ([]LightwellPackageRow, int64, error)
 	ListPackageVersions(ctx context.Context, opts ListLightwellPackageVersionsOptions) ([]LightwellPackageVersionRow, int64, error)
 	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
+	InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error)
 }
 
 type UserPreferenceDao interface {

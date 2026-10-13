@@ -40,6 +40,12 @@ const docTemplate = `{
                         "name": "file",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalog source for analysis: pulp (default) or db",
+                        "name": "catalog_source",
+                        "in": "formData"
                     }
                 ],
                 "responses": {

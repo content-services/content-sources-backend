@@ -20,6 +20,11 @@ const (
 )
 
 const (
+	CatalogSourcePulp = "pulp"
+	CatalogSourceDB   = "db"
+)
+
+const (
 	OriginExternal  = "external"
 	OriginRedHat    = "red_hat"
 	OriginUpload    = "upload"
@@ -204,6 +209,17 @@ func ValidDistributionMinorVersionLabel(label string) bool {
 func ValidExtendedReleaseLabel(label string) bool {
 	_, exists := ExtendedReleaseStreamNames[label]
 	return exists
+}
+
+// ValidCatalogSource reports whether source is an allowed Lens catalog backend.
+// Empty is valid and means the default (pulp).
+func ValidCatalogSource(source string) bool {
+	switch source {
+	case "", CatalogSourcePulp, CatalogSourceDB:
+		return true
+	default:
+		return false
+	}
 }
 
 func SnapshotInterval(redHat bool) string {

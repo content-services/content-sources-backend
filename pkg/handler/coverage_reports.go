@@ -5,17 +5,14 @@ import (
 	"encoding/hex"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
-	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -23,7 +20,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 )
 
 const maxCoverageUploadSizeBytes = 15 * 1024 * 1024 // 15 MiB
@@ -70,6 +66,7 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, t
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file formData file true "Manifest file (CycloneDX, SPDX, etc.)"
+// @Param        catalog_source formData string false "Catalog source for analysis: pulp (default) or db"
 // @Success      201 {object} api.CoverageReportResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -78,6 +75,10 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, t
 func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 	accountID, orgID := GetAccountIdOrgId(c)
 
+	catalogSource := c.FormValue("catalog_source")
+	if !config.ValidCatalogSource(catalogSource) {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "Catalog source must be empty, pulp, or db")
+	}
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "File is required")
@@ -143,18 +144,8 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error creating coverage report", err.Error())
 	}
 
-	// TODO: remove once we don't need seeded data
-	if config.Get().Options.SeedLightwellCoverageReports && !storeUploadsAccessible {
-		go func(reportUUID string) {
-			time.Sleep(3 * time.Second)
-			if _, err := seeds.SeedCoverageReport(db.DB, seeds.CoverageReportSeedOptions{UUID: reportUUID}); err != nil {
-				log.Error().Err(err).Str("uuid", reportUUID).Msg("failed to seed coverage report")
-			}
-		}(report.UUID)
-	}
-
 	if storeUploadsAccessible {
-		ch.enqueueCoverageAnalysisEvent(c, report, uploadUUID, fileHeader.Filename)
+		ch.enqueueCoverageAnalysisEvent(c, report, uploadUUID, fileHeader.Filename, catalogSource)
 	}
 
 	return c.JSON(http.StatusCreated, report)
@@ -217,12 +208,13 @@ func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) erro
 	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&response, c, totalCount))
 }
 
-func (ch *CoverageReportHandler) enqueueCoverageAnalysisEvent(c echo.Context, report api.CoverageReportResponse, uploadUUID string, filename string) uuid.UUID {
+func (ch *CoverageReportHandler) enqueueCoverageAnalysisEvent(c echo.Context, report api.CoverageReportResponse, uploadUUID string, filename string, catalogSource string) uuid.UUID {
 	accountID, orgID := GetAccountIdOrgId(c)
 	payload := payloads.CoverageAnalysisPayload{
 		CoverageReportUUID: report.UUID,
 		CoverageUploadUUID: uploadUUID,
 		Filename:           filename,
+		CatalogSource:      catalogSource,
 	}
 	task := queue.Task{
 		Typename:  config.CoverageAnalysisTask,
