@@ -182,20 +182,24 @@ type FeatureService struct {
 }
 
 type TermsService struct {
-	Server          string            `mapstructure:"server"`
-	Site            string            `mapstructure:"site"`
-	EventFeatureMap map[string]string `mapstructure:"event_feature_map"` // maps terms event → required entitled feature name
-	ClientCert      string            `mapstructure:"client_cert"`
-	ClientKey       string            `mapstructure:"client_key"`
-	CACert          string            `mapstructure:"ca_cert"`
-	ClientCertPath  string            `mapstructure:"client_cert_path"`
-	ClientKeyPath   string            `mapstructure:"client_key_path"`
-	CACertPath      string            `mapstructure:"ca_cert_path"`
+	Server          string `mapstructure:"server"`
+	Site            string `mapstructure:"site"`
+	EventFeatureMap string `mapstructure:"event_feature_map"` // "event:feature,event:feature"
+	ClientCert      string `mapstructure:"client_cert"`
+	ClientKey       string `mapstructure:"client_key"`
+	CACert          string `mapstructure:"ca_cert"`
+	ClientCertPath  string `mapstructure:"client_cert_path"`
+	ClientKeyPath   string `mapstructure:"client_key_path"`
+	CACertPath      string `mapstructure:"ca_cert_path"`
 }
 
-// Events returns the terms event names, derived from the keys of EventFeatureMap.
+func (ts TermsService) EventFeatures() map[string]string {
+	return parseEventFeatureMap(ts.EventFeatureMap)
+}
+
+// Events returns the terms event names, parsed from EventFeatureMap
 func (ts TermsService) Events() []string {
-	return slices.Collect(maps.Keys(ts.EventFeatureMap))
+	return slices.Collect(maps.Keys(ts.EventFeatures()))
 }
 
 type PulpLogParser struct {
@@ -485,7 +489,7 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("clients.terms_service.server", "")
 	v.SetDefault("clients.terms_service.site", "")
-	v.SetDefault("clients.terms_service.event_feature_map", nil)
+	v.SetDefault("clients.terms_service.event_feature_map", "")
 	v.SetDefault("clients.terms_service.client_cert", "")
 	v.SetDefault("clients.terms_service.client_key", "")
 	v.SetDefault("clients.terms_service.ca_cert", "")
@@ -894,4 +898,22 @@ func FeatureAccessible(ctx context.Context, feature Feature) bool {
 		return true
 	}
 	return false
+}
+
+func parseEventFeatureMap(raw string) map[string]string {
+	eventFeatures := make(map[string]string)
+	for _, pair := range strings.Split(raw, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		event, feature, ok := strings.Cut(pair, ":")
+		event = strings.TrimSpace(event)
+		feature = strings.TrimSpace(feature)
+		if !ok || event == "" || feature == "" {
+			continue
+		}
+		eventFeatures[event] = feature
+	}
+	return eventFeatures
 }

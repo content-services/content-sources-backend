@@ -46,10 +46,7 @@ func (s *LightwellTermsSuite) SetupTest() {
 
 	config.LoadedConfig.Loaded = true
 	config.LoadedConfig.Features.LightwellTerms = config.Feature{Enabled: true}
-	config.LoadedConfig.Clients.TermsService.EventFeatureMap = map[string]string{
-		"network":  "lightwell-network",
-		"academic": "lightwell-research-institutions",
-	}
+	config.LoadedConfig.Clients.TermsService.EventFeatureMap = "network:lightwell-network,academic:lightwell-research-institutions"
 }
 
 func (s *LightwellTermsSuite) TearDownTest() {

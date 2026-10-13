@@ -180,9 +180,7 @@ clients:
   terms_service:
     server: #https://terms.stage.api.redhat.com
     site: lightwell
-    event_feature_map:
-      network: lightwell-network
-      academic: lightwell-research-institutions
+    event_feature_map: "network:lightwell-network,academic:lightwell-research-institutions"
     client_cert:
     client_key:
     ca_cert:

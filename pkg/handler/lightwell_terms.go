@@ -96,7 +96,7 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 // user's org is entitled to, based on the event_feature_map config. If no
 // mapping is configured, all events pass through unchanged.
 func (h *LightwellTermsHandler) filterEventsByEntitlement(c echo.Context, events []string) []string {
-	eventFeatureMap := config.Get().Clients.TermsService.EventFeatureMap
+	eventFeatureMap := config.Get().Clients.TermsService.EventFeatures()
 	if len(eventFeatureMap) == 0 || len(events) == 0 {
 		return events
 	}
