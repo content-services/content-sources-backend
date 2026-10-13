@@ -180,7 +180,7 @@ export async function refreshJWTToken(page: Page, fileName: string): Promise<str
   return newToken;
 }
 
-const BUFFER_MINUTES = 5;
+const BUFFER_MINUTES = 10;
 
 /**
  * Validate token (expiry check) and refresh via page if needed.
