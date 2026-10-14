@@ -79,8 +79,8 @@ func (s *RepositoryParameterSuite) TestListParams() {
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Name)
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Label)
 	assert.Equal(t, []api.FeatureProduct{
-		{Name: "RHEL-EUS-x86_64", Label: "Red Hat Enterprise Linux Extended Update Support for x86_64"},
-		{Name: "RHEL-E4S-x86_64", Label: "Red Hat Enterprise Linux for x86_64 (E4S)"},
+		{Name: "RHEL-EUS-x86_64", Label: "Red Hat Enterprise Linux for x86_64 - Extended Update Support"},
+		{Name: "RHEL-E4S-x86_64", Label: "Red Hat Enterprise Linux for x86_64 - Update Services for SAP Solutions"},
 	}, response.FeatureProducts)
 
 	assert.NotEmpty(t, response.ExtendedReleaseStreams)
