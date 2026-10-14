@@ -14,6 +14,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type ApiLightwellBeaconStatusResponse,
+    ApiLightwellBeaconStatusResponseFromJSON,
+    ApiLightwellBeaconStatusResponseToJSON,
+} from '../models/ApiLightwellBeaconStatusResponse';
+import {
     type ApiLightwellCustomerIdsResponse,
     ApiLightwellCustomerIdsResponseFromJSON,
     ApiLightwellCustomerIdsResponseToJSON,
@@ -54,6 +59,45 @@ export interface ListLightwellVulnerabilitiesRequest {
  * 
  */
 export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for getLightwellBeaconStatus without sending the request
+     */
+    async getLightwellBeaconStatusRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/lightwell/beacon/status/`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Return when the latest successful beacon sync started. The timestamp is omitted until the first successful sync.
+     * Get Lightwell beacon status
+     */
+    async getLightwellBeaconStatusRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiLightwellBeaconStatusResponse>> {
+        const requestOptions = await this.getLightwellBeaconStatusRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiLightwellBeaconStatusResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Return when the latest successful beacon sync started. The timestamp is omitted until the first successful sync.
+     * Get Lightwell beacon status
+     */
+    async getLightwellBeaconStatus(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiLightwellBeaconStatusResponse> {
+        const response = await this.getLightwellBeaconStatusRaw(initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for listLightwellCustomerIds without sending the request

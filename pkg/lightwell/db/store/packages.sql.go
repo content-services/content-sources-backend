@@ -214,6 +214,7 @@ SELECT
     array_agg(pv.release ORDER BY pv.version) AS releases,
     array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
     array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
+    MAX(pv.published_at) AS last_publication,
     COUNT(*) OVER() AS total_count
 FROM lightwell_packages p
 JOIN repository_configurations rc ON rc.uuid = p.repository_configuration_uuid
@@ -222,30 +223,47 @@ LEFT JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE r.origin = 'lightwell'
     AND ($1::text IS NULL OR r.content_type = $1::text)
     AND ($2::text IS NULL OR p.name ILIKE '%' || $2::text || '%')
-    AND ($3::text IS NULL OR lower(rc.name) = lower($3::text))
-    AND ($4::text IS NULL OR lower(r.security_level) = lower($4::text))
-    AND ((rc.org_id = $5::text) = $6::bool)
     AND (
-        $7::text[] IS NULL
+        $3::text IS NULL
+        OR p.name ILIKE '%' || $3::text || '%'
+        OR p.package_group ILIKE '%' || $3::text || '%'
+    )
+    AND ($4::text IS NULL OR lower(rc.name) = lower($4::text))
+    AND ($5::text IS NULL OR lower(r.security_level) = lower($5::text))
+    AND ((rc.org_id = $6::text) = $7::bool)
+    AND (
+        $8::text[] IS NULL
         OR EXISTS (
             SELECT 1
             FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
-            WHERE btrim(t.token) = ANY($7::text[])
+            WHERE btrim(t.token) = ANY($8::text[])
         )
     )
 GROUP BY p.uuid, p.repository_configuration_uuid, rc.name, r.content_type, p.name, p.package_group
-ORDER BY p.package_group, p.name
-LIMIT $9 OFFSET $8
+ORDER BY
+    CASE WHEN $9::text = 'group_name' AND $10::text = 'asc' THEN p.package_group END ASC,
+    CASE WHEN $9::text = 'group_name' AND $10::text = 'asc' THEN p.name END ASC,
+    CASE WHEN $9::text = 'group_name' AND $10::text = 'desc' THEN p.package_group END DESC,
+    CASE WHEN $9::text = 'group_name' AND $10::text = 'desc' THEN p.name END DESC,
+    CASE WHEN $9::text = 'name' AND $10::text = 'asc' THEN p.name END ASC,
+    CASE WHEN $9::text = 'name' AND $10::text = 'desc' THEN p.name END DESC,
+    CASE WHEN $9::text = 'last_publication' AND $10::text = 'asc' THEN MAX(pv.published_at) END ASC,
+    CASE WHEN $9::text = 'last_publication' AND $10::text = 'desc' THEN MAX(pv.published_at) END DESC,
+    p.package_group, p.name
+LIMIT $12 OFFSET $11
 `
 
 type ListLightwellPackagesParams struct {
 	Ecosystem        *string  `json:"ecosystem"`
 	Name             *string  `json:"name"`
+	Search           *string  `json:"search"`
 	Repository       *string  `json:"repository"`
 	SecurityLevel    *string  `json:"security_level"`
 	DemoOrg          string   `json:"demo_org"`
 	IsDemo           bool     `json:"is_demo"`
 	EntitledFeatures []string `json:"entitled_features"`
+	SortColumn       string   `json:"sort_column"`
+	SortDirection    string   `json:"sort_direction"`
 	PageOffset       int32    `json:"page_offset"`
 	PageLimit        int32    `json:"page_limit"`
 }
@@ -261,6 +279,7 @@ type ListLightwellPackagesRow struct {
 	Releases                    interface{} `json:"releases"`
 	PublishedAts                interface{} `json:"published_ats"`
 	UpstreamVersions            interface{} `json:"upstream_versions"`
+	LastPublication             interface{} `json:"last_publication"`
 	TotalCount                  int64       `json:"total_count"`
 }
 
@@ -268,11 +287,14 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 	rows, err := q.db.Query(ctx, listLightwellPackages,
 		arg.Ecosystem,
 		arg.Name,
+		arg.Search,
 		arg.Repository,
 		arg.SecurityLevel,
 		arg.DemoOrg,
 		arg.IsDemo,
 		arg.EntitledFeatures,
+		arg.SortColumn,
+		arg.SortDirection,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
@@ -294,6 +316,7 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 			&i.Releases,
 			&i.PublishedAts,
 			&i.UpstreamVersions,
+			&i.LastPublication,
 			&i.TotalCount,
 		); err != nil {
 			return nil, err
