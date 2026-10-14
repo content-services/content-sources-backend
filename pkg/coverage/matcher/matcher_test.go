@@ -184,3 +184,32 @@ func TestNormalizePythonName(t *testing.T) {
 	assert.Equal(t, "foo-bar", normalizePythonName("foo-_bar"))
 	assert.Equal(t, "foo-bar", normalizePythonName("foo--bar"))
 }
+
+func TestPackageFullName(t *testing.T) {
+	for _, tc := range []struct {
+		pkg  Package
+		want string
+	}{
+		{Package{Ecosystem: "Go", Namespace: "github.com/pelletier/go-toml", Name: "v2"}, "github.com/pelletier/go-toml/v2"},
+		{Package{Ecosystem: "JavaScript", Namespace: "@angular", Name: "core"}, "@angular/core"},
+		{Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core"}, "org.springframework:spring-core"},
+		{Package{Ecosystem: EcosystemPython, Name: "flask"}, "flask"},
+	} {
+		assert.Equal(t, tc.want, tc.pkg.FullName())
+	}
+}
+
+func TestMatchCatalog_NamespacesRemainDistinct(t *testing.T) {
+	for _, ecosystem := range []string{"Go", "JavaScript"} {
+		t.Run(ecosystem, func(t *testing.T) {
+			catalog := []Package{{Ecosystem: ecosystem, Namespace: "first", Name: "v2", Version: "2.0.0"}}
+			manifest := []Package{
+				catalog[0],
+				{Ecosystem: ecosystem, Namespace: "second", Name: "v2", Version: "2.0.0"},
+			}
+			results, _ := MatchCatalog(catalog, manifest, snapshotAt)
+			assert.Equal(t, MatchStatusExact, results[0].MatchStatus)
+			assert.Equal(t, MatchStatusNone, results[1].MatchStatus)
+		})
+	}
+}

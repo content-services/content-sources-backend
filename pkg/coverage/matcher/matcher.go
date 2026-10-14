@@ -23,6 +23,17 @@ type Package struct {
 	Namespace string
 }
 
+// FullName preserves the namespace and name using the ecosystem's separator.
+func (p Package) FullName() string {
+	if p.Namespace == "" {
+		return p.Name
+	}
+	if p.Ecosystem == EcosystemJava {
+		return p.Namespace + ":" + p.Name
+	}
+	return p.Namespace + "/" + p.Name
+}
+
 type MatchResult struct {
 	Package
 	MatchStatus string
@@ -145,8 +156,7 @@ func NormalizeKey(pkg Package) string {
 	case EcosystemJava:
 		return strings.ToLower(pkg.Namespace) + ":" + strings.ToLower(pkg.Name)
 	default:
-		// TODO: include namespace when matching other ecosystems (scoped npm, Go modules).
-		return strings.ToLower(pkg.Ecosystem) + ":" + strings.ToLower(pkg.Name)
+		return strings.ToLower(pkg.Ecosystem) + ":" + strings.ToLower(pkg.FullName())
 	}
 }
 
