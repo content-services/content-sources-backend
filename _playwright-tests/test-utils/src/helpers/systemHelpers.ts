@@ -1,4 +1,5 @@
 import { expect, Page } from '@playwright/test';
+import { ensureValidToken, usesIdentityHeaderAuth } from './tokenHelpers';
 
 /** Poll timeout for system propagation to inventory and patch (3 minutes) */
 export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 180_000;
@@ -168,20 +169,33 @@ export const getTemplateSystemsCount = async (
 /**
  * Wait for host to appear in Inventory and Patch.
  * When expecting a content template, polls for the host in Patch first, then until template_uuid is set.
+ *
+ * Refreshes the browser JWT on each poll iteration so long waits (up to timeoutMs) do not fail
+ * after the token expires. No-op when the token is still valid, or when IDENTITY_HEADER auth is used.
+ *
+ * @param authStateFile - Playwright storageState filename for ensureValidToken (default: ADMIN_TOKEN.json)
  */
 export const waitInPatch = async (
   page: Page,
   hostname: string,
   expectedAttachment: boolean = true,
   timeoutMs: number = INVENTORY_PATCH_POLL_TIMEOUT_MS,
+  authStateFile: string = 'ADMIN_TOKEN.json',
 ): Promise<void> => {
   const pollOptions = {
     timeout: timeoutMs,
     intervals: [INVENTORY_PATCH_POLL_INTERVAL_MS] as [number],
   };
 
+  const withValidToken = async (check: () => Promise<number>): Promise<number> => {
+    if (!usesIdentityHeaderAuth()) {
+      await ensureValidToken(page, authStateFile);
+    }
+    return check();
+  };
+
   await expect
-    .poll(() => isInInventory(page, hostname), {
+    .poll(() => withValidToken(() => isInInventory(page, hostname)), {
       ...pollOptions,
       message: 'System did not appear in inventory in time',
     })
@@ -189,14 +203,14 @@ export const waitInPatch = async (
 
   if (expectedAttachment) {
     await expect
-      .poll(() => isSystemListedInPatch(page, hostname), {
+      .poll(() => withValidToken(() => isSystemListedInPatch(page, hostname)), {
         ...pollOptions,
         message: 'System did not appear in Patch in time',
       })
       .toBe(1);
 
     await expect
-      .poll(() => hasTemplateUuidInPatch(page, hostname), {
+      .poll(() => withValidToken(() => hasTemplateUuidInPatch(page, hostname)), {
         ...pollOptions,
         message:
           'System is in Patch but template_uuid is not set (content-template facts may not be uploaded yet)',
@@ -206,7 +220,7 @@ export const waitInPatch = async (
   }
 
   await expect
-    .poll(() => isInPatch(page, hostname, false), {
+    .poll(() => withValidToken(() => isInPatch(page, hostname, false)), {
       ...pollOptions,
       message: 'System did not appear in Patch without a template in time',
     })
