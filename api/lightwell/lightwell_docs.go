@@ -808,6 +808,9 @@ const docTemplatelightwell = `{
                 "group": {
                     "type": "string"
                 },
+                "last_updated": {
+                    "type": "string"
+                },
                 "latest_releases": {
                     "type": "array",
                     "items": {

@@ -41,6 +41,12 @@ export interface ApiLightwellPackageResponse {
     group?: string;
     /**
      * 
+     * @type {string}
+     * @memberof ApiLightwellPackageResponse
+     */
+    lastUpdated?: string;
+    /**
+     * 
      * @type {Array<ApiReleaseInfo>}
      * @memberof ApiLightwellPackageResponse
      */
@@ -90,6 +96,7 @@ export function ApiLightwellPackageResponseFromJSONTyped(json: any, ignoreDiscri
         
         'ecosystem': json['ecosystem'] == null ? undefined : json['ecosystem'],
         'group': json['group'] == null ? undefined : json['group'],
+        'lastUpdated': json['last_updated'] == null ? undefined : json['last_updated'],
         'latestReleases': json['latest_releases'] == null ? undefined : ((json['latest_releases'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'name': json['name'] == null ? undefined : json['name'],
         'repository': json['repository'] == null ? undefined : json['repository'],
@@ -111,6 +118,7 @@ export function ApiLightwellPackageResponseToJSONTyped(value?: ApiLightwellPacka
         
         'ecosystem': value['ecosystem'],
         'group': value['group'],
+        'last_updated': value['lastUpdated'],
         'latest_releases': value['latestReleases'] == null ? undefined : ((value['latestReleases'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'name': value['name'],
         'repository': value['repository'],
