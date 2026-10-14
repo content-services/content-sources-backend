@@ -157,6 +157,8 @@ export function checkTokenExpiry(token: string, bufferMinutes: number = 5): Toke
  * @param fileName - Name of the auth state file (e.g., 'ADMIN_TOKEN.json')
  */
 export async function refreshJWTToken(page: Page, fileName: string): Promise<string> {
+  // Avoid sending a pinned Authorization bearer to SSO / third-party origins during re-auth.
+  await page.context().setExtraHTTPHeaders({});
   await page.goto('/insights/content/repositories');
   await page.waitForLoadState('networkidle', { timeout: 30000 });
 
@@ -176,6 +178,10 @@ export async function refreshJWTToken(page: Page, fileName: string): Promise<str
 
   const envVarName = fileNameToEnvVar(fileName);
   process.env[envVarName] = newToken;
+
+  // test.use({ extraHTTPHeaders }) pins Authorization at context creation. Update it so
+  // page.request (and other context traffic) use the refreshed JWT instead of a stale header.
+  await page.context().setExtraHTTPHeaders({ Authorization: newToken });
 
   return newToken;
 }
