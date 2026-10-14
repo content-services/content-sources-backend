@@ -4,8 +4,10 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,6 +16,18 @@ func newTestClient(t *testing.T, server *httptest.Server, site string, events []
 	t.Helper()
 	endpointURL, err := buildEndpointURL(server.URL)
 	require.NoError(t, err)
+
+	config.LoadedConfig.Loaded = true
+	prevMap := config.Get().Clients.TermsService.EventFeatureMap
+	pairs := make([]string, 0, len(events))
+	for _, event := range events {
+		pairs = append(pairs, event+":"+event)
+	}
+	config.Get().Clients.TermsService.EventFeatureMap = strings.Join(pairs, ",")
+	t.Cleanup(func() {
+		config.Get().Clients.TermsService.EventFeatureMap = prevMap
+	})
+
 	return &termsServiceImpl{
 		client:      *server.Client(),
 		endpointURL: endpointURL,
@@ -109,7 +123,7 @@ func TestGetRequiredEvents_BothRequired(t *testing.T) {
 	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	events, err := client.GetRequiredEvents(context.Background(), "testuser")
 	require.NoError(t, err)
-	assert.Equal(t, []string{"network", "academic"}, events)
+	assert.ElementsMatch(t, []string{"network", "academic"}, events)
 }
 
 func TestGetRequiredEvents_OnlyOneRequired(t *testing.T) {

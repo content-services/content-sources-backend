@@ -119,7 +119,9 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 // those that still require acceptance by the given user.
 func (t *termsServiceImpl) GetRequiredEvents(ctx context.Context, login string) ([]string, error) {
 	var required []string
-	for _, event := range t.events {
+	log.Ctx(ctx).Debug().Msgf("GetRequiredEvents - t.events: %v", t.events)
+	log.Ctx(ctx).Debug().Msgf("GetRequiredEvents - config events: %v", config.Get().Clients.TermsService.Events())
+	for _, event := range config.Get().Clients.TermsService.Events() {
 		ok, err := t.isEventRequired(ctx, login, event)
 		if err != nil {
 			return nil, err
