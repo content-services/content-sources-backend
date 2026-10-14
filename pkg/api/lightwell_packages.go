@@ -9,6 +9,8 @@ type LightwellPackageResponse struct {
 	RepositoryUUID string        `json:"repository_uuid"`
 	Versions       []string      `json:"versions"`
 	LatestReleases []ReleaseInfo `json:"latest_releases"`
+	// LastPublication is the most recent publish time across the package's versions.
+	LastPublication string `json:"last_publication,omitempty"`
 }
 
 // LightwellPackageCollectionResponse is a paginated collection of cross-repo packages.
@@ -53,6 +55,8 @@ func (r *LightwellPackageVersionCollectionResponse) SetMetadata(meta ResponseMet
 type LightwellPackageFilterData struct {
 	Ecosystem     string `query:"ecosystem"`
 	Name          string `query:"name"`
+	Search        string `query:"search"`
+	SortBy        string `query:"sort_by"`
 	Repository    string `query:"repository"`
 	SecurityLevel string `query:"security_level"`
 	Demo          bool   `query:"demo"`

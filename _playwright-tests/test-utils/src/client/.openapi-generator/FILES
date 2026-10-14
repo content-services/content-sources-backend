@@ -25,6 +25,8 @@ models/ApiCoverageReportPackageCollectionResponse.ts
 models/ApiCoverageReportPackageResponse.ts
 models/ApiCoverageReportResponse.ts
 models/ApiCreateUploadRequest.ts
+models/ApiCveCount.ts
+models/ApiCveRange.ts
 models/ApiEcosystemCoverageSummary.ts
 models/ApiExtendedReleaseArchitecture.ts
 models/ApiExtendedReleaseStream.ts
@@ -34,6 +36,7 @@ models/ApiFetchGPGKeyResponse.ts
 models/ApiGenericAttributeValidationResponse.ts
 models/ApiLightwellAdvisoryCollectionResponse.ts
 models/ApiLightwellAdvisoryResponse.ts
+models/ApiLightwellBeaconStatusResponse.ts
 models/ApiLightwellCustomerIdsResponse.ts
 models/ApiLightwellLtwlsuptTicketIdsResponse.ts
 models/ApiLightwellPackageCollectionResponse.ts
@@ -105,6 +108,7 @@ models/ApiTemplateCollectionResponse.ts
 models/ApiTemplateRequest.ts
 models/ApiTemplateResponse.ts
 models/ApiTemplateUpdateRequest.ts
+models/ApiTermsRequiredResponse.ts
 models/ApiUUIDListRequest.ts
 models/ApiUpload.ts
 models/ApiUploadResponse.ts

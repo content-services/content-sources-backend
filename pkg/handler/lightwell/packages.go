@@ -61,6 +61,9 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Produce      json
 // @Param        ecosystem       query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
+// @Param        search          query  string  false  "Filter by package name or group/scope (substring match)"
+// @Param        sort_by         query  string  false  "Sort the results. Valid fields: group/name, name, scope/name, last_publication. Each may be suffixed with :asc or :desc (default asc)."
+// @Param        repository      query  string  false  "Filter by repository name"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
 // @Param        demo            query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit           query  int     false  "Limit of results to return"

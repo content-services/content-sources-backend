@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ApiCveCount } from './ApiCveCount';
+import {
+    ApiCveCountFromJSON,
+    ApiCveCountFromJSONTyped,
+    ApiCveCountToJSON,
+    ApiCveCountToJSONTyped,
+} from './ApiCveCount';
 import type { ApiEcosystemCoverageSummary } from './ApiEcosystemCoverageSummary';
 import {
     ApiEcosystemCoverageSummaryFromJSON,
@@ -52,6 +59,12 @@ export interface ApiCoverageReportResponse {
      */
     createdAt?: string;
     /**
+     * Count of CVEs fixed in remediated repos across covered packages, by severity
+     * @type {ApiCveCount}
+     * @memberof ApiCoverageReportResponse
+     */
+    cveSummary?: ApiCveCount;
+    /**
      * Per-ecosystem breakdown
      * @type {Array<ApiEcosystemCoverageSummary>}
      * @memberof ApiCoverageReportResponse
@@ -75,6 +88,12 @@ export interface ApiCoverageReportResponse {
      * @memberof ApiCoverageReportResponse
      */
     partialMatches?: number;
+    /**
+     * Package entries skipped because no usable identity could be extracted; absent for older reports
+     * @type {number}
+     * @memberof ApiCoverageReportResponse
+     */
+    skippedEntries?: number;
     /**
      * Coverage analysis task status
      * @type {string}
@@ -122,10 +141,12 @@ export function ApiCoverageReportResponseFromJSONTyped(json: any, ignoreDiscrimi
         'analysisTaskUuid': json['analysis_task_uuid'] == null ? undefined : json['analysis_task_uuid'],
         'completedAt': json['completed_at'] == null ? undefined : json['completed_at'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
+        'cveSummary': json['cve_summary'] == null ? undefined : ApiCveCountFromJSON(json['cve_summary']),
         'ecosystemCoverageSummary': json['ecosystem_coverage_summary'] == null ? undefined : ((json['ecosystem_coverage_summary'] as Array<any>).map(ApiEcosystemCoverageSummaryFromJSON)),
         'exactMatches': json['exact_matches'] == null ? undefined : json['exact_matches'],
         'inputFormat': json['input_format'] == null ? undefined : json['input_format'],
         'partialMatches': json['partial_matches'] == null ? undefined : json['partial_matches'],
+        'skippedEntries': json['skipped_entries'] == null ? undefined : json['skipped_entries'],
         'status': json['status'] == null ? undefined : json['status'],
         'total': json['total'] == null ? undefined : json['total'],
         'unmatched': json['unmatched'] == null ? undefined : json['unmatched'],
@@ -148,10 +169,12 @@ export function ApiCoverageReportResponseToJSONTyped(value?: ApiCoverageReportRe
         'analysis_task_uuid': value['analysisTaskUuid'],
         'completed_at': value['completedAt'],
         'created_at': value['createdAt'],
+        'cve_summary': ApiCveCountToJSON(value['cveSummary']),
         'ecosystem_coverage_summary': value['ecosystemCoverageSummary'] == null ? undefined : ((value['ecosystemCoverageSummary'] as Array<any>).map(ApiEcosystemCoverageSummaryToJSON)),
         'exact_matches': value['exactMatches'],
         'input_format': value['inputFormat'],
         'partial_matches': value['partialMatches'],
+        'skipped_entries': value['skippedEntries'],
         'status': value['status'],
         'total': value['total'],
         'unmatched': value['unmatched'],

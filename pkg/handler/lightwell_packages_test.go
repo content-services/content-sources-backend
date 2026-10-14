@@ -273,6 +273,116 @@ func (s *LightwellPackagesSuite) TestListPackagesNoTangCalls() {
 	s.pulpClient.AssertNotCalled(t, "ListMavenPackages", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
+// TestListPackagesSearchFilter verifies the search param is passed through to the
+// DAO as the broad name-or-group search option.
+func (s *LightwellPackagesSuite) TestListPackagesSearchFilter() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackages", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackagesOptions) bool {
+		return opts.Search != nil && *opts.Search == "jackson"
+	})).Return([]dao.LightwellPackageRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?search=jackson", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListPackagesSortByGroupNameDesc verifies a valid sort_by token is normalized
+// and passed through to the DAO as a column + direction.
+func (s *LightwellPackagesSuite) TestListPackagesSortByGroupNameDesc() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackages", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackagesOptions) bool {
+		return opts.SortColumn == "group_name" && opts.SortDirection == "desc"
+	})).Return([]dao.LightwellPackageRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?sort_by=group/name:desc", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListPackagesSortByScopeName verifies the npm-flavored scope/name token maps to
+// the same physical group_name ordering.
+func (s *LightwellPackagesSuite) TestListPackagesSortByScopeName() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackages", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackagesOptions) bool {
+		return opts.SortColumn == "group_name" && opts.SortDirection == "asc"
+	})).Return([]dao.LightwellPackageRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?sort_by=scope/name", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListPackagesSortByLastPublication verifies last_publication is accepted as a sort field.
+func (s *LightwellPackagesSuite) TestListPackagesSortByLastPublication() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellPackage.On("ListPackages", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellPackagesOptions) bool {
+		return opts.SortColumn == "last_publication" && opts.SortDirection == "desc"
+	})).Return([]dao.LightwellPackageRow{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/packages?sort_by=last_publication:desc", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListPackagesInvalidSortBy verifies an unknown sort_by token returns 400 with a
+// message listing the valid tokens, and the DAO is not called.
+func (s *LightwellPackagesSuite) TestListPackagesInvalidSortBy() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	path := fmt.Sprintf("%s/lightwell/packages?sort_by=bogus", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+	assert.Contains(t, string(body), "group/name")
+	assert.Contains(t, string(body), "last_publication")
+
+	s.reg.LightwellPackage.AssertNotCalled(t, "ListPackages", mock.Anything, mock.Anything)
+}
+
+// TestListPackagesInvalidSortDirection verifies an unknown direction returns 400.
+func (s *LightwellPackagesSuite) TestListPackagesInvalidSortDirection() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	path := fmt.Sprintf("%s/lightwell/packages?sort_by=name:sideways", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, code)
+
+	s.reg.LightwellPackage.AssertNotCalled(t, "ListPackages", mock.Anything, mock.Anything)
+}
+
 // --- /lightwell/package_versions tests ---
 
 func (s *LightwellPackagesSuite) TestListPackageVersions() {
