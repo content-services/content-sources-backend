@@ -498,13 +498,13 @@ wait_for_task_or_warn() {
   return 1
 }
 
-# Uploads checked-in wheel and source distributions into the remediated
-# Python repository. PyPI cannot supply our remediated versions.
-#   populate_python_remediated_repo <DOMAIN_NAME> <BASE_PATH>
-populate_python_remediated_repo() (
+# Uploads checked-in wheel and source distributions into a rebuilt Python
+# repository (remediated/predisclosure). PyPI cannot supply our rebuilt versions.
+#   populate_python_repo <DOMAIN_NAME> <BASE_PATH> <ARTIFACT_DIR>
+populate_python_repo() (
   local domain_name="$1"
   local base_path="$2"
-  local artifact_dir="${REPO_DIR}/scripts/fixtures/python_remediated"
+  local artifact_dir="$3"
 
   find_distribution_by_base_path "$domain_name" "python/pypi" "$base_path"
   if [[ -z "$RESULT" ]]; then
@@ -516,11 +516,11 @@ populate_python_remediated_repo() (
   distribution=$(pulp_api GET "$RESULT")
   repo_href=$(echo "$distribution" | jq -er '.repository')
 
-  echo "    Uploading synthetic remediated Python releases..."
+  echo "    Uploading synthetic Python releases for ${base_path}..."
   local artifact filename encoded_filename repo_version encoded_version existing response task_href
   for artifact in "$artifact_dir"/*.whl "$artifact_dir"/*.tar.gz; do
     if [[ ! -f "$artifact" ]]; then
-      echo "ERROR: Missing remediated Python fixture: ${artifact}" >&2
+      echo "ERROR: Missing Python fixture: ${artifact}" >&2
       exit 1
     fi
     filename=$(basename "$artifact")
@@ -645,7 +645,9 @@ create_repos_from_json() {
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
         if [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "python/remediated" ]]; then
-          populate_python_remediated_repo "$domain_name" "$entry_base_path"
+          populate_python_repo "$domain_name" "$entry_base_path" "${REPO_DIR}/scripts/fixtures/python_remediated"
+        elif [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "python/predisclosure" ]]; then
+          populate_python_repo "$domain_name" "$entry_base_path" "${REPO_DIR}/scripts/fixtures/python_predisclosure"
         fi
         ;;
       *)
