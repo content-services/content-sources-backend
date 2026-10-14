@@ -31,10 +31,6 @@ type termsServiceImpl struct {
 	events      []string
 }
 
-// pingProbeLogin is used only to verify the terms service is reachable with
-// the configured client certs. The required true/false result is ignored.
-const pingProbeLogin = "content-sources-ping"
-
 func NewTermsServiceClient() (TermsServiceClient, error) {
 	httpClient, err := config.GetHTTPClient(&config.TermsServiceCertUser{}, true)
 	if err != nil {
@@ -45,43 +41,12 @@ func NewTermsServiceClient() (TermsServiceClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := &termsServiceImpl{
+	return &termsServiceImpl{
 		client:      httpClient,
 		endpointURL: endpointURL,
 		site:        ts.Site,
 		events:      ts.Events(),
-	}
-	if err := client.Ping(context.Background()); err != nil {
-		log.Error().Err(err).
-			Str("endpoint", endpointURL).
-			Str("site", ts.Site).
-			Strs("events", client.events).
-			Msg("terms service ping failed")
-	} else {
-		log.Info().
-			Str("endpoint", endpointURL).
-			Str("site", ts.Site).
-			Strs("events", client.events).
-			Msg("terms service ping ok")
-	}
-	return client, nil
-}
-
-// Ping checks that the terms service is reachable with the configured certs,
-// site, and at least one event. A 200 response with body "false" still counts
-// as success; only transport or non-OK status failures are reported.
-func (t *termsServiceImpl) Ping(ctx context.Context) error {
-	if t.site == "" {
-		return fmt.Errorf("terms site is empty")
-	}
-	if len(t.events) == 0 {
-		return fmt.Errorf("no configured terms events")
-	}
-	_, err := t.isEventRequired(ctx, pingProbeLogin, t.events[0])
-	if err != nil {
-		return fmt.Errorf("terms service ping: %w", err)
-	}
-	return nil
+	}, nil
 }
 
 func buildEndpointURL(baseURL string) (string, error) {
@@ -109,12 +74,6 @@ func (t *termsServiceImpl) IsTermsAcceptanceRequired(ctx context.Context, login 
 // isEventRequired checks a single event for the given user.
 func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, event string) (bool, error) {
 	if !loginPattern.MatchString(login) {
-		log.Ctx(ctx).Debug().
-			Str("login", login).
-			Str("site", t.site).
-			Str("event", event).
-			Str("url", t.endpointURL).
-			Msg("login pattern doesn't match")
 		return false, fmt.Errorf("invalid login for terms service request")
 	}
 
@@ -123,13 +82,6 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 	// URL passed to NewRequestWithContext.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, t.endpointURL, nil)
 	if err != nil {
-		log.Ctx(ctx).Debug().
-			Str("login", login).
-			Str("site", t.site).
-			Str("event", event).
-			Str("url", t.endpointURL).
-			Str("err", err.Error()).
-			Msg("building request")
 		return false, fmt.Errorf("building isrequired request for event %q: %w", event, err)
 	}
 	params := url.Values{}
@@ -140,13 +92,6 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 
 	resp, err := t.client.Do(req)
 	if err != nil {
-		log.Ctx(ctx).Debug().
-			Str("login", login).
-			Str("site", t.site).
-			Str("event", event).
-			Str("url", t.endpointURL).
-			Str("err", err.Error()).
-			Msg("making request")
 		log.Ctx(ctx).Error().Err(err).Str("event", event).Msg("terms service isrequired call failed")
 		return false, fmt.Errorf("terms service isrequired for event %q: %w", event, err)
 	}
@@ -154,15 +99,6 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxTermsResponseBytes))
 	if err != nil {
-		log.Ctx(ctx).Debug().
-			Str("login", login).
-			Str("site", t.site).
-			Str("event", event).
-			Str("url", t.endpointURL).
-			Str("err", err.Error()).
-			Int("resp", resp.StatusCode).
-			Str("body", string(body)).
-			Msg("reading response")
 		return false, fmt.Errorf("reading isrequired response for event %q: %w", event, err)
 	}
 
@@ -177,16 +113,6 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 
 	trimmed := strings.TrimSpace(string(body))
 
-	log.Ctx(ctx).Debug().
-		Str("login", login).
-		Str("site", t.site).
-		Str("event", event).
-		Str("url", req.URL.String()).
-		Int("status", resp.StatusCode).
-		Str("body", trimmed).
-		Bool("required", strings.EqualFold(trimmed, "true")).
-		Msg("iseventrequired end")
-
 	return strings.EqualFold(trimmed, "true"), nil
 }
 
@@ -194,9 +120,7 @@ func (t *termsServiceImpl) isEventRequired(ctx context.Context, login string, ev
 // those that still require acceptance by the given user.
 func (t *termsServiceImpl) GetRequiredEvents(ctx context.Context, login string) ([]string, error) {
 	var required []string
-	log.Ctx(ctx).Debug().Msgf("GetRequiredEvents - t.events: %v", t.events)
-	log.Ctx(ctx).Debug().Msgf("GetRequiredEvents - config events: %v", config.Get().Clients.TermsService.Events())
-	for _, event := range config.Get().Clients.TermsService.Events() {
+	for _, event := range t.events {
 		ok, err := t.isEventRequired(ctx, login, event)
 		if err != nil {
 			return nil, err

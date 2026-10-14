@@ -73,7 +73,6 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 	}
 
 	events, err := h.TermsServiceClient.GetRequiredEvents(ctx, login)
-	log.Ctx(c.Request().Context()).Debug().Msgf("events after GetRequiredEvents: %v", events)
 	if err != nil {
 		// Fail open: if the terms service is unreachable, allow the user
 		// through rather than blocking access to content.
@@ -82,7 +81,6 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 	}
 
 	events = h.filterEventsByEntitlement(c, events)
-	log.Ctx(c.Request().Context()).Debug().Msgf("filtered events from filterEventsByEntitlement: %v", events)
 
 	resp := api.TermsRequiredResponse{Required: len(events) > 0}
 	if resp.Required {
@@ -98,10 +96,7 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 // user's org is entitled to, based on the event_feature_map config. If no
 // mapping is configured, all events pass through unchanged.
 func (h *LightwellTermsHandler) filterEventsByEntitlement(c echo.Context, events []string) []string {
-	log.Ctx(c.Request().Context()).Debug().Msgf("required events passed to filterEventsByEntitlement: %v", events)
-
 	eventFeatureMap := config.Get().Clients.TermsService.EventFeatures()
-	log.Ctx(c.Request().Context()).Debug().Msgf("event feature map: %v", eventFeatureMap)
 	if len(eventFeatureMap) == 0 || len(events) == 0 {
 		log.Ctx(c.Request().Context()).Debug().Msg("event feature map or events is empty")
 		return events
