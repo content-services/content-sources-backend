@@ -76,7 +76,7 @@ type MockRoadmapClient_GetAppstreams_Call struct {
 
 // GetAppstreams is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRoadmapClient_Expecter) GetAppstreams(ctx interface{}) *MockRoadmapClient_GetAppstreams_Call {
+func (_e *MockRoadmapClient_Expecter) GetAppstreams(ctx any) *MockRoadmapClient_GetAppstreams_Call {
 	return &MockRoadmapClient_GetAppstreams_Call{Call: _e.mock.On("GetAppstreams", ctx)}
 }
 
@@ -142,7 +142,7 @@ type MockRoadmapClient_GetRhelLifecycle_Call struct {
 
 // GetRhelLifecycle is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRoadmapClient_Expecter) GetRhelLifecycle(ctx interface{}) *MockRoadmapClient_GetRhelLifecycle_Call {
+func (_e *MockRoadmapClient_Expecter) GetRhelLifecycle(ctx any) *MockRoadmapClient_GetRhelLifecycle_Call {
 	return &MockRoadmapClient_GetRhelLifecycle_Call{Call: _e.mock.On("GetRhelLifecycle", ctx)}
 }
 
@@ -204,7 +204,7 @@ type MockRoadmapClient_GetRhelLifecycleForLatestMajorVersions_Call struct {
 
 // GetRhelLifecycleForLatestMajorVersions is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockRoadmapClient_Expecter) GetRhelLifecycleForLatestMajorVersions(ctx interface{}) *MockRoadmapClient_GetRhelLifecycleForLatestMajorVersions_Call {
+func (_e *MockRoadmapClient_Expecter) GetRhelLifecycleForLatestMajorVersions(ctx any) *MockRoadmapClient_GetRhelLifecycleForLatestMajorVersions_Call {
 	return &MockRoadmapClient_GetRhelLifecycleForLatestMajorVersions_Call{Call: _e.mock.On("GetRhelLifecycleForLatestMajorVersions", ctx)}
 }
 

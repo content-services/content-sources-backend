@@ -348,6 +348,17 @@
                 },
                 "type": "object"
             },
+            "api.FeatureProduct": {
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.FeatureSet": {
                 "additionalProperties": {
                     "$ref": "#/components/schemas/api.Feature"
@@ -1710,6 +1721,13 @@
                         "description": "Extended release streams available",
                         "items": {
                             "$ref": "#/components/schemas/api.ExtendedReleaseStream"
+                        },
+                        "type": "array"
+                    },
+                    "feature_products": {
+                        "description": "Features available (Red Hat products)",
+                        "items": {
+                            "$ref": "#/components/schemas/api.FeatureProduct"
                         },
                         "type": "array"
                     }
