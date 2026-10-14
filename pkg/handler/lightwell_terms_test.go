@@ -13,6 +13,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
@@ -197,7 +198,7 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_NoEntitledFeatures() {
 	assert.False(t, resp.Required, "should not require terms when org has no entitled features")
 }
 
-func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsOpen() {
+func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsClosed() {
 	t := s.T()
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
@@ -213,12 +214,13 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsOpen
 
 	code, body, err := s.serveRouter(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, http.StatusServiceUnavailable, code)
 
-	var resp api.TermsRequiredResponse
+	var resp ce.ErrorResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
-	assert.False(t, resp.Required, "should fail open when feature service is unavailable")
-	assert.Empty(t, resp.Events)
+	require.Len(t, resp.Errors, 1)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.Errors[0].Status)
+	assert.Contains(t, resp.Errors[0].Title, "Terms service unavailable")
 }
 
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
@@ -288,7 +290,7 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 	assert.False(t, resp.Required)
 }
 
-func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
+func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsClosed() {
 	t := s.T()
 
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
@@ -300,9 +302,11 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 
 	code, body, err := s.serveRouter(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, http.StatusServiceUnavailable, code)
 
-	var resp api.TermsRequiredResponse
+	var resp ce.ErrorResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
-	assert.False(t, resp.Required, "should fail open when terms service is unavailable")
+	require.Len(t, resp.Errors, 1)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.Errors[0].Status)
+	assert.Contains(t, resp.Errors[0].Title, "Terms service unavailable")
 }
