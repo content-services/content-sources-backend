@@ -16,6 +16,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// Keep search and ordering consistent with matcher.Package.FullName.
+const coverageReportPackageFullNameSQL = `(CASE WHEN COALESCE(namespace, '') = '' THEN name
+	WHEN ecosystem = 'Java' THEN namespace || ':' || name
+	ELSE namespace || '/' || name END)`
+
 type CreateCoverageReportParams struct {
 	OrgID     string
 	AccountID *string
@@ -83,7 +88,7 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 	query := d.db.WithContext(ctx).Model(&models.CoverageReportPackage{}).Where("coverage_report_uuid = ?", reportUUID)
 
 	if filterData.Search != "" {
-		query = query.Where("name ILIKE ?", "%"+filterData.Search+"%")
+		query = query.Where(coverageReportPackageFullNameSQL+" ILIKE ?", "%"+filterData.Search+"%")
 	}
 	if filterData.Ecosystem != "" {
 		ecosystems := strings.Split(filterData.Ecosystem, ",")
@@ -100,14 +105,18 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 	}
 
 	var packages []models.CoverageReportPackage
-	if err := query.Order("name ASC").Offset(pageData.Offset).Limit(pageData.Limit).Find(&packages).Error; err != nil {
+	if err := query.Order(coverageReportPackageFullNameSQL + " ASC").Order("uuid ASC").Offset(pageData.Offset).Limit(pageData.Limit).Find(&packages).Error; err != nil {
 		return api.CoverageReportPackageCollectionResponse{}, 0, d.toApiError(err)
 	}
 
 	items := make([]api.CoverageReportPackageResponse, len(packages))
 	for i, pkg := range packages {
+		identity := matcher.Package{Ecosystem: pkg.Ecosystem, Name: pkg.Name}
+		if pkg.Namespace != nil {
+			identity.Namespace = *pkg.Namespace
+		}
 		items[i] = api.CoverageReportPackageResponse{
-			Name:        pkg.Name,
+			Name:        identity.FullName(),
 			Version:     pkg.Version,
 			Ecosystem:   pkg.Ecosystem,
 			Covered:     pkg.MatchStatus != models.CoverageMatchStatusNone,

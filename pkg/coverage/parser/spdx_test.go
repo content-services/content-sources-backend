@@ -292,3 +292,20 @@ func TestParseSpdxSkippedEntries(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_SPDX2JSON_GoModuleIdentity(t *testing.T) {
+	data := `{"spdxVersion":"SPDX-2.3","packages":[
+		{"name":"github.com/pelletier/go-toml/v2","versionInfo":"v2.2.4","packageFileName":"go:usr/bin/app"},
+		{"externalRefs":[{"referenceType":"purl","referenceLocator":"pkg:golang/github.com/pelletier/go-toml/v2@v2.2.4"}]},
+		{"name":"github.com/other/module/v2","versionInfo":"v2.2.4","packageFileName":"go:usr/bin/app"},
+		{"name":"github.com/pelletier/go-toml/v3","versionInfo":"v3.0.0","packageFileName":"go:usr/bin/app"}
+	]}`
+	result, err := Parse("sbom.spdx.json", strings.NewReader(data))
+	require.NoError(t, err)
+	assert.Equal(t, 0, result.SkippedEntries)
+	assert.ElementsMatch(t, []Package{
+		{Ecosystem: EcosystemGo, Namespace: "github.com/pelletier/go-toml", Name: "v2", Version: "v2.2.4"},
+		{Ecosystem: EcosystemGo, Namespace: "github.com/other/module", Name: "v2", Version: "v2.2.4"},
+		{Ecosystem: EcosystemGo, Namespace: "github.com/pelletier/go-toml", Name: "v3", Version: "v3.0.0"},
+	}, result.Packages)
+}
