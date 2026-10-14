@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net/http"
@@ -901,6 +902,21 @@ func FeatureAccessible(ctx context.Context, feature Feature) bool {
 }
 
 func parseEventFeatureMap(raw string) map[string]string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return make(map[string]string)
+	}
+
+	// Handle JSON object format (e.g. from app-interface deployment config)
+	if strings.HasPrefix(raw, "{") {
+		parsed := make(map[string]string)
+		if err := json.Unmarshal([]byte(raw), &parsed); err == nil {
+			return parsed
+		}
+		log.Warn().Str("raw", raw).Msg("event_feature_map looks like JSON but failed to parse, falling back to key:value format")
+	}
+
+	// Simple key:value,key:value format
 	eventFeatures := make(map[string]string)
 	for _, pair := range strings.Split(raw, ",") {
 		pair = strings.TrimSpace(pair)

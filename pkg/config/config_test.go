@@ -100,6 +100,12 @@ func TestParseEventFeatureMap(t *testing.T) {
 		"academic": "lightwell-research-institutions",
 	}, parseEventFeatureMap("network:lightwell-network,academic:lightwell-research-institutions"))
 	assert.Equal(t, map[string]string{"network": "lightwell-network"}, parseEventFeatureMap("bad,network:lightwell-network"))
+
+	// Deployed stage config uses JSON format — parser must handle it
+	assert.Equal(t, map[string]string{
+		"network":  "lightwell-network",
+		"academic": "lightwell-research-institutions",
+	}, parseEventFeatureMap(`{"network":"lightwell-network","academic":"lightwell-research-institutions"}`))
 }
 
 func TestTermsServiceCertUser(t *testing.T) {
