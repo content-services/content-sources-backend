@@ -159,7 +159,7 @@ func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID stri
 
 	if config.Get().Clients.FeatureService.Server == "" || orgID == config.RedHatOrg {
 		if config.Get().Options.EntitleAll {
-			return config.Get().Options.FeatureFilter, nil
+			return append(entitledFeatures, config.Get().Options.FeatureFilter...), nil
 		}
 		return entitledFeatures, nil
 	}
