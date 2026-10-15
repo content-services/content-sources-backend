@@ -103,9 +103,10 @@ clients:
     client_key:
   pulp:
     server: https://localhost:8443
-    # Uncomment username and password to use basic auth
-    # username: admin
-    # password: password
+    # Service account (non-superuser, mimics stage/prod behavior)
+    # Use 'admin'/'password' for superuser access if needed
+    username: content-sources-svc
+    password: service-password
     storage_type: local #object or local
     download_policy: on_demand #on_demand or immediate
     guard_subject_dn: "some_dn"
