@@ -156,6 +156,11 @@ var ExtendedReleaseStreamNames = map[string]string{
 	EEUS: "Enhanced Extended Update Support (EEUS)",
 }
 
+// LightwellClearinghouseFeature is the feature-service name for the
+// Clearinghouse SKU.  Orgs entitled to this feature bypass the terms
+// service entirely — they are handled through the Clearinghouse flow.
+const LightwellClearinghouseFeature = "lightwell-clearinghouse"
+
 // Features that do not currently use a subscription check, available to all users
 var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", "", "lightwell-network-demo"}
 

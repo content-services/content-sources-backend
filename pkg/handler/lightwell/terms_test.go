@@ -39,6 +39,8 @@ func (s *LightwellTermsSuite) SetupTest() {
 func (s *LightwellTermsSuite) TestTermsRequiredRoute() {
 	t := s.T()
 
+	s.fsClient.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil)
 	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{}, nil)
 
@@ -77,6 +79,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_Required() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	t := s.T()
 
+	s.fsClient.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil)
 	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{}, nil)
 
@@ -136,6 +140,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 	t := s.T()
 
+	s.fsClient.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil)
 	s.tsClient.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string(nil), fmt.Errorf("connection refused"))
 
@@ -150,4 +156,25 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 	var resp api.TermsRequiredResponse
 	require.NoError(t, json.Unmarshal(body, &resp))
 	assert.False(t, resp.Required, "should fail open when terms service is unavailable")
+}
+
+func (s *LightwellTermsSuite) TestGetTermsRequired_ClearinghouseEntitled_SkipsTerms() {
+	t := s.T()
+
+	s.fsClient.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network", "lightwell-clearinghouse"}, nil)
+
+	path := fmt.Sprintf("%s/terms/required", LightwellAPIPath)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.False(t, resp.Required, "clearinghouse-entitled orgs should skip terms entirely")
+	assert.Empty(t, resp.Events)
+	s.tsClient.AssertNotCalled(t, "GetRequiredEvents")
 }
