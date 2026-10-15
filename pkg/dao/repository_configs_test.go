@@ -2120,6 +2120,78 @@ func (suite *RepositoryConfigSuite) TestListFilterOrigin() {
 	assert.Equal(t, int64(quantity), total)
 }
 
+func (suite *RepositoryConfigSuite) TestListLightwellIgnoreRepos() {
+	t := suite.T()
+	tx := suite.tx
+	orgID := seeds.RandomOrgId()
+
+	base := "lightwell/java/remediated"
+	demo := base + "-demo"
+	other := "lightwell/python/predisclosure"
+
+	// Three lightwell repos: a base, a repo that shares its "-demo" suffix, and an unrelated one.
+	repos := []models.Repository{
+		{Origin: config.OriginLightwell, ContentType: config.ContentTypeRpm, PublishedDistURL: "https://pulp.example.com/java/remediated"},
+		{Origin: config.OriginLightwell, ContentType: config.ContentTypeRpm, PublishedDistURL: "https://pulp.example.com/java/remediated-demo"},
+		{Origin: config.OriginLightwell, ContentType: config.ContentTypeRpm, PublishedDistURL: "https://pulp.example.com/python/predisclosure"},
+	}
+	require.NoError(t, tx.Create(&repos).Error)
+
+	repoConfigs := []models.RepositoryConfiguration{
+		{Name: base, OrgID: orgID, RepositoryUUID: repos[0].UUID},
+		{Name: demo, OrgID: orgID, RepositoryUUID: repos[1].UUID},
+		{Name: other, OrgID: orgID, RepositoryUUID: repos[2].UUID},
+	}
+	require.NoError(t, tx.Create(&repoConfigs).Error)
+
+	// A non-lightwell repo, to confirm the origin guard never removes it.
+	external, err := seeds.SeedRepositoryConfigurations(tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(t, err)
+	externalName := external[0].Name
+
+	repoConfigDao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+	suite.mockPulpForListOrFetch(2)
+	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), orgID).Return([]string{}, nil)
+
+	// The ignore list is read from config at query time, so drive it explicitly here
+	// rather than depending on the ambient config.yaml.
+	origIgnore := config.Get().Options.LightwellIgnoreRepos
+	defer func() { config.Get().Options.LightwellIgnoreRepos = origIgnore }()
+
+	// The lightwell UI lists through the generic endpoint, which does not set Origin;
+	// the ignore filter must still apply there.
+	filterData := api.FilterData{}
+
+	namesIn := func(resp api.RepositoryCollectionResponse) map[string]bool {
+		out := map[string]bool{}
+		for _, d := range resp.Data {
+			out[d.Name] = true
+		}
+		return out
+	}
+
+	// With no ignore list configured, all repos are returned.
+	config.Get().Options.LightwellIgnoreRepos = nil
+	resp, _, err := repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	require.NoError(t, err)
+	present := namesIn(resp)
+	assert.True(t, present[base])
+	assert.True(t, present[demo])
+	assert.True(t, present[other])
+	assert.True(t, present[externalName])
+
+	// The ignore list matches names exactly: ignoring the base name hides only that repo,
+	// leaving its "-demo" twin and every other repo in place.
+	config.Get().Options.LightwellIgnoreRepos = []string{base}
+	resp, _, err = repoConfigDao.List(context.Background(), orgID, api.PaginationData{Limit: -1}, filterData)
+	require.NoError(t, err)
+	present = namesIn(resp)
+	assert.False(t, present[base])
+	assert.True(t, present[demo])
+	assert.True(t, present[other])
+	assert.True(t, present[externalName])
+}
+
 func (suite *RepositoryConfigSuite) TestListFilterContentType() {
 	t := suite.T()
 	tx := suite.tx
