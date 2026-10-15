@@ -5441,6 +5441,17 @@ const docTemplate = `{
                 }
             }
         },
+        "api.FeatureProduct": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "api.FeatureSet": {
             "type": "object",
             "additionalProperties": {
@@ -6805,6 +6816,13 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ExtendedReleaseStream"
+                    }
+                },
+                "feature_products": {
+                    "description": "Features available (Red Hat products)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.FeatureProduct"
                     }
                 }
             }
