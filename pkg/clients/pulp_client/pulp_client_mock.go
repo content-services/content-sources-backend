@@ -18,10 +18,19 @@ func NewMockPulpGlobalClient(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockPulpGlobalClient {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockPulpGlobalClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -73,7 +82,7 @@ type MockPulpGlobalClient_CancelTask_Call struct {
 // CancelTask is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskHref string
-func (_e *MockPulpGlobalClient_Expecter) CancelTask(ctx interface{}, taskHref interface{}) *MockPulpGlobalClient_CancelTask_Call {
+func (_e *MockPulpGlobalClient_Expecter) CancelTask(ctx any, taskHref any) *MockPulpGlobalClient_CancelTask_Call {
 	return &MockPulpGlobalClient_CancelTask_Call{Call: _e.mock.On("CancelTask", ctx, taskHref)}
 }
 
@@ -192,7 +201,7 @@ type MockPulpGlobalClient_GetTask_Call struct {
 // GetTask is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskHref string
-func (_e *MockPulpGlobalClient_Expecter) GetTask(ctx interface{}, taskHref interface{}) *MockPulpGlobalClient_GetTask_Call {
+func (_e *MockPulpGlobalClient_Expecter) GetTask(ctx any, taskHref any) *MockPulpGlobalClient_GetTask_Call {
 	return &MockPulpGlobalClient_GetTask_Call{Call: _e.mock.On("GetTask", ctx, taskHref)}
 }
 
@@ -248,7 +257,7 @@ type MockPulpGlobalClient_Livez_Call struct {
 
 // Livez is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPulpGlobalClient_Expecter) Livez(ctx interface{}) *MockPulpGlobalClient_Livez_Call {
+func (_e *MockPulpGlobalClient_Expecter) Livez(ctx any) *MockPulpGlobalClient_Livez_Call {
 	return &MockPulpGlobalClient_Livez_Call{Call: _e.mock.On("Livez", ctx)}
 }
 
@@ -309,7 +318,7 @@ type MockPulpGlobalClient_LookupDomain_Call struct {
 // LookupDomain is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpGlobalClient_Expecter) LookupDomain(ctx interface{}, name interface{}) *MockPulpGlobalClient_LookupDomain_Call {
+func (_e *MockPulpGlobalClient_Expecter) LookupDomain(ctx any, name any) *MockPulpGlobalClient_LookupDomain_Call {
 	return &MockPulpGlobalClient_LookupDomain_Call{Call: _e.mock.On("LookupDomain", ctx, name)}
 }
 
@@ -375,7 +384,7 @@ type MockPulpGlobalClient_LookupOrCreateDomain_Call struct {
 // LookupOrCreateDomain is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpGlobalClient_Expecter) LookupOrCreateDomain(ctx interface{}, name interface{}) *MockPulpGlobalClient_LookupOrCreateDomain_Call {
+func (_e *MockPulpGlobalClient_Expecter) LookupOrCreateDomain(ctx any, name any) *MockPulpGlobalClient_LookupOrCreateDomain_Call {
 	return &MockPulpGlobalClient_LookupOrCreateDomain_Call{Call: _e.mock.On("LookupOrCreateDomain", ctx, name)}
 }
 
@@ -443,7 +452,7 @@ type MockPulpGlobalClient_PollTask_Call struct {
 // PollTask is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskHref string
-func (_e *MockPulpGlobalClient_Expecter) PollTask(ctx interface{}, taskHref interface{}) *MockPulpGlobalClient_PollTask_Call {
+func (_e *MockPulpGlobalClient_Expecter) PollTask(ctx any, taskHref any) *MockPulpGlobalClient_PollTask_Call {
 	return &MockPulpGlobalClient_PollTask_Call{Call: _e.mock.On("PollTask", ctx, taskHref)}
 }
 
@@ -502,7 +511,7 @@ type MockPulpGlobalClient_SetDomainLabel_Call struct {
 //   - pulpHref string
 //   - key string
 //   - value string
-func (_e *MockPulpGlobalClient_Expecter) SetDomainLabel(ctx interface{}, pulpHref interface{}, key interface{}, value interface{}) *MockPulpGlobalClient_SetDomainLabel_Call {
+func (_e *MockPulpGlobalClient_Expecter) SetDomainLabel(ctx any, pulpHref any, key any, value any) *MockPulpGlobalClient_SetDomainLabel_Call {
 	return &MockPulpGlobalClient_SetDomainLabel_Call{Call: _e.mock.On("SetDomainLabel", ctx, pulpHref, key, value)}
 }
 
@@ -569,7 +578,7 @@ type MockPulpGlobalClient_UpdateDomainIfNeeded_Call struct {
 // UpdateDomainIfNeeded is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpGlobalClient_Expecter) UpdateDomainIfNeeded(ctx interface{}, name interface{}) *MockPulpGlobalClient_UpdateDomainIfNeeded_Call {
+func (_e *MockPulpGlobalClient_Expecter) UpdateDomainIfNeeded(ctx any, name any) *MockPulpGlobalClient_UpdateDomainIfNeeded_Call {
 	return &MockPulpGlobalClient_UpdateDomainIfNeeded_Call{Call: _e.mock.On("UpdateDomainIfNeeded", ctx, name)}
 }
 
@@ -607,10 +616,19 @@ func NewMockPulpClient(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockPulpClient {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockPulpClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -662,7 +680,7 @@ type MockPulpClient_CancelTask_Call struct {
 // CancelTask is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskHref string
-func (_e *MockPulpClient_Expecter) CancelTask(ctx interface{}, taskHref interface{}) *MockPulpClient_CancelTask_Call {
+func (_e *MockPulpClient_Expecter) CancelTask(ctx any, taskHref any) *MockPulpClient_CancelTask_Call {
 	return &MockPulpClient_CancelTask_Call{Call: _e.mock.On("CancelTask", ctx, taskHref)}
 }
 
@@ -728,7 +746,7 @@ type MockPulpClient_CreateOrUpdateFeatureGuard_Call struct {
 // CreateOrUpdateFeatureGuard is a helper method to define mock.On call
 //   - ctx context.Context
 //   - featureName string
-func (_e *MockPulpClient_Expecter) CreateOrUpdateFeatureGuard(ctx interface{}, featureName interface{}) *MockPulpClient_CreateOrUpdateFeatureGuard_Call {
+func (_e *MockPulpClient_Expecter) CreateOrUpdateFeatureGuard(ctx any, featureName any) *MockPulpClient_CreateOrUpdateFeatureGuard_Call {
 	return &MockPulpClient_CreateOrUpdateFeatureGuard_Call{Call: _e.mock.On("CreateOrUpdateFeatureGuard", ctx, featureName)}
 }
 
@@ -794,7 +812,7 @@ type MockPulpClient_CreateOrUpdateGuardsForOrg_Call struct {
 // CreateOrUpdateGuardsForOrg is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgId string
-func (_e *MockPulpClient_Expecter) CreateOrUpdateGuardsForOrg(ctx interface{}, orgId interface{}) *MockPulpClient_CreateOrUpdateGuardsForOrg_Call {
+func (_e *MockPulpClient_Expecter) CreateOrUpdateGuardsForOrg(ctx any, orgId any) *MockPulpClient_CreateOrUpdateGuardsForOrg_Call {
 	return &MockPulpClient_CreateOrUpdateGuardsForOrg_Call{Call: _e.mock.On("CreateOrUpdateGuardsForOrg", ctx, orgId)}
 }
 
@@ -860,7 +878,7 @@ type MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call struct {
 // CreateOrUpdateGuardsForRhelRepo is a helper method to define mock.On call
 //   - ctx context.Context
 //   - featureName string
-func (_e *MockPulpClient_Expecter) CreateOrUpdateGuardsForRhelRepo(ctx interface{}, featureName interface{}) *MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call {
+func (_e *MockPulpClient_Expecter) CreateOrUpdateGuardsForRhelRepo(ctx any, featureName any) *MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call {
 	return &MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call{Call: _e.mock.On("CreateOrUpdateGuardsForRhelRepo", ctx, featureName)}
 }
 
@@ -888,78 +906,6 @@ func (_c *MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call) Return(s string, 
 }
 
 func (_c *MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call) RunAndReturn(run func(ctx context.Context, featureName string) (string, error)) *MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// CreatePackage provides a mock function for the type MockPulpClient
-func (_mock *MockPulpClient) CreatePackage(ctx context.Context, artifactHref *string, uploadHref *string) (string, error) {
-	ret := _mock.Called(ctx, artifactHref, uploadHref)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreatePackage")
-	}
-
-	var r0 string
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *string, *string) (string, error)); ok {
-		return returnFunc(ctx, artifactHref, uploadHref)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *string, *string) string); ok {
-		r0 = returnFunc(ctx, artifactHref, uploadHref)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *string, *string) error); ok {
-		r1 = returnFunc(ctx, artifactHref, uploadHref)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockPulpClient_CreatePackage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreatePackage'
-type MockPulpClient_CreatePackage_Call struct {
-	*mock.Call
-}
-
-// CreatePackage is a helper method to define mock.On call
-//   - ctx context.Context
-//   - artifactHref *string
-//   - uploadHref *string
-func (_e *MockPulpClient_Expecter) CreatePackage(ctx interface{}, artifactHref interface{}, uploadHref interface{}) *MockPulpClient_CreatePackage_Call {
-	return &MockPulpClient_CreatePackage_Call{Call: _e.mock.On("CreatePackage", ctx, artifactHref, uploadHref)}
-}
-
-func (_c *MockPulpClient_CreatePackage_Call) Run(run func(ctx context.Context, artifactHref *string, uploadHref *string)) *MockPulpClient_CreatePackage_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 *string
-		if args[1] != nil {
-			arg1 = args[1].(*string)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *MockPulpClient_CreatePackage_Call) Return(s string, err error) *MockPulpClient_CreatePackage_Call {
-	_c.Call.Return(s, err)
-	return _c
-}
-
-func (_c *MockPulpClient_CreatePackage_Call) RunAndReturn(run func(ctx context.Context, artifactHref *string, uploadHref *string) (string, error)) *MockPulpClient_CreatePackage_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1003,7 +949,7 @@ type MockPulpClient_CreateRpmDistribution_Call struct {
 //   - name string
 //   - basePath string
 //   - contentGuardHref *string
-func (_e *MockPulpClient_Expecter) CreateRpmDistribution(ctx interface{}, publicationHref interface{}, name interface{}, basePath interface{}, contentGuardHref interface{}) *MockPulpClient_CreateRpmDistribution_Call {
+func (_e *MockPulpClient_Expecter) CreateRpmDistribution(ctx any, publicationHref any, name any, basePath any, contentGuardHref any) *MockPulpClient_CreateRpmDistribution_Call {
 	return &MockPulpClient_CreateRpmDistribution_Call{Call: _e.mock.On("CreateRpmDistribution", ctx, publicationHref, name, basePath, contentGuardHref)}
 }
 
@@ -1086,7 +1032,7 @@ type MockPulpClient_CreateRpmPublication_Call struct {
 // CreateRpmPublication is a helper method to define mock.On call
 //   - ctx context.Context
 //   - versionHref string
-func (_e *MockPulpClient_Expecter) CreateRpmPublication(ctx interface{}, versionHref interface{}) *MockPulpClient_CreateRpmPublication_Call {
+func (_e *MockPulpClient_Expecter) CreateRpmPublication(ctx any, versionHref any) *MockPulpClient_CreateRpmPublication_Call {
 	return &MockPulpClient_CreateRpmPublication_Call{Call: _e.mock.On("CreateRpmPublication", ctx, versionHref)}
 }
 
@@ -1158,7 +1104,7 @@ type MockPulpClient_CreateRpmRemote_Call struct {
 //   - clientCert *string
 //   - clientKey *string
 //   - caCert *string
-func (_e *MockPulpClient_Expecter) CreateRpmRemote(ctx interface{}, name interface{}, url interface{}, clientCert interface{}, clientKey interface{}, caCert interface{}) *MockPulpClient_CreateRpmRemote_Call {
+func (_e *MockPulpClient_Expecter) CreateRpmRemote(ctx any, name any, url any, clientCert any, clientKey any, caCert any) *MockPulpClient_CreateRpmRemote_Call {
 	return &MockPulpClient_CreateRpmRemote_Call{Call: _e.mock.On("CreateRpmRemote", ctx, name, url, clientCert, clientKey, caCert)}
 }
 
@@ -1247,7 +1193,7 @@ type MockPulpClient_CreateRpmRepository_Call struct {
 //   - ctx context.Context
 //   - uuid string
 //   - rpmRemotePulpRef *string
-func (_e *MockPulpClient_Expecter) CreateRpmRepository(ctx interface{}, uuid interface{}, rpmRemotePulpRef interface{}) *MockPulpClient_CreateRpmRepository_Call {
+func (_e *MockPulpClient_Expecter) CreateRpmRepository(ctx any, uuid any, rpmRemotePulpRef any) *MockPulpClient_CreateRpmRepository_Call {
 	return &MockPulpClient_CreateRpmRepository_Call{Call: _e.mock.On("CreateRpmRepository", ctx, uuid, rpmRemotePulpRef)}
 }
 
@@ -1326,7 +1272,7 @@ type MockPulpClient_CreateUpload_Call struct {
 // CreateUpload is a helper method to define mock.On call
 //   - ctx context.Context
 //   - size int64
-func (_e *MockPulpClient_Expecter) CreateUpload(ctx interface{}, size interface{}) *MockPulpClient_CreateUpload_Call {
+func (_e *MockPulpClient_Expecter) CreateUpload(ctx any, size any) *MockPulpClient_CreateUpload_Call {
 	return &MockPulpClient_CreateUpload_Call{Call: _e.mock.On("CreateUpload", ctx, size)}
 }
 
@@ -1394,7 +1340,7 @@ type MockPulpClient_DeleteRpmDistribution_Call struct {
 // DeleteRpmDistribution is a helper method to define mock.On call
 //   - ctx context.Context
 //   - rpmDistributionHref string
-func (_e *MockPulpClient_Expecter) DeleteRpmDistribution(ctx interface{}, rpmDistributionHref interface{}) *MockPulpClient_DeleteRpmDistribution_Call {
+func (_e *MockPulpClient_Expecter) DeleteRpmDistribution(ctx any, rpmDistributionHref any) *MockPulpClient_DeleteRpmDistribution_Call {
 	return &MockPulpClient_DeleteRpmDistribution_Call{Call: _e.mock.On("DeleteRpmDistribution", ctx, rpmDistributionHref)}
 }
 
@@ -1460,7 +1406,7 @@ type MockPulpClient_DeleteRpmRemote_Call struct {
 // DeleteRpmRemote is a helper method to define mock.On call
 //   - ctx context.Context
 //   - pulpHref string
-func (_e *MockPulpClient_Expecter) DeleteRpmRemote(ctx interface{}, pulpHref interface{}) *MockPulpClient_DeleteRpmRemote_Call {
+func (_e *MockPulpClient_Expecter) DeleteRpmRemote(ctx any, pulpHref any) *MockPulpClient_DeleteRpmRemote_Call {
 	return &MockPulpClient_DeleteRpmRemote_Call{Call: _e.mock.On("DeleteRpmRemote", ctx, pulpHref)}
 }
 
@@ -1526,7 +1472,7 @@ type MockPulpClient_DeleteRpmRepository_Call struct {
 // DeleteRpmRepository is a helper method to define mock.On call
 //   - ctx context.Context
 //   - rpmRepositoryHref string
-func (_e *MockPulpClient_Expecter) DeleteRpmRepository(ctx interface{}, rpmRepositoryHref interface{}) *MockPulpClient_DeleteRpmRepository_Call {
+func (_e *MockPulpClient_Expecter) DeleteRpmRepository(ctx any, rpmRepositoryHref any) *MockPulpClient_DeleteRpmRepository_Call {
 	return &MockPulpClient_DeleteRpmRepository_Call{Call: _e.mock.On("DeleteRpmRepository", ctx, rpmRepositoryHref)}
 }
 
@@ -1594,7 +1540,7 @@ type MockPulpClient_DeleteRpmRepositoryVersion_Call struct {
 // DeleteRpmRepositoryVersion is a helper method to define mock.On call
 //   - ctx context.Context
 //   - href string
-func (_e *MockPulpClient_Expecter) DeleteRpmRepositoryVersion(ctx interface{}, href interface{}) *MockPulpClient_DeleteRpmRepositoryVersion_Call {
+func (_e *MockPulpClient_Expecter) DeleteRpmRepositoryVersion(ctx any, href any) *MockPulpClient_DeleteRpmRepositoryVersion_Call {
 	return &MockPulpClient_DeleteRpmRepositoryVersion_Call{Call: _e.mock.On("DeleteRpmRepositoryVersion", ctx, href)}
 }
 
@@ -1660,7 +1606,7 @@ type MockPulpClient_DeleteUpload_Call struct {
 // DeleteUpload is a helper method to define mock.On call
 //   - ctx context.Context
 //   - uploadHref string
-func (_e *MockPulpClient_Expecter) DeleteUpload(ctx interface{}, uploadHref interface{}) *MockPulpClient_DeleteUpload_Call {
+func (_e *MockPulpClient_Expecter) DeleteUpload(ctx any, uploadHref any) *MockPulpClient_DeleteUpload_Call {
 	return &MockPulpClient_DeleteUpload_Call{Call: _e.mock.On("DeleteUpload", ctx, uploadHref)}
 }
 
@@ -1728,7 +1674,7 @@ type MockPulpClient_FindDistributionByPath_Call struct {
 // FindDistributionByPath is a helper method to define mock.On call
 //   - ctx context.Context
 //   - path string
-func (_e *MockPulpClient_Expecter) FindDistributionByPath(ctx interface{}, path interface{}) *MockPulpClient_FindDistributionByPath_Call {
+func (_e *MockPulpClient_Expecter) FindDistributionByPath(ctx any, path any) *MockPulpClient_FindDistributionByPath_Call {
 	return &MockPulpClient_FindDistributionByPath_Call{Call: _e.mock.On("FindDistributionByPath", ctx, path)}
 }
 
@@ -1796,7 +1742,7 @@ type MockPulpClient_FindGenericDistributionByBasePath_Call struct {
 // FindGenericDistributionByBasePath is a helper method to define mock.On call
 //   - ctx context.Context
 //   - basePath string
-func (_e *MockPulpClient_Expecter) FindGenericDistributionByBasePath(ctx interface{}, basePath interface{}) *MockPulpClient_FindGenericDistributionByBasePath_Call {
+func (_e *MockPulpClient_Expecter) FindGenericDistributionByBasePath(ctx any, basePath any) *MockPulpClient_FindGenericDistributionByBasePath_Call {
 	return &MockPulpClient_FindGenericDistributionByBasePath_Call{Call: _e.mock.On("FindGenericDistributionByBasePath", ctx, basePath)}
 }
 
@@ -1864,7 +1810,7 @@ type MockPulpClient_FindGenericRepositoryByName_Call struct {
 // FindGenericRepositoryByName is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpClient_Expecter) FindGenericRepositoryByName(ctx interface{}, name interface{}) *MockPulpClient_FindGenericRepositoryByName_Call {
+func (_e *MockPulpClient_Expecter) FindGenericRepositoryByName(ctx any, name any) *MockPulpClient_FindGenericRepositoryByName_Call {
 	return &MockPulpClient_FindGenericRepositoryByName_Call{Call: _e.mock.On("FindGenericRepositoryByName", ctx, name)}
 }
 
@@ -1932,7 +1878,7 @@ type MockPulpClient_FindRpmPublicationByVersion_Call struct {
 // FindRpmPublicationByVersion is a helper method to define mock.On call
 //   - ctx context.Context
 //   - versionHref string
-func (_e *MockPulpClient_Expecter) FindRpmPublicationByVersion(ctx interface{}, versionHref interface{}) *MockPulpClient_FindRpmPublicationByVersion_Call {
+func (_e *MockPulpClient_Expecter) FindRpmPublicationByVersion(ctx any, versionHref any) *MockPulpClient_FindRpmPublicationByVersion_Call {
 	return &MockPulpClient_FindRpmPublicationByVersion_Call{Call: _e.mock.On("FindRpmPublicationByVersion", ctx, versionHref)}
 }
 
@@ -2007,7 +1953,7 @@ type MockPulpClient_FinishUpload_Call struct {
 //   - ctx context.Context
 //   - uploadHref string
 //   - sha256 string
-func (_e *MockPulpClient_Expecter) FinishUpload(ctx interface{}, uploadHref interface{}, sha256 interface{}) *MockPulpClient_FinishUpload_Call {
+func (_e *MockPulpClient_Expecter) FinishUpload(ctx any, uploadHref any, sha256 any) *MockPulpClient_FinishUpload_Call {
 	return &MockPulpClient_FinishUpload_Call{Call: _e.mock.On("FinishUpload", ctx, uploadHref, sha256)}
 }
 
@@ -2177,7 +2123,7 @@ type MockPulpClient_GetLatestVersionHref_Call struct {
 // GetLatestVersionHref is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoHref string
-func (_e *MockPulpClient_Expecter) GetLatestVersionHref(ctx interface{}, repoHref interface{}) *MockPulpClient_GetLatestVersionHref_Call {
+func (_e *MockPulpClient_Expecter) GetLatestVersionHref(ctx any, repoHref any) *MockPulpClient_GetLatestVersionHref_Call {
 	return &MockPulpClient_GetLatestVersionHref_Call{Call: _e.mock.On("GetLatestVersionHref", ctx, repoHref)}
 }
 
@@ -2243,7 +2189,7 @@ type MockPulpClient_GetMavenRepositoryMetrics_Call struct {
 // GetMavenRepositoryMetrics is a helper method to define mock.On call
 //   - ctx context.Context
 //   - repoHref string
-func (_e *MockPulpClient_Expecter) GetMavenRepositoryMetrics(ctx interface{}, repoHref interface{}) *MockPulpClient_GetMavenRepositoryMetrics_Call {
+func (_e *MockPulpClient_Expecter) GetMavenRepositoryMetrics(ctx any, repoHref any) *MockPulpClient_GetMavenRepositoryMetrics_Call {
 	return &MockPulpClient_GetMavenRepositoryMetrics_Call{Call: _e.mock.On("GetMavenRepositoryMetrics", ctx, repoHref)}
 }
 
@@ -2311,7 +2257,7 @@ type MockPulpClient_GetRpmRemoteByName_Call struct {
 // GetRpmRemoteByName is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpClient_Expecter) GetRpmRemoteByName(ctx interface{}, name interface{}) *MockPulpClient_GetRpmRemoteByName_Call {
+func (_e *MockPulpClient_Expecter) GetRpmRemoteByName(ctx any, name any) *MockPulpClient_GetRpmRemoteByName_Call {
 	return &MockPulpClient_GetRpmRemoteByName_Call{Call: _e.mock.On("GetRpmRemoteByName", ctx, name)}
 }
 
@@ -2378,7 +2324,7 @@ type MockPulpClient_GetRpmRemoteList_Call struct {
 
 // GetRpmRemoteList is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPulpClient_Expecter) GetRpmRemoteList(ctx interface{}) *MockPulpClient_GetRpmRemoteList_Call {
+func (_e *MockPulpClient_Expecter) GetRpmRemoteList(ctx any) *MockPulpClient_GetRpmRemoteList_Call {
 	return &MockPulpClient_GetRpmRemoteList_Call{Call: _e.mock.On("GetRpmRemoteList", ctx)}
 }
 
@@ -2441,7 +2387,7 @@ type MockPulpClient_GetRpmRepositoryByName_Call struct {
 // GetRpmRepositoryByName is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpClient_Expecter) GetRpmRepositoryByName(ctx interface{}, name interface{}) *MockPulpClient_GetRpmRepositoryByName_Call {
+func (_e *MockPulpClient_Expecter) GetRpmRepositoryByName(ctx any, name any) *MockPulpClient_GetRpmRepositoryByName_Call {
 	return &MockPulpClient_GetRpmRepositoryByName_Call{Call: _e.mock.On("GetRpmRepositoryByName", ctx, name)}
 }
 
@@ -2509,7 +2455,7 @@ type MockPulpClient_GetRpmRepositoryByRemote_Call struct {
 // GetRpmRepositoryByRemote is a helper method to define mock.On call
 //   - ctx context.Context
 //   - pulpHref string
-func (_e *MockPulpClient_Expecter) GetRpmRepositoryByRemote(ctx interface{}, pulpHref interface{}) *MockPulpClient_GetRpmRepositoryByRemote_Call {
+func (_e *MockPulpClient_Expecter) GetRpmRepositoryByRemote(ctx any, pulpHref any) *MockPulpClient_GetRpmRepositoryByRemote_Call {
 	return &MockPulpClient_GetRpmRepositoryByRemote_Call{Call: _e.mock.On("GetRpmRepositoryByRemote", ctx, pulpHref)}
 }
 
@@ -2577,7 +2523,7 @@ type MockPulpClient_GetRpmRepositoryVersion_Call struct {
 // GetRpmRepositoryVersion is a helper method to define mock.On call
 //   - ctx context.Context
 //   - href string
-func (_e *MockPulpClient_Expecter) GetRpmRepositoryVersion(ctx interface{}, href interface{}) *MockPulpClient_GetRpmRepositoryVersion_Call {
+func (_e *MockPulpClient_Expecter) GetRpmRepositoryVersion(ctx any, href any) *MockPulpClient_GetRpmRepositoryVersion_Call {
 	return &MockPulpClient_GetRpmRepositoryVersion_Call{Call: _e.mock.On("GetRpmRepositoryVersion", ctx, href)}
 }
 
@@ -2643,7 +2589,7 @@ type MockPulpClient_GetTask_Call struct {
 // GetTask is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskHref string
-func (_e *MockPulpClient_Expecter) GetTask(ctx interface{}, taskHref interface{}) *MockPulpClient_GetTask_Call {
+func (_e *MockPulpClient_Expecter) GetTask(ctx any, taskHref any) *MockPulpClient_GetTask_Call {
 	return &MockPulpClient_GetTask_Call{Call: _e.mock.On("GetTask", ctx, taskHref)}
 }
 
@@ -2710,7 +2656,7 @@ type MockPulpClient_ListDistributions_Call struct {
 
 // ListDistributions is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPulpClient_Expecter) ListDistributions(ctx interface{}) *MockPulpClient_ListDistributions_Call {
+func (_e *MockPulpClient_Expecter) ListDistributions(ctx any) *MockPulpClient_ListDistributions_Call {
 	return &MockPulpClient_ListDistributions_Call{Call: _e.mock.On("ListDistributions", ctx)}
 }
 
@@ -2733,6 +2679,72 @@ func (_c *MockPulpClient_ListDistributions_Call) Return(rpmRpmDistributionRespon
 }
 
 func (_c *MockPulpClient_ListDistributions_Call) RunAndReturn(run func(ctx context.Context) (*[]zest.RpmRpmDistributionResponse, error)) *MockPulpClient_ListDistributions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListMavenFlatPackages provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListMavenFlatPackages(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error) {
+	ret := _mock.Called(ctx, repoHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListMavenFlatPackages")
+	}
+
+	var r0 zest.PaginatedMavenRepositoryFlatPackageResponseList
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)); ok {
+		return returnFunc(ctx, repoHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) zest.PaginatedMavenRepositoryFlatPackageResponseList); ok {
+		r0 = returnFunc(ctx, repoHref)
+	} else {
+		r0 = ret.Get(0).(zest.PaginatedMavenRepositoryFlatPackageResponseList)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, repoHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ListMavenFlatPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListMavenFlatPackages'
+type MockPulpClient_ListMavenFlatPackages_Call struct {
+	*mock.Call
+}
+
+// ListMavenFlatPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoHref string
+func (_e *MockPulpClient_Expecter) ListMavenFlatPackages(ctx any, repoHref any) *MockPulpClient_ListMavenFlatPackages_Call {
+	return &MockPulpClient_ListMavenFlatPackages_Call{Call: _e.mock.On("ListMavenFlatPackages", ctx, repoHref)}
+}
+
+func (_c *MockPulpClient_ListMavenFlatPackages_Call) Run(run func(ctx context.Context, repoHref string)) *MockPulpClient_ListMavenFlatPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListMavenFlatPackages_Call) Return(paginatedMavenRepositoryFlatPackageResponseList zest.PaginatedMavenRepositoryFlatPackageResponseList, err error) *MockPulpClient_ListMavenFlatPackages_Call {
+	_c.Call.Return(paginatedMavenRepositoryFlatPackageResponseList, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListMavenFlatPackages_Call) RunAndReturn(run func(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)) *MockPulpClient_ListMavenFlatPackages_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2776,7 +2788,7 @@ type MockPulpClient_ListMavenPackageContent_Call struct {
 //   - groupId string
 //   - artifactId string
 //   - baseVersion string
-func (_e *MockPulpClient_Expecter) ListMavenPackageContent(ctx interface{}, repoHref interface{}, groupId interface{}, artifactId interface{}, baseVersion interface{}) *MockPulpClient_ListMavenPackageContent_Call {
+func (_e *MockPulpClient_Expecter) ListMavenPackageContent(ctx any, repoHref any, groupId any, artifactId any, baseVersion any) *MockPulpClient_ListMavenPackageContent_Call {
 	return &MockPulpClient_ListMavenPackageContent_Call{Call: _e.mock.On("ListMavenPackageContent", ctx, repoHref, groupId, artifactId, baseVersion)}
 }
 
@@ -2860,7 +2872,7 @@ type MockPulpClient_ListMavenPackages_Call struct {
 //   - search string
 //   - limit int
 //   - offset int
-func (_e *MockPulpClient_Expecter) ListMavenPackages(ctx interface{}, repoHref interface{}, search interface{}, limit interface{}, offset interface{}) *MockPulpClient_ListMavenPackages_Call {
+func (_e *MockPulpClient_Expecter) ListMavenPackages(ctx any, repoHref any, search any, limit any, offset any) *MockPulpClient_ListMavenPackages_Call {
 	return &MockPulpClient_ListMavenPackages_Call{Call: _e.mock.On("ListMavenPackages", ctx, repoHref, search, limit, offset)}
 }
 
@@ -2907,69 +2919,6 @@ func (_c *MockPulpClient_ListMavenPackages_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
-// ListMavenFlatPackages provides a mock function for the type MockPulpClient
-func (_mock *MockPulpClient) ListMavenFlatPackages(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error) {
-	ret := _mock.Called(ctx, repoHref)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListMavenFlatPackages")
-	}
-
-	var r0 zest.PaginatedMavenRepositoryFlatPackageResponseList
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)); ok {
-		return returnFunc(ctx, repoHref)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) zest.PaginatedMavenRepositoryFlatPackageResponseList); ok {
-		r0 = returnFunc(ctx, repoHref)
-	} else {
-		r0 = ret.Get(0).(zest.PaginatedMavenRepositoryFlatPackageResponseList)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, repoHref)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockPulpClient_ListMavenFlatPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListMavenFlatPackages'
-type MockPulpClient_ListMavenFlatPackages_Call struct {
-	*mock.Call
-}
-
-// ListMavenFlatPackages is a helper method to define mock.On call
-//   - ctx context.Context
-//   - repoHref string
-func (_e *MockPulpClient_Expecter) ListMavenFlatPackages(ctx interface{}, repoHref interface{}) *MockPulpClient_ListMavenFlatPackages_Call {
-	return &MockPulpClient_ListMavenFlatPackages_Call{Call: _e.mock.On("ListMavenFlatPackages", ctx, repoHref)}
-}
-
-func (_c *MockPulpClient_ListMavenFlatPackages_Call) Run(run func(ctx context.Context, repoHref string)) *MockPulpClient_ListMavenFlatPackages_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(arg0, arg1)
-	})
-	return _c
-}
-
-func (_c *MockPulpClient_ListMavenFlatPackages_Call) Return(paginatedMavenRepositoryFlatPackageListResponse zest.PaginatedMavenRepositoryFlatPackageResponseList, err error) *MockPulpClient_ListMavenFlatPackages_Call {
-	_c.Call.Return(paginatedMavenRepositoryFlatPackageListResponse, err)
-	return _c
-}
-
-func (_c *MockPulpClient_ListMavenFlatPackages_Call) RunAndReturn(run func(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)) *MockPulpClient_ListMavenFlatPackages_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ListVersionAllPackages provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) ListVersionAllPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
 	ret := _mock.Called(ctx, versionHref)
@@ -3006,7 +2955,7 @@ type MockPulpClient_ListVersionAllPackages_Call struct {
 // ListVersionAllPackages is a helper method to define mock.On call
 //   - ctx context.Context
 //   - versionHref string
-func (_e *MockPulpClient_Expecter) ListVersionAllPackages(ctx interface{}, versionHref interface{}) *MockPulpClient_ListVersionAllPackages_Call {
+func (_e *MockPulpClient_Expecter) ListVersionAllPackages(ctx any, versionHref any) *MockPulpClient_ListVersionAllPackages_Call {
 	return &MockPulpClient_ListVersionAllPackages_Call{Call: _e.mock.On("ListVersionAllPackages", ctx, versionHref)}
 }
 
@@ -3084,7 +3033,7 @@ type MockPulpClient_ListVersionPackagesWithFilters_Call struct {
 //   - limit int32
 //   - search string
 //   - ordering []string
-func (_e *MockPulpClient_Expecter) ListVersionPackagesWithFilters(ctx interface{}, versionHref interface{}, offset interface{}, limit interface{}, search interface{}, ordering interface{}) *MockPulpClient_ListVersionPackagesWithFilters_Call {
+func (_e *MockPulpClient_Expecter) ListVersionPackagesWithFilters(ctx any, versionHref any, offset any, limit any, search any, ordering any) *MockPulpClient_ListVersionPackagesWithFilters_Call {
 	return &MockPulpClient_ListVersionPackagesWithFilters_Call{Call: _e.mock.On("ListVersionPackagesWithFilters", ctx, versionHref, offset, limit, search, ordering)}
 }
 
@@ -3160,7 +3109,7 @@ type MockPulpClient_Livez_Call struct {
 
 // Livez is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPulpClient_Expecter) Livez(ctx interface{}) *MockPulpClient_Livez_Call {
+func (_e *MockPulpClient_Expecter) Livez(ctx any) *MockPulpClient_Livez_Call {
 	return &MockPulpClient_Livez_Call{Call: _e.mock.On("Livez", ctx)}
 }
 
@@ -3223,7 +3172,7 @@ type MockPulpClient_LookupArtifact_Call struct {
 // LookupArtifact is a helper method to define mock.On call
 //   - ctx context.Context
 //   - sha256sum string
-func (_e *MockPulpClient_Expecter) LookupArtifact(ctx interface{}, sha256sum interface{}) *MockPulpClient_LookupArtifact_Call {
+func (_e *MockPulpClient_Expecter) LookupArtifact(ctx any, sha256sum any) *MockPulpClient_LookupArtifact_Call {
 	return &MockPulpClient_LookupArtifact_Call{Call: _e.mock.On("LookupArtifact", ctx, sha256sum)}
 }
 
@@ -3289,7 +3238,7 @@ type MockPulpClient_LookupDomain_Call struct {
 // LookupDomain is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpClient_Expecter) LookupDomain(ctx interface{}, name interface{}) *MockPulpClient_LookupDomain_Call {
+func (_e *MockPulpClient_Expecter) LookupDomain(ctx any, name any) *MockPulpClient_LookupDomain_Call {
 	return &MockPulpClient_LookupDomain_Call{Call: _e.mock.On("LookupDomain", ctx, name)}
 }
 
@@ -3355,7 +3304,7 @@ type MockPulpClient_LookupOrCreateDomain_Call struct {
 // LookupOrCreateDomain is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpClient_Expecter) LookupOrCreateDomain(ctx interface{}, name interface{}) *MockPulpClient_LookupOrCreateDomain_Call {
+func (_e *MockPulpClient_Expecter) LookupOrCreateDomain(ctx any, name any) *MockPulpClient_LookupOrCreateDomain_Call {
 	return &MockPulpClient_LookupOrCreateDomain_Call{Call: _e.mock.On("LookupOrCreateDomain", ctx, name)}
 }
 
@@ -3423,7 +3372,7 @@ type MockPulpClient_LookupPackage_Call struct {
 // LookupPackage is a helper method to define mock.On call
 //   - ctx context.Context
 //   - sha256sum string
-func (_e *MockPulpClient_Expecter) LookupPackage(ctx interface{}, sha256sum interface{}) *MockPulpClient_LookupPackage_Call {
+func (_e *MockPulpClient_Expecter) LookupPackage(ctx any, sha256sum any) *MockPulpClient_LookupPackage_Call {
 	return &MockPulpClient_LookupPackage_Call{Call: _e.mock.On("LookupPackage", ctx, sha256sum)}
 }
 
@@ -3491,7 +3440,7 @@ type MockPulpClient_ModifyRpmRepositoryContent_Call struct {
 //   - repoHref string
 //   - contentHrefsToAdd []string
 //   - contentHrefsToRemove []string
-func (_e *MockPulpClient_Expecter) ModifyRpmRepositoryContent(ctx interface{}, repoHref interface{}, contentHrefsToAdd interface{}, contentHrefsToRemove interface{}) *MockPulpClient_ModifyRpmRepositoryContent_Call {
+func (_e *MockPulpClient_Expecter) ModifyRpmRepositoryContent(ctx any, repoHref any, contentHrefsToAdd any, contentHrefsToRemove any) *MockPulpClient_ModifyRpmRepositoryContent_Call {
 	return &MockPulpClient_ModifyRpmRepositoryContent_Call{Call: _e.mock.On("ModifyRpmRepositoryContent", ctx, repoHref, contentHrefsToAdd, contentHrefsToRemove)}
 }
 
@@ -3566,7 +3515,7 @@ type MockPulpClient_OrphanCleanup_Call struct {
 
 // OrphanCleanup is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPulpClient_Expecter) OrphanCleanup(ctx interface{}) *MockPulpClient_OrphanCleanup_Call {
+func (_e *MockPulpClient_Expecter) OrphanCleanup(ctx any) *MockPulpClient_OrphanCleanup_Call {
 	return &MockPulpClient_OrphanCleanup_Call{Call: _e.mock.On("OrphanCleanup", ctx)}
 }
 
@@ -3629,7 +3578,7 @@ type MockPulpClient_PollTask_Call struct {
 // PollTask is a helper method to define mock.On call
 //   - ctx context.Context
 //   - taskHref string
-func (_e *MockPulpClient_Expecter) PollTask(ctx interface{}, taskHref interface{}) *MockPulpClient_PollTask_Call {
+func (_e *MockPulpClient_Expecter) PollTask(ctx any, taskHref any) *MockPulpClient_PollTask_Call {
 	return &MockPulpClient_PollTask_Call{Call: _e.mock.On("PollTask", ctx, taskHref)}
 }
 
@@ -3695,7 +3644,7 @@ type MockPulpClient_RepairRpmRepositoryVersion_Call struct {
 // RepairRpmRepositoryVersion is a helper method to define mock.On call
 //   - ctx context.Context
 //   - href string
-func (_e *MockPulpClient_Expecter) RepairRpmRepositoryVersion(ctx interface{}, href interface{}) *MockPulpClient_RepairRpmRepositoryVersion_Call {
+func (_e *MockPulpClient_Expecter) RepairRpmRepositoryVersion(ctx any, href any) *MockPulpClient_RepairRpmRepositoryVersion_Call {
 	return &MockPulpClient_RepairRpmRepositoryVersion_Call{Call: _e.mock.On("RepairRpmRepositoryVersion", ctx, href)}
 }
 
@@ -3763,7 +3712,7 @@ type MockPulpClient_ResolveRepositoryFromBasePath_Call struct {
 // ResolveRepositoryFromBasePath is a helper method to define mock.On call
 //   - ctx context.Context
 //   - basePath string
-func (_e *MockPulpClient_Expecter) ResolveRepositoryFromBasePath(ctx interface{}, basePath interface{}) *MockPulpClient_ResolveRepositoryFromBasePath_Call {
+func (_e *MockPulpClient_Expecter) ResolveRepositoryFromBasePath(ctx any, basePath any) *MockPulpClient_ResolveRepositoryFromBasePath_Call {
 	return &MockPulpClient_ResolveRepositoryFromBasePath_Call{Call: _e.mock.On("ResolveRepositoryFromBasePath", ctx, basePath)}
 }
 
@@ -3822,7 +3771,7 @@ type MockPulpClient_SetDomainLabel_Call struct {
 //   - pulpHref string
 //   - key string
 //   - value string
-func (_e *MockPulpClient_Expecter) SetDomainLabel(ctx interface{}, pulpHref interface{}, key interface{}, value interface{}) *MockPulpClient_SetDomainLabel_Call {
+func (_e *MockPulpClient_Expecter) SetDomainLabel(ctx any, pulpHref any, key any, value any) *MockPulpClient_SetDomainLabel_Call {
 	return &MockPulpClient_SetDomainLabel_Call{Call: _e.mock.On("SetDomainLabel", ctx, pulpHref, key, value)}
 }
 
@@ -3899,7 +3848,7 @@ type MockPulpClient_Status_Call struct {
 
 // Status is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockPulpClient_Expecter) Status(ctx interface{}) *MockPulpClient_Status_Call {
+func (_e *MockPulpClient_Expecter) Status(ctx any) *MockPulpClient_Status_Call {
 	return &MockPulpClient_Status_Call{Call: _e.mock.On("Status", ctx)}
 }
 
@@ -3961,7 +3910,7 @@ type MockPulpClient_SyncRpmRepository_Call struct {
 //   - ctx context.Context
 //   - rpmRpmRepositoryHref string
 //   - remoteHref *string
-func (_e *MockPulpClient_Expecter) SyncRpmRepository(ctx interface{}, rpmRpmRepositoryHref interface{}, remoteHref interface{}) *MockPulpClient_SyncRpmRepository_Call {
+func (_e *MockPulpClient_Expecter) SyncRpmRepository(ctx any, rpmRpmRepositoryHref any, remoteHref any) *MockPulpClient_SyncRpmRepository_Call {
 	return &MockPulpClient_SyncRpmRepository_Call{Call: _e.mock.On("SyncRpmRepository", ctx, rpmRpmRepositoryHref, remoteHref)}
 }
 
@@ -4023,7 +3972,7 @@ type MockPulpClient_UpdateDomainIfNeeded_Call struct {
 // UpdateDomainIfNeeded is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockPulpClient_Expecter) UpdateDomainIfNeeded(ctx interface{}, name interface{}) *MockPulpClient_UpdateDomainIfNeeded_Call {
+func (_e *MockPulpClient_Expecter) UpdateDomainIfNeeded(ctx any, name any) *MockPulpClient_UpdateDomainIfNeeded_Call {
 	return &MockPulpClient_UpdateDomainIfNeeded_Call{Call: _e.mock.On("UpdateDomainIfNeeded", ctx, name)}
 }
 
@@ -4093,7 +4042,7 @@ type MockPulpClient_UpdateRpmDistribution_Call struct {
 //   - distributionName string
 //   - basePath string
 //   - contentGuardHref *string
-func (_e *MockPulpClient_Expecter) UpdateRpmDistribution(ctx interface{}, rpmDistributionHref interface{}, rpmPublicationHref interface{}, distributionName interface{}, basePath interface{}, contentGuardHref interface{}) *MockPulpClient_UpdateRpmDistribution_Call {
+func (_e *MockPulpClient_Expecter) UpdateRpmDistribution(ctx any, rpmDistributionHref any, rpmPublicationHref any, distributionName any, basePath any, contentGuardHref any) *MockPulpClient_UpdateRpmDistribution_Call {
 	return &MockPulpClient_UpdateRpmDistribution_Call{Call: _e.mock.On("UpdateRpmDistribution", ctx, rpmDistributionHref, rpmPublicationHref, distributionName, basePath, contentGuardHref)}
 }
 
@@ -4183,7 +4132,7 @@ type MockPulpClient_UpdateRpmRemote_Call struct {
 //   - clientCert *string
 //   - clientKey *string
 //   - caCert *string
-func (_e *MockPulpClient_Expecter) UpdateRpmRemote(ctx interface{}, pulpHref interface{}, url interface{}, clientCert interface{}, clientKey interface{}, caCert interface{}) *MockPulpClient_UpdateRpmRemote_Call {
+func (_e *MockPulpClient_Expecter) UpdateRpmRemote(ctx any, pulpHref any, url any, clientCert any, clientKey any, caCert any) *MockPulpClient_UpdateRpmRemote_Call {
 	return &MockPulpClient_UpdateRpmRemote_Call{Call: _e.mock.On("UpdateRpmRemote", ctx, pulpHref, url, clientCert, clientKey, caCert)}
 }
 
@@ -4280,7 +4229,7 @@ type MockPulpClient_UploadChunk_Call struct {
 //   - contentRange string
 //   - file *os.File
 //   - sha256 string
-func (_e *MockPulpClient_Expecter) UploadChunk(ctx interface{}, uploadHref interface{}, contentRange interface{}, file interface{}, sha256 interface{}) *MockPulpClient_UploadChunk_Call {
+func (_e *MockPulpClient_Expecter) UploadChunk(ctx any, uploadHref any, contentRange any, file any, sha256 any) *MockPulpClient_UploadChunk_Call {
 	return &MockPulpClient_UploadChunk_Call{Call: _e.mock.On("UploadChunk", ctx, uploadHref, contentRange, file, sha256)}
 }
 
@@ -4327,6 +4276,80 @@ func (_c *MockPulpClient_UploadChunk_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// UploadPackage provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) UploadPackage(ctx context.Context, artifactHref *string, uploadHref *string) (*string, error) {
+	ret := _mock.Called(ctx, artifactHref, uploadHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UploadPackage")
+	}
+
+	var r0 *string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *string, *string) (*string, error)); ok {
+		return returnFunc(ctx, artifactHref, uploadHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *string, *string) *string); ok {
+		r0 = returnFunc(ctx, artifactHref, uploadHref)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *string, *string) error); ok {
+		r1 = returnFunc(ctx, artifactHref, uploadHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_UploadPackage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadPackage'
+type MockPulpClient_UploadPackage_Call struct {
+	*mock.Call
+}
+
+// UploadPackage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - artifactHref *string
+//   - uploadHref *string
+func (_e *MockPulpClient_Expecter) UploadPackage(ctx any, artifactHref any, uploadHref any) *MockPulpClient_UploadPackage_Call {
+	return &MockPulpClient_UploadPackage_Call{Call: _e.mock.On("UploadPackage", ctx, artifactHref, uploadHref)}
+}
+
+func (_c *MockPulpClient_UploadPackage_Call) Run(run func(ctx context.Context, artifactHref *string, uploadHref *string)) *MockPulpClient_UploadPackage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *string
+		if args[1] != nil {
+			arg1 = args[1].(*string)
+		}
+		var arg2 *string
+		if args[2] != nil {
+			arg2 = args[2].(*string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_UploadPackage_Call) Return(s *string, err error) *MockPulpClient_UploadPackage_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockPulpClient_UploadPackage_Call) RunAndReturn(run func(ctx context.Context, artifactHref *string, uploadHref *string) (*string, error)) *MockPulpClient_UploadPackage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // WithDomain provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) WithDomain(domainName string) PulpClient {
 	ret := _mock.Called(domainName)
@@ -4353,7 +4376,7 @@ type MockPulpClient_WithDomain_Call struct {
 
 // WithDomain is a helper method to define mock.On call
 //   - domainName string
-func (_e *MockPulpClient_Expecter) WithDomain(domainName interface{}) *MockPulpClient_WithDomain_Call {
+func (_e *MockPulpClient_Expecter) WithDomain(domainName any) *MockPulpClient_WithDomain_Call {
 	return &MockPulpClient_WithDomain_Call{Call: _e.mock.On("WithDomain", domainName)}
 }
 
