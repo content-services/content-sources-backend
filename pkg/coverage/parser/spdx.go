@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/package-url/packageurl-go"
 )
 
 type spdxPURLFields struct {
@@ -159,29 +161,72 @@ func parseSPDXJSONObject(dec *json.Decoder, isRoot bool, skipped *int) ([]Packag
 	return result, nil
 }
 
-// inferFromSPDX2Fields constructs a Package directly from SPDX 2 name/versionInfo/packageFileName
+// inferFromSPDX2Fields constructs a Package from SPDX 2 name/versionInfo/packageFileName
 // when no PURL is present. Some SBOM generators (e.g. Clair/Scanner V4) emit SPDX 2.3 packages
 // identified only by name, versionInfo, and a packageFileName ecosystem prefix
-// (maven:, python:, sqlite:, go:, jar:, file:) rather than a Package URL.
-// Only Maven and Python are currently present in the Lightwell catalog, so other
-// ecosystems are intentionally left unmatched (and counted as skipped).
+// (maven:, python:, go:, npm:, nuget:, cargo:, and also sqlite:, jar:, file:) rather than a Package URL.
+// Recognized language prefixes are turned into a Package URL and parsed with parsePURL, so unsupported
+// ecosystems (JavaScript, C#, Go, Rust) show up the same way they do when a PURL is already present.
+// OS and file prefixes (sqlite, jar, file) and container labels stay unmatched and are counted as skipped.
 func inferFromSPDX2Fields(name, version, packageFileName string) *Package {
 	if name == "" || version == "" || packageFileName == "" {
 		return nil
 	}
 	prefix, _, _ := strings.Cut(packageFileName, ":")
+	raw, ok := clairPURL(prefix, name, version)
+	if !ok {
+		return nil
+	}
+	return parsePURL(raw)
+}
+
+// clairPURL builds a Package URL for a Clair packageFileName prefix.
+// The second result is false for prefixes that are not a language ecosystem.
+func clairPURL(prefix, name, version string) (string, bool) {
+	var purlType, namespace, purlName string
 	switch prefix {
 	case "maven":
 		group, artifact, ok := strings.Cut(name, ":")
-		if !ok {
-			return nil
+		if !ok || group == "" || artifact == "" {
+			return "", false
 		}
-		return &Package{Ecosystem: EcosystemJava, Namespace: group, Name: artifact, Version: version}
-	case "python":
-		return &Package{Ecosystem: EcosystemPython, Name: name, Version: version}
+		purlType, namespace, purlName = "maven", group, artifact
+	case "python", "pypi":
+		purlType, purlName = "pypi", name
+	case "go", "golang":
+		purlType = "golang"
+		namespace, purlName = splitLast(name)
+	case "npm":
+		purlType = "npm"
+		namespace, purlName = splitFirst(name)
+	case "nuget":
+		purlType, purlName = "nuget", name
+	case "cargo":
+		purlType, purlName = "cargo", name
 	default:
-		return nil
+		return "", false
 	}
+	if purlName == "" {
+		return "", false
+	}
+	return packageurl.NewPackageURL(purlType, namespace, purlName, version, nil, "").ToString(), true
+}
+
+// splitLast divides path on the final slash. A path with no slash is the name.
+func splitLast(path string) (namespace, name string) {
+	if i := strings.LastIndex(path, "/"); i >= 0 {
+		return path[:i], path[i+1:]
+	}
+	return "", path
+}
+
+// splitFirst divides path on the first slash. A path with no slash is the name.
+func splitFirst(path string) (namespace, name string) {
+	namespace, name, found := strings.Cut(path, "/")
+	if !found {
+		return "", path
+	}
+	return namespace, name
 }
 
 // decodeJSONStringOrArray accepts SPDX 3 type as either "Package" or ["software_Package", "Element"].

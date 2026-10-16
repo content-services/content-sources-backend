@@ -497,7 +497,7 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsCVEData() {
 		byName[p.Name] = p
 	}
 
-	spring := byName["spring-core"]
+	spring := byName["org.springframework:spring-core"]
 	assert.Equal(s.T(), api.CveCount{Critical: 1, Important: 3, Moderate: 6, Low: 20}, spring.CveCount)
 	require.NotNil(s.T(), spring.CveRange)
 	assert.Equal(s.T(), float32(1.2), spring.CveRange.Low)
@@ -533,6 +533,67 @@ func TestCoverageReportSkippedEntriesResponse(t *testing.T) {
 			var got int
 			require.NoError(t, json.Unmarshal(fields["skipped_entries"], &got))
 			assert.Equal(t, *count, got)
+		}
+	}
+}
+
+func (s *CoverageReportDaoSuite) TestListPackagesFullNameOrder() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusCompleted)
+	for _, tc := range []struct {
+		id, namespace, name, version string
+	}{
+		{"00000000-0000-0000-0000-000000000003", "github.com/z", "aaa", "1.0.0"},
+		{"00000000-0000-0000-0000-000000000002", "github.com/a/module", "v2", "2.0.0"},
+		{"00000000-0000-0000-0000-000000000001", "github.com/a/module", "v2", "1.0.0"},
+	} {
+		pkg := models.CoverageReportPackage{
+			UUID: tc.id, CoverageReportUUID: report.UUID,
+			Ecosystem: "Go", Namespace: utils.Ptr(tc.namespace), Name: tc.name, Version: tc.version,
+			MatchStatus: models.CoverageMatchStatusNone,
+		}
+		require.NoError(s.T(), s.tx.Create(&pkg).Error)
+	}
+
+	var names, versions []string
+	for offset := 0; offset < 3; offset++ {
+		resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
+			api.PaginationData{Limit: 1, Offset: offset}, api.ListCoverageReportPackagesRequest{})
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), int64(3), total)
+		require.Len(s.T(), resp.Data, 1)
+		names = append(names, resp.Data[0].Name)
+		versions = append(versions, resp.Data[0].Version)
+	}
+	assert.Equal(s.T(), []string{
+		"github.com/a/module/v2", "github.com/a/module/v2", "github.com/z/aaa",
+	}, names)
+	assert.Equal(s.T(), []string{"1.0.0", "2.0.0", "1.0.0"}, versions)
+}
+
+func (s *CoverageReportDaoSuite) TestListPackagesNamespacedIdentity() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusCompleted)
+	otherReport := s.createReport(orgID, config.TaskStatusCompleted)
+	for _, tc := range []struct {
+		ecosystem, namespace, name, fullName string
+	}{
+		{"Go", "github.com/pelletier/go-toml", "v2", "github.com/pelletier/go-toml/v2"},
+		{"Go", "github.com/other/module", "v2", "github.com/other/module/v2"},
+		{"JavaScript", "@angular", "core", "@angular/core"},
+		{"Java", "org.springframework", "spring-core", "org.springframework:spring-core"},
+	} {
+		pkg := s.createPackage(report.UUID, tc.name, "2.0.0", tc.ecosystem, models.CoverageMatchStatusNone)
+		require.NoError(s.T(), s.tx.Model(&pkg).Update("namespace", tc.namespace).Error)
+		other := s.createPackage(otherReport.UUID, tc.name, "2.0.0", tc.ecosystem, models.CoverageMatchStatusNone)
+		require.NoError(s.T(), s.tx.Model(&other).Update("namespace", tc.namespace).Error)
+		for _, search := range []string{tc.namespace, tc.fullName} {
+			resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
+				api.PaginationData{Limit: 100}, api.ListCoverageReportPackagesRequest{Search: search})
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), int64(1), total)
+			require.Len(s.T(), resp.Data, 1)
+			assert.Equal(s.T(), tc.fullName, resp.Data[0].Name)
 		}
 	}
 }
