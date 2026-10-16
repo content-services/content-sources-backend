@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
@@ -72,6 +73,20 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
+	_, orgID := GetAccountIdOrgId(c)
+	entitledFeatures, err := h.FeatureServiceClient.GetEntitledFeatures(ctx, orgID)
+	if err != nil {
+		// Fail open: if the feature service is unreachable, don't block
+		// users with terms for features they may not have access to.
+		log.Ctx(ctx).Warn().Err(err).Msg("could not check entitled features for terms check, failing open (required=false)")
+		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
+	}
+
+	if slices.Contains(entitledFeatures, config.LightwellClearinghouseFeature) {
+		log.Ctx(ctx).Debug().Msg("skipping terms check for clearinghouse-entitled org")
+		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
+	}
+
 	events, err := h.TermsServiceClient.GetRequiredEvents(ctx, login)
 	if err != nil {
 		// Fail open: if the terms service is unreachable, allow the user
@@ -80,7 +95,7 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 		return c.JSON(http.StatusOK, api.TermsRequiredResponse{Required: false})
 	}
 
-	events = h.filterEventsByEntitlement(c, events)
+	events = filterEventsByEntitlement(c, events, entitledFeatures)
 
 	resp := api.TermsRequiredResponse{Required: len(events) > 0}
 	if resp.Required {
@@ -95,24 +110,11 @@ func (h *LightwellTermsHandler) GetTermsRequired(c echo.Context) error {
 // filterEventsByEntitlement narrows the required events to only those the
 // user's org is entitled to, based on the event_feature_map config. If no
 // mapping is configured, all events pass through unchanged.
-func (h *LightwellTermsHandler) filterEventsByEntitlement(c echo.Context, events []string) []string {
+func filterEventsByEntitlement(c echo.Context, events []string, entitledFeatures []string) []string {
 	eventFeatureMap := config.Get().Clients.TermsService.EventFeatures()
 	if len(eventFeatureMap) == 0 || len(events) == 0 {
 		log.Ctx(c.Request().Context()).Debug().Msg("event feature map or events is empty")
 		return events
-	}
-
-	_, orgID := GetAccountIdOrgId(c)
-	if orgID == "" {
-		return events
-	}
-
-	entitledFeatures, err := h.FeatureServiceClient.GetEntitledFeatures(c.Request().Context(), orgID)
-	if err != nil {
-		// Fail open: if the feature service is unreachable, don't block
-		// users with terms for features they may not have access to.
-		log.Ctx(c.Request().Context()).Warn().Err(err).Msg("could not check entitled features for terms filtering, failing open (required=false)")
-		return nil
 	}
 
 	featureSet := make(map[string]bool, len(entitledFeatures))

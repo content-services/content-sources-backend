@@ -202,8 +202,6 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsOpen
 
 	config.LoadedConfig.Clients.TermsService.Site = "lightwell"
 
-	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
-		Return([]string{"network", "academic"}, nil)
 	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
 		Return([]string(nil), fmt.Errorf("feature service unavailable"))
 
@@ -224,6 +222,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureServiceError_FailsOpen
 func (s *LightwellTermsSuite) TestGetTermsRequired_NotRequired() {
 	t := s.T()
 
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil)
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string{}, nil)
 
@@ -270,6 +270,48 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_InternalUser_SkipsTerms() {
 	assert.Empty(t, resp.Events)
 }
 
+func (s *LightwellTermsSuite) TestGetTermsRequired_ClearinghouseEntitled_SkipsTerms() {
+	t := s.T()
+
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network", "lightwell-clearinghouse"}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.False(t, resp.Required, "clearinghouse-entitled orgs should skip terms entirely")
+	assert.Empty(t, resp.Events)
+	s.tsMock.AssertNotCalled(t, "GetRequiredEvents")
+}
+
+func (s *LightwellTermsSuite) TestGetTermsRequired_ClearinghouseWithOtherFeatures_SkipsTerms() {
+	t := s.T()
+
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network", "lightwell-clearinghouse", "lightwell-research-institutions"}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/terms/required", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var resp api.TermsRequiredResponse
+	require.NoError(t, json.Unmarshal(body, &resp))
+	assert.False(t, resp.Required, "clearinghouse-entitled orgs should skip terms even with other features")
+	assert.Empty(t, resp.Events)
+	s.tsMock.AssertNotCalled(t, "GetRequiredEvents")
+}
+
 func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 	t := s.T()
 
@@ -291,6 +333,8 @@ func (s *LightwellTermsSuite) TestGetTermsRequired_FeatureDisabled() {
 func (s *LightwellTermsSuite) TestGetTermsRequired_ClientError_FailsOpen() {
 	t := s.T()
 
+	s.fsMock.On("GetEntitledFeatures", test.MockCtx(), test_handler.MockOrgId).
+		Return([]string{"lightwell-network"}, nil)
 	s.tsMock.On("GetRequiredEvents", test.MockCtx(), "user").
 		Return([]string(nil), fmt.Errorf("connection refused"))
 
