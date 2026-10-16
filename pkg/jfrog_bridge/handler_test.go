@@ -61,7 +61,8 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	jfrogPuts := make(map[string]int)
 	var jfrogPosts []string
 	var capturedProperties string
-	var capturedCDXBody []byte
+	var capturedSBOMBody []byte
+	var capturedVEXBody []byte
 
 	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
@@ -74,9 +75,13 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 			if strings.Contains(r.URL.RawQuery, "properties=") {
 				capturedProperties = r.URL.RawQuery
 			}
-			if strings.HasSuffix(r.URL.Path, ".cdx.vex.json") {
+			if strings.HasSuffix(r.URL.Path, ".bom.json") && !strings.Contains(r.URL.Path, "/vex/") {
 				body, _ := io.ReadAll(r.Body)
-				capturedCDXBody = body
+				capturedSBOMBody = body
+			}
+			if strings.Contains(r.URL.Path, "/vex/") && strings.HasSuffix(r.URL.Path, ".bom.json") {
+				body, _ := io.ReadAll(r.Body)
+				capturedVEXBody = body
 			}
 			jfrogPuts[r.URL.Path]++
 			w.WriteHeader(http.StatusCreated)
@@ -158,8 +163,12 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	pomKey := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.pom"
 	assert.Equal(t, 1, jfrogPuts[pomKey], "POM should be uploaded")
 
+	// Assert: CycloneDX SBOM uploaded
+	sbomKey := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.bom.json"
+	assert.Equal(t, 1, jfrogPuts[sbomKey], "CycloneDX SBOM should be uploaded")
+
 	// Assert: CycloneDX VEX uploaded
-	cdxKey := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.cdx.vex.json"
+	cdxKey := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003/vex/spring-core-5.3.18.rhlw-00003.bom.json"
 	assert.Equal(t, 1, jfrogPuts[cdxKey], "CycloneDX VEX should be uploaded")
 
 	// Assert: maven-metadata.xml uploaded
@@ -174,15 +183,23 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	assert.Contains(t, jfrogPosts, "/evidence/api/v1/evidence/prepare")
 	assert.Contains(t, jfrogPosts, "/evidence/api/v1/evidence/deploy")
 
-	// Assert: CycloneDX body contains pedigree
-	require.NotEmpty(t, capturedCDXBody, "CycloneDX VEX body must be captured")
-	var cdxDoc cdxBOM
-	require.NoError(t, json.Unmarshal(capturedCDXBody, &cdxDoc))
-	require.Len(t, cdxDoc.Components, 1, "components array must have one entry")
-	require.NotNil(t, cdxDoc.Components[0].Pedigree, "pedigree must be present")
-	require.Len(t, cdxDoc.Components[0].Pedigree.Ancestors, 1)
-	assert.Equal(t, "5.3.18", cdxDoc.Components[0].Pedigree.Ancestors[0].Version)
-	assert.Contains(t, cdxDoc.Components[0].Pedigree.Ancestors[0].PackageURL, "?type=jar")
+	// Assert: CycloneDX SBOM body contains pedigree
+	require.NotEmpty(t, capturedSBOMBody, "CycloneDX SBOM body must be captured")
+	var sbomDoc cdxBOM
+	require.NoError(t, json.Unmarshal(capturedSBOMBody, &sbomDoc))
+	assert.Equal(t, "1.7", sbomDoc.SpecVersion)
+	require.Len(t, sbomDoc.Components, 1, "SBOM components array must have one entry")
+	require.NotNil(t, sbomDoc.Components[0].Pedigree, "pedigree must be present")
+	require.Len(t, sbomDoc.Components[0].Pedigree.Ancestors, 1)
+	assert.Equal(t, "5.3.18", sbomDoc.Components[0].Pedigree.Ancestors[0].Version)
+
+	// Assert: CycloneDX VEX body has vulnerabilities
+	require.NotEmpty(t, capturedVEXBody, "CycloneDX VEX body must be captured")
+	var vexDoc cdxBOM
+	require.NoError(t, json.Unmarshal(capturedVEXBody, &vexDoc))
+	assert.Equal(t, "1.7", vexDoc.SpecVersion)
+	assert.Nil(t, vexDoc.Metadata, "VEX must not have metadata")
+	assert.Empty(t, vexDoc.Components, "VEX must not have components")
 }
 
 func TestGAVDedup(t *testing.T) {

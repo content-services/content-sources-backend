@@ -32,12 +32,16 @@ const (
 // OSVRecord holds the bridge-internal representation of a single CVE
 // extracted from an OSV JSON file.
 type OSVRecord struct {
-	CVEID       string
-	Aliases     []string
-	Description string
-	CVSSVector  string
-	CVSSScore   float64
-	Severity    string
+	CVEID        string
+	Aliases      []string
+	Description  string
+	CVSSVector   string
+	CVSSScore    float64
+	Severity     string
+	IssueURL     string
+	FixCommitURL string
+	Published    string
+	Updated      string
 }
 
 // RegistryClient abstracts HTTP calls to the Lightwell registry on
@@ -181,7 +185,15 @@ func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, err
 // the bridge needs but the shared type omits.
 type osvFile struct {
 	vulnerability_parser.OSVAdvisory
-	Aliases []string `json:"aliases"`
+	Aliases    []string `json:"aliases"`
+	References []osvRef `json:"references"`
+	Published  string   `json:"published"`
+	Modified   string   `json:"modified"`
+}
+
+type osvRef struct {
+	URL  string `json:"url"`
+	Type string `json:"type"`
 }
 
 func parseOSVFile(data []byte) (OSVRecord, error) {
@@ -192,6 +204,8 @@ func parseOSVFile(data []byte) (OSVRecord, error) {
 
 	rec := OSVRecord{
 		Description: adv.Details,
+		Published:   adv.Published,
+		Updated:     adv.Modified,
 	}
 
 	// Extract CVE ID from aliases (first entry starting with "CVE-")
@@ -230,6 +244,22 @@ func parseOSVFile(data []byte) (OSVRecord, error) {
 	}
 	if rec.Severity == "" {
 		rec.Severity = "unknown"
+	}
+
+	// Extract upstream issue and fix commit URLs from references
+	for _, ref := range adv.References {
+		if ref.URL == "" {
+			continue
+		}
+		if ref.Type == "FIX" || strings.Contains(ref.URL, "/commit/") || strings.Contains(ref.URL, "/commits/") {
+			if rec.FixCommitURL == "" {
+				rec.FixCommitURL = ref.URL
+			}
+		} else if strings.Contains(ref.URL, "/issues/") || strings.Contains(ref.URL, "/issue/") {
+			if rec.IssueURL == "" {
+				rec.IssueURL = ref.URL
+			}
+		}
 	}
 
 	return rec, nil

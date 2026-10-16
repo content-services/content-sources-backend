@@ -67,3 +67,4 @@ compose_files/pulp/assets/certs/dev_certs
 /pkg/jfrog_bridge/testdata.zip
 /pkg/jfrog_bridge/lightwell-catalog.key
 .env.catalog
+docs/cyclonedx-sbom-vex-build-plan.md

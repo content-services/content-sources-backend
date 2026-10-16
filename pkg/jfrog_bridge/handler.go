@@ -154,19 +154,25 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("content embargo check: %w", err)
 	}
 
-	// 3. Generate CycloneDX VEX
-	cdxData, err := GenerateCycloneDXVEX(rem.GroupID, rem.ArtifactID, rem.Version, rem.BaseVersion, osvRecords)
+	// 3. Generate CycloneDX SBOM (produces serialNumber for VEX cross-reference)
+	sbomSerialNumber, sbomData, err := GenerateCycloneDXSBOM(rem.GroupID, rem.ArtifactID, rem.Version, rem.BaseVersion, jarSHA256, osvRecords)
+	if err != nil {
+		return fmt.Errorf("generate CycloneDX SBOM: %w", err)
+	}
+
+	// 4. Generate CycloneDX VEX (references SBOM via serialNumber)
+	cdxData, err := GenerateCycloneDXVEX(rem.GroupID, rem.ArtifactID, rem.Version, rem.BaseVersion, sbomSerialNumber, osvRecords)
 	if err != nil {
 		return fmt.Errorf("generate CycloneDX VEX: %w", err)
 	}
 
-	// 4. Generate OpenVEX predicate (for Evidence, not uploaded as file)
+	// 5. Generate OpenVEX predicate (for Evidence, not uploaded as file)
 	openVEXData, err := GenerateOpenVEXPredicate(rem.GroupID, rem.ArtifactID, rem.Version, osvRecords)
 	if err != nil {
 		return fmt.Errorf("generate OpenVEX predicate: %w", err)
 	}
 
-	// 5. Upload bundle to JFrog
+	// 6. Upload bundle to JFrog
 	gp := groupPath(rem.GroupID)
 	deployBase := fmt.Sprintf("%s/%s/%s", gp, rem.ArtifactID, rem.Version)
 
@@ -180,19 +186,24 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("upload POM: %w", err)
 	}
 
-	cdxPath := fmt.Sprintf("%s/%s-%s.cdx.vex.json", deployBase, rem.ArtifactID, rem.Version)
+	sbomPath := fmt.Sprintf("%s/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
+	if err := h.jfrog.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
+		return fmt.Errorf("upload CycloneDX SBOM: %w", err)
+	}
+
+	cdxPath := fmt.Sprintf("%s/vex/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
 	if err := h.jfrog.UploadFile(ctx, cdxPath, cdxData, "application/json"); err != nil {
 		return fmt.Errorf("upload CycloneDX VEX: %w", err)
 	}
 
-	// 6. Upload maven-metadata.xml
+	// 7. Upload maven-metadata.xml
 	metadataXML := generateMavenMetadata(rem.GroupID, rem.ArtifactID, rem.Version)
 	metadataPath := fmt.Sprintf("%s/%s/maven-metadata.xml", gp, rem.ArtifactID)
 	if err := h.jfrog.UploadFile(ctx, metadataPath, metadataXML, "application/xml"); err != nil {
 		return fmt.Errorf("upload maven-metadata.xml: %w", err)
 	}
 
-	// 7. Set catalog properties on JAR
+	// 8. Set catalog properties on JAR
 	regURL := h.registryURL
 	if regURL == "" {
 		regURL = loadConfig().RegistryURL
@@ -208,12 +219,12 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("set properties: %w", err)
 	}
 
-	// 8. Sign and deploy Evidence
+	// 9. Sign and deploy Evidence
 	if err := h.evidence.CreateAndDeploy(ctx, openVEXData, jarPath, jarSHA256); err != nil {
 		return fmt.Errorf("evidence: %w", err)
 	}
 
-	// 9. Verify
+	// 10. Verify
 	if err := h.jfrog.VerifyDelivery(ctx, jarPath); err != nil {
 		return fmt.Errorf("verify delivery: %w", err)
 	}
