@@ -8,24 +8,18 @@
 # the corresponding Pulp remotes, repositories, and distributions under
 # the appropriate domains, then runs the Go importer.
 #
-# Idempotent: existing distributions (matched by base_path) are reused;
-# Maven catalog seed (if empty) and the CS import always run. Python
-# remediated fixture files are uploaded only if missing from the repository.
-# The vulnerability seed is skipped when those rows already exist. Advisories
-# and the package mirror are refreshed on every run.
+# Idempotent: existing distributions (matched by base_path) are reused.
+# SQL package seed defines which versions to put in Pulp, Pulp is filled from that,
+# then import-lightwell-packages --force fills the mirror.
+# The vulnerability seed is skipped when those rows already exist.
 #
 # Intended for local development against the Pulp instance started via docker-compose.
 # Maven catalogs are seeded with uploaded POM + repository modify (pull-through
 # GET does not create MavenPackage units that the packages API lists).
 #
 # Usage:
-#   ./scripts/create_lightwell_repo.sh [--remote-url URL] [--validated-count N]
+#   ./scripts/create_lightwell_repo.sh [--remote-url URL]
 #
-#   --validated-count N  Number of distinct packages to seed into the validated
-#                        Maven repo (default 20). Also settable via the
-#                        VALIDATED_PACKAGE_COUNT environment variable. Packages
-#                        are synthetic POMs uploaded via repository modify so
-#                        they appear in the packages API.
 #
 # Auth:
 #   Basic auth (default): set PULP_USER and PULP_PASS
@@ -54,11 +48,8 @@ SUFFIX="$(date +%s)"
 REPO_DIR="$(cd "$(dirname "$0")/.."; pwd)"
 LIGHTWELL_JSON="${REPO_DIR}/pkg/external_repos/lightwell_repos.json"
 LIGHTWELL_DEMO_JSON="${REPO_DIR}/pkg/external_repos/lightwell_demo_repos.json"
-
-# Base path of the "validated" Maven repo that should be seeded with a large
-# number of distinct packages, and how many packages to seed there.
-VALIDATED_BASE_PATH="${VALIDATED_BASE_PATH:-java/validated}"
-VALIDATED_PACKAGE_COUNT="${VALIDATED_PACKAGE_COUNT:-20}"
+LIGHTWELL_SEED_PSQL="${LIGHTWELL_SEED_PSQL:-sslmode=disable dbname=content user=content host=localhost port=5433 password=content}"
+PYTHON_WHEEL_DIR="${REPO_DIR}/scripts/fixtures/python_wheels"
 
 # If no user is set, default to basic auth with admin/password for backwards compat
 if [[ -z "$PULP_USER" && -z "$PULP_CLIENT_CERT" ]]; then
@@ -72,9 +63,8 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --remote-url)      REMOTE_URL="$2"; shift 2 ;;
-    --validated-count) VALIDATED_PACKAGE_COUNT="$2"; shift 2 ;;
-    *)                 echo "Unknown option: $1" >&2; exit 1 ;;
+    --remote-url) REMOTE_URL="$2"; shift 2 ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done
 
@@ -356,9 +346,40 @@ upload_maven_pom() {
   fi
 }
 
-# Seeds MavenPackage units via artifact upload + repository modify.
-# Pull-through GETs only create artifacts and leave packages/ empty.
-#
+# Removes all content units from a Pulp repository (maven or python).
+#   clear_repository_content <REPO_HREF>
+clear_repository_content() {
+  local repo_href="$1"
+  local body
+  body=$(jq -n '{remove_content_units: ["*"]}')
+  pulp_create "repository modify" "${repo_href}modify/" "$body" '.task'
+  echo "    Clearing existing content in ${repo_href}..."
+  if ! wait_for_task_or_warn "$RESULT"; then
+    echo "ERROR: Failed to clear repository ${repo_href}" >&2
+    exit 1
+  fi
+}
+
+# Uploads a per-repo Maven marker POM so pulp_maven prefix metadata stays unique
+# across repos/domains (see seed_maven_packages). Sets RESULT to the artifact href.
+#   upload_maven_repo_marker <DOMAIN_NAME> <BASE_PATH>
+upload_maven_repo_marker() {
+  local domain_name="$1"
+  local base_path="$2"
+  local marker_slug
+  marker_slug=$(printf '%s-%s' "$domain_name" "$base_path" | tr -c 'a-zA-Z0-9' '-')
+  upload_maven_pom "$domain_name" \
+    "csseed/${marker_slug}/marker/1.0.0/marker-1.0.0.pom" \
+    "<?xml version=\"1.0\"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>csseed.${marker_slug}</groupId>
+  <artifactId>marker</artifactId>
+  <version>1.0.0</version>
+</project>
+"
+}
+
 # BASE_PATH is used to give each repo a uniquely-namespaced marker package.
 # pulp_maven derives a repo's .meta/prefixes.txt from the first two segments of
 # each package's group_id; that file's content is deterministic (no timestamp),
@@ -382,72 +403,10 @@ seed_maven_packages() {
     return 0
   fi
 
-  echo "    Seeding MavenPackage units (upload POM + modify)..."
+  echo "    Seeding per-repo Maven marker..."
 
   local -a content_hrefs=()
-
-  # Per-repo marker package so this repo's prefixes.txt is globally unique
-  # (see function header for why identical prefixes.txt across domains crashes).
-  local marker_slug
-  marker_slug=$(printf '%s-%s' "$domain_name" "$base_path" | tr -c 'a-zA-Z0-9' '-')
-  upload_maven_pom "$domain_name" \
-    "csseed/${marker_slug}/marker/1.0.0/marker-1.0.0.pom" \
-    "<?xml version=\"1.0\"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>csseed.${marker_slug}</groupId>
-  <artifactId>marker</artifactId>
-  <version>1.0.0</version>
-</project>
-"
-  content_hrefs+=("$RESULT")
-
-  upload_maven_pom "$domain_name" \
-    "blissed/blissed/1.0-beta-3/blissed-1.0-beta-3.pom" \
-    '<?xml version="1.0"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>blissed</groupId>
-  <artifactId>blissed</artifactId>
-  <version>1.0-beta-3</version>
-</project>
-'
-  content_hrefs+=("$RESULT")
-
-  upload_maven_pom "$domain_name" \
-    "avalon-util/avalon-util-exception/1.0.0/avalon-util-exception-1.0.0.pom" \
-    '<?xml version="1.0"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>avalon-util</groupId>
-  <artifactId>avalon-util-exception</artifactId>
-  <version>1.0.0</version>
-</project>
-'
-  content_hrefs+=("$RESULT")
-
-  upload_maven_pom "$domain_name" \
-    "org/example/demo-lib/5.3.18.rhlw-00001/demo-lib-5.3.18.rhlw-00001.pom" \
-    '<?xml version="1.0"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.example</groupId>
-  <artifactId>demo-lib</artifactId>
-  <version>5.3.18.rhlw-00001</version>
-</project>
-'
-  content_hrefs+=("$RESULT")
-
-  upload_maven_pom "$domain_name" \
-    "org/example/demo-lib/5.3.18.rhlw-00003/demo-lib-5.3.18.rhlw-00003.pom" \
-    '<?xml version="1.0"?>
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.example</groupId>
-  <artifactId>demo-lib</artifactId>
-  <version>5.3.18.rhlw-00003</version>
-</project>
-'
+  upload_maven_repo_marker "$domain_name" "$base_path"
   content_hrefs+=("$RESULT")
 
   local body
@@ -458,12 +417,12 @@ seed_maven_packages() {
     pulp_create "repository modify" "${repo_href}modify/" "$body" '.task'
     echo "    Waiting for modify task (attempt ${attempt})..."
     if wait_for_task_or_warn "$RESULT"; then
-      echo "    Seeded ${#content_hrefs[@]} Maven artifacts."
+      echo "    Seeded marker package into ${base_path}."
       return 0
     fi
     sleep .5
   done
-  echo "WARN: Maven catalog seed failed for ${repo_href}; packages/ may be empty." >&2
+  echo "WARN: Maven marker seed failed for ${repo_href}; packages/ may be empty." >&2
 }
 
 # Like wait_for_task but returns 1 on failure instead of exiting.
@@ -498,105 +457,77 @@ wait_for_task_or_warn() {
   return 1
 }
 
-# Uploads checked-in wheel and source distributions into a rebuilt Python
-# repository (remediated/predisclosure). PyPI cannot supply our rebuilt versions.
-#   populate_python_repo <DOMAIN_NAME> <BASE_PATH> <ARTIFACT_DIR>
-populate_python_repo() (
-  local domain_name="$1"
-  local base_path="$2"
-  local artifact_dir="$3"
-
-  find_distribution_by_base_path "$domain_name" "python/pypi" "$base_path"
-  if [[ -z "$RESULT" ]]; then
-    echo "ERROR: Python distribution not found for ${base_path}" >&2
-    exit 1
-  fi
-
-  local distribution repo_href
-  distribution=$(pulp_api GET "$RESULT")
-  repo_href=$(echo "$distribution" | jq -er '.repository')
-
-  echo "    Uploading synthetic Python releases for ${base_path}..."
-  local artifact filename encoded_filename repo_version encoded_version existing response task_href
-  for artifact in "$artifact_dir"/*.whl "$artifact_dir"/*.tar.gz; do
-    if [[ ! -f "$artifact" ]]; then
-      echo "ERROR: Missing Python fixture: ${artifact}" >&2
-      exit 1
-    fi
-    filename=$(basename "$artifact")
-    encoded_filename=$(jq -nr --arg value "$filename" '$value|@uri')
-    repo_version=$(pulp_api GET "$repo_href" | jq -er '.latest_version_href')
-    encoded_version=$(jq -nr --arg value "$repo_version" '$value|@uri')
-    existing=$(pulp_api GET \
-      "${API_ROOT}/${domain_name}/api/v3/content/python/packages/?filename=${encoded_filename}&repository_version=${encoded_version}" \
-      | jq -er '.count')
-    if (( existing > 0 )); then
-      echo "      Already present: ${filename}"
-      continue
-    fi
-
-    local -a args=(-sS -k --fail-with-body -F "relative_path=${filename}" -F "repository=${repo_href}" -F "file=@${artifact}")
-    if [[ -n "$PULP_CLIENT_CERT" ]]; then
-      args+=(--cert "$PULP_CLIENT_CERT")
-      if [[ -n "$PULP_CLIENT_KEY" ]]; then
-        args+=(--key "$PULP_CLIENT_KEY")
-      fi
-      if [[ -n "$PULP_CA_CERT" ]]; then
-        args+=(--cacert "$PULP_CA_CERT")
-      fi
-    elif [[ -n "$PULP_USER" ]]; then
-      args+=(-u "${PULP_USER}:${PULP_PASS}")
-    fi
-
-    response=$(curl "${args[@]}" "$(pulp_url "${API_ROOT}/${domain_name}/api/v3/content/python/packages/")")
-    task_href=$(echo "$response" | jq -er '.task')
-    wait_for_task "$task_href"
-    echo "      Uploaded: ${filename}"
-  done
-)
-
-# Seeds a large number of *distinct* MavenPackage units into the validated repo.
-#
-# The application counts a Maven "package" as a distinct group_id:artifact_id
-# that has a .pom. This uploads TARGET synthetic POMs, each with a distinct
-# artifactId, and adds them to the repository in a single modify so they appear
-# in the packages API. Idempotent: if the catalog already holds at least TARGET
-# packages the seed is skipped.
-#   seed_validated_maven_packages <DOMAIN_NAME> <REPO_HREF> <TARGET_COUNT>
-seed_validated_maven_packages() {
+# Uploads a Python wheel into a repository if missing.
+#   upload_python_wheel <DOMAIN_NAME> <REPO_HREF> <WHEEL_PATH>
+upload_python_wheel() {
   local domain_name="$1"
   local repo_href="$2"
-  local target="$3"
+  local artifact="$3"
 
-  local pkg_json pkg_count
-  pkg_json=$(pulp_api GET "${repo_href}packages/?limit=1")
-  pkg_count=$(echo "$pkg_json" | jq -r '.count // 0')
-  if [[ "$pkg_count" != "null" && "$pkg_count" -ge "$target" ]]; then
-    echo "    Validated catalog already has ${pkg_count} package(s) (>= ${target}); skipping seed."
+  local filename encoded_filename repo_version encoded_version existing response task_href
+  filename=$(basename "$artifact")
+  encoded_filename=$(jq -nr --arg value "$filename" '$value|@uri')
+  repo_version=$(pulp_api GET "$repo_href" | jq -er '.latest_version_href')
+  encoded_version=$(jq -nr --arg value "$repo_version" '$value|@uri')
+  existing=$(pulp_api GET \
+    "${API_ROOT}/${domain_name}/api/v3/content/python/packages/?filename=${encoded_filename}&repository_version=${encoded_version}" \
+    | jq -er '.count')
+  if (( existing > 0 )); then
+    echo "      Already present: ${filename}"
     return 0
   fi
 
-  echo "    Seeding ${target} distinct validated MavenPackage units (upload POM + modify)..."
+  local -a args=(-sS -k --fail-with-body -F "relative_path=${filename}" -F "repository=${repo_href}" -F "file=@${artifact}")
+  if [[ -n "$PULP_CLIENT_CERT" ]]; then
+    args+=(--cert "$PULP_CLIENT_CERT")
+    if [[ -n "$PULP_CLIENT_KEY" ]]; then
+      args+=(--key "$PULP_CLIENT_KEY")
+    fi
+    if [[ -n "$PULP_CA_CERT" ]]; then
+      args+=(--cacert "$PULP_CA_CERT")
+    fi
+  elif [[ -n "$PULP_USER" ]]; then
+    args+=(-u "${PULP_USER}:${PULP_PASS}")
+  fi
+
+  response=$(curl "${args[@]}" "$(pulp_url "${API_ROOT}/${domain_name}/api/v3/content/python/packages/")")
+  task_href=$(echo "$response" | jq -er '.task')
+  wait_for_task "$task_href"
+  echo "      Uploaded: ${filename}"
+}
+
+# Seeds Maven catalog content from rows already in the app database mirror.
+#   seed_maven_repo_from_db <DOMAIN_NAME> <REPO_HREF> <BASE_PATH> <TSV_ROWS>
+seed_maven_repo_from_db() {
+  local domain_name="$1"
+  local repo_href="$2"
+  local base_path="$3"
+  local rows_tsv="$4"
+
+  echo "    Seeding Maven packages for ${base_path} from database catalog..."
+  clear_repository_content "$repo_href"
 
   local -a content_hrefs=()
-  local i artifact_id relative_path
-  for ((i = 1; i <= target; i++)); do
-    group="org.lightwell.validated"
-    artifact_id=$(printf 'validated-pkg-%04d' $RANDOM)
-    version="1.0.$RANDOM"
-    relative_path="org/lightwell/validated/"${group//./\/}"/${artifact_id}/$version/${artifact_id}-$version.pom"
+  upload_maven_repo_marker "$domain_name" "$base_path"
+  content_hrefs+=("$RESULT")
+
+  local group artifact version group_path relative_path
+  while IFS=$'\t' read -r group artifact version; do
+    [[ -n "$group" ]] || continue
+    group_path="${group//.//}"
+    relative_path="${group_path}/${artifact}/${version}/${artifact}-${version}.pom"
     upload_maven_pom "$domain_name" "$relative_path" \
       "<?xml version=\"1.0\"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>${group}</groupId>
-  <artifactId>${artifact_id}</artifactId>
+  <artifactId>${artifact}</artifactId>
   <version>${version}</version>
 </project>
 "
     content_hrefs+=("$RESULT")
-    echo "      ...uploaded ${i}/${target} POMs"
-  done
+    echo "      ...${group}:${artifact}:${version}"
+  done < "$rows_tsv"
 
   local body
   body=$(jq -n --args '{add_content_units: $ARGS.positional}' "${content_hrefs[@]}")
@@ -606,12 +537,122 @@ seed_validated_maven_packages() {
     pulp_create "repository modify" "${repo_href}modify/" "$body" '.task'
     echo "    Waiting for modify task (attempt ${attempt})..."
     if wait_for_task_or_warn "$RESULT"; then
-      echo "    Seeded ${#content_hrefs[@]} validated Maven packages."
+      echo "    Seeded $(( ${#content_hrefs[@]} - 1 )) Maven packages (+ marker) into ${base_path}."
       return 0
     fi
-    sleep 2
+    sleep .5
   done
-  echo "WARN: Validated catalog seed failed for ${repo_href}; packages/ may be incomplete." >&2
+  echo "WARN: Maven seed from database failed for ${repo_href}; packages/ may be incomplete." >&2
+}
+
+# Seeds Python catalog content from rows already in the app database mirror.
+#   seed_python_repo_from_db <DOMAIN_NAME> <REPO_HREF> <BASE_PATH> <TSV_ROWS>
+seed_python_repo_from_db() {
+  local domain_name="$1"
+  local repo_href="$2"
+  local base_path="$3"
+  local rows_tsv="$4"
+
+  echo "    Seeding Python packages for ${base_path} from database catalog..."
+  clear_repository_content "$repo_href"
+
+  local name version wheel_path
+  while IFS=$'\t' read -r name version; do
+    [[ -n "$name" ]] || continue
+    wheel_path="${PYTHON_WHEEL_DIR}/${name}/${version}.whl"
+    if [[ ! -f "$wheel_path" ]]; then
+      echo "ERROR: Missing wheel fixture: ${wheel_path}" >&2
+      exit 1
+    fi
+    upload_python_wheel "$domain_name" "$repo_href" "$wheel_path"
+    echo "      ...${name}==${version}"
+  done < "$rows_tsv"
+}
+
+# Loads catalog package versions from Postgres and uploads them into Pulp.
+#   seed_pulp_catalog_from_database <DOMAIN_NAME>
+seed_pulp_catalog_from_database() {
+  local domain_name="$1"
+  local catalog_tsv
+  catalog_tsv="$(mktemp)"
+  psql "$LIGHTWELL_SEED_PSQL" -v ON_ERROR_STOP=1 -tA -F $'\t' -c "
+    SELECT
+        CASE rc.name
+            WHEN 'lightwell/java/validated' THEN 'java/validated'
+            WHEN 'lightwell/java/remediated' THEN 'java/remediated'
+            WHEN 'lightwell/java/predisclosure' THEN 'java/predisclosure'
+            WHEN 'lightwell/python/validated' THEN 'python/validated'
+            WHEN 'lightwell/python/remediated' THEN 'python/remediated'
+            WHEN 'lightwell/python/predisclosure' THEN 'python/predisclosure'
+        END AS base_path,
+        r.content_type,
+        lp.package_group,
+        lp.name AS package_name,
+        lpv.version
+    FROM lightwell_package_versions lpv
+    JOIN lightwell_packages lp ON lp.uuid = lpv.lightwell_package_uuid
+    JOIN repository_configurations rc ON rc.uuid = lpv.repository_configuration_uuid
+    JOIN repositories r ON r.uuid = rc.repository_uuid
+    WHERE rc.org_id = '-3'
+        AND rc.deleted_at IS NULL
+        AND rc.name IN (
+            'lightwell/java/validated',
+            'lightwell/java/remediated',
+            'lightwell/java/predisclosure',
+            'lightwell/python/validated',
+            'lightwell/python/remediated',
+            'lightwell/python/predisclosure'
+        )
+    ORDER BY base_path, lp.package_group, lp.name, lpv.version;
+  " >"$catalog_tsv"
+
+  local base_path content_type
+  for base_path in java/validated java/remediated java/predisclosure python/validated python/remediated python/predisclosure; do
+    local repo_rows
+    repo_rows="$(mktemp)"
+    awk -F '\t' -v bp="$base_path" '$1 == bp { print }' "$catalog_tsv" >"$repo_rows"
+    if [[ ! -s "$repo_rows" ]]; then
+      rm -f "$repo_rows"
+      continue
+    fi
+    content_type=$(head -n1 "$repo_rows" | cut -f2)
+    echo ""
+    echo "==> Seeding Pulp catalog (${base_path}) from database..."
+    find_distribution_by_base_path "$domain_name" \
+      "$(if [[ "$content_type" == maven ]]; then echo maven/maven; else echo python/pypi; fi)" \
+      "$base_path"
+    if [[ -z "$RESULT" ]]; then
+      echo "ERROR: Distribution not found for ${base_path} in domain ${domain_name}" >&2
+      rm -f "$repo_rows"
+      exit 1
+    fi
+    local distribution repo_href
+    distribution=$(pulp_api GET "$RESULT")
+    repo_href=$(echo "$distribution" | jq -er '.repository')
+    case "$content_type" in
+      maven)
+        local maven_rows
+        maven_rows="$(mktemp)"
+        cut -f3,4,5 "$repo_rows" >"$maven_rows"
+        seed_maven_repo_from_db "$domain_name" "$repo_href" "$base_path" "$maven_rows"
+        rm -f "$maven_rows"
+        ;;
+      python)
+        local python_rows
+        python_rows="$(mktemp)"
+        cut -f4,5 "$repo_rows" >"$python_rows"
+        seed_python_repo_from_db "$domain_name" "$repo_href" "$base_path" "$python_rows"
+        rm -f "$python_rows"
+        ;;
+      *)
+        echo "ERROR: Unsupported content type ${content_type} for ${base_path}" >&2
+        rm -f "$repo_rows"
+        exit 1
+        ;;
+    esac
+    rm -f "$repo_rows"
+  done
+  rm -f "$catalog_tsv"
 }
 
 # Ensures repos from a JSON allowlist file under the given domain.
@@ -636,19 +677,12 @@ create_repos_from_json() {
     case "$entry_type" in
       maven)
         ensure_pulp_repo "$domain_name" maven "$entry_base_path" "$REMOTE_URL"
-        if [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "$VALIDATED_BASE_PATH" ]]; then
-          seed_validated_maven_packages "$domain_name" "$REPO_HREF" "$VALIDATED_PACKAGE_COUNT"
-        else
+        if [[ "$entry_base_path" != "java/validated" && "$entry_base_path" != "java/remediated" && "$entry_base_path" != "java/predisclosure" ]]; then
           seed_maven_packages "$domain_name" "$REPO_HREF" "$entry_base_path"
         fi
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
-        if [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "python/remediated" ]]; then
-          populate_python_repo "$domain_name" "$entry_base_path" "${REPO_DIR}/scripts/fixtures/python_remediated"
-        elif [[ "$domain_name" == "$DOMAIN" && "$entry_base_path" == "python/predisclosure" ]]; then
-          populate_python_repo "$domain_name" "$entry_base_path" "${REPO_DIR}/scripts/fixtures/python_predisclosure"
-        fi
         ;;
       *)
         echo "WARN: Skipping unsupported type '${entry_type}' for ${entry_name}"
@@ -694,24 +728,36 @@ if [[ "$import_err" -ne 0 ]]; then
   exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# Step 4: Seed vulnerabilities, advisories, and the package mirror (SQL)
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "==> Seeding lightwell vulnerabilities, advisories, and package mirror..."
+"${REPO_DIR}/scripts/seed_lightwell_dev.sh"
+
+# ---------------------------------------------------------------------------
+# Step 5: Upload catalog packages into Pulp from the SQL package seed
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "==> Seeding Pulp catalog from database (domain ${DOMAIN})..."
+seed_pulp_catalog_from_database "$DOMAIN"
+
+# ---------------------------------------------------------------------------
+# Step 6: Fill the package mirror from Pulp
+# ---------------------------------------------------------------------------
+
+echo ""
+echo "==> Importing lightwell packages into the mirror..."
+
 import_err=0
-(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true CLIENTS_PULP_USERNAME="${PULP_USER}" CLIENTS_PULP_PASSWORD="${PULP_PASS}" go run ./cmd/external-repos/main.go import-lightwell-packages) || import_err=$?
+(cd "${REPO_DIR}" && FEATURES_LIGHTWELL_ENABLED=true CLIENTS_PULP_USERNAME="${PULP_USER}" CLIENTS_PULP_PASSWORD="${PULP_PASS}" go run ./cmd/external-repos/main.go import-lightwell-packages --force) || import_err=$?
 
 if [[ "$import_err" -ne 0 ]]; then
   echo "ERROR: import packages failed (exit code ${import_err})" >&2
   exit 1
 fi
-
-# ---------------------------------------------------------------------------
-# Step 4: Seed vulnerabilities, advisories, and the package mirror
-# ---------------------------------------------------------------------------
-# Pulp still holds the catalog used by the endpoints that read Pulp directly.
-# This replaces the mirror rows for the four org -3 repositories so the list
-# endpoints match the advisory fixed_versions.
-
-echo ""
-echo "==> Seeding lightwell vulnerabilities, advisories, and package mirror..."
-"${REPO_DIR}/scripts/seed_lightwell_dev.sh"
 
 # ---------------------------------------------------------------------------
 # Done
