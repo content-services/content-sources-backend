@@ -72,6 +72,10 @@ options:
   seed_lightwell_coverage_reports: true
   # Example: "2026-10-09T13:00:00Z". A new value forces one package import.
   lightwell_package_import_force_at: ""
+  # Lightwell repository names (as in the seed allowlist, matched exactly) to hide from the list API.
+  # To also hide a repo's demo variant, list its "-demo" name explicitly.
+  # Example: ["lightwell/java/remediated", "lightwell/java/remediated-demo"]
+  lightwell_ignore_repos: []
 metrics:
   path: "/metrics"
   port: 9000

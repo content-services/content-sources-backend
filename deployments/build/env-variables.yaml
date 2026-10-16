@@ -321,6 +321,8 @@ env:
     value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
   - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
     value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+  - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+    value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
 # Only for transform-pulp-logs and hotfix-transform-pulp-logs-fix (reference floorist-bucket secret).
 env_transform_pulp_logs:
@@ -377,6 +379,10 @@ parameters:
     value: 'false'
   - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
     description: 'Example: 2026-10-09T13:00:00Z. A new value forces one package import.'
+    required: false
+    value: ""
+  - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+    description: Comma separated list of lightwell repository names (matched exactly) to hide from the repositories list API
     required: false
     value: ""
   - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB

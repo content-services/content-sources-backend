@@ -686,6 +686,17 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 		}
 	}
 
+	// Hide operator-configured lightwell repos (matched by exact name) from every list endpoint.
+	// Gated on the repo's own origin (not the request's Origin filter) so it also applies to the
+	// generic /repositories/ endpoint the lightwell UI uses, while never removing a non-lightwell
+	// repo with a matching name.
+	if ignored := config.Get().Options.LightwellIgnoreRepos; len(ignored) > 0 {
+		filteredDB = filteredDB.Where(
+			"NOT (repository_configurations.name IN ? AND repositories.origin = ?)",
+			ignored, config.OriginLightwell,
+		)
+	}
+
 	if filterData.Arch != "" {
 		arches := strings.Split(filterData.Arch, ",")
 		filteredDB = filteredDB.Where("arch IN ?", arches)

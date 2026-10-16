@@ -407,6 +407,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
             resources:
               limits:
@@ -788,6 +790,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
             resources:
               limits:
@@ -1135,6 +1139,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: retry-failed-tasks
           podSpec:
@@ -1470,6 +1476,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: retry-failed-deletion-tasks
           # https://crontab.guru/#0_6_*_*_*
@@ -1808,6 +1816,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: process-repos
           # https://crontab.guru/
@@ -2147,6 +2157,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: cleanup
           # https://crontab.guru/
@@ -2488,6 +2500,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
@@ -2827,6 +2841,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: sync-lightwell-advisories
           schedule: ${SYNC_LIGHTWELL_ADVISORIES_CRON_JOB}
@@ -3163,6 +3179,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: sync-lightwell-advisories-force
           podSpec:
@@ -3497,6 +3515,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: import-lightwell-packages
           schedule: ${IMPORT_LIGHTWELL_PACKAGES_CRON_JOB}
@@ -3833,6 +3853,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: sync-lightwell-vulns
           schedule: ${SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB}
@@ -4169,6 +4191,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
@@ -4505,6 +4529,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -4864,6 +4890,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: hotfix-transform-pulp-logs-fix
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
@@ -5201,6 +5229,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -5555,6 +5585,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: disable-snapshot-for-epel-repos
           podSpec:
@@ -5888,6 +5920,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: delete-invalid-redhat-repos
           podSpec:
@@ -6221,6 +6255,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: set-domain-label
           podSpec:
@@ -6554,6 +6590,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: set-detected-os-versions
           podSpec:
@@ -6887,6 +6925,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: move-templates-to-shared-epel
           podSpec:
@@ -7220,6 +7260,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: remove-custom-epel-repos
           podSpec:
@@ -7553,6 +7595,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
         - name: cancel-tasks
           podSpec:
             securityContext:
@@ -7886,6 +7930,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: send-template-update-events
           podSpec:
@@ -8219,6 +8265,8 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
               - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
                 value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
       database:
         name: content-sources
@@ -8320,6 +8368,11 @@ parameters:
     value: 'false'
   - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
     description: 'Example: 2026-10-09T13:00:00Z. A new value forces one package import.'
+    required: false
+    value: ''
+  - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+    description: Comma separated list of lightwell repository names (matched exactly)
+      to hide from the repositories list API
     required: false
     value: ''
   - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB
