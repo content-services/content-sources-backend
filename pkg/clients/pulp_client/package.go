@@ -10,20 +10,20 @@ import (
 // specify fields to workaround https://github.com/pulp/pulp_rpm/issues/3694
 var RpmFields = []string{"pulp_href", "name", "version", "release", "arch", "epoch", "sha256", "summary"}
 
-func (r *pulpDaoImpl) CreatePackage(ctx context.Context, artifactHref *string, uploadHref *string) (string, error) {
+func (r *pulpDaoImpl) UploadPackage(ctx context.Context, artifactHref *string, uploadHref *string) (*string, error) {
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if artifactHref == nil && uploadHref == nil {
-		return "", fmt.Errorf("must specify either artifactHref or uploadHref")
+		return nil, fmt.Errorf("must specify either artifactHref or uploadHref")
 	}
 	if artifactHref != nil && uploadHref != nil {
-		return "", fmt.Errorf("cannot specify both artifactHref and uploadHref")
+		return nil, fmt.Errorf("cannot specify both artifactHref and uploadHref")
 	}
 
-	api := client.ContentPackagesAPI.ContentRpmPackagesCreate(ctx, r.domainName)
+	api := client.ContentPackagesAPI.ContentRpmPackagesUpload(ctx, r.domainName)
 	if artifactHref != nil {
 		api = api.Artifact(*artifactHref)
 	}
@@ -36,9 +36,9 @@ func (r *pulpDaoImpl) CreatePackage(ctx context.Context, artifactHref *string, u
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return "", errorWithResponseBody("error creating package", httpResp, err)
+		return nil, errorWithResponseBody("error uploading package", httpResp, err)
 	}
-	return resp.Task, nil
+	return resp.PulpHref, nil
 }
 
 func (r *pulpDaoImpl) LookupPackage(ctx context.Context, sha256sum string) (*string, error) {

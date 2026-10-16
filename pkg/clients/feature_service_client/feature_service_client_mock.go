@@ -17,10 +17,19 @@ func NewMockFeatureServiceClient(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockFeatureServiceClient {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockFeatureServiceClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -74,7 +83,7 @@ type MockFeatureServiceClient_GetEntitledFeatures_Call struct {
 // GetEntitledFeatures is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockFeatureServiceClient_Expecter) GetEntitledFeatures(ctx interface{}, orgID interface{}) *MockFeatureServiceClient_GetEntitledFeatures_Call {
+func (_e *MockFeatureServiceClient_Expecter) GetEntitledFeatures(ctx any, orgID any) *MockFeatureServiceClient_GetEntitledFeatures_Call {
 	return &MockFeatureServiceClient_GetEntitledFeatures_Call{Call: _e.mock.On("GetEntitledFeatures", ctx, orgID)}
 }
 
@@ -146,7 +155,7 @@ type MockFeatureServiceClient_GetFeatureStatusByOrgID_Call struct {
 // GetFeatureStatusByOrgID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID string
-func (_e *MockFeatureServiceClient_Expecter) GetFeatureStatusByOrgID(ctx interface{}, orgID interface{}) *MockFeatureServiceClient_GetFeatureStatusByOrgID_Call {
+func (_e *MockFeatureServiceClient_Expecter) GetFeatureStatusByOrgID(ctx any, orgID any) *MockFeatureServiceClient_GetFeatureStatusByOrgID_Call {
 	return &MockFeatureServiceClient_GetFeatureStatusByOrgID_Call{Call: _e.mock.On("GetFeatureStatusByOrgID", ctx, orgID)}
 }
 
@@ -217,7 +226,7 @@ type MockFeatureServiceClient_ListFeatures_Call struct {
 
 // ListFeatures is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockFeatureServiceClient_Expecter) ListFeatures(ctx interface{}) *MockFeatureServiceClient_ListFeatures_Call {
+func (_e *MockFeatureServiceClient_Expecter) ListFeatures(ctx any) *MockFeatureServiceClient_ListFeatures_Call {
 	return &MockFeatureServiceClient_ListFeatures_Call{Call: _e.mock.On("ListFeatures", ctx)}
 }
 

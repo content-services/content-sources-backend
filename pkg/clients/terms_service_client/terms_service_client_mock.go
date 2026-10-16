@@ -16,10 +16,19 @@ func NewMockTermsServiceClient(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockTermsServiceClient {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockTermsServiceClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -35,72 +44,6 @@ type MockTermsServiceClient_Expecter struct {
 
 func (_m *MockTermsServiceClient) EXPECT() *MockTermsServiceClient_Expecter {
 	return &MockTermsServiceClient_Expecter{mock: &_m.Mock}
-}
-
-// IsTermsAcceptanceRequired provides a mock function for the type MockTermsServiceClient
-func (_mock *MockTermsServiceClient) IsTermsAcceptanceRequired(ctx context.Context, login string) (bool, error) {
-	ret := _mock.Called(ctx, login)
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsTermsAcceptanceRequired")
-	}
-
-	var r0 bool
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
-		return returnFunc(ctx, login)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
-		r0 = returnFunc(ctx, login)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, login)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockTermsServiceClient_IsTermsAcceptanceRequired_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsTermsAcceptanceRequired'
-type MockTermsServiceClient_IsTermsAcceptanceRequired_Call struct {
-	*mock.Call
-}
-
-// IsTermsAcceptanceRequired is a helper method to define mock.On call
-//   - ctx context.Context
-//   - login string
-func (_e *MockTermsServiceClient_Expecter) IsTermsAcceptanceRequired(ctx any, login any) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
-	return &MockTermsServiceClient_IsTermsAcceptanceRequired_Call{Call: _e.mock.On("IsTermsAcceptanceRequired", ctx, login)}
-}
-
-func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) Run(run func(ctx context.Context, login string)) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) Return(required bool, err error) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
-	_c.Call.Return(required, err)
-	return _c
-}
-
-func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) RunAndReturn(run func(ctx context.Context, login string) (bool, error)) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
-	_c.Call.Return(run)
-	return _c
 }
 
 // GetRequiredEvents provides a mock function for the type MockTermsServiceClient
@@ -161,12 +104,78 @@ func (_c *MockTermsServiceClient_GetRequiredEvents_Call) Run(run func(ctx contex
 	return _c
 }
 
-func (_c *MockTermsServiceClient_GetRequiredEvents_Call) Return(events []string, err error) *MockTermsServiceClient_GetRequiredEvents_Call {
-	_c.Call.Return(events, err)
+func (_c *MockTermsServiceClient_GetRequiredEvents_Call) Return(strings []string, err error) *MockTermsServiceClient_GetRequiredEvents_Call {
+	_c.Call.Return(strings, err)
 	return _c
 }
 
 func (_c *MockTermsServiceClient_GetRequiredEvents_Call) RunAndReturn(run func(ctx context.Context, login string) ([]string, error)) *MockTermsServiceClient_GetRequiredEvents_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsTermsAcceptanceRequired provides a mock function for the type MockTermsServiceClient
+func (_mock *MockTermsServiceClient) IsTermsAcceptanceRequired(ctx context.Context, login string) (bool, error) {
+	ret := _mock.Called(ctx, login)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsTermsAcceptanceRequired")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, login)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, login)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, login)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTermsServiceClient_IsTermsAcceptanceRequired_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsTermsAcceptanceRequired'
+type MockTermsServiceClient_IsTermsAcceptanceRequired_Call struct {
+	*mock.Call
+}
+
+// IsTermsAcceptanceRequired is a helper method to define mock.On call
+//   - ctx context.Context
+//   - login string
+func (_e *MockTermsServiceClient_Expecter) IsTermsAcceptanceRequired(ctx any, login any) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
+	return &MockTermsServiceClient_IsTermsAcceptanceRequired_Call{Call: _e.mock.On("IsTermsAcceptanceRequired", ctx, login)}
+}
+
+func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) Run(run func(ctx context.Context, login string)) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) Return(b bool, err error) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockTermsServiceClient_IsTermsAcceptanceRequired_Call) RunAndReturn(run func(ctx context.Context, login string) (bool, error)) *MockTermsServiceClient_IsTermsAcceptanceRequired_Call {
 	_c.Call.Return(run)
 	return _c
 }
