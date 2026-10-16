@@ -10,6 +10,7 @@ SELECT
     array_agg(pv.release ORDER BY pv.version) AS releases,
     array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
     array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
+    p.updated_at AS last_updated,
     COUNT(*) OVER() AS total_count
 FROM lightwell_packages p
 JOIN repository_configurations rc ON rc.uuid = p.repository_configuration_uuid
@@ -18,6 +19,11 @@ LEFT JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE r.origin = 'lightwell'
     AND (sqlc.narg(ecosystem)::text IS NULL OR r.content_type = sqlc.narg(ecosystem)::text)
     AND (sqlc.narg(name)::text IS NULL OR p.name ILIKE '%' || sqlc.narg(name)::text || '%')
+    AND (
+        sqlc.narg(search)::text IS NULL
+        OR p.name ILIKE '%' || sqlc.narg(search)::text || '%'
+        OR p.package_group ILIKE '%' || sqlc.narg(search)::text || '%'
+    )
     AND (sqlc.narg(repository)::text IS NULL OR lower(rc.name) = lower(sqlc.narg(repository)::text))
     AND (sqlc.narg(security_level)::text IS NULL OR lower(r.security_level) = lower(sqlc.narg(security_level)::text))
     AND ((rc.org_id = sqlc.arg(demo_org)::text) = sqlc.arg(is_demo)::bool)
@@ -29,8 +35,17 @@ WHERE r.origin = 'lightwell'
             WHERE btrim(t.token) = ANY(sqlc.narg(entitled_features)::text[])
         )
     )
-GROUP BY p.uuid, p.repository_configuration_uuid, rc.name, r.content_type, p.name, p.package_group
-ORDER BY p.package_group, p.name
+GROUP BY p.uuid, p.repository_configuration_uuid, rc.name, r.content_type, p.name, p.package_group, p.updated_at
+ORDER BY
+    CASE WHEN sqlc.arg(sort_column)::text = 'group_name' AND sqlc.arg(sort_direction)::text = 'asc' THEN p.package_group END ASC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'group_name' AND sqlc.arg(sort_direction)::text = 'asc' THEN p.name END ASC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'group_name' AND sqlc.arg(sort_direction)::text = 'desc' THEN p.package_group END DESC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'group_name' AND sqlc.arg(sort_direction)::text = 'desc' THEN p.name END DESC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'name' AND sqlc.arg(sort_direction)::text = 'asc' THEN p.name END ASC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'name' AND sqlc.arg(sort_direction)::text = 'desc' THEN p.name END DESC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'last_updated' AND sqlc.arg(sort_direction)::text = 'asc' THEN p.updated_at END ASC,
+    CASE WHEN sqlc.arg(sort_column)::text = 'last_updated' AND sqlc.arg(sort_direction)::text = 'desc' THEN p.updated_at END DESC,
+    p.package_group, p.name
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
 -- name: ListLightwellPackageVersions :many

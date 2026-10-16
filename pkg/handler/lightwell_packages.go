@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -44,6 +45,9 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Produce      json
 // @Param        ecosystem       query  string  false  "Filter by ecosystem (maven, python, npm)"
 // @Param        name            query  string  false  "Filter by package name (substring match)"
+// @Param        search          query  string  false  "Filter by package name or group/scope (substring match)"
+// @Param        sort_by         query  string  false  "Sort the results. Valid fields: group/name, name, scope/name, last_updated. Each may be suffixed with :asc or :desc (default asc)."
+// @Param        repository      query  string  false  "Filter by repository name"
 // @Param        security_level  query  string  false  "Filter by security level (validated, remediated)"
 // @Param        demo            query  bool    false  "Return demo repositories instead of production ones (default false)"
 // @Param        limit           query  int     false  "Limit of results to return"
@@ -58,6 +62,11 @@ func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 
 	if err := validateContentType(filters.Ecosystem); err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid ecosystem filter", err.Error())
+	}
+
+	sortColumn, sortDirection, err := parseLightwellSortBy(filters.SortBy)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid sort_by parameter", err.Error())
 	}
 
 	_, orgID := GetAccountIdOrgId(c)
@@ -84,6 +93,8 @@ func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 	opts := dao.ListLightwellPackagesOptions{
 		Demo:             filters.Demo,
 		EntitledFeatures: lightwellFeatures,
+		SortColumn:       sortColumn,
+		SortDirection:    sortDirection,
 		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
 		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
 	}
@@ -92,6 +103,9 @@ func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
 	}
 	if filters.Name != "" {
 		opts.Name = &filters.Name
+	}
+	if filters.Search != "" {
+		opts.Search = &filters.Search
 	}
 	if filters.Repository != "" {
 		opts.Repository = &filters.Repository
@@ -143,7 +157,43 @@ func mapRowToLightwellPackage(row dao.LightwellPackageRow) api.LightwellPackageR
 		RepositoryUUID: row.RepositoryConfigurationUUID,
 		Versions:       versions,
 		LatestReleases: releases,
+		LastUpdated:    row.LastUpdated,
 	}
+}
+
+// lightwellSortColumns maps the UI-facing sort_by tokens to normalized sort columns.
+// The maven-flavored "group/name" and npm-flavored "scope/name" tokens both resolve to
+// the physical package_group ordering.
+var lightwellSortColumns = map[string]string{
+	"group/name":   "group_name",
+	"scope/name":   "group_name",
+	"name":         "name",
+	"last_updated": "last_updated",
+}
+
+// parseLightwellSortBy parses a sort_by value like "group/name:desc" into a normalized
+// column and direction. An empty value yields the default ("group_name", "asc"). An
+// unknown field or direction returns an error listing the valid tokens.
+func parseLightwellSortBy(sortBy string) (column string, direction string, err error) {
+	if strings.TrimSpace(sortBy) == "" {
+		return "group_name", "asc", nil
+	}
+
+	field := strings.TrimSpace(sortBy)
+	direction = "asc"
+	if parts := strings.SplitN(sortBy, ":", 2); len(parts) == 2 {
+		field = strings.TrimSpace(parts[0])
+		direction = strings.ToLower(strings.TrimSpace(parts[1]))
+	}
+
+	column, ok := lightwellSortColumns[field]
+	if !ok {
+		return "", "", fmt.Errorf("unknown sort field %q; valid sort_by fields are: group/name, name, scope/name, last_updated (each optionally suffixed with :asc or :desc)", field)
+	}
+	if direction != "asc" && direction != "desc" {
+		return "", "", fmt.Errorf("unknown sort direction %q; valid directions are: asc, desc", direction)
+	}
+	return column, direction, nil
 }
 
 // lightwellAPIVersion is the version field on the v0.1 list responses.
@@ -262,6 +312,8 @@ func parseLightwellPackageFilters(c echo.Context) api.LightwellPackageFilterData
 	_ = echo.QueryParamsBinder(c).
 		String("ecosystem", &f.Ecosystem).
 		String("name", &f.Name).
+		String("search", &f.Search).
+		String("sort_by", &f.SortBy).
 		String("repository", &f.Repository).
 		String("security_level", &f.SecurityLevel).
 		Bool("demo", &f.Demo).

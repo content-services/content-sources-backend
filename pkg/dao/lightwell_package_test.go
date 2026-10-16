@@ -314,6 +314,93 @@ func (s *LightwellPackageSuite) TestListPackagesNameFilterCaseInsensitive() {
 	assert.Equal(s.T(), []string{""}, rows[0].UpstreamVersions)
 }
 
+func (s *LightwellPackageSuite) TestListPackagesSearchMatchesGroup() {
+	ctx, dao := s.dao()
+	testID := fmt.Sprintf("search-%d", time.Now().UnixNano())
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+
+	// Match package: name does not contain the search term; group does.
+	s.createPackageWithVersions(ctx, repoConfigUUID, "widget-lib", "com.uniquegroup",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.uniquegroup/widget-lib@1.0"})
+	// Non-match package: neither name nor group contains the search term. Proves the
+	// search param actually filters rather than being ignored.
+	s.createPackageWithVersions(ctx, repoConfigUUID, "other-lib", "com.other",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.other/other-lib@1.0"})
+
+	rows, _, err := dao.ListPackages(ctx, ListLightwellPackagesOptions{
+		Repository:       ptr(testID),
+		Search:           ptr("uniquegroup"),
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+
+	s.NoError(err)
+	s.Require().Len(rows, 1)
+	assert.Equal(s.T(), "widget-lib", rows[0].Name)
+	assert.Equal(s.T(), "com.uniquegroup", rows[0].Group)
+}
+
+func (s *LightwellPackageSuite) TestListPackagesSortByGroupNameDesc() {
+	ctx, dao := s.dao()
+	testID := fmt.Sprintf("sort-gn-%d", time.Now().UnixNano())
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+
+	s.createPackageWithVersions(ctx, repoConfigUUID, "alpha", "com.aaa",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.aaa/alpha@1.0"})
+	s.createPackageWithVersions(ctx, repoConfigUUID, "beta", "com.zzz",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.zzz/beta@1.0"})
+
+	rows, _, err := dao.ListPackages(ctx, ListLightwellPackagesOptions{
+		Repository:       ptr(testID),
+		SortColumn:       "group_name",
+		SortDirection:    "desc",
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+
+	s.NoError(err)
+	s.Require().Len(rows, 2)
+	assert.Equal(s.T(), "com.zzz", rows[0].Group, "descending group order should put com.zzz first")
+	assert.Equal(s.T(), "com.aaa", rows[1].Group)
+}
+
+func (s *LightwellPackageSuite) TestListPackagesSortByLastUpdated() {
+	ctx, dao := s.dao()
+	testID := fmt.Sprintf("sort-lu-%d", time.Now().UnixNano())
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(ctx, testID, "lightwell-maven", "validated")
+
+	// Names are chosen so alphabetical (default) order is the OPPOSITE of recency
+	// order: "aaa-stale" sorts first by name but was updated longest ago. This proves
+	// last_updated:desc actually sorts by timestamp, not by the default name ordering.
+	stalePkg := s.createPackageWithVersions(ctx, repoConfigUUID, "aaa-stale", "com.example",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.example/aaa-stale@1.0"})
+	recentPkg := s.createPackageWithVersions(ctx, repoConfigUUID, "zzz-recent", "com.example",
+		[]string{"1.0"}, []string{""}, []string{"pkg:maven/com.example/zzz-recent@1.0"})
+
+	// Set deterministic, distinct updated_at timestamps.
+	s.Require().NoError(db.DB.WithContext(ctx).Exec(
+		`UPDATE lightwell_packages SET updated_at = ? WHERE uuid = ?`, "2020-01-01T00:00:00Z", stalePkg).Error)
+	s.Require().NoError(db.DB.WithContext(ctx).Exec(
+		`UPDATE lightwell_packages SET updated_at = ? WHERE uuid = ?`, "2025-01-01T00:00:00Z", recentPkg).Error)
+
+	rows, _, err := dao.ListPackages(ctx, ListLightwellPackagesOptions{
+		Repository:       ptr(testID),
+		SortColumn:       "last_updated",
+		SortDirection:    "desc",
+		EntitledFeatures: []string{"lightwell-maven"},
+		Limit:            100,
+		Offset:           0,
+	})
+
+	s.NoError(err)
+	s.Require().Len(rows, 2)
+	assert.Equal(s.T(), "zzz-recent", rows[0].Name, "most recently updated should be first with last_updated:desc")
+	assert.Equal(s.T(), "aaa-stale", rows[1].Name)
+	assert.NotEmpty(s.T(), rows[0].LastUpdated)
+}
+
 func (s *LightwellPackageSuite) TestListPackagesSecurityLevelFilterCaseInsensitive() {
 	ctx, dao := s.dao()
 	testID := fmt.Sprintf("sec-%d", time.Now().UnixNano())

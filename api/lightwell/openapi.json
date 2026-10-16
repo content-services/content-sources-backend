@@ -111,6 +111,9 @@
                     "group": {
                         "type": "string"
                     },
+                    "last_updated": {
+                        "type": "string"
+                    },
                     "latest_releases": {
                         "items": {
                             "$ref": "#/components/schemas/api.ReleaseInfo"

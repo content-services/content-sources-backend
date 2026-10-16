@@ -729,6 +729,24 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Filter by package name or group/scope (substring match)",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort the results. Valid fields: group/name, name, scope/name, last_updated. Each may be suffixed with :asc or :desc (default asc).",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by repository name",
+                        "name": "repository",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Filter by security level (validated, remediated)",
                         "name": "security_level",
                         "in": "query"
@@ -5627,6 +5645,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "group": {
+                    "type": "string"
+                },
+                "last_updated": {
                     "type": "string"
                 },
                 "latest_releases": {
