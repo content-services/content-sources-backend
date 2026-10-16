@@ -20,6 +20,11 @@ const (
 )
 
 const (
+	CatalogSourcePulp = "pulp"
+	CatalogSourceDB   = "db"
+)
+
+const (
 	OriginExternal  = "external"
 	OriginRedHat    = "red_hat"
 	OriginUpload    = "upload"
@@ -156,6 +161,11 @@ var ExtendedReleaseStreamNames = map[string]string{
 	EEUS: "Enhanced Extended Update Support (EEUS)",
 }
 
+// LightwellClearinghouseFeature is the feature-service name for the
+// Clearinghouse SKU.  Orgs entitled to this feature bypass the terms
+// service entirely — they are handled through the Clearinghouse flow.
+const LightwellClearinghouseFeature = "lightwell-clearinghouse"
+
 // Features that do not currently use a subscription check, available to all users
 var SubscriptionFeaturesIgnored = []string{"RHEL-OS-x86_64", "", "lightwell-network-demo"}
 
@@ -204,6 +214,17 @@ func ValidDistributionMinorVersionLabel(label string) bool {
 func ValidExtendedReleaseLabel(label string) bool {
 	_, exists := ExtendedReleaseStreamNames[label]
 	return exists
+}
+
+// ValidCatalogSource reports whether source is an allowed Lens catalog backend.
+// Empty is valid and means the default (pulp).
+func ValidCatalogSource(source string) bool {
+	switch source {
+	case "", CatalogSourcePulp, CatalogSourceDB:
+		return true
+	default:
+		return false
+	}
 }
 
 func SnapshotInterval(redHat bool) string {

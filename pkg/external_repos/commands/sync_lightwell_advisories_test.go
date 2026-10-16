@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -13,21 +14,25 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
-// fakeCloudEventsClient is a minimal cloudevents.Client stub that records how
-// many events were sent so tests can assert the bridge topic was published to.
+// fakeCloudEventsClient is a minimal cloudevents.Client stub that records
+// events sent so tests can assert on count and payload content.
 type fakeCloudEventsClient struct {
-	sent int
+	sent   int
+	events []cloudevents.Event
 }
 
-func (f *fakeCloudEventsClient) Send(_ context.Context, _ cloudevents.Event) protocol.Result {
+func (f *fakeCloudEventsClient) Send(_ context.Context, e cloudevents.Event) protocol.Result {
 	f.sent++
-	return nil // nil result is treated as ACK/delivered
+	f.events = append(f.events, e)
+	return nil
 }
 
 func (f *fakeCloudEventsClient) Request(_ context.Context, _ cloudevents.Event) (*cloudevents.Event, protocol.Result) {
@@ -112,8 +117,10 @@ func mockRepoConfigFetch(mockDao *dao.MockDaoRegistry) {
 
 func testEntry() external_repos.LightwellAllowlistEntry {
 	return external_repos.LightwellAllowlistEntry{
-		Name:    testRepoName,
-		OsvPath: "lightwell/osv/java/remediated",
+		Name:     testRepoName,
+		Type:     "maven",
+		BasePath: "java/remediated",
+		OsvPath:  "lightwell/osv/java/remediated",
 	}
 }
 
@@ -183,6 +190,8 @@ func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
 
 	fakeClient := setupFakeBridgeClient(t)
 
+	const testSHA = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
@@ -193,6 +202,9 @@ func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
+	mux.HandleFunc("/java/remediated/com/example/lib-a/1.0.1/lib-a-1.0.1.jar.sha256", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testSHA)
+	})
 
 	server := setupTestServer(t, mux)
 	mockDao := dao.GetMockDaoRegistry(t)
@@ -201,15 +213,12 @@ func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
 	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
 	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.Anything).Return(nil)
 
-	// The bridge path reuses the per-org notification tracking under a sentinel
-	// org_id, so only advisories not yet sent to the bridge are published.
 	bridgeUnnotified := []dao.LightwellNotificationData{
 		{PackageName: "com.example:lib-a", AdvisoryID: "ADV-001", Severity: "9.8", FixedVersions: []string{"1.0.1"}},
 	}
 	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID).Return(bridgeUnnotified, nil)
 	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified).Return(nil)
 
-	// No orgs opted in, so the per-org path is a no-op and we isolate the bridge path.
 	mockDao.UserPreference.On("ListDistinctOrgsByPreference", mock.Anything,
 		models.UserPreferenceLightwellNotificationEnabled, "true",
 	).Return([]string{}, nil)
@@ -220,6 +229,19 @@ func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
 	assert.Equal(t, 1, fakeClient.sent, "bridge event should be sent exactly once")
 	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID)
 	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, bridgeNotificationOrgID, bridgeUnnotified)
+
+	// Verify the sent CloudEvents payload contains artifact checksums.
+	require.Len(t, fakeClient.events, 1)
+	var notifications []event.NotificationEvent
+	err = json.Unmarshal(fakeClient.events[0].Data(), &notifications)
+	require.NoError(t, err)
+	require.NotEmpty(t, notifications)
+
+	raw, _ := json.Marshal(notifications[0].Payload)
+	var payload event.LightwellPackagePayload
+	require.NoError(t, json.Unmarshal(raw, &payload))
+	require.NotEmpty(t, payload.Releases)
+	assert.Equal(t, testSHA, payload.Releases[0].ArtifactChecksums["lib-a-1.0.1.jar"])
 }
 
 func TestProcessOsvForEntry_BridgeSkippedWhenAllNotified(t *testing.T) {
@@ -547,4 +569,72 @@ func TestProcessOsvForEntry_SkipsFailedOSVFetch(t *testing.T) {
 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
+}
+
+func TestBuildChecksumRequests(t *testing.T) {
+	inputs := []event.LightwellNotificationInput{
+		{PackageName: "org.example:lib-a", FixedVersions: []string{"1.0.0", "1.0.1"}},
+		{PackageName: "org.example:lib-b", FixedVersions: []string{"1.0.0"}},
+		{PackageName: "org.example:lib-a", FixedVersions: []string{"1.0.0"}},
+	}
+
+	requests := buildChecksumRequests(inputs)
+
+	assert.Len(t, requests, 3)
+	assert.Equal(t, event.ArtifactChecksumRequest{PackageName: "org.example:lib-a", Version: "1.0.0"}, requests[0])
+	assert.Equal(t, event.ArtifactChecksumRequest{PackageName: "org.example:lib-a", Version: "1.0.1"}, requests[1])
+	assert.Equal(t, event.ArtifactChecksumRequest{PackageName: "org.example:lib-b", Version: "1.0.0"}, requests[2])
+}
+
+func TestBuildChecksumRequestsEmpty(t *testing.T) {
+	requests := buildChecksumRequests(nil)
+	assert.Empty(t, requests)
+}
+
+func TestBuildContentBaseURL(t *testing.T) {
+	origOrigin := config.Get().Clients.Pulp.ContentOrigin
+	origPrefix := config.Get().Clients.Pulp.ContentPathPrefix
+	origLW := config.Get().Clients.Pulp.LightwellContentOrigin
+	defer func() {
+		config.Get().Clients.Pulp.ContentOrigin = origOrigin
+		config.Get().Clients.Pulp.ContentPathPrefix = origPrefix
+		config.Get().Clients.Pulp.LightwellContentOrigin = origLW
+	}()
+
+	config.Get().Clients.Pulp.ContentOrigin = "https://packages.redhat.com"
+	config.Get().Clients.Pulp.ContentPathPrefix = "lightwell"
+	config.Get().Clients.Pulp.LightwellContentOrigin = ""
+
+	entry := external_repos.LightwellAllowlistEntry{
+		Name:     testRepoName,
+		BasePath: "java/remediated",
+	}
+
+	result, err := buildContentBaseURL(entry)
+	require.NoError(t, err)
+	assert.Equal(t, "https://packages.redhat.com/lightwell/java/remediated", result)
+}
+
+func TestBuildContentBaseURLLightwellOriginOverride(t *testing.T) {
+	origOrigin := config.Get().Clients.Pulp.ContentOrigin
+	origPrefix := config.Get().Clients.Pulp.ContentPathPrefix
+	origLW := config.Get().Clients.Pulp.LightwellContentOrigin
+	defer func() {
+		config.Get().Clients.Pulp.ContentOrigin = origOrigin
+		config.Get().Clients.Pulp.ContentPathPrefix = origPrefix
+		config.Get().Clients.Pulp.LightwellContentOrigin = origLW
+	}()
+
+	config.Get().Clients.Pulp.ContentOrigin = "https://default.example.com"
+	config.Get().Clients.Pulp.ContentPathPrefix = "lightwell"
+	config.Get().Clients.Pulp.LightwellContentOrigin = "https://override.example.com"
+
+	entry := external_repos.LightwellAllowlistEntry{
+		Name:     testRepoName,
+		BasePath: "java/remediated",
+	}
+
+	result, err := buildContentBaseURL(entry)
+	require.NoError(t, err)
+	assert.Equal(t, "https://override.example.com/lightwell/java/remediated", result)
 }

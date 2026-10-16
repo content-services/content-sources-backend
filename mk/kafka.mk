@@ -22,7 +22,7 @@ kafka-topics-list:  ## List the kafka topics from the kafka container
 .PHONY: kafka-topics-create
 kafka-topics-create:  ## Create the kafka topics in KAFKA_TOPICS
 	for topic in $(KAFKA_TOPICS); do \
-	    $(COMPOSE_COMMAND) exec kafka /opt/kafka/bin/kafka-topics.sh --create --topic $$topic --bootstrap-server localhost:9092; \
+	    $(COMPOSE_COMMAND) exec kafka /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic $$topic --bootstrap-server localhost:9092; \
 	done
 
 .PHONY: kafka-topics-describe

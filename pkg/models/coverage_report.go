@@ -54,6 +54,7 @@ type CoverageReport struct {
 	OrgID                    string                    `json:"org_id" gorm:"not null"`
 	AccountID                *string                   `json:"account_id,omitempty"`
 	Status                   string                    `json:"status" gorm:"not null"`
+	SkippedEntries           *int                      `json:"skipped_entries,omitempty"`
 	InputFormat              *string                   `json:"input_format,omitempty"`
 	Total                    *int                      `json:"total,omitempty"`
 	ExactMatches             *int                      `json:"exact_matches,omitempty"`
@@ -89,6 +90,7 @@ func (cr *CoverageReport) MapForUpdate() map[string]interface{} {
 	forUpdate["status"] = cr.Status
 	forUpdate["input_format"] = cr.InputFormat
 	forUpdate["total"] = cr.Total
+	forUpdate["skipped_entries"] = cr.SkippedEntries
 	forUpdate["exact_matches"] = cr.ExactMatches
 	forUpdate["partial_matches"] = cr.PartialMatches
 	forUpdate["unmatched"] = cr.Unmatched

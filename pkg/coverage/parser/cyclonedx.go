@@ -18,23 +18,23 @@ type cdxComponent struct {
 }
 
 // parseCycloneDX dispatches JSON or XML from the first non-space byte.
-func parseCycloneDX(r *bufio.Reader) ([]Package, error) {
+func parseCycloneDX(r *bufio.Reader, skipped *int) ([]Package, error) {
 	start, err := peekSBOMStart(r)
 	if err != nil {
 		return nil, fmt.Errorf("reading CycloneDX SBOM: %w", err)
 	}
 	switch start {
 	case '{', '[':
-		return parseCycloneDXJSON(r)
+		return parseCycloneDXJSON(r, skipped)
 	case '<':
-		return parseCycloneDXXML(r)
+		return parseCycloneDXXML(r, skipped)
 	default:
 		return nil, fmt.Errorf("unsupported CycloneDX encoding (supported: JSON, XML)")
 	}
 }
 
 // parseCycloneDXJSON streams metadata.component and components[] without loading the rest of the BOM.
-func parseCycloneDXJSON(r io.Reader) ([]Package, error) {
+func parseCycloneDXJSON(r io.Reader, skipped *int) ([]Package, error) {
 	dec := json.NewDecoder(r)
 	var pkgs []Package
 
@@ -42,21 +42,21 @@ func parseCycloneDXJSON(r io.Reader) ([]Package, error) {
 		"metadata": func(d *json.Decoder) error {
 			return readJSONObject(d, map[string]jsonFieldHandler{
 				"component": func(d *json.Decoder) error {
-					extracted, err := parseCDXJSONComponent(d)
+					extracted, err := parseCDXJSONComponent(d, skipped)
 					pkgs = append(pkgs, extracted...)
 					return err
 				},
 			})
 		},
 		"components": func(d *json.Decoder) error {
-			return appendParsedJSONArray(d, &pkgs, parseCDXJSONComponent)
+			return appendParsedJSONArray(d, &pkgs, func(d *json.Decoder) ([]Package, error) { return parseCDXJSONComponent(d, skipped) })
 		},
 	})
 	return pkgs, wrapParse("CycloneDX JSON", err)
 }
 
 // parseCDXJSONComponent streams one component and any nested components[] under it.
-func parseCDXJSONComponent(dec *json.Decoder) ([]Package, error) {
+func parseCDXJSONComponent(dec *json.Decoder, skipped *int) ([]Package, error) {
 	var purl, group, name, version string
 	var pkgs []Package
 
@@ -66,17 +66,22 @@ func parseCDXJSONComponent(dec *json.Decoder) ([]Package, error) {
 		"name":    func(d *json.Decoder) error { return decodeJSONString(d, &name) },
 		"version": func(d *json.Decoder) error { return decodeJSONString(d, &version) },
 		"components": func(d *json.Decoder) error {
-			return appendParsedJSONArray(d, &pkgs, parseCDXJSONComponent)
+			return appendParsedJSONArray(d, &pkgs, func(d *json.Decoder) ([]Package, error) { return parseCDXJSONComponent(d, skipped) })
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	return appendFromCDXIdentity(pkgs, purl, group, name, version), nil
+	before := len(pkgs)
+	pkgs = appendFromCDXIdentity(pkgs, purl, group, name, version)
+	if len(pkgs) == before {
+		*skipped++
+	}
+	return pkgs, nil
 }
 
 // parseCycloneDXXML walks component elements and skips tools/vulnerabilities so they are not treated as inventory.
-func parseCycloneDXXML(r io.Reader) ([]Package, error) {
+func parseCycloneDXXML(r io.Reader, skipped *int) ([]Package, error) {
 	var pkgs []Package
 	err := forEachXMLStart(r, func(dec *xml.Decoder, se xml.StartElement) error {
 		switch se.Name.Local {
@@ -84,7 +89,7 @@ func parseCycloneDXXML(r io.Reader) ([]Package, error) {
 			"formulation", "annotations", "declarations", "externalReferences":
 			return dec.Skip()
 		case "component":
-			extracted, err := decodeCDXXMLComponent(dec, se)
+			extracted, err := decodeCDXXMLComponent(dec, se, skipped)
 			pkgs = append(pkgs, extracted...)
 			return err
 		}
@@ -94,19 +99,22 @@ func parseCycloneDXXML(r io.Reader) ([]Package, error) {
 }
 
 // decodeCDXXMLComponent reads one <component> subtree, including nested children.
-func decodeCDXXMLComponent(dec *xml.Decoder, start xml.StartElement) ([]Package, error) {
+func decodeCDXXMLComponent(dec *xml.Decoder, start xml.StartElement, skipped *int) ([]Package, error) {
 	var c cdxComponent
 	if err := dec.DecodeElement(&c, &start); err != nil {
 		return nil, err
 	}
-	return flattenCDXComponent(c), nil
+	return flattenCDXComponent(c, skipped), nil
 }
 
 // flattenCDXComponent turns a component and its nested children into packages.
-func flattenCDXComponent(c cdxComponent) []Package {
+func flattenCDXComponent(c cdxComponent, skipped *int) []Package {
 	pkgs := appendFromCDXIdentity(nil, c.PURL, c.Group, c.Name, c.Version)
+	if len(pkgs) == 0 {
+		*skipped++
+	}
 	for _, child := range c.Components {
-		pkgs = append(pkgs, flattenCDXComponent(child)...)
+		pkgs = append(pkgs, flattenCDXComponent(child, skipped)...)
 	}
 	return pkgs
 }

@@ -70,6 +70,12 @@ options:
   internal_user: "internal-user"
   seed_lightwell: true
   seed_lightwell_coverage_reports: true
+  # Example: "2026-10-09T13:00:00Z". A new value forces one package import.
+  lightwell_package_import_force_at: ""
+  # Lightwell repository names (as in the seed allowlist, matched exactly) to hide from the list API.
+  # To also hide a repo's demo variant, list its "-demo" name explicitly.
+  # Example: ["lightwell/java/remediated", "lightwell/java/remediated-demo"]
+  lightwell_ignore_repos: []
 metrics:
   path: "/metrics"
   port: 9000
@@ -170,6 +176,21 @@ clients:
     client_cert_path:
     client_key_path:
     ca_cert_path:
+  # Terms service (mTLS). Certs are in Vault:
+  #   Stage: vault.devshift.net → app-interface/lightwell-ui/stage/service-account
+  #   Prod:  vault.devshift.net → app-interface/lightwell-ui/prod/service-account
+  # The Vault secret contains: cert, csr, key, password, username.
+  # For local dev, save the cert, key, and CA chain as PEM files and use the *_path fields.
+  terms_service:
+    server: #https://terms.stage.api.redhat.com
+    site: lightwell
+    event_feature_map: "network:lightwell-network,academic:lightwell-research-institutions"
+    client_cert:
+    client_key:
+    ca_cert:
+    client_cert_path:
+    client_key_path:
+    ca_cert_path:
   roadmap:
     server: #https://console.stage.redhat.com/api/roadmap/v1
     username:
@@ -260,6 +281,11 @@ features:
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
   lightwell_store_uploads:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
+  lightwell_terms:
     enabled: false
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]

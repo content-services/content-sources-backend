@@ -8,7 +8,8 @@ CREATE TABLE repository_configurations (
     name VARCHAR(255) DEFAULT NULL,
     repository_uuid UUID DEFAULT NULL,
     feature_name VARCHAR(255) DEFAULT NULL,
-    last_import_repository_version TEXT DEFAULT NULL
+    last_import_repository_version TEXT DEFAULT NULL,
+    package_import_forced_at TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE repositories (
@@ -189,7 +190,14 @@ CREATE TABLE lightwell_package_versions (
     version TEXT NOT NULL,
     release TEXT NOT NULL DEFAULT '',
     published_at TEXT NOT NULL DEFAULT '',
-    purl TEXT NOT NULL DEFAULT ''
+    purl TEXT NOT NULL DEFAULT '',
+    upstream_version TEXT NOT NULL DEFAULT '',
+    project_url TEXT NOT NULL DEFAULT '',
+    license TEXT NOT NULL DEFAULT '',
+    summary TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    author TEXT NOT NULL DEFAULT '',
+    author_email TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_lightwell_package_versions_pkg_version
@@ -197,6 +205,9 @@ CREATE UNIQUE INDEX idx_lightwell_package_versions_pkg_version
 
 CREATE INDEX idx_lightwell_package_versions_repo
     ON lightwell_package_versions (repository_configuration_uuid);
+
+CREATE INDEX idx_lightwell_package_versions_pkg_upstream
+    ON lightwell_package_versions (lightwell_package_uuid, upstream_version);
 
 CREATE TABLE lightwell_beacon_sync (
     id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id),

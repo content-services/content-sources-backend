@@ -31,5 +31,12 @@
     "base_path": "python/remediated",
     "feature_name": "lightwell-network,lightwell-clearinghouse,lightwell-research-institutions",
     "osv_path": "lightwell/osv/python/remediated"
+  },
+  {
+    "name": "lightwell/python/predisclosure",
+    "type": "python",
+    "base_path": "python/predisclosure",
+    "feature_name": "lightwell-network,lightwell-clearinghouse",
+    "osv_path": "lightwell/osv/python/predisclosure"
   }
 ]

@@ -16,6 +16,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -75,6 +76,17 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 	if err != nil {
 		panic(err)
 	}
+	var tsClient terms_service_client.TermsServiceClient
+	termsClientReady := false
+	if config.TermsServiceConfigured() {
+		tsClient, err = terms_service_client.NewTermsServiceClient()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to create terms service client; terms routes will not be registered")
+		} else {
+			termsClientReady = true
+		}
+	}
+
 	var s3Client s3_client.S3Client
 	if config.Get().Clients.Lightwell.S3.CoverageUploads.Name == "" {
 		log.Warn().Msg("s3 not configured")
@@ -113,6 +125,9 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterLightwellVulnerabilityRoutes(group, daoReg)
 		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client, &fsClient)
 		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
+		if termsClientReady {
+			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
+		}
 
 		pulpClient := pulp_client.GetPulpClientWithDomain("")
 		if config.Tang == nil {

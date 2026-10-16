@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -75,6 +77,7 @@ type Clients struct {
 	Redis          Redis          `mapstructure:"redis"`
 	Candlepin      Candlepin      `mapstructure:"candlepin"`
 	FeatureService FeatureService `mapstructure:"feature_service"`
+	TermsService   TermsService   `mapstructure:"terms_service"`
 	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
 	Roadmap        Roadmap        `mapstructure:"roadmap"`
 	Jira           Jira           `mapstructure:"jira"`
@@ -110,6 +113,7 @@ type FeatureSet struct {
 	LightwellBeacon                       Feature `mapstructure:"lightwell_beacon"`
 	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
+	LightwellTerms                        Feature `mapstructure:"lightwell_terms"`
 	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
 }
 
@@ -176,6 +180,27 @@ type FeatureService struct {
 	ClientCertPath string `mapstructure:"client_cert_path"`
 	ClientKeyPath  string `mapstructure:"client_key_path"`
 	CACertPath     string `mapstructure:"ca_cert_path"`
+}
+
+type TermsService struct {
+	Server          string `mapstructure:"server"`
+	Site            string `mapstructure:"site"`
+	EventFeatureMap string `mapstructure:"event_feature_map"` // "event:feature,event:feature"
+	ClientCert      string `mapstructure:"client_cert"`
+	ClientKey       string `mapstructure:"client_key"`
+	CACert          string `mapstructure:"ca_cert"`
+	ClientCertPath  string `mapstructure:"client_cert_path"`
+	ClientKeyPath   string `mapstructure:"client_key_path"`
+	CACertPath      string `mapstructure:"ca_cert_path"`
+}
+
+func (ts TermsService) EventFeatures() map[string]string {
+	return parseEventFeatureMap(ts.EventFeatureMap)
+}
+
+// Events returns the terms event names, parsed from EventFeatureMap
+func (ts TermsService) Events() []string {
+	return slices.Collect(maps.Keys(ts.EventFeatures()))
 }
 
 type PulpLogParser struct {
@@ -292,14 +317,16 @@ type Options struct {
 	// url (https://servername) to access the api, used to reference gpg keys
 	// Supports partial hostnames (i.e. http://.server.example.com).
 	// If this is encountered (and clowder is used), it will prepend the envName from clowder
-	ExternalURL                  string   `mapstructure:"external_url"`
-	SnapshotRetainDaysLimit      int      `mapstructure:"snapshot_retain_days_limit"`
-	FeatureFilter                []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
-	EntitleAll                   bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
-	InternalUser                 string   `mapstructure:"internal_user"`
-	LoadLightwellDemo            bool     `mapstructure:"load_lightwell_demo"`
-	SeedLightwell                bool     `mapstructure:"seed_lightwell"`
-	SeedLightwellCoverageReports bool     `mapstructure:"seed_lightwell_coverage_reports"`
+	ExternalURL                   string   `mapstructure:"external_url"`
+	SnapshotRetainDaysLimit       int      `mapstructure:"snapshot_retain_days_limit"`
+	FeatureFilter                 []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
+	EntitleAll                    bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
+	InternalUser                  string   `mapstructure:"internal_user"`
+	LoadLightwellDemo             bool     `mapstructure:"load_lightwell_demo"`
+	SeedLightwell                 bool     `mapstructure:"seed_lightwell"`
+	SeedLightwellCoverageReports  bool     `mapstructure:"seed_lightwell_coverage_reports"`
+	LightwellPackageImportForceAt string   `mapstructure:"lightwell_package_import_force_at"`
+	LightwellIgnoreRepos          []string `mapstructure:"lightwell_ignore_repos"` // Lightwell repository names (as defined in the seed allowlist) to hide from the lightwell list API.
 }
 
 type Metrics struct {
@@ -378,6 +405,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.load_lightwell_demo", true)
 	v.SetDefault("options.seed_lightwell", false)
 	v.SetDefault("options.seed_lightwell_coverage_reports", false)
+	v.SetDefault("options.lightwell_package_import_force_at", "")
+	v.SetDefault("options.lightwell_ignore_repos", []string{})
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")
@@ -461,6 +490,16 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.feature_service.client_key_path", "")
 	v.SetDefault("clients.feature_service.ca_cert_path", "")
 
+	v.SetDefault("clients.terms_service.server", "")
+	v.SetDefault("clients.terms_service.site", "")
+	v.SetDefault("clients.terms_service.event_feature_map", "")
+	v.SetDefault("clients.terms_service.client_cert", "")
+	v.SetDefault("clients.terms_service.client_key", "")
+	v.SetDefault("clients.terms_service.ca_cert", "")
+	v.SetDefault("clients.terms_service.client_cert_path", "")
+	v.SetDefault("clients.terms_service.client_key_path", "")
+	v.SetDefault("clients.terms_service.ca_cert_path", "")
+
 	v.SetDefault("clients.roadmap.server", "")
 	v.SetDefault("clients.roadmap.username", "")
 	v.SetDefault("clients.roadmap.password", "")
@@ -525,6 +564,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.lightwell_store_uploads.accounts", nil)
 	v.SetDefault("features.lightwell_store_uploads.organizations", nil)
 	v.SetDefault("features.lightwell_store_uploads.users", nil)
+	v.SetDefault("features.lightwell_terms.enabled", false)
+	v.SetDefault("features.lightwell_terms.accounts", nil)
+	v.SetDefault("features.lightwell_terms.organizations", nil)
+	v.SetDefault("features.lightwell_terms.users", nil)
 	v.SetDefault("features.admin_jfrog_upload.enabled", false)
 	v.SetDefault("features.admin_jfrog_upload.accounts", nil)
 	v.SetDefault("features.admin_jfrog_upload.organizations", nil)
@@ -785,6 +828,10 @@ func FeatureServiceConfigured() bool {
 	return Get().Clients.FeatureService.Server != ""
 }
 
+func TermsServiceConfigured() bool {
+	return Get().Clients.TermsService.Server != ""
+}
+
 func RoadmapConfigured() bool {
 	return Get().Clients.Roadmap.Server != ""
 }
@@ -854,4 +901,37 @@ func FeatureAccessible(ctx context.Context, feature Feature) bool {
 		return true
 	}
 	return false
+}
+
+func parseEventFeatureMap(raw string) map[string]string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return make(map[string]string)
+	}
+
+	// Handle JSON object format (e.g. from app-interface deployment config)
+	if strings.HasPrefix(raw, "{") {
+		parsed := make(map[string]string)
+		if err := json.Unmarshal([]byte(raw), &parsed); err == nil {
+			return parsed
+		}
+		log.Warn().Str("raw", raw).Msg("event_feature_map looks like JSON but failed to parse, falling back to key:value format")
+	}
+
+	// Simple key:value,key:value format
+	eventFeatures := make(map[string]string)
+	for _, pair := range strings.Split(raw, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		event, feature, ok := strings.Cut(pair, ":")
+		event = strings.TrimSpace(event)
+		feature = strings.TrimSpace(feature)
+		if !ok || event == "" || feature == "" {
+			continue
+		}
+		eventFeatures[event] = feature
+	}
+	return eventFeatures
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // parseCSV streams rows and extracts packages from a packageurl column (header may be preceded by metadata rows).
-func parseCSV(r io.Reader) ([]Package, error) {
+func parseCSV(r io.Reader, skipped *int) ([]Package, error) {
 	reader := csv.NewReader(r)
 	reader.FieldsPerRecord = -1
 	reader.LazyQuotes = true
@@ -37,14 +37,18 @@ func parseCSV(r io.Reader) ([]Package, error) {
 		}
 
 		if purlCol >= len(record) {
+			*skipped++
 			continue
 		}
 		purl := strings.TrimSpace(record[purlCol])
 		if purl == "" {
+			*skipped++
 			continue
 		}
 		if pkg := parsePURL(purl); pkg != nil {
 			packages = append(packages, *pkg)
+		} else {
+			*skipped++
 		}
 	}
 

@@ -47,20 +47,29 @@ func CoverageAnalysisHandler(ctx context.Context, task *models.TaskInfo, _ *queu
 	ctxWithLogger := logger.WithContext(ctx)
 
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.LightwellOrg)
-	if err != nil {
-		return err
-	}
-
 	s3Client, err := s3_client.NewS3Client(config.Get().Clients.Lightwell.S3.CoverageUploads)
 	if err != nil {
 		return fmt.Errorf("failed to initialize s3 client: %w", err)
 	}
 
-	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	source := opts.CatalogSource
+	if source == "" {
+		source = config.CatalogSourcePulp
+	}
+	opts.CatalogSource = source
 
-	if config.Tang == nil {
-		return fmt.Errorf("no tang configuration present")
+	var pulpClient pulp_client.PulpClient
+	var tang tangy.Tangy
+	if source != config.CatalogSourceDB {
+		domainName, err := daoReg.Domain.Fetch(ctxWithLogger, config.LightwellOrg)
+		if err != nil {
+			return err
+		}
+		pulpClient = pulp_client.GetPulpClientWithDomain(domainName)
+		if config.Tang == nil {
+			return fmt.Errorf("no tang configuration present")
+		}
+		tang = *config.Tang
 	}
 
 	ca := CoverageAnalysis{
@@ -69,7 +78,7 @@ func CoverageAnalysisHandler(ctx context.Context, task *models.TaskInfo, _ *queu
 		daoReg:     daoReg,
 		s3Client:   s3Client,
 		pulpClient: pulpClient,
-		tang:       *config.Tang,
+		tang:       tang,
 	}
 	err = ca.Run()
 	if err == nil {
@@ -136,8 +145,8 @@ func (c *CoverageAnalysis) Run() error {
 		if parsedPackages.SkippedEntries > 0 {
 			//nolint:staticcheck // ST1005: user-facing message persisted verbatim to AnalysisTaskError and rendered in the UI; never wrapped further
 			return fmt.Errorf(
-				"None of the %d package entries in the uploaded %s manifest include a Package URL (PURL).\n"+
-					"Coverage analysis requires PURLs to identify packages — consider regenerating the SBOM with a PURL-aware tool such as Syft.",
+				"None of the %d package entries in the uploaded %s manifest could be identified using a Package URL (PURL) or supported package metadata.\n"+
+					"Coverage analysis requires identifiable packages — consider regenerating the SBOM with a PURL-aware tool such as Syft.",
 				parsedPackages.SkippedEntries, parsedPackages.InputFormat,
 			)
 		}
@@ -149,12 +158,12 @@ func (c *CoverageAnalysis) Run() error {
 		return fmt.Errorf("failed to update coverage report status: %w", err)
 	}
 
-	validatedCatalog, snapshotAt, err := catalog.LoadCatalog(c.ctx, c.daoReg, c.pulpClient, c.tang)
+	lightwellCatalog, snapshotAt, err := catalog.LoadCatalog(c.ctx, c.daoReg, c.pulpClient, c.tang, c.payload.CatalogSource)
 	if err != nil {
 		return fmt.Errorf("failed to load catalog: %w", err)
 	}
 
-	results, summary := matcher.MatchCatalog(validatedCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
+	results, summary := matcher.MatchCatalog(lightwellCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
 
 	// CVE enrichment is best-effort: a failure to load advisories should not fail the
 	// whole analysis. On error we persist the coverage results without CVE data, leaving
@@ -170,11 +179,12 @@ func (c *CoverageAnalysis) Run() error {
 	}
 
 	err = c.daoReg.CoverageReport.SaveCoverageAnalysis(c.ctx, c.payload.CoverageReportUUID, dao.SaveCoverageAnalysisParams{
-		InputFormat: parsedPackages.InputFormat,
-		Results:     results,
-		PackageCVEs: packageCVEs,
-		CveSummary:  cveSummary,
-		Summary:     summary,
+		InputFormat:    parsedPackages.InputFormat,
+		SkippedEntries: parsedPackages.SkippedEntries,
+		Results:        results,
+		PackageCVEs:    packageCVEs,
+		CveSummary:     cveSummary,
+		Summary:        summary,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to save coverage analysis: %w", err)

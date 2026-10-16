@@ -12,6 +12,58 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const listLensCatalog = `-- name: ListLensCatalog :many
+SELECT
+    r.content_type AS ecosystem,
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.upstream_version
+FROM lightwell_package_versions pv
+JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid
+JOIN repositories r ON r.uuid = rc.repository_uuid
+WHERE rc.org_id = $1::text
+    AND r.origin = 'lightwell'
+    AND r.content_type IN ('maven', 'python')
+    AND lower(r.security_level) IN ('validated', 'remediated')
+ORDER BY r.content_type, p.package_group, p.name, pv.version
+`
+
+type ListLensCatalogRow struct {
+	Ecosystem       string `json:"ecosystem"`
+	PackageGroup    string `json:"package_group"`
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	UpstreamVersion string `json:"upstream_version"`
+}
+
+func (q *Queries) ListLensCatalog(ctx context.Context, orgID string) ([]ListLensCatalogRow, error) {
+	rows, err := q.db.Query(ctx, listLensCatalog, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLensCatalogRow{}
+	for rows.Next() {
+		var i ListLensCatalogRow
+		if err := rows.Scan(
+			&i.Ecosystem,
+			&i.PackageGroup,
+			&i.Name,
+			&i.Version,
+			&i.UpstreamVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLightwellPackageVersions = `-- name: ListLightwellPackageVersions :many
 SELECT
     pv.uuid,
@@ -23,6 +75,7 @@ SELECT
     pv.version,
     pv.release,
     pv.published_at,
+    pv.upstream_version,
     pv.purl,
     COUNT(*) OVER() AS total_count
 FROM lightwell_package_versions pv
@@ -99,6 +152,7 @@ type ListLightwellPackageVersionsRow struct {
 	Version                     string      `json:"version"`
 	Release                     string      `json:"release"`
 	PublishedAt                 string      `json:"published_at"`
+	UpstreamVersion             string      `json:"upstream_version"`
 	Purl                        string      `json:"purl"`
 	TotalCount                  int64       `json:"total_count"`
 }
@@ -134,6 +188,7 @@ func (q *Queries) ListLightwellPackageVersions(ctx context.Context, arg ListLigh
 			&i.Version,
 			&i.Release,
 			&i.PublishedAt,
+			&i.UpstreamVersion,
 			&i.Purl,
 			&i.TotalCount,
 		); err != nil {
@@ -158,6 +213,7 @@ SELECT
     array_agg(pv.version ORDER BY pv.version) AS versions,
     array_agg(pv.release ORDER BY pv.version) AS releases,
     array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
+    array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
     COUNT(*) OVER() AS total_count
 FROM lightwell_packages p
 JOIN repository_configurations rc ON rc.uuid = p.repository_configuration_uuid
@@ -204,6 +260,7 @@ type ListLightwellPackagesRow struct {
 	Versions                    interface{} `json:"versions"`
 	Releases                    interface{} `json:"releases"`
 	PublishedAts                interface{} `json:"published_ats"`
+	UpstreamVersions            interface{} `json:"upstream_versions"`
 	TotalCount                  int64       `json:"total_count"`
 }
 
@@ -236,6 +293,7 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 			&i.Versions,
 			&i.Releases,
 			&i.PublishedAts,
+			&i.UpstreamVersions,
 			&i.TotalCount,
 		); err != nil {
 			return nil, err

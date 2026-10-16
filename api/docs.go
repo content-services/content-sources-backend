@@ -40,6 +40,12 @@ const docTemplate = `{
                         "name": "file",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Catalog source for analysis: pulp (default) or db",
+                        "name": "catalog_source",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -769,6 +775,27 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/terms/required": {
+            "get": {
+                "description": "Check whether the current user must accept Lightwell terms before access.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Check if Lightwell terms acceptance is required",
+                "operationId": "getLightwellTermsRequired",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.TermsRequiredResponse"
                         }
                     }
                 }
@@ -5274,6 +5301,10 @@ const docTemplate = `{
                     "description": "Number of packages with name found but not version",
                     "type": "integer"
                 },
+                "skipped_entries": {
+                    "description": "Package entries skipped because no usable identity could be extracted; absent for older reports",
+                    "type": "integer"
+                },
                 "status": {
                     "description": "Coverage analysis task status",
                     "type": "string"
@@ -8027,6 +8058,23 @@ const docTemplate = `{
                 "use_latest": {
                     "description": "Use latest snapshot for all repositories in the template",
                     "type": "boolean"
+                }
+            }
+        },
+        "api.TermsRequiredResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "required": {
+                    "type": "boolean"
+                },
+                "site": {
+                    "type": "string"
                 }
             }
         },

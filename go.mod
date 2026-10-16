@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/content-services/lecho/v3 v3.5.2
-	github.com/content-services/tang v0.0.30
+	github.com/content-services/tang v0.0.31
 	github.com/content-services/yummy v1.0.20
 	github.com/getkin/kin-openapi v0.135.0
 	github.com/go-openapi/spec v0.22.2 // indirect
@@ -34,15 +34,15 @@ require github.com/RedHatInsights/rbac-client-go v1.0.0
 require (
 	github.com/IBM/sarama v1.61.1
 	github.com/aws/aws-sdk-go-v2 v1.47.1
-	github.com/aws/aws-sdk-go-v2/config v1.33.6
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.6
-	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.4.11
-	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.88.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.113.4
+	github.com/aws/aws-sdk-go-v2/config v1.33.7
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.7
+	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.4.14
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.89.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.1
 	github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.16.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/content-services/caliri/release/v4 v4.8.1
-	github.com/content-services/zest/release/v2026 v2026.9.1790681838
+	github.com/content-services/zest/release/v2026 v2026.10.1791550566
 	github.com/ctreminiom/go-atlassian/v2 v2.12.0
 	github.com/getsentry/sentry-go v0.49.0
 	github.com/getsentry/sentry-go/zerolog v0.49.0
@@ -56,7 +56,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/project-kessel/kessel-sdk-go v1.13.0
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.1.0
-	github.com/redis/go-redis/v9 v9.22.0
+	github.com/redis/go-redis/v9 v9.23.0
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xdg/scram v1.0.5
 	go.uber.org/goleak v1.3.0
@@ -74,10 +74,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.10.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.38.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.10.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.38.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -127,7 +127,7 @@ require (
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/atomic v1.12.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect

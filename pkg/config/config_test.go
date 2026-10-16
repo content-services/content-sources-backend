@@ -79,6 +79,58 @@ func runTestCustomHTTPErrorHandler(t *testing.T, e *echo.Echo, method string, gi
 	}
 }
 
+func TestTermsServiceConfigured(t *testing.T) {
+	c := Get()
+
+	c.Clients.TermsService.Server = ""
+	assert.False(t, TermsServiceConfigured())
+
+	c.Clients.TermsService.Server = "https://terms.stage.api.redhat.com"
+	assert.True(t, TermsServiceConfigured())
+
+	// reset to avoid leaking state into other tests
+	c.Clients.TermsService.Server = ""
+}
+
+func TestParseEventFeatureMap(t *testing.T) {
+	assert.Equal(t, map[string]string{}, parseEventFeatureMap(""))
+	assert.Equal(t, map[string]string{}, parseEventFeatureMap("bad-entry,also-bad"))
+	assert.Equal(t, map[string]string{
+		"network":  "lightwell-network",
+		"academic": "lightwell-research-institutions",
+	}, parseEventFeatureMap("network:lightwell-network,academic:lightwell-research-institutions"))
+	assert.Equal(t, map[string]string{"network": "lightwell-network"}, parseEventFeatureMap("bad,network:lightwell-network"))
+
+	// Deployed stage config uses JSON format — parser must handle it
+	assert.Equal(t, map[string]string{
+		"network":  "lightwell-network",
+		"academic": "lightwell-research-institutions",
+	}, parseEventFeatureMap(`{"network":"lightwell-network","academic":"lightwell-research-institutions"}`))
+}
+
+func TestTermsServiceCertUser(t *testing.T) {
+	c := Get()
+	c.Clients.TermsService.ClientCert = "test-cert"
+	c.Clients.TermsService.ClientKey = "test-key"
+	c.Clients.TermsService.CACert = "test-ca"
+	c.Clients.TermsService.ClientCertPath = "/path/to/cert"
+	c.Clients.TermsService.ClientKeyPath = "/path/to/key"
+	c.Clients.TermsService.CACertPath = "/path/to/ca"
+
+	certUser := &TermsServiceCertUser{}
+	assert.Equal(t, "test-cert", certUser.ClientCert())
+	assert.Equal(t, "test-key", certUser.ClientKey())
+	assert.Equal(t, "test-ca", certUser.CACert())
+	assert.Equal(t, "/path/to/cert", certUser.ClientCertPath())
+	assert.Equal(t, "/path/to/key", certUser.ClientKeyPath())
+	assert.Equal(t, "/path/to/ca", certUser.CACertPath())
+	assert.Equal(t, "terms_service", certUser.Label())
+	assert.Equal(t, "", certUser.Proxy())
+
+	// reset to avoid leaking state into other tests
+	c.Clients.TermsService = TermsService{}
+}
+
 func TestClowderS3URL(t *testing.T) {
 	assert.Equal(t, "http://foo:80", ClowderS3Url(clowder.ObjectStoreConfig{
 		Hostname: "foo",

@@ -183,6 +183,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -289,6 +297,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -379,6 +405,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
             resources:
               limits:
@@ -536,6 +566,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -642,6 +680,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -732,6 +788,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
             resources:
               limits:
@@ -855,6 +915,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -961,6 +1029,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -1051,6 +1137,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: retry-failed-tasks
           podSpec:
@@ -1162,6 +1252,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -1268,6 +1366,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -1358,6 +1474,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: retry-failed-deletion-tasks
           # https://crontab.guru/#0_6_*_*_*
@@ -1472,6 +1592,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -1578,6 +1706,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -1668,6 +1814,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: process-repos
           # https://crontab.guru/
@@ -1783,6 +1933,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -1889,6 +2047,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -1979,6 +2155,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: cleanup
           # https://crontab.guru/
@@ -2096,6 +2276,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -2202,6 +2390,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -2292,6 +2498,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: pulp-orphan-cleanup
           # https://crontab.guru/
@@ -2407,6 +2617,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -2513,6 +2731,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -2603,6 +2839,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: sync-lightwell-advisories
           schedule: ${SYNC_LIGHTWELL_ADVISORIES_CRON_JOB}
@@ -2715,6 +2955,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -2821,6 +3069,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -2911,6 +3177,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: sync-lightwell-advisories-force
           podSpec:
@@ -3021,6 +3291,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -3127,6 +3405,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -3217,6 +3513,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: import-lightwell-packages
           schedule: ${IMPORT_LIGHTWELL_PACKAGES_CRON_JOB}
@@ -3329,6 +3629,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -3435,6 +3743,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -3525,6 +3851,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: sync-lightwell-vulns
           schedule: ${SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB}
@@ -3637,6 +3967,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -3743,6 +4081,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -3833,6 +4189,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: transform-pulp-logs
           schedule: "0 1 * * *"
@@ -3945,6 +4305,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -4051,6 +4419,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -4141,6 +4527,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -4276,6 +4666,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -4382,6 +4780,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -4472,6 +4888,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: hotfix-transform-pulp-logs-fix
           suspend: ${{SUSPEND_TRANSFORM_PULP_LOGS}}
@@ -4585,6 +5005,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -4691,6 +5119,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -4781,6 +5227,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
               - name: CLIENTS_PULP_LOG_PARSER_S3_NAME
                 valueFrom:
                   secretKeyRef:
@@ -4911,6 +5361,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5017,6 +5475,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -5107,6 +5583,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: disable-snapshot-for-epel-repos
           podSpec:
@@ -5216,6 +5696,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5322,6 +5810,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -5412,6 +5918,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: delete-invalid-redhat-repos
           podSpec:
@@ -5521,6 +6031,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5627,6 +6145,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -5717,6 +6253,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: set-domain-label
           podSpec:
@@ -5826,6 +6366,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -5932,6 +6480,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -6022,6 +6588,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: set-detected-os-versions
           podSpec:
@@ -6131,6 +6701,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -6237,6 +6815,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -6327,6 +6923,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: move-templates-to-shared-epel
           podSpec:
@@ -6436,6 +7036,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -6542,6 +7150,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -6632,6 +7258,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: remove-custom-epel-repos
           podSpec:
@@ -6741,6 +7371,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -6847,6 +7485,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -6937,6 +7593,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
         - name: cancel-tasks
           podSpec:
             securityContext:
@@ -7046,6 +7706,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -7152,6 +7820,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -7242,6 +7928,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
         - name: send-template-update-events
           podSpec:
@@ -7351,6 +8041,14 @@ objects:
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ACCOUNTS}
               - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
                 value: ${FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+                value: ${FEATURES_LIGHTWELL_TERMS_ENABLED}
+              - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+                value: ${FEATURES_LIGHTWELL_TERMS_ACCOUNTS}
+              - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+                value: ${FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS}
+              - name: FEATURES_LIGHTWELL_TERMS_USERS
+                value: ${FEATURES_LIGHTWELL_TERMS_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ENABLED}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_USERS
@@ -7457,6 +8155,24 @@ objects:
                     name: content-sources-candlepin
                     key: key
                     optional: true
+              - name: CLIENTS_TERMS_SERVICE_SERVER
+                value: ${CLIENTS_TERMS_SERVICE_SERVER}
+              - name: CLIENTS_TERMS_SERVICE_SITE
+                value: ${CLIENTS_TERMS_SERVICE_SITE}
+              - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+                value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: cert
+                    optional: true
+              - name: CLIENTS_TERMS_SERVICE_CLIENT_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: terms-service-cert
+                    key: key
+                    optional: true
               - name: CLIENTS_ROADMAP_SERVER
                 value: ${CLIENTS_ROADMAP_SERVER}
               - name: FEATURES_KESSEL_ENABLED
@@ -7547,6 +8263,10 @@ objects:
                 value: ${OPTIONS_SEED_LIGHTWELL}
               - name: OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS
                 value: ${OPTIONS_SEED_LIGHTWELL_COVERAGE_REPORTS}
+              - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+                value: ${OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT}
+              - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+                value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
       database:
         name: content-sources
@@ -7646,6 +8366,15 @@ parameters:
     description: whether to suspend the import-lightwell-packages cronjob
     required: false
     value: 'false'
+  - name: OPTIONS_LIGHTWELL_PACKAGE_IMPORT_FORCE_AT
+    description: 'Example: 2026-10-09T13:00:00Z. A new value forces one package import.'
+    required: false
+    value: ''
+  - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
+    description: Comma separated list of lightwell repository names (matched exactly)
+      to hide from the repositories list API
+    required: false
+    value: ''
   - name: SYNC_LIGHTWELL_VULNERABILITIES_CRON_JOB
     value: 0 */2 * * *
   - name: SUSPEND_SYNC_LIGHTWELL_VULNERABILITIES
@@ -7782,6 +8511,15 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_LIGHTWELL_STORE_UPLOADS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_TERMS_ENABLED
+    description: Whether the Lightwell Terms feature should be turned on
+    value: 'false'
+  - name: FEATURES_LIGHTWELL_TERMS_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_LIGHTWELL_TERMS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_LIGHTWELL_TERMS_USERS
+    description: Comma separated list of usernames that can access the feature
   - name: FEATURES_ADMIN_JFROG_UPLOAD_ENABLED
     description: Whether the Admin JFrog Upload feature should be turned on
     value: 'false'
@@ -7839,6 +8577,15 @@ parameters:
   - name: CLIENTS_CANDLEPIN_SERVER
     value: ''
   - name: CLIENTS_FEATURE_SERVICE_SERVER
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_SERVER
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_SITE
+    description: Terms service site identifier (e.g. lightwell)
+    value: ''
+  - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
+    description: Comma-separated mapping of terms event to required entitled feature
+      name (e.g. network:lightwell-network,academic:lightwell-research-institutions)
     value: ''
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import

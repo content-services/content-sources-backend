@@ -21,7 +21,7 @@ type ListPackagesRequest struct {
 	Search string `query:"search"`                   // Name or group to optionally filter-on
 }
 
-// ReleaseInfo represents the latest release information for a package version
+// ReleaseInfo represents the latest release information for a package version.
 type ReleaseInfo struct {
 	Version   string `json:"version"`
 	Release   string `json:"release"`

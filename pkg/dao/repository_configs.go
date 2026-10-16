@@ -686,6 +686,17 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 		}
 	}
 
+	// Hide operator-configured lightwell repos (matched by exact name) from every list endpoint.
+	// Gated on the repo's own origin (not the request's Origin filter) so it also applies to the
+	// generic /repositories/ endpoint the lightwell UI uses, while never removing a non-lightwell
+	// repo with a matching name.
+	if ignored := config.Get().Options.LightwellIgnoreRepos; len(ignored) > 0 {
+		filteredDB = filteredDB.Where(
+			"NOT (repository_configurations.name IN ? AND repositories.origin = ?)",
+			ignored, config.OriginLightwell,
+		)
+	}
+
 	if filterData.Arch != "" {
 		arches := strings.Split(filterData.Arch, ",")
 		filteredDB = filteredDB.Where("arch IN ?", arches)
@@ -2229,23 +2240,42 @@ func (r repositoryConfigDaoImpl) SetPartnerRepo(ctx context.Context, repoConfigU
 	return r.db.WithContext(ctx).Model(&repoConfig).Omit("Repository").Update("partner", partner).Error
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx context.Context) ([]LightwellRepoToImport, error) {
+func lightwellImportContentTypes(ecosystems []string) []string {
+	if len(ecosystems) == 0 {
+		return []string{config.ContentTypeMaven, config.ContentTypePython, config.ContentTypeNpm}
+	}
+	return ecosystems
+}
+
+func sqlPlaceholders(n int) string {
+	return strings.Repeat("?,", n-1) + "?"
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx context.Context, filter LightwellRepoImportFilter) ([]LightwellRepoToImport, error) {
+	contentTypes := lightwellImportContentTypes(filter.Ecosystems)
+	args := []any{config.LightwellOrg, config.LightwellDemoOrg}
+	for _, contentType := range contentTypes {
+		args = append(args, contentType)
+	}
+	args = append(args, filter.Name, filter.Name)
+
 	var out []LightwellRepoToImport
-	rows, err := r.db.WithContext(ctx).Raw(`
+	rows, err := r.db.WithContext(ctx).Raw(fmt.Sprintf(`
 		SELECT
 			rc.uuid,
 			rc.org_id,
 			rc.name,
 			r.content_type,
 			COALESCE(r.published_distribution_base_path, ''),
-			COALESCE(rc.last_import_repository_version, '')
+			COALESCE(rc.last_import_repository_version, ''),
+			COALESCE(rc.package_import_forced_at, '')
 		FROM repository_configurations rc
 		JOIN repositories r ON r.uuid = rc.repository_uuid
 		WHERE rc.org_id IN (?, ?)
-			AND r.content_type IN (?, ?, ?)
+			AND r.content_type IN (%s)
 			AND rc.deleted_at IS NULL
-	`, config.LightwellOrg, config.LightwellDemoOrg,
-		config.ContentTypeMaven, config.ContentTypePython, config.ContentTypeNpm).Rows()
+			AND (? = '' OR lower(rc.name) = lower(?))
+	`, sqlPlaceholders(len(contentTypes))), args...).Rows()
 	if err != nil {
 		return nil, err
 	}
@@ -2254,7 +2284,7 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx con
 	for rows.Next() {
 		var item LightwellRepoToImport
 		if err := rows.Scan(&item.RepoConfigUUID, &item.OrgID, &item.Name,
-			&item.ContentType, &item.BasePath, &item.LastImportRepositoryVersion); err != nil {
+			&item.ContentType, &item.BasePath, &item.LastImportRepositoryVersion, &item.PackageImportForcedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -2262,9 +2292,15 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx con
 	return out, rows.Err()
 }
 
-func (r repositoryConfigDaoImpl) InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string) error {
+func (r repositoryConfigDaoImpl) InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string, forceRequest string) error {
+	updates := map[string]any{
+		"last_import_repository_version": versionHref,
+	}
+	if forceRequest != "" {
+		updates["package_import_forced_at"] = forceRequest
+	}
 	return r.db.WithContext(ctx).
 		Model(&models.RepositoryConfiguration{}).
 		Where("uuid = ?", repoConfigUUID).
-		UpdateColumn("last_import_repository_version", versionHref).Error
+		UpdateColumns(updates).Error
 }

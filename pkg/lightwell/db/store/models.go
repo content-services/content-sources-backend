@@ -67,6 +67,13 @@ type LightwellPackageVersion struct {
 	Release                     string    `json:"release"`
 	PublishedAt                 string    `json:"published_at"`
 	Purl                        string    `json:"purl"`
+	UpstreamVersion             string    `json:"upstream_version"`
+	ProjectUrl                  string    `json:"project_url"`
+	License                     string    `json:"license"`
+	Summary                     string    `json:"summary"`
+	Description                 string    `json:"description"`
+	Author                      string    `json:"author"`
+	AuthorEmail                 string    `json:"author_email"`
 }
 
 type LightwellVulnerability struct {
@@ -126,4 +133,5 @@ type RepositoryConfiguration struct {
 	RepositoryUuid              pgtype.UUID `json:"repository_uuid"`
 	FeatureName                 pgtype.Text `json:"feature_name"`
 	LastImportRepositoryVersion *string     `json:"last_import_repository_version"`
+	PackageImportForcedAt       string      `json:"package_import_forced_at"`
 }
