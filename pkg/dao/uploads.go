@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"errors"
+	"strconv"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -11,6 +13,11 @@ import (
 type uploadDaoImpl struct {
 	db         *gorm.DB
 	pulpClient pulp_client.PulpClient
+}
+
+type UploadChunkRange struct {
+	Offset int64
+	Size   int64
 }
 
 func GetUploadDao(db *gorm.DB, pulpClient pulp_client.PulpClient) UploadDao {
@@ -29,6 +36,7 @@ func (t uploadDaoImpl) StoreFileUpload(ctx context.Context, orgID string, upload
 	upload.ChunkSize = chunkSize
 	upload.Size = uploadSize
 	upload.ChunkList = []string{}
+	upload.ChunkMetadata = models.UploadChunkMetadata{}
 
 	db := t.db.Model(models.Upload{}).WithContext(ctx).Create(&upload)
 	if db.Error != nil {
@@ -57,13 +65,57 @@ func (t uploadDaoImpl) GetExistingUploadIDAndCompletedChunks(ctx context.Context
 	return result.UploadUUID, result.ChunkList, nil
 }
 
-func (t uploadDaoImpl) StoreChunkUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string) error {
+func (t uploadDaoImpl) GetCompletedUploadChunk(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkRange UploadChunkRange) (*models.Upload, error) {
+	offsetKey := strconv.FormatInt(chunkRange.Offset, 10)
+
+	var upload models.Upload
+	err := t.db.WithContext(ctx).
+		Model(&models.Upload{}).
+		Select("upload_uuid", "size").
+		Where("org_id = ? AND upload_uuid = ?", orgID, uploadUUID).
+		Where(
+			`(chunk_metadata -> ?::text)
+				@> jsonb_build_object(
+					'size', ?::bigint,
+					'sha256', ?::text
+				)`,
+			offsetKey,
+			chunkRange.Size,
+			sha256,
+		).
+		Take(&upload).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &upload, nil
+}
+
+func (t uploadDaoImpl) StoreChunkUpload(ctx context.Context, orgID string, uploadUUID string, sha256 string, chunkRange UploadChunkRange) error {
+	offsetKey := strconv.FormatInt(chunkRange.Offset, 10)
+
 	db := t.db.Model(models.Upload{}).
 		WithContext(ctx).
 		Where("org_id = ?", orgID).
 		Where("upload_uuid = ?", uploadUUID).
-		Where("? != all(chunk_list)", sha256).
-		Update("chunk_list", gorm.Expr(`array_append(chunk_list, ?)`, sha256))
+		Updates(map[string]any{
+			"chunk_list": gorm.Expr(`array_append(chunk_list, ?)`, sha256),
+			"chunk_metadata": gorm.Expr(
+				`jsonb_set(
+					chunk_metadata,
+					ARRAY[?::text],
+					jsonb_build_object('size', ?::bigint, 'sha256', ?::text),
+					true
+				)`,
+				offsetKey,
+				chunkRange.Size,
+				sha256,
+			),
+		})
 
 	if db.Error != nil {
 		return db.Error
