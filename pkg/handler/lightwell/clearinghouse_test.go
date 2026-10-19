@@ -188,6 +188,7 @@ func (s *ClearinghouseSuite) TestAddFiles() {
 	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer}, nil).Once()
 	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes}, nil).Once()
 	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes, other}, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes, other}, nil).Once()
 	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes, other, extra}, nil).Once()
 
 	path := "/clearinghouse/submissions/" + id.String() + "/files"
@@ -233,6 +234,15 @@ func (s *ClearinghouseSuite) TestAddFiles() {
 	}))
 	s.Equal(http.StatusConflict, code, string(body))
 	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 3)
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Len(fetched.Files, 4)
+	for _, submissionFile := range fetched.Files {
+		s.NotEqual("extra.txt", submissionFile.Filename)
+	}
 
 	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, path, "files", map[string]string{
 		"extra.txt": "new",
@@ -298,11 +308,18 @@ func (s *ClearinghouseSuite) TestDeleteFile() {
 	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
 	now := time.Now().UTC()
 	notes := clearinghouseFile(id, "notes.txt", "user", now)
+	remaining := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "vulnerabilities.json", "user", now),
+		clearinghouseFile(id, "reproducer.py", "user", now),
+		clearinghouseFile(id, "extra.txt", "user", now),
+	}
 	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Twice()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Once()
 	s.reg.ClearinghouseUpload.On("DeleteFileIfUploading", mock.Anything, id, "notes.txt", mock.Anything).
 		Return(func(_ context.Context, _ uuid.UUID, _ string, after func(dao.ClearinghouseUploadFile) error) error {
 			return after(notes)
 		}).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(remaining, nil).Once()
 	s.s3Client.On("Delete", mock.Anything, notes.Filepath).Return(nil).Once()
 
 	path := "/clearinghouse/submissions/" + id.String() + "/files/notes.txt"
@@ -313,6 +330,15 @@ func (s *ClearinghouseSuite) TestDeleteFile() {
 	s.Equal(http.StatusNoContent, code, string(body))
 	s.s3Client.AssertNumberOfCalls(s.T(), "Delete", 1)
 
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Len(fetched.Files, 3)
+	for _, submissionFile := range fetched.Files {
+		s.Equal("user", submissionFile.Username)
+		s.False(submissionFile.CreatedAt.IsZero())
+	}
 }
 func (s *ClearinghouseSuite) TestDeleteOriginalFile() {
 	s.enableClearinghouse()
@@ -347,6 +373,7 @@ func (s *ClearinghouseSuite) TestDeleteSubmission() {
 	reproducer := clearinghouseFile(id, "reproducer.py", "user", upload.CreatedAt)
 	original := clearinghouseFile(id, "vulnerabilities.json", "user", upload.CreatedAt)
 	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Times(3)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(dao.ClearinghouseUpload{}, pgx.ErrNoRows).Once()
 	s.reg.ClearinghouseUpload.On("DeleteFileIfUploading", mock.Anything, id, "missing.txt", mock.Anything).Return(pgx.ErrNoRows).Once()
 	s.reg.ClearinghouseUpload.On("DeleteFileIfUploading", mock.Anything, id, "reproducer.py", mock.Anything).
 		Return(func(_ context.Context, _ uuid.UUID, _ string, after func(dao.ClearinghouseUploadFile) error) error {
@@ -368,6 +395,8 @@ func (s *ClearinghouseSuite) TestDeleteSubmission() {
 	s.Equal(http.StatusNoContent, code, string(body))
 	s.s3Client.AssertNumberOfCalls(s.T(), "Delete", 2)
 
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
+	s.Equal(http.StatusNotFound, code, string(body))
 }
 func (s *ClearinghouseSuite) TestListAndGet() {
 	s.enableClearinghouse()
@@ -394,6 +423,10 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 		return orgID != nil && *orgID == test_handler.MockOrgId
 	})).Return(int64(1), nil).Once()
 	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id}).Return(files, nil).Once()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, otherID).Return(other, nil)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(mine, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(files, nil).Once()
+
 	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions"))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	var listed api.ClearinghouseSubmissionCollectionResponse
@@ -410,6 +443,18 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 		s.False(submissionFile.CreatedAt.IsZero())
 	}
 
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Equal(id.String(), fetched.UUID)
+	s.Equal(api.ClearinghouseSubmissionStatusPending, fetched.Status)
+	s.False(fetched.CreatedAt.IsZero())
+	s.Require().Len(fetched.Files, 3)
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
+	s.Equal(http.StatusNotFound, code, string(body))
+
 	s.enableRead()
 	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(func(params dao.ListClearinghouseUploadsParams) bool {
 		return params.OrgID == nil && params.Limit == 100 && params.Offset == 0
@@ -418,10 +463,19 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 		return orgID == nil
 	})).Return(int64(2), nil).Once()
 	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id, otherID}).Return(files, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, otherID).Return([]dao.ClearinghouseUploadFile{}, nil).Once()
+
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions"))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Require().NoError(json.Unmarshal(body, &listed))
 	s.Len(listed.Data, 2)
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Equal(otherID.String(), fetched.UUID)
+	s.Equal("someone", fetched.Username)
+	s.Equal(api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
 }
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {

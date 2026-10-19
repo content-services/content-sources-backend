@@ -50,6 +50,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
+	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
 }
 
@@ -327,6 +328,30 @@ func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 	return c.JSON(http.StatusOK, handler.SetCollectionResponseMetadata(&response, c, total))
 }
 
+// getSubmission godoc
+// @Summary      Get a clearinghouse submission
+// @ID           getClearinghouseSubmission
+// @Description  Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch any submission. File contents are not included.
+// @Tags         lightwell
+// @Produce      json
+// @Param        uuid path string true "Clearinghouse submission UUID"
+// @Success      200 {object} api.ClearinghouseSubmission
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid} [get]
+func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
+	upload, err := h.visibleUpload(c)
+	if err != nil {
+		return err
+	}
+	files, err := h.Uploads.ListFiles(c.Request().Context(), upload.UUID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
+	}
+	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(upload, files))
+}
+
 type preparedClearinghouseFile struct {
 	name   string
 	header *multipart.FileHeader
@@ -510,6 +535,25 @@ func openClearinghouseFile(file preparedClearinghouseFile) (multipart.File, int6
 		return nil, 0, ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading clearinghouse submission", err.Error())
 	}
 	return body, n, nil
+}
+
+func (h *ClearinghouseHandler) visibleUpload(c echo.Context) (dao.ClearinghouseUpload, error) {
+	orgFilter, err := clearinghouseOrgFilter(c)
+	if err != nil {
+		return dao.ClearinghouseUpload{}, err
+	}
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return dao.ClearinghouseUpload{}, err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return dao.ClearinghouseUpload{}, clearinghouseStoreError(err, "Error fetching clearinghouse submission")
+	}
+	if orgFilter != nil && upload.OrgID != *orgFilter {
+		return dao.ClearinghouseUpload{}, ce.NewErrorResponse(http.StatusNotFound, "Error fetching clearinghouse submission", "Submission not found")
+	}
+	return upload, nil
 }
 
 func clearinghouseOrgFilter(c echo.Context) (*string, error) {
