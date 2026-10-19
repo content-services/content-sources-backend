@@ -477,6 +477,60 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.Equal("someone", fetched.Username)
 	s.Equal(api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
 }
+func (s *ClearinghouseSuite) TestSubmit() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	current := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	files := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "vulnerabilities.json", "user", current.CreatedAt),
+		clearinghouseFile(id, "reproducer.py", "user", current.CreatedAt),
+		clearinghouseFile(id, "extra.txt", "user", current.CreatedAt),
+	}
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(func(context.Context, uuid.UUID) (dao.ClearinghouseUpload, error) {
+		return current, nil
+	})
+	s.reg.ClearinghouseUpload.On("Submit", mock.Anything, id, "user").
+		Return(func(_ context.Context, _ uuid.UUID, username string) (dao.ClearinghouseUpload, error) {
+			if current.Status != api.ClearinghouseSubmissionStatusPending {
+				return dao.ClearinghouseUpload{}, pgx.ErrNoRows
+			}
+			now := time.Now().UTC()
+			current.Status = api.ClearinghouseSubmissionStatusSubmitted
+			current.SubmittedAt = &now
+			current.SubmittedBy = &username
+			return current, nil
+		})
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(files, nil).Once()
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Equal(api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
+	s.Require().NotNil(fetched.SubmittedBy)
+	s.Equal("user", *fetched.SubmittedBy)
+	s.Require().NotNil(fetched.SubmittedAt)
+	s.False(fetched.SubmittedAt.IsZero())
+	s.Len(fetched.Files, 3)
+
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit", clearinghouseOtherUser()))
+	s.Equal(http.StatusForbidden, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit"))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "can no longer be changed")
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/files", "files", map[string]string{
+		"late.txt": "nope",
+	}))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "can no longer be changed")
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()+"/files/extra.txt"))
+	s.Equal(http.StatusConflict, code, string(body))
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()))
+	s.Equal(http.StatusConflict, code, string(body))
+}
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
 	now := time.Now().UTC()
