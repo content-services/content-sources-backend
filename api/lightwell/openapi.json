@@ -1422,6 +1422,80 @@
                 ]
             }
         },
+        "/clearinghouse/submissions/{uuid}/archive": {
+            "get": {
+                "description": "Download the submission file and every other file in the submission as a zip archive. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "operationId": "downloadClearinghouseSubmissionArchive",
+                "parameters": [
+                    {
+                        "description": "Clearinghouse submission UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "409": {
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Conflict"
+                    },
+                    "500": {
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Download a clearinghouse submission archive",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
         "/clearinghouse/submissions/{uuid}/files": {
             "post": {
                 "description": "Upload more files onto an existing clearinghouse submission while it is pending. Anyone in the same org can add files. Requires the Lightwell clearinghouse feature.",

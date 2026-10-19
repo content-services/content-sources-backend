@@ -1,11 +1,13 @@
 package lightwell
 
 import (
+	"archive/zip"
 	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -54,6 +56,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/submission", h.downloadSubmission, rbac.RbacVerbRead)
+	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/archive", h.downloadSubmissionArchive, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/files/:filename", h.downloadSubmissionFile, rbac.RbacVerbRead)
 }
 
@@ -426,6 +429,94 @@ func (h *ClearinghouseHandler) downloadSubmission(c echo.Context) error {
 		return clearinghouseStoreError(err, "Error fetching clearinghouse submission")
 	}
 	return h.downloadClearinghouseFile(c, upload.Filename)
+}
+
+// downloadSubmissionArchive godoc
+// @Summary      Download a clearinghouse submission archive
+// @ID           downloadClearinghouseSubmissionArchive
+// @Description  Download the submission file and every other file in the submission as a zip archive. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.
+// @Tags         lightwell
+// @Produce      application/zip
+// @Param        uuid path string true "Clearinghouse submission UUID"
+// @Success      200 {file} file
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/archive [get]
+func (h *ClearinghouseHandler) downloadSubmissionArchive(c echo.Context) error {
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error downloading clearinghouse submission")
+	}
+	if err := authorizeClearinghouseDownload(c, upload); err != nil {
+		return err
+	}
+	files, err := h.Uploads.ListFiles(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error downloading clearinghouse submission")
+	}
+	if h.S3 == nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission", "s3 not configured")
+	}
+
+	ordered := clearinghouseArchiveFiles(files, upload.Filename)
+	bodies := make([]io.ReadCloser, 0, len(ordered))
+	closeBodies := func(from int) {
+		for i := from; i < len(bodies); i++ {
+			bodies[i].Close()
+		}
+	}
+	for _, file := range ordered {
+		body, err := h.S3.Get(c.Request().Context(), file.Filepath)
+		if err != nil {
+			closeBodies(0)
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission", err.Error())
+		}
+		bodies = append(bodies, body)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentType, "application/zip")
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+uploadID.String()+".zip\"")
+	c.Response().WriteHeader(http.StatusOK)
+	archive := zip.NewWriter(c.Response())
+	for i, file := range ordered {
+		entry, err := archive.Create(file.Filename)
+		if err != nil {
+			closeBodies(i)
+			_ = archive.Flush()
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission", err.Error())
+		}
+		_, err = io.Copy(entry, bodies[i])
+		bodies[i].Close()
+		if err != nil {
+			closeBodies(i + 1)
+			_ = archive.Flush()
+			return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission", err.Error())
+		}
+	}
+	if err := archive.Close(); err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission", err.Error())
+	}
+	return nil
+}
+
+func clearinghouseArchiveFiles(files []dao.ClearinghouseUploadFile, submissionFilename string) []dao.ClearinghouseUploadFile {
+	ordered := append([]dao.ClearinghouseUploadFile(nil), files...)
+	sort.Slice(ordered, func(i, j int) bool {
+		if ordered[i].Filename == submissionFilename {
+			return true
+		}
+		if ordered[j].Filename == submissionFilename {
+			return false
+		}
+		return ordered[i].Filename < ordered[j].Filename
+	})
+	return ordered
 }
 
 // downloadSubmissionFile godoc

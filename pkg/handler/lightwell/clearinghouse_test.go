@@ -595,6 +595,79 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 	s.Equal("payload", string(body))
 
 }
+func (s *ClearinghouseSuite) TestArchive() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	now := upload.CreatedAt
+	files := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "reproducer.py", "user", now),
+		clearinghouseFile(id, "vulnerabilities.json", "user", now),
+		clearinghouseFile(id, "extra.txt", "user", now),
+	}
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(files, nil).Once()
+	contents := map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+		"extra.txt":            "new",
+		"reproducer.py":        "print('hi')",
+	}
+	for _, file := range files {
+		content := contents[file.Filename]
+		s.s3Client.On("Get", mock.Anything, file.Filepath).Return(func(context.Context, string) io.ReadCloser {
+			return io.NopCloser(strings.NewReader(content))
+		}, nil).Once()
+	}
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/archive"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	s.Require().NoError(err)
+	s.Require().Len(archive.File, 3)
+	s.Equal([]string{"vulnerabilities.json", "extra.txt", "reproducer.py"}, []string{archive.File[0].Name, archive.File[1].Name, archive.File[2].Name})
+	s.Equal(`{"vulnerabilities":[]}`, readZipEntry(s.T(), archive.File[0]))
+	s.Equal("new", readZipEntry(s.T(), archive.File[1]))
+	s.Equal("print('hi')", readZipEntry(s.T(), archive.File[2]))
+}
+func (s *ClearinghouseSuite) TestArchiveSecondFileFailure() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	files := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "vulnerabilities.json", "user", upload.CreatedAt),
+		clearinghouseFile(id, "reproducer.py", "user", upload.CreatedAt),
+	}
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(files, nil).Once()
+	s.s3Client.On("Get", mock.Anything, files[0].Filepath).Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader(`{"vulnerabilities":[]}`))
+	}, nil).Once()
+	s.s3Client.On("Get", mock.Anything, files[1].Filepath).Return(nil, errors.New("missing object")).Once()
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/archive"))
+	s.Equal(http.StatusInternalServerError, code, string(body))
+	s.Contains(string(body), "missing object")
+}
+func (s *ClearinghouseSuite) TestArchiveReadFailure() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	files := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "vulnerabilities.json", "user", upload.CreatedAt),
+		clearinghouseFile(id, "reproducer.py", "user", upload.CreatedAt),
+	}
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(files, nil).Once()
+	s.s3Client.On("Get", mock.Anything, mock.AnythingOfType("string")).Return(func(context.Context, string) io.ReadCloser {
+		return failingReadCloser{}
+	}, nil).Times(2)
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/archive"))
+	s.Equal(http.StatusOK, code, string(body))
+	s.NotEmpty(body)
+	_, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	s.Error(err)
+}
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
 	now := time.Now().UTC()
