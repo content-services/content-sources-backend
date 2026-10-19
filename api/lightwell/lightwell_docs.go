@@ -244,6 +244,67 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/{uuid}/files/{filename}": {
+            "delete": {
+                "description": "Delete one file from a clearinghouse submission while it is uploading. Deleting the file that was uploaded with the submission removes the submission and every file stored with it. Only the user who created the submission can delete files. Requires the Lightwell clearinghouse feature.",
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Delete a clearinghouse submission file",
+                "operationId": "deleteClearinghouseSubmissionFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File name",
+                        "name": "filename",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/package_versions": {
             "get": {
                 "description": "List package versions aggregated across all Lightwell repositories.",
