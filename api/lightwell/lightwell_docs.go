@@ -505,6 +505,60 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/{uuid}/submission": {
+            "get": {
+                "description": "Download the file that was uploaded when the clearinghouse submission was created. The author can download it while it is uploading or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Download a clearinghouse submission",
+                "operationId": "downloadClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/clearinghouse/submissions/{uuid}/submit": {
             "post": {
                 "description": "Conclude a clearinghouse submission. Sets its status from uploading to submitted and records the time and the username of the caller. Only the user who created the submission can submit it. Requires the Lightwell clearinghouse feature.",

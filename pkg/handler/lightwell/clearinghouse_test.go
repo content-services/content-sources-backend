@@ -223,6 +223,8 @@ func TestClearinghouseSubmissions(t *testing.T) {
 
 	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/files/reproducer.py", otherUser))
 	assert.Equal(t, http.StatusBadRequest, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/submission", otherUser))
+	assert.Equal(t, http.StatusBadRequest, code, string(body))
 }
 
 func TestClearinghouseDownloadAccess(t *testing.T) {
@@ -256,6 +258,9 @@ func TestClearinghouseDownloadAccess(t *testing.T) {
 	downloadPath := "/clearinghouse/submissions/" + created.UUID + "/files/vulnerabilities.json"
 
 	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, downloadPath))
+	require.Equal(t, http.StatusOK, code, string(body))
+	assert.Equal(t, "payload", string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/submission"))
 	require.Equal(t, http.StatusOK, code, string(body))
 	assert.Equal(t, "payload", string(body))
 
