@@ -156,6 +156,34 @@ func TestClearinghouseSubmissions(t *testing.T) {
 	assert.Equal(t, created.UUID, fetched.UUID)
 	assert.Equal(t, api.ClearinghouseSubmissionStatusUploading, fetched.Status)
 	assert.Len(t, fetched.Files, 3)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/submit"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &fetched))
+	assert.Equal(t, api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
+	assert.Len(t, fetched.Files, 3)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequestAs(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/submit", "files", map[string]string{}, otherUser))
+	assert.Equal(t, http.StatusForbidden, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/submit"))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	assert.Contains(t, string(body), "can no longer be changed")
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"late.txt": "nope",
+	}))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	assert.Contains(t, string(body), "can no longer be changed")
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID+"/files/extra.txt"))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	s3Client.AssertNumberOfCalls(t, "Delete", 1)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
+	assert.Equal(t, http.StatusNotFound, code, string(body))
 }
 
 func TestClearinghouseCreatePutFailure(t *testing.T) {
