@@ -49,6 +49,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create", h.createSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/submit", h.submitSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
@@ -279,6 +280,54 @@ func clearinghouseDeleteError(err error, title, missing string) error {
 		return ce.NewErrorResponse(http.StatusNotFound, title, missing)
 	}
 	return clearinghouseStoreError(err, title)
+}
+
+// submitSubmission godoc
+// @Summary      Submit a clearinghouse submission
+// @ID           submitClearinghouseSubmission
+// @Description  Conclude a clearinghouse submission. Sets its status from uploading to submitted and records the time and the username of the caller. Only the user who created the submission can submit it. Requires the Lightwell clearinghouse feature.
+// @Tags         lightwell
+// @Produce      json
+// @Param        uuid path string true "Clearinghouse submission UUID"
+// @Success      200 {object} api.ClearinghouseSubmission
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      403 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/submit [post]
+func (h *ClearinghouseHandler) submitSubmission(c echo.Context) error {
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error submitting clearinghouse submission")
+	}
+	_, orgID := handler.GetAccountIdOrgId(c)
+	if upload.OrgID != orgID {
+		return ce.NewErrorResponse(http.StatusNotFound, "Error submitting clearinghouse submission", "Submission not found")
+	}
+	username, err := clearinghouseUsername(c)
+	if err != nil {
+		return err
+	}
+	if upload.Username != username {
+		return ce.NewErrorResponse(http.StatusForbidden, "Cannot submit clearinghouse submission", "Only the user who created the submission can submit it")
+	}
+	updated, err := h.Uploads.Submit(c.Request().Context(), upload.UUID, username)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ce.NewErrorResponse(http.StatusConflict, "Cannot submit clearinghouse submission", "Submission has been submitted and can no longer be changed")
+		}
+		return clearinghouseStoreError(err, "Error submitting clearinghouse submission")
+	}
+	files, err := h.Uploads.ListFiles(c.Request().Context(), upload.UUID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
+	}
+	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(updated, files))
 }
 
 // listSubmissions godoc
