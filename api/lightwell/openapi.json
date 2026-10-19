@@ -1051,6 +1051,66 @@
                 ]
             }
         },
+        "/clearinghouse/submissions": {
+            "get": {
+                "description": "Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still uploading. Callers with Lightwell clearinghouse read see every submission. File contents are not included.",
+                "operationId": "listClearinghouseSubmissions",
+                "parameters": [
+                    {
+                        "description": "Number of items to include in response. Default value: 100.",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Starting point for retrieving a subset of results. Default value: 0.",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.ClearinghouseSubmissionCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List clearinghouse submissions",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
         "/clearinghouse/submissions/create": {
             "post": {
                 "description": "Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.",

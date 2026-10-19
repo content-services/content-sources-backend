@@ -152,6 +152,30 @@ func TestClearinghouseSubmissions(t *testing.T) {
 	require.Equal(t, http.StatusOK, code, string(body))
 	require.NoError(t, json.Unmarshal(body, &fetched))
 	assert.Len(t, fetched.Files, 3)
+
+	otherID := uuid.New()
+	uploads.uploads = append(uploads.uploads, dao.ClearinghouseUpload{
+		UUID:     otherID,
+		OrgID:    "other-org",
+		Username: "someone",
+		Status:   api.ClearinghouseSubmissionStatusSubmitted,
+	})
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	var listed api.ClearinghouseSubmissionCollectionResponse
+	require.NoError(t, json.Unmarshal(body, &listed))
+	require.Len(t, listed.Data, 1)
+	assert.Equal(t, created.UUID, listed.Data[0].UUID)
+	assert.Equal(t, "user", listed.Data[0].Username)
+	assert.False(t, listed.Data[0].CreatedAt.IsZero())
+	assert.Nil(t, listed.Data[0].SubmittedAt)
+	assert.Nil(t, listed.Data[0].SubmittedBy)
+	require.Len(t, listed.Data[0].Files, 3)
+	for _, file := range listed.Data[0].Files {
+		assert.Equal(t, "user", file.Username)
+		assert.False(t, file.CreatedAt.IsZero())
+	}
 }
 
 func TestClearinghouseCreatePutFailure(t *testing.T) {
@@ -309,11 +333,12 @@ type memClearinghouseStore struct {
 
 func (m *memClearinghouseStore) Create(_ context.Context, params dao.CreateClearinghouseUploadParams) (dao.ClearinghouseUpload, error) {
 	row := dao.ClearinghouseUpload{
-		UUID:     params.UUID,
-		OrgID:    params.OrgID,
-		Username: params.Username,
-		Filename: params.Filename,
-		Status:   params.Status,
+		UUID:      params.UUID,
+		OrgID:     params.OrgID,
+		Username:  params.Username,
+		Filename:  params.Filename,
+		Status:    params.Status,
+		CreatedAt: time.Now().UTC(),
 	}
 	m.uploads = append(m.uploads, row)
 	return row, nil
