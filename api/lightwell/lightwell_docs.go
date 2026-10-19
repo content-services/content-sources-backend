@@ -117,6 +117,63 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/create": {
+            "post": {
+                "description": "Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Create a clearinghouse submission",
+                "operationId": "createClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to store with the submission. Maximum size is 50 MiB.",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/package_versions": {
             "get": {
                 "description": "List package versions aggregated across all Lightwell repositories.",
@@ -1069,6 +1126,87 @@ const docTemplatelightwell = `{
         }
     },
     "definitions": {
+        "api.ClearinghouseSubmission": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
+                    }
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "processed_at": {
+                    "type": "string"
+                },
+                "processed_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitted_by": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "vulnerability_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmission"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionFile": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "api.LightwellAdvisoryCollectionResponse": {
             "type": "object",
             "properties": {

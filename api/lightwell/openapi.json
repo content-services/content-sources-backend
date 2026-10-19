@@ -1,6 +1,87 @@
 {
     "components": {
         "schemas": {
+            "api.ClearinghouseSubmission": {
+                "properties": {
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "error_message": {
+                        "type": "string"
+                    },
+                    "filename": {
+                        "type": "string"
+                    },
+                    "files": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ClearinghouseSubmissionFile"
+                        },
+                        "type": "array"
+                    },
+                    "org_id": {
+                        "type": "string"
+                    },
+                    "processed_at": {
+                        "type": "string"
+                    },
+                    "processed_by": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "submitted_at": {
+                        "type": "string"
+                    },
+                    "submitted_by": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "vulnerability_count": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ClearinghouseSubmissionCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ClearinghouseSubmission"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ClearinghouseSubmissionFile": {
+                "properties": {
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "filename": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "api.LightwellAdvisoryCollectionResponse": {
                 "properties": {
                     "data": {
@@ -1051,6 +1132,88 @@
                     }
                 },
                 "summary": "List Lightwell Advisories",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
+        "/clearinghouse/submissions/create": {
+            "post": {
+                "description": "Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.",
+                "operationId": "createClearinghouseSubmission",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "description": "File to store with the submission. Maximum size is 50 MiB.",
+                                        "format": "binary",
+                                        "type": "string",
+                                        "x-formData-name": "file"
+                                    }
+                                },
+                                "required": [
+                                    "file"
+                                ],
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.ClearinghouseSubmission"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Conflict"
+                    },
+                    "413": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Request Entity Too Large"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Create a clearinghouse submission",
                 "tags": [
                     "lightwell"
                 ]

@@ -12946,8 +12946,8 @@ func (_c *MockClearinghouseUploadDao_CreateFile_Call) RunAndReturn(run func(ctx 
 }
 
 // CreateFiles provides a mock function for the type MockClearinghouseUploadDao
-func (_mock *MockClearinghouseUploadDao) CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error) {
-	ret := _mock.Called(ctx, params)
+func (_mock *MockClearinghouseUploadDao) CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error) {
+	ret := _mock.Called(ctx, params, beforeCommit)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateFiles")
@@ -12955,18 +12955,18 @@ func (_mock *MockClearinghouseUploadDao) CreateFiles(ctx context.Context, params
 
 	var r0 []ClearinghouseUploadFile
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error)); ok {
-		return returnFunc(ctx, params)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error)); ok {
+		return returnFunc(ctx, params, beforeCommit)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []CreateClearinghouseUploadFileParams) []ClearinghouseUploadFile); ok {
-		r0 = returnFunc(ctx, params)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) []ClearinghouseUploadFile); ok {
+		r0 = returnFunc(ctx, params, beforeCommit)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]ClearinghouseUploadFile)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []CreateClearinghouseUploadFileParams) error); ok {
-		r1 = returnFunc(ctx, params)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) error); ok {
+		r1 = returnFunc(ctx, params, beforeCommit)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -12981,11 +12981,12 @@ type MockClearinghouseUploadDao_CreateFiles_Call struct {
 // CreateFiles is a helper method to define mock.On call
 //   - ctx context.Context
 //   - params []CreateClearinghouseUploadFileParams
-func (_e *MockClearinghouseUploadDao_Expecter) CreateFiles(ctx any, params any) *MockClearinghouseUploadDao_CreateFiles_Call {
-	return &MockClearinghouseUploadDao_CreateFiles_Call{Call: _e.mock.On("CreateFiles", ctx, params)}
+//   - beforeCommit func([]ClearinghouseUploadFile) error
+func (_e *MockClearinghouseUploadDao_Expecter) CreateFiles(ctx any, params any, beforeCommit any) *MockClearinghouseUploadDao_CreateFiles_Call {
+	return &MockClearinghouseUploadDao_CreateFiles_Call{Call: _e.mock.On("CreateFiles", ctx, params, beforeCommit)}
 }
 
-func (_c *MockClearinghouseUploadDao_CreateFiles_Call) Run(run func(ctx context.Context, params []CreateClearinghouseUploadFileParams)) *MockClearinghouseUploadDao_CreateFiles_Call {
+func (_c *MockClearinghouseUploadDao_CreateFiles_Call) Run(run func(ctx context.Context, params []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error)) *MockClearinghouseUploadDao_CreateFiles_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -12995,9 +12996,14 @@ func (_c *MockClearinghouseUploadDao_CreateFiles_Call) Run(run func(ctx context.
 		if args[1] != nil {
 			arg1 = args[1].([]CreateClearinghouseUploadFileParams)
 		}
+		var arg2 func([]ClearinghouseUploadFile) error
+		if args[2] != nil {
+			arg2 = args[2].(func([]ClearinghouseUploadFile) error)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -13008,7 +13014,93 @@ func (_c *MockClearinghouseUploadDao_CreateFiles_Call) Return(clearinghouseUploa
 	return _c
 }
 
-func (_c *MockClearinghouseUploadDao_CreateFiles_Call) RunAndReturn(run func(ctx context.Context, params []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error)) *MockClearinghouseUploadDao_CreateFiles_Call {
+func (_c *MockClearinghouseUploadDao_CreateFiles_Call) RunAndReturn(run func(ctx context.Context, params []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error)) *MockClearinghouseUploadDao_CreateFiles_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateWithFiles provides a mock function for the type MockClearinghouseUploadDao
+func (_mock *MockClearinghouseUploadDao) CreateWithFiles(ctx context.Context, upload CreateClearinghouseUploadParams, files []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error) (ClearinghouseUpload, []ClearinghouseUploadFile, error) {
+	ret := _mock.Called(ctx, upload, files, beforeCommit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateWithFiles")
+	}
+
+	var r0 ClearinghouseUpload
+	var r1 []ClearinghouseUploadFile
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateClearinghouseUploadParams, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) (ClearinghouseUpload, []ClearinghouseUploadFile, error)); ok {
+		return returnFunc(ctx, upload, files, beforeCommit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateClearinghouseUploadParams, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) ClearinghouseUpload); ok {
+		r0 = returnFunc(ctx, upload, files, beforeCommit)
+	} else {
+		r0 = ret.Get(0).(ClearinghouseUpload)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateClearinghouseUploadParams, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) []ClearinghouseUploadFile); ok {
+		r1 = returnFunc(ctx, upload, files, beforeCommit)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]ClearinghouseUploadFile)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, CreateClearinghouseUploadParams, []CreateClearinghouseUploadFileParams, func([]ClearinghouseUploadFile) error) error); ok {
+		r2 = returnFunc(ctx, upload, files, beforeCommit)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockClearinghouseUploadDao_CreateWithFiles_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateWithFiles'
+type MockClearinghouseUploadDao_CreateWithFiles_Call struct {
+	*mock.Call
+}
+
+// CreateWithFiles is a helper method to define mock.On call
+//   - ctx context.Context
+//   - upload CreateClearinghouseUploadParams
+//   - files []CreateClearinghouseUploadFileParams
+//   - beforeCommit func([]ClearinghouseUploadFile) error
+func (_e *MockClearinghouseUploadDao_Expecter) CreateWithFiles(ctx any, upload any, files any, beforeCommit any) *MockClearinghouseUploadDao_CreateWithFiles_Call {
+	return &MockClearinghouseUploadDao_CreateWithFiles_Call{Call: _e.mock.On("CreateWithFiles", ctx, upload, files, beforeCommit)}
+}
+
+func (_c *MockClearinghouseUploadDao_CreateWithFiles_Call) Run(run func(ctx context.Context, upload CreateClearinghouseUploadParams, files []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error)) *MockClearinghouseUploadDao_CreateWithFiles_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 CreateClearinghouseUploadParams
+		if args[1] != nil {
+			arg1 = args[1].(CreateClearinghouseUploadParams)
+		}
+		var arg2 []CreateClearinghouseUploadFileParams
+		if args[2] != nil {
+			arg2 = args[2].([]CreateClearinghouseUploadFileParams)
+		}
+		var arg3 func([]ClearinghouseUploadFile) error
+		if args[3] != nil {
+			arg3 = args[3].(func([]ClearinghouseUploadFile) error)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockClearinghouseUploadDao_CreateWithFiles_Call) Return(clearinghouseUpload ClearinghouseUpload, clearinghouseUploadFiles []ClearinghouseUploadFile, err error) *MockClearinghouseUploadDao_CreateWithFiles_Call {
+	_c.Call.Return(clearinghouseUpload, clearinghouseUploadFiles, err)
+	return _c
+}
+
+func (_c *MockClearinghouseUploadDao_CreateWithFiles_Call) RunAndReturn(run func(ctx context.Context, upload CreateClearinghouseUploadParams, files []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error) (ClearinghouseUpload, []ClearinghouseUploadFile, error)) *MockClearinghouseUploadDao_CreateWithFiles_Call {
 	_c.Call.Return(run)
 	return _c
 }

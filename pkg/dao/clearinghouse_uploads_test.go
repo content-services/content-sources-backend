@@ -53,7 +53,7 @@ func TestClearinghouseUploadDao(t *testing.T) {
 			Filepath:   "uploads/" + uploadID.String() + "/reproducer.py",
 			Username:   "author",
 		},
-	})
+	}, nil)
 	require.NoError(t, err)
 
 	_, err = uploads.CreateFiles(ctx, []CreateClearinghouseUploadFileParams{{
@@ -62,7 +62,7 @@ func TestClearinghouseUploadDao(t *testing.T) {
 		Filename:   "reproducer.py",
 		Filepath:   "uploads/" + uploadID.String() + "/reproducer.py",
 		Username:   "author",
-	}})
+	}}, nil)
 	var pgErr *pgconn.PgError
 	require.ErrorAs(t, err, &pgErr)
 	assert.Equal(t, "23505", pgErr.Code)
@@ -127,6 +127,64 @@ func TestClearinghouseUploadDao(t *testing.T) {
 		Filename:   "closed.json",
 		Filepath:   "uploads/" + closedID.String() + "/closed.json",
 		Username:   "author",
-	}})
+	}}, nil)
 	require.ErrorIs(t, err, ErrClearinghouseSubmissionClosed)
+
+	rollbackID := uuid.New()
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), "DELETE FROM clearinghouse_uploads WHERE uuid = $1", rollbackID)
+	})
+	stored := false
+	_, _, err = uploads.CreateWithFiles(ctx, CreateClearinghouseUploadParams{
+		UUID:     rollbackID,
+		OrgID:    orgID,
+		Username: "author",
+		Filename: "rollback.json",
+		Status:   api.ClearinghouseSubmissionStatusPending,
+	}, []CreateClearinghouseUploadFileParams{{
+		UUID:       uuid.New(),
+		UploadUUID: rollbackID,
+		Filename:   "rollback.json",
+		Filepath:   "uploads/" + rollbackID.String() + "/rollback.json",
+		Username:   "author",
+	}}, func([]ClearinghouseUploadFile) error {
+		stored = true
+		_, getErr := uploads.Get(ctx, rollbackID)
+		require.NoError(t, getErr)
+		return errors.New("put failed")
+	})
+	require.EqualError(t, err, "put failed")
+	assert.True(t, stored)
+	_, err = uploads.Get(ctx, rollbackID)
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+
+	keptID := uuid.New()
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), "DELETE FROM clearinghouse_uploads WHERE uuid = $1", keptID)
+	})
+	_, err = uploads.Create(ctx, CreateClearinghouseUploadParams{
+		UUID:     keptID,
+		OrgID:    orgID,
+		Username: "author",
+		Filename: "kept.json",
+		Status:   api.ClearinghouseSubmissionStatusPending,
+	})
+	require.NoError(t, err)
+	extraFileID := uuid.New()
+	_, err = uploads.CreateFiles(ctx, []CreateClearinghouseUploadFileParams{{
+		UUID:       extraFileID,
+		UploadUUID: keptID,
+		Filename:   "extra.txt",
+		Filepath:   "uploads/" + keptID.String() + "/extra.txt",
+		Username:   "author",
+	}}, func([]ClearinghouseUploadFile) error {
+		_, getErr := uploads.GetFileByName(ctx, keptID, "extra.txt")
+		require.NoError(t, getErr)
+		return errors.New("put failed")
+	})
+	require.EqualError(t, err, "put failed")
+	_, err = uploads.GetFileByName(ctx, keptID, "extra.txt")
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+	_, err = uploads.Get(ctx, keptID)
+	require.NoError(t, err)
 }
