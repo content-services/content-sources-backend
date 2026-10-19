@@ -10,6 +10,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -48,6 +49,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create", h.createSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
 }
 
@@ -286,6 +288,59 @@ func clearinghouseDeleteError(err error, title, missing string) error {
 	return clearinghouseStoreError(err, title)
 }
 
+// listSubmissions godoc
+// @Summary      List clearinghouse submissions
+// @ID           listClearinghouseSubmissions
+// @Description  Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still uploading. Callers with Lightwell clearinghouse read see every submission. File contents are not included.
+// @Tags         lightwell
+// @Produce      json
+// @Param        limit  query int false "Number of items to include in response. Default value: 100."
+// @Param        offset query int false "Starting point for retrieving a subset of results. Default value: 0."
+// @Success      200 {object} api.ClearinghouseSubmissionCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions [get]
+func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
+	orgFilter, err := clearinghouseOrgFilter(c)
+	if err != nil {
+		return err
+	}
+	page := clearinghousePage(c)
+	uploads, err := h.Uploads.List(c.Request().Context(), dao.ListClearinghouseUploadsParams{
+		OrgID:  orgFilter,
+		Limit:  page.limit,
+		Offset: page.offset,
+	})
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submissions")
+	}
+	total, err := h.Uploads.Count(c.Request().Context(), orgFilter)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submissions")
+	}
+
+	filesByUpload := map[uuid.UUID][]dao.ClearinghouseUploadFile{}
+	if len(uploads) > 0 {
+		ids := make([]uuid.UUID, len(uploads))
+		for i, upload := range uploads {
+			ids[i] = upload.UUID
+		}
+		files, filesErr := h.Uploads.ListFilesByUploads(c.Request().Context(), ids)
+		if filesErr != nil {
+			return clearinghouseStoreError(filesErr, "Error listing clearinghouse submission files")
+		}
+		for _, file := range files {
+			filesByUpload[file.UploadUUID] = append(filesByUpload[file.UploadUUID], file)
+		}
+	}
+
+	response := api.ClearinghouseSubmissionCollectionResponse{Data: make([]api.ClearinghouseSubmission, 0, len(uploads))}
+	for _, upload := range uploads {
+		response.Data = append(response.Data, clearinghouseSubmissionFromStore(upload, filesByUpload[upload.UUID]))
+	}
+	return c.JSON(http.StatusOK, handler.SetCollectionResponseMetadata(&response, c, total))
+}
+
 type preparedClearinghouseFile struct {
 	name   string
 	header *multipart.FileHeader
@@ -432,6 +487,32 @@ func openClearinghouseFile(file preparedClearinghouseFile) (multipart.File, int6
 		return nil, 0, ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading clearinghouse submission", err.Error())
 	}
 	return body, n, nil
+}
+
+func clearinghouseOrgFilter(c echo.Context) (*string, error) {
+	ctx := c.Request().Context()
+	if config.FeatureAccessible(ctx, config.Get().Features.LightwellClearinghouseRead) {
+		return nil, nil
+	}
+	if !config.FeatureAccessible(ctx, config.Get().Features.LightwellClearinghouse) {
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Cannot access clearinghouse submissions",
+			"Neither the user nor account is allowed.")
+	}
+	_, orgID := handler.GetAccountIdOrgId(c)
+	return &orgID, nil
+}
+
+type clearinghousePageParams struct {
+	limit  int32
+	offset int32
+}
+
+func clearinghousePage(c echo.Context) clearinghousePageParams {
+	page := handler.ParsePagination(c)
+	if page.Offset < 0 {
+		page.Offset = 0
+	}
+	return clearinghousePageParams{limit: int32(page.Limit), offset: int32(page.Offset)} //nolint:gosec // pagination limit is capped at 200
 }
 
 func parseClearinghouseUUID(raw string) (uuid.UUID, error) {
