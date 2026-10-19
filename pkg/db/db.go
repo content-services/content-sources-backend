@@ -31,6 +31,11 @@ var LightwellQueries store.Querier
 // the same pool and uses it for every query after init.
 var lightwellPool *pgxpool.Pool
 
+// LightwellPool returns the pool behind LightwellQueries so callers can open a transaction.
+func LightwellPool() *pgxpool.Pool {
+	return lightwellPool
+}
+
 // GetUrl Get database config and return url
 func GetUrl() string {
 	dbConfig := config.Get().Database

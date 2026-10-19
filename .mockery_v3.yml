@@ -49,6 +49,7 @@ packages:
       LightwellAdvisoryDao: {}
       LightwellVulnerabilityDao: {}
       LightwellPackageDao: {}
+      ClearinghouseUploadDao: {}
       UserPreferenceDao: {}
   github.com/content-services/content-sources-backend/pkg/tasks/client:
     interfaces:
