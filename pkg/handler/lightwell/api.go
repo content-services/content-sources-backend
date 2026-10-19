@@ -6,6 +6,7 @@ import (
 	lwdocs "github.com/content-services/content-sources-backend/api/lightwell"
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -75,6 +76,17 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 	if config.Tang != nil {
 		RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient, termsMiddleware...)
 	}
+
+	var uploadS3 s3_client.S3Client
+	if config.Get().Clients.Lightwell.S3.ClearinghouseUploads.Name == "" {
+		log.Warn().Msg("clearinghouse uploads s3 not configured")
+	} else {
+		uploadS3, err = s3_client.NewS3Client(config.Get().Clients.Lightwell.S3.ClearinghouseUploads)
+		if err != nil {
+			panic(err)
+		}
+	}
+	RegisterClearinghouseRoutes(group, daoReg.ClearinghouseUpload, uploadS3)
 }
 
 func addLightwellRoute(e *echo.Group, method string, path string, h echo.HandlerFunc, verb rbac.Verb, m ...echo.MiddlewareFunc) {

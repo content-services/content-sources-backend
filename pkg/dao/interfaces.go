@@ -339,12 +339,13 @@ type LightwellPackageDao interface {
 
 type ClearinghouseUploadDao interface {
 	Create(ctx context.Context, params CreateClearinghouseUploadParams) (ClearinghouseUpload, error)
+	CreateWithFiles(ctx context.Context, upload CreateClearinghouseUploadParams, files []CreateClearinghouseUploadFileParams, afterCommit func([]ClearinghouseUploadFile) error) (ClearinghouseUpload, []ClearinghouseUploadFile, error)
 	Get(ctx context.Context, uploadID uuid.UUID) (ClearinghouseUpload, error)
 	Delete(ctx context.Context, uploadID uuid.UUID) error
 	List(ctx context.Context, params ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error)
 	Count(ctx context.Context, orgID *string) (int64, error)
 	CreateFile(ctx context.Context, params CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)
-	CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error)
+	CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams, afterCommit func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error)
 	DeleteFile(ctx context.Context, fileID uuid.UUID) error
 	ListFiles(ctx context.Context, uploadID uuid.UUID) ([]ClearinghouseUploadFile, error)
 	ListFilesByUploads(ctx context.Context, uploadIDs []uuid.UUID) ([]ClearinghouseUploadFile, error)

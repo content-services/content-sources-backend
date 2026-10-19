@@ -6,6 +6,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/terms_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -24,6 +25,7 @@ type LightwellSuite struct {
 	pulpClient *pulp_client.MockPulpClient
 	fsClient   *feature_service_client.MockFeatureServiceClient
 	tsClient   *terms_service_client.MockTermsServiceClient
+	s3Client   *s3_client.MockS3Client
 }
 
 func (s *LightwellSuite) SetupTest() {
@@ -32,6 +34,7 @@ func (s *LightwellSuite) SetupTest() {
 	s.pulpClient = pulp_client.NewMockPulpClient(s.T())
 	s.fsClient = feature_service_client.NewMockFeatureServiceClient(s.T())
 	s.tsClient = terms_service_client.NewMockTermsServiceClient(s.T())
+	s.s3Client = s3_client.NewMockS3Client(s.T())
 }
 
 // serveRouter sets up a router with all lightwell routes registered
@@ -55,6 +58,7 @@ func (s *LightwellSuite) record(req *http.Request) *httptest.ResponseRecorder {
 	var tsClient terms_service_client.TermsServiceClient = s.tsClient
 	var fsClientForTerms feature_service_client.FeatureServiceClient = s.fsClient
 	RegisterLightwellTermsRoutes(pathPrefix, &tsClient, &fsClientForTerms)
+	RegisterClearinghouseRoutes(pathPrefix, s.reg.ToDaoRegistry().ClearinghouseUpload, s.s3Client)
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)

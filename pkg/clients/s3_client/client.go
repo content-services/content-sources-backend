@@ -17,6 +17,7 @@ import (
 type S3Client interface {
 	Put(ctx context.Context, storageKey string, body io.Reader, contentLength int64) error
 	Get(ctx context.Context, storageKey string) (io.ReadCloser, error)
+	Delete(ctx context.Context, storageKey string) error
 }
 
 type s3Client struct {
@@ -76,4 +77,15 @@ func (c *s3Client) Get(ctx context.Context, storageKey string) (io.ReadCloser, e
 		return nil, fmt.Errorf("failed to download %s from s3: %w", storageKey, err)
 	}
 	return out.Body, nil
+}
+
+func (c *s3Client) Delete(ctx context.Context, storageKey string) error {
+	_, err := c.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: &c.bucket,
+		Key:    &storageKey,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete %s from s3: %w", storageKey, err)
+	}
+	return nil
 }

@@ -99,6 +99,58 @@ func (d clearinghouseUploadDaoImpl) Create(ctx context.Context, params CreateCle
 	return clearinghouseUploadFromStore(row), nil
 }
 
+func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload CreateClearinghouseUploadParams, files []CreateClearinghouseUploadFileParams, afterCommit func([]ClearinghouseUploadFile) error) (ClearinghouseUpload, []ClearinghouseUploadFile, error) {
+	if err := d.requireQuerier(); err != nil {
+		return ClearinghouseUpload{}, nil, err
+	}
+	if d.pool == nil {
+		return ClearinghouseUpload{}, nil, fmt.Errorf("lightwell pool is not initialized")
+	}
+	tx, err := d.pool.Begin(ctx)
+	if err != nil {
+		return ClearinghouseUpload{}, nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	q := store.New(tx)
+	row, err := q.CreateClearinghouseUpload(ctx, store.CreateClearinghouseUploadParams{
+		Uuid:     upload.UUID,
+		OrgID:    upload.OrgID,
+		Username: upload.Username,
+		Filename: upload.Filename,
+		Status:   upload.Status,
+	})
+	if err != nil {
+		return ClearinghouseUpload{}, nil, err
+	}
+	out := make([]ClearinghouseUploadFile, 0, len(files))
+	for _, file := range files {
+		fileRow, err := q.CreateClearinghouseUploadFile(ctx, store.CreateClearinghouseUploadFileParams{
+			Uuid:                    file.UUID,
+			ClearinghouseUploadUuid: file.UploadUUID,
+			Filename:                file.Filename,
+			Filepath:                file.Filepath,
+			Username:                file.Username,
+		})
+		if err != nil {
+			return ClearinghouseUpload{}, nil, err
+		}
+		out = append(out, clearinghouseUploadFileFromStore(fileRow))
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return ClearinghouseUpload{}, nil, err
+	}
+	if afterCommit != nil {
+		if err := afterCommit(out); err != nil {
+			if delErr := d.querier.DeleteClearinghouseUpload(ctx, upload.UUID); delErr != nil {
+				return ClearinghouseUpload{}, nil, errors.Join(err, delErr)
+			}
+			return ClearinghouseUpload{}, nil, err
+		}
+	}
+	return clearinghouseUploadFromStore(row), out, nil
+}
+
 func (d clearinghouseUploadDaoImpl) Get(ctx context.Context, uploadID uuid.UUID) (ClearinghouseUpload, error) {
 	if err := d.requireQuerier(); err != nil {
 		return ClearinghouseUpload{}, err
@@ -160,7 +212,7 @@ func (d clearinghouseUploadDaoImpl) CreateFile(ctx context.Context, params Creat
 	return clearinghouseUploadFileFromStore(row), nil
 }
 
-func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error) {
+func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams, afterCommit func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error) {
 	if err := d.requireQuerier(); err != nil {
 		return nil, err
 	}
@@ -204,6 +256,20 @@ func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []Cr
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
+	}
+	if afterCommit != nil {
+		if err := afterCommit(out); err != nil {
+			var delErrs []error
+			for _, file := range out {
+				if delErr := d.querier.DeleteClearinghouseUploadFile(ctx, file.UUID); delErr != nil {
+					delErrs = append(delErrs, delErr)
+				}
+			}
+			if len(delErrs) > 0 {
+				return nil, errors.Join(append([]error{err}, delErrs...)...)
+			}
+			return nil, err
+		}
 	}
 	return out, nil
 }
