@@ -46,6 +46,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	h := ClearinghouseHandler{Uploads: uploads, S3: s3Client}
 	clearinghouse := checkLightwellClearinghouseAccessible()
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create", h.createSubmission, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 }
 
 // createSubmission godoc
@@ -93,6 +94,57 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 	return c.JSON(http.StatusCreated, clearinghouseSubmissionFromStore(upload, files))
 }
 
+// addSubmissionFiles godoc
+// @Summary      Add files to a clearinghouse submission
+// @ID           addClearinghouseSubmissionFiles
+// @Description  Upload more files onto an existing clearinghouse submission while it is pending. Anyone in the same org can add files. Requires the Lightwell clearinghouse feature.
+// @Tags         lightwell
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        uuid  path   string true "Clearinghouse submission UUID"
+// @Param        files formData file true "Files to add. Repeat the field to upload multiple files."
+// @Success      200 {object} api.ClearinghouseSubmission
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      413 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/files [post]
+func (h *ClearinghouseHandler) addSubmissionFiles(c echo.Context) error {
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error fetching clearinghouse submission")
+	}
+	_, orgID := handler.GetAccountIdOrgId(c)
+	if upload.OrgID != orgID {
+		return ce.NewErrorResponse(http.StatusNotFound, "Error fetching clearinghouse submission", "Submission not found")
+	}
+	if upload.Status != api.ClearinghouseSubmissionStatusPending {
+		return ce.NewErrorResponse(http.StatusConflict, "Cannot add files to clearinghouse submission", "Submission has been submitted and can no longer be changed")
+	}
+
+	headers, err := clearinghouseFormFiles(c)
+	if err != nil {
+		return err
+	}
+	prepared, err := prepareClearinghouseFiles(headers)
+	if err != nil {
+		return err
+	}
+	if _, err = h.storeClearinghouseFiles(c, upload.UUID, prepared); err != nil {
+		return err
+	}
+	files, err := h.Uploads.ListFiles(c.Request().Context(), upload.UUID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
+	}
+	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(upload, files))
+}
+
 type preparedClearinghouseFile struct {
 	name   string
 	header *multipart.FileHeader
@@ -108,6 +160,21 @@ func clearinghouseFormFile(c echo.Context) (*multipart.FileHeader, error) {
 		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "Exactly one file is required")
 	}
 	return files[0], nil
+}
+
+func clearinghouseFormFiles(c echo.Context) ([]*multipart.FileHeader, error) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "Files are required")
+	}
+	files := form.File["files"]
+	if len(files) == 0 {
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "At least one file is required")
+	}
+	if len(files) > maxClearinghouseFilesPerRequest {
+		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "Too many files")
+	}
+	return files, nil
 }
 
 func prepareClearinghouseFiles(headers []*multipart.FileHeader) ([]preparedClearinghouseFile, error) {
@@ -261,6 +328,14 @@ func openClearinghouseFile(file preparedClearinghouseFile) (multipart.File, int6
 		return nil, 0, ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading clearinghouse submission", err.Error())
 	}
 	return body, n, nil
+}
+
+func parseClearinghouseUUID(raw string) (uuid.UUID, error) {
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return uuid.UUID{}, ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "Invalid submission UUID")
+	}
+	return id, nil
 }
 
 func cleanClearinghouseFilename(name string) (string, error) {
