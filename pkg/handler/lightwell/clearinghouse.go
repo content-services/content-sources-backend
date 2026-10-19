@@ -53,6 +53,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/submission", h.downloadSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/files/:filename", h.downloadSubmissionFile, rbac.RbacVerbRead)
 }
 
@@ -400,6 +401,31 @@ func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
 	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(upload, files))
+}
+
+// downloadSubmission godoc
+// @Summary      Download a clearinghouse submission
+// @ID           downloadClearinghouseSubmission
+// @Description  Download the file that was uploaded when the clearinghouse submission was created. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.
+// @Tags         lightwell
+// @Produce      application/octet-stream
+// @Param        uuid path string true "Clearinghouse submission UUID"
+// @Success      200 {file} file
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/submission [get]
+func (h *ClearinghouseHandler) downloadSubmission(c echo.Context) error {
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error fetching clearinghouse submission")
+	}
+	return h.downloadClearinghouseFile(c, upload.Filename)
 }
 
 // downloadSubmissionFile godoc
