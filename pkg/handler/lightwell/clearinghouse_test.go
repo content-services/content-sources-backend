@@ -558,6 +558,10 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Equal("payload", string(body))
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/submission"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Equal("payload", string(body))
+
 	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
 	s.Equal(http.StatusForbidden, code, string(body))
 	s.Contains(string(body), "Only the user who created the submission can download it")
