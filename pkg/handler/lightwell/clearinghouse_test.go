@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/mock"
@@ -290,6 +291,54 @@ func (s *ClearinghouseSuite) TestAddFilesCleanupFailure() {
 	}))
 	s.Equal(http.StatusInternalServerError, code, string(body))
 	s.Contains(string(body), "delete failed")
+}
+func (s *ClearinghouseSuite) TestDeleteFile() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	now := time.Now().UTC()
+	notes := clearinghouseFile(id, "notes.txt", "user", now)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Twice()
+	s.reg.ClearinghouseUpload.On("DeleteFileIfUploading", mock.Anything, id, "notes.txt", mock.Anything).
+		Return(func(_ context.Context, _ uuid.UUID, _ string, after func(dao.ClearinghouseUploadFile) error) error {
+			return after(notes)
+		}).Once()
+	s.s3Client.On("Delete", mock.Anything, notes.Filepath).Return(nil).Once()
+
+	path := "/clearinghouse/submissions/" + id.String() + "/files/notes.txt"
+	code, body := s.serve(clearinghouseRequestAs(s.T(), http.MethodDelete, path, clearinghouseOtherUser()))
+	s.Equal(http.StatusForbidden, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, path))
+	s.Equal(http.StatusNoContent, code, string(body))
+	s.s3Client.AssertNumberOfCalls(s.T(), "Delete", 1)
+
+}
+func (s *ClearinghouseSuite) TestDeleteOriginalFile() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	now := upload.CreatedAt
+	files := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "vulnerabilities.json", "user", now),
+		clearinghouseFile(id, "reproducer.py", "user", now),
+	}
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Once()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(dao.ClearinghouseUpload{}, pgx.ErrNoRows).Once()
+	s.reg.ClearinghouseUpload.On("DeleteIfUploading", mock.Anything, id, mock.Anything).
+		Return(func(_ context.Context, _ uuid.UUID, after func([]dao.ClearinghouseUploadFile) error) error {
+			return after(files)
+		}).Once()
+	s.s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(nil)
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()+"/files/vulnerabilities.json"))
+	s.Equal(http.StatusNoContent, code, string(body))
+	s.s3Client.AssertNumberOfCalls(s.T(), "Delete", 2)
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/files", "files", map[string]string{
+		"late.txt": "nope",
+	}))
+	s.Equal(http.StatusNotFound, code, string(body))
 }
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
