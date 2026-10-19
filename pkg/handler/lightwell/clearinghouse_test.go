@@ -549,6 +549,14 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 			current.SubmittedBy = &username
 			return current, nil
 		}).Once()
+	s.reg.ClearinghouseUpload.On("Process", mock.Anything, id, "user").
+		Return(func(_ context.Context, _ uuid.UUID, username string) (dao.ClearinghouseUpload, error) {
+			now := time.Now().UTC()
+			current.Status = api.ClearinghouseSubmissionStatusProcessed
+			current.ProcessedAt = &now
+			current.ProcessedBy = &username
+			return current, nil
+		}).Once()
 	s.s3Client.On("Get", mock.Anything, file.Filepath).Return(func(context.Context, string) io.ReadCloser {
 		return io.NopCloser(strings.NewReader("payload"))
 	}, nil)
@@ -594,6 +602,28 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Equal("payload", string(body))
 
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/process"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Equal(api.ClearinghouseSubmissionStatusProcessed, fetched.Status)
+	s.Require().NotNil(fetched.ProcessedBy)
+	s.Equal("user", *fetched.ProcessedBy)
+	s.Require().NotNil(fetched.ProcessedAt)
+	s.False(fetched.ProcessedAt.IsZero())
+
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/archive", other))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	s.Require().NoError(err)
+	s.Require().Len(archive.File, 1)
+
+	s.disableRead()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "cannot be downloaded")
 }
 func (s *ClearinghouseSuite) TestArchive() {
 	s.enableClearinghouse()
@@ -667,6 +697,50 @@ func (s *ClearinghouseSuite) TestArchiveReadFailure() {
 	s.NotEmpty(body)
 	_, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	s.Error(err)
+}
+func (s *ClearinghouseSuite) TestProcessConflicts() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	current := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(func(context.Context, uuid.UUID) (dao.ClearinghouseUpload, error) {
+		return current, nil
+	})
+	s.reg.ClearinghouseUpload.On("Submit", mock.Anything, id, "user").Return(dao.ClearinghouseUpload{}, pgx.ErrNoRows).Once()
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/process"))
+	s.Equal(http.StatusBadRequest, code, string(body))
+
+	s.enableRead()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/process"))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "must be submitted")
+
+	stillUploading := uuid.New()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, stillUploading).Return(dao.ClearinghouseUpload{
+		UUID:     stillUploading,
+		OrgID:    "other-org",
+		Username: "someone",
+		Status:   api.ClearinghouseSubmissionStatusPending,
+	}, nil).Once()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+stillUploading.String()+"/process"))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "must be submitted")
+
+	current.Status = api.ClearinghouseSubmissionStatusProcessed
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/process"))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "already been processed")
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/files", "files", map[string]string{
+		"late.txt": "nope",
+	}))
+	s.Equal(http.StatusConflict, code, string(body))
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()+"/files/extra.txt"))
+	s.Equal(http.StatusConflict, code, string(body))
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()))
+	s.Equal(http.StatusConflict, code, string(body))
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit"))
+	s.Equal(http.StatusConflict, code, string(body))
 }
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
