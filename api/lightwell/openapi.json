@@ -1121,6 +1121,119 @@
                 ]
             }
         },
+        "/clearinghouse/submissions/{uuid}/files": {
+            "post": {
+                "description": "Upload more files onto an existing clearinghouse submission while it is uploading. Only the user who created the submission can add files. Requires the Lightwell clearinghouse feature.",
+                "operationId": "addClearinghouseSubmissionFiles",
+                "parameters": [
+                    {
+                        "description": "Clearinghouse submission UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "files": {
+                                        "description": "Files to add. Repeat the field to upload multiple files.",
+                                        "format": "binary",
+                                        "type": "string",
+                                        "x-formData-name": "files"
+                                    }
+                                },
+                                "required": [
+                                    "files"
+                                ],
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.ClearinghouseSubmission"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Conflict"
+                    },
+                    "413": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Request Entity Too Large"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Add files to a clearinghouse submission",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
         "/package_versions": {
             "get": {
                 "description": "List package versions aggregated across all Lightwell repositories.",

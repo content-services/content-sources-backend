@@ -73,6 +73,53 @@ func TestClearinghouseSubmissions(t *testing.T) {
 	assert.Equal(t, "vulnerabilities.json", created.Filename)
 	require.Len(t, created.Files, 1)
 	assert.Equal(t, "vulnerabilities.json", created.Files[0].Filename)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"reproducer.py": "print('hi')",
+	}))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "more",
+	}))
+	require.Equal(t, http.StatusOK, code, string(body))
+	var updated api.ClearinghouseSubmission
+	require.NoError(t, json.Unmarshal(body, &updated))
+	assert.Len(t, updated.Files, 3)
+	assert.Equal(t, "user", updated.Username)
+
+	otherUser := test_handler.MockIdentity
+	user := *test_handler.MockIdentity.Identity.User
+	user.Username = "other"
+	otherUser.Identity.User = &user
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequestAs(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"other.txt": "nope",
+	}, otherUser))
+	assert.Equal(t, http.StatusForbidden, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "again",
+	}))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	s3Client.AssertNumberOfCalls(t, "Put", 3)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "again",
+		"extra.txt": "new",
+	}))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	s3Client.AssertNumberOfCalls(t, "Put", 3)
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID))
+	require.Equal(t, http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmission
+	require.NoError(t, json.Unmarshal(body, &fetched))
+	assert.Len(t, fetched.Files, 3)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"extra.txt": "new",
+	}))
+	require.Equal(t, http.StatusOK, code, string(body))
+	s3Client.AssertNumberOfCalls(t, "Put", 4)
 }
 
 func TestClearinghouseCreatePutFailure(t *testing.T) {
@@ -93,6 +140,60 @@ func TestClearinghouseCreatePutFailure(t *testing.T) {
 	assert.Contains(t, string(body), "put failed")
 	assert.Empty(t, uploads.uploads)
 	assert.Empty(t, uploads.files)
+}
+
+func TestClearinghouseAddFilesPutFailure(t *testing.T) {
+	oldClearinghouse := config.Get().Features.LightwellClearinghouse
+	t.Cleanup(func() {
+		config.Get().Features.LightwellClearinghouse = oldClearinghouse
+	})
+	config.Get().Features.LightwellClearinghouse = config.Feature{Enabled: true}
+
+	uploads := &memClearinghouseStore{}
+	s3Client := s3_client.NewMockS3Client(t)
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(errors.New("put failed")).Once()
+	s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
+
+	code, body := serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	require.Equal(t, http.StatusCreated, code, string(body))
+	var created api.ClearinghouseSubmission
+	require.NoError(t, json.Unmarshal(body, &created))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "more",
+		"extra.txt": "new",
+	}))
+	assert.Equal(t, http.StatusInternalServerError, code, string(body))
+	assert.Contains(t, string(body), "put failed")
+	require.Len(t, uploads.files, 1)
+	assert.Equal(t, "vulnerabilities.json", uploads.files[0].Filename)
+	assert.Len(t, uploads.uploads, 1)
+
+	uploads = &memClearinghouseStore{}
+	s3Client = s3_client.NewMockS3Client(t)
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(errors.New("put failed")).Once()
+	s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(errors.New("delete failed")).Once()
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	require.Equal(t, http.StatusCreated, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &created))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "more",
+		"extra.txt": "new",
+	}))
+	assert.Equal(t, http.StatusInternalServerError, code, string(body))
+	assert.Contains(t, string(body), "delete failed")
+	require.Len(t, uploads.files, 1)
+	assert.Equal(t, "vulnerabilities.json", uploads.files[0].Filename)
 }
 
 type memClearinghouseStore struct {

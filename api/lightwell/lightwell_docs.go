@@ -168,6 +168,82 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/{uuid}/files": {
+            "post": {
+                "description": "Upload more files onto an existing clearinghouse submission while it is uploading. Only the user who created the submission can add files. Requires the Lightwell clearinghouse feature.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Add files to a clearinghouse submission",
+                "operationId": "addClearinghouseSubmissionFiles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Files to add. Repeat the field to upload multiple files.",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/package_versions": {
             "get": {
                 "description": "List package versions aggregated across all Lightwell repositories.",
