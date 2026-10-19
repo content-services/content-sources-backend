@@ -220,6 +220,64 @@ func TestClearinghouseSubmissions(t *testing.T) {
 
 	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
 	assert.Equal(t, http.StatusNotFound, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/files/reproducer.py", otherUser))
+	assert.Equal(t, http.StatusBadRequest, code, string(body))
+}
+
+func TestClearinghouseDownloadAccess(t *testing.T) {
+	oldClearinghouse := config.Get().Features.LightwellClearinghouse
+	oldRead := config.Get().Features.LightwellClearinghouseRead
+	t.Cleanup(func() {
+		config.Get().Features.LightwellClearinghouse = oldClearinghouse
+		config.Get().Features.LightwellClearinghouseRead = oldRead
+	})
+	config.Get().Features.LightwellClearinghouse = config.Feature{Enabled: true}
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: false}
+
+	otherUser := test_handler.MockIdentity
+	user := *test_handler.MockIdentity.Identity.User
+	user.Username = "other"
+	otherUser.Identity.User = &user
+
+	uploads := &memClearinghouseStore{}
+	s3Client := s3_client.NewMockS3Client(t)
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil)
+	s3Client.On("Get", mock.Anything, mock.AnythingOfType("string")).Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader("payload"))
+	}, nil)
+
+	code, body := serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	require.Equal(t, http.StatusCreated, code, string(body))
+	var created api.ClearinghouseSubmission
+	require.NoError(t, json.Unmarshal(body, &created))
+	downloadPath := "/clearinghouse/submissions/" + created.UUID + "/files/vulnerabilities.json"
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, downloadPath))
+	require.Equal(t, http.StatusOK, code, string(body))
+	assert.Equal(t, "payload", string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, downloadPath, otherUser))
+	assert.Equal(t, http.StatusBadRequest, code, string(body))
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: true}
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, downloadPath, otherUser))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	assert.Contains(t, string(body), "must be submitted")
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: false}
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/submit"))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, downloadPath))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: true}
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, downloadPath, otherUser))
+	require.Equal(t, http.StatusOK, code, string(body))
+	assert.Equal(t, "payload", string(body))
 }
 
 func TestClearinghouseCreatePutFailure(t *testing.T) {
@@ -631,6 +689,13 @@ func clearinghouseRequest(t *testing.T, method, path string) *http.Request {
 	t.Helper()
 	req := httptest.NewRequest(method, LightwellAPIPath+path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	return req
+}
+
+func clearinghouseRequestAs(t *testing.T, method, path string, id identity.XRHID) *http.Request {
+	t.Helper()
+	req := clearinghouseRequest(t, method, path)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, id))
 	return req
 }
 
