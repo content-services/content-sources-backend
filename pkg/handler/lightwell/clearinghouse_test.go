@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
@@ -155,6 +156,140 @@ func (s *ClearinghouseSuite) TestCreatePutFailure() {
 	}))
 	s.Equal(http.StatusInternalServerError, code, string(body))
 	s.Contains(string(body), "put failed")
+}
+func (s *ClearinghouseSuite) TestAddFiles() {
+	s.enableClearinghouse()
+	s.allowPut()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil)
+
+	s.expectCreateFiles(nil)
+	s.expectCreateFiles(nil)
+	s.expectCreateFiles(func(params []dao.CreateClearinghouseUploadFileParams) {
+		s.Require().Len(params, 1)
+		s.Equal("other.txt", params[0].Filename)
+		s.Equal("other", params[0].Username)
+	})
+	s.reg.ClearinghouseUpload.On("CreateFiles", mock.Anything, mock.Anything, mock.Anything).Return(nil, &pgconn.PgError{Code: "23505"}).Once()
+	s.reg.ClearinghouseUpload.On("CreateFiles", mock.Anything, mock.Anything, mock.Anything).Return(nil, &pgconn.PgError{Code: "23505"}).Once()
+	s.expectCreateFiles(nil)
+
+	now := time.Now().UTC()
+	file := func(name, username string) dao.ClearinghouseUploadFile {
+		return clearinghouseFile(id, name, username, now)
+	}
+	vuln := file("vulnerabilities.json", "user")
+	reproducer := file("reproducer.py", "user")
+	notes := file("notes.txt", "user")
+	other := file("other.txt", "other")
+	extra := file("extra.txt", "user")
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer}, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes}, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes, other}, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{vuln, reproducer, notes, other, extra}, nil).Once()
+
+	path := "/clearinghouse/submissions/" + id.String() + "/files"
+	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, path, "files", map[string]string{
+		"reproducer.py": "print('hi')",
+	}))
+	s.Require().Equal(http.StatusOK, code, string(body))
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, path, "files", map[string]string{
+		"notes.txt": "more",
+	}))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var updated api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &updated))
+	s.Len(updated.Files, 3)
+	s.Equal("user", updated.Username)
+
+	code, body = s.serve(clearinghouseUploadRequestAs(s.T(), http.MethodPost, path, "files", map[string]string{
+		"other.txt": "nope",
+	}, clearinghouseOtherUser()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Require().NoError(json.Unmarshal(body, &updated))
+	var added api.ClearinghouseSubmissionFile
+	foundOther := false
+	for _, submissionFile := range updated.Files {
+		if submissionFile.Filename == "other.txt" {
+			added = submissionFile
+			foundOther = true
+		}
+	}
+	s.Require().True(foundOther)
+	s.Equal("other", added.Username)
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, path, "files", map[string]string{
+		"notes.txt": "again",
+	}))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 3)
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, path, "files", map[string]string{
+		"notes.txt": "again",
+		"extra.txt": "new",
+	}))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 3)
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, path, "files", map[string]string{
+		"extra.txt": "new",
+	}))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 4)
+}
+func (s *ClearinghouseSuite) TestAddFilesPutFailure() {
+	s.enableClearinghouse()
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(errors.New("put failed")).Once()
+	s.s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(nil).Once()
+	s.expectCreate()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, mock.Anything).Return(func(_ context.Context, uploadID uuid.UUID) (dao.ClearinghouseUpload, error) {
+		return clearinghouseUpload(uploadID, api.ClearinghouseSubmissionStatusPending), nil
+	}).Once()
+	s.expectCreateFiles(nil)
+
+	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+	var created api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &created))
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "more",
+		"extra.txt": "new",
+	}))
+	s.Equal(http.StatusInternalServerError, code, string(body))
+	s.Contains(string(body), "put failed")
+}
+func (s *ClearinghouseSuite) TestAddFilesCleanupFailure() {
+	s.enableClearinghouse()
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil).Once()
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(errors.New("put failed")).Once()
+	s.s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(errors.New("delete failed")).Once()
+	s.expectCreate()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, mock.Anything).Return(func(_ context.Context, uploadID uuid.UUID) (dao.ClearinghouseUpload, error) {
+		return clearinghouseUpload(uploadID, api.ClearinghouseSubmissionStatusPending), nil
+	}).Once()
+	s.expectCreateFiles(nil)
+
+	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+	var created api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &created))
+
+	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"notes.txt": "more",
+		"extra.txt": "new",
+	}))
+	s.Equal(http.StatusInternalServerError, code, string(body))
+	s.Contains(string(body), "delete failed")
 }
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
