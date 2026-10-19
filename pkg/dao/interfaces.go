@@ -37,6 +37,7 @@ type DaoRegistry struct {
 	LightwellAdvisory      LightwellAdvisoryDao
 	LightwellVulnerability LightwellVulnerabilityDao
 	LightwellPackage       LightwellPackageDao
+	ClearinghouseUpload    ClearinghouseUploadDao
 	UserPreference         UserPreferenceDao
 	CoverageReport         CoverageReportDao
 }
@@ -86,6 +87,7 @@ func GetDaoRegistry(db *gorm.DB) *DaoRegistry {
 		LightwellAdvisory:      lightwellAdvisoryDaoImpl{db: db, querier: csdb.LightwellQueries},
 		LightwellVulnerability: newLightwellVulnerabilityDao(csdb.LightwellQueries),
 		LightwellPackage:       lightwellPackageDaoImpl{db: db, querier: csdb.LightwellQueries},
+		ClearinghouseUpload:    newClearinghouseUploadDao(csdb.LightwellPool(), csdb.LightwellQueries),
 		UserPreference:         userPreferenceDaoImpl{db: db},
 		CoverageReport:         coverageReportDaoImpl{db: db},
 	}
@@ -323,6 +325,24 @@ type LightwellPackageDao interface {
 	ListPackageVersions(ctx context.Context, opts ListLightwellPackageVersionsOptions) ([]LightwellPackageVersionRow, int64, error)
 	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
 	InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error)
+}
+
+type ClearinghouseUploadDao interface {
+	Create(ctx context.Context, params CreateClearinghouseUploadParams) (ClearinghouseUpload, error)
+	Get(ctx context.Context, uploadID uuid.UUID) (ClearinghouseUpload, error)
+	Delete(ctx context.Context, uploadID uuid.UUID) error
+	List(ctx context.Context, params ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error)
+	Count(ctx context.Context, orgID *string) (int64, error)
+	CreateFile(ctx context.Context, params CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)
+	CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error)
+	DeleteFile(ctx context.Context, fileID uuid.UUID) error
+	ListFiles(ctx context.Context, uploadID uuid.UUID) ([]ClearinghouseUploadFile, error)
+	ListFilesByUploads(ctx context.Context, uploadIDs []uuid.UUID) ([]ClearinghouseUploadFile, error)
+	GetFileByName(ctx context.Context, uploadID uuid.UUID, filename string) (ClearinghouseUploadFile, error)
+	Submit(ctx context.Context, uploadID uuid.UUID, username string) (ClearinghouseUpload, error)
+	Process(ctx context.Context, uploadID uuid.UUID, username string) (ClearinghouseUpload, error)
+	DeleteIfUploading(ctx context.Context, uploadID uuid.UUID, beforeCommit func([]ClearinghouseUploadFile) error) error
+	DeleteFileIfUploading(ctx context.Context, uploadID uuid.UUID, filename string, beforeCommit func(ClearinghouseUploadFile) error) error
 }
 
 type UserPreferenceDao interface {

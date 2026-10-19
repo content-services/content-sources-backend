@@ -213,3 +213,32 @@ CREATE TABLE lightwell_beacon_sync (
     id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id),
     last_processed_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE clearinghouse_uploads (
+    uuid UUID UNIQUE NOT NULL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    org_id VARCHAR(255) NOT NULL,
+    username TEXT NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    vulnerability_count INTEGER,
+    status VARCHAR(255) NOT NULL CHECK (status IN ('uploading', 'submitted', 'processed')),
+    error_message TEXT,
+    submitted_at TIMESTAMPTZ,
+    submitted_by TEXT,
+    processed_at TIMESTAMPTZ,
+    processed_by TEXT
+);
+
+CREATE INDEX idx_clearinghouse_uploads_org_id ON clearinghouse_uploads (org_id);
+
+CREATE TABLE clearinghouse_upload_files (
+    uuid UUID UNIQUE NOT NULL PRIMARY KEY,
+    clearinghouse_upload_uuid UUID NOT NULL REFERENCES clearinghouse_uploads(uuid) ON DELETE CASCADE,
+    filename VARCHAR(255) NOT NULL,
+    filepath TEXT NOT NULL,
+    username TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_clearinghouse_upload_files_upload_uuid_filename
+    ON clearinghouse_upload_files (clearinghouse_upload_uuid, filename);
