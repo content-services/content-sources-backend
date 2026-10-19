@@ -1,6 +1,7 @@
 package lightwell
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -225,6 +226,88 @@ func TestClearinghouseSubmissions(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, code, string(body))
 	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/submission", otherUser))
 	assert.Equal(t, http.StatusBadRequest, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/archive", otherUser))
+	assert.Equal(t, http.StatusBadRequest, code, string(body))
+}
+
+func readZipEntry(t *testing.T, file *zip.File) string {
+	t.Helper()
+	reader, err := file.Open()
+	require.NoError(t, err)
+	defer reader.Close()
+	content, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	return string(content)
+}
+
+type failingReadCloser struct{}
+
+func (failingReadCloser) Read([]byte) (int, error) {
+	return 0, errors.New("read failed")
+}
+
+func (failingReadCloser) Close() error {
+	return nil
+}
+
+func TestClearinghouseArchiveFailure(t *testing.T) {
+	oldClearinghouse := config.Get().Features.LightwellClearinghouse
+	t.Cleanup(func() {
+		config.Get().Features.LightwellClearinghouse = oldClearinghouse
+	})
+	config.Get().Features.LightwellClearinghouse = config.Feature{Enabled: true}
+
+	uploads := &memClearinghouseStore{}
+	s3Client := s3_client.NewMockS3Client(t)
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil)
+	s3Client.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
+		return strings.HasSuffix(key, "/vulnerabilities.json")
+	})).Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader(`{"vulnerabilities":[]}`))
+	}, nil)
+	s3Client.On("Get", mock.Anything, mock.MatchedBy(func(key string) bool {
+		return strings.HasSuffix(key, "/reproducer.py")
+	})).Return(nil, errors.New("missing object"))
+
+	code, body := serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	require.Equal(t, http.StatusCreated, code, string(body))
+	var created api.ClearinghouseSubmission
+	require.NoError(t, json.Unmarshal(body, &created))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"reproducer.py": "print('hi')",
+	}))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/archive"))
+	assert.Equal(t, http.StatusInternalServerError, code, string(body))
+	assert.Contains(t, string(body), "missing object")
+	_, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	assert.Error(t, err)
+
+	uploads = &memClearinghouseStore{}
+	s3Client = s3_client.NewMockS3Client(t)
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil)
+	s3Client.On("Get", mock.Anything, mock.AnythingOfType("string")).Return(func(context.Context, string) io.ReadCloser {
+		return failingReadCloser{}
+	}, nil)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	require.Equal(t, http.StatusCreated, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &created))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"reproducer.py": "print('hi')",
+	}))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/archive"))
+	assert.Equal(t, http.StatusInternalServerError, code, string(body))
+	assert.Contains(t, string(body), "read failed")
+	_, err = zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	assert.Error(t, err)
 }
 
 func TestClearinghouseDownloadAccess(t *testing.T) {
