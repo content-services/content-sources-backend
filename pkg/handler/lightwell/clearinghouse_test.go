@@ -264,6 +264,44 @@ func TestClearinghouseDeleteSubmissionJSON(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, code, string(body))
 }
 
+func TestClearinghouseDeleteSubmission(t *testing.T) {
+	oldClearinghouse := config.Get().Features.LightwellClearinghouse
+	t.Cleanup(func() {
+		config.Get().Features.LightwellClearinghouse = oldClearinghouse
+	})
+	config.Get().Features.LightwellClearinghouse = config.Feature{Enabled: true}
+
+	uploads := &memClearinghouseStore{}
+	s3Client := s3_client.NewMockS3Client(t)
+	s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(nil)
+	s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(nil)
+
+	code, body := serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
+		"vulnerabilities.json": `{"vulnerabilities":[]}`,
+	}))
+	require.Equal(t, http.StatusCreated, code, string(body))
+	var created api.ClearinghouseSubmission
+	require.NoError(t, json.Unmarshal(body, &created))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"reproducer.py": "print('hi')",
+	}))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID+"/files/missing.txt"))
+	assert.Equal(t, http.StatusNotFound, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID+"/files/reproducer.py"))
+	assert.Equal(t, http.StatusNoContent, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID))
+	assert.Equal(t, http.StatusNoContent, code, string(body))
+	s3Client.AssertNumberOfCalls(t, "Delete", 2)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID))
+	assert.Equal(t, http.StatusNotFound, code, string(body))
+}
+
 type memClearinghouseStore struct {
 	uploads []dao.ClearinghouseUpload
 	files   []dao.ClearinghouseUploadFile
