@@ -168,6 +168,60 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/{uuid}": {
+            "delete": {
+                "description": "Delete a clearinghouse submission and its files while it is uploading. Only the user who created the submission can delete it. Requires the Lightwell clearinghouse feature.",
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Delete a clearinghouse submission",
+                "operationId": "deleteClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/clearinghouse/submissions/{uuid}/files": {
             "post": {
                 "description": "Upload more files onto an existing clearinghouse submission while it is uploading. Only the user who created the submission can add files. Requires the Lightwell clearinghouse feature.",
