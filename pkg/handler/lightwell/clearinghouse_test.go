@@ -192,6 +192,85 @@ func TestClearinghouseSubmissions(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, code, string(body))
 	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/archive", otherUser))
 	assert.Equal(t, http.StatusBadRequest, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/process"))
+	assert.Equal(t, http.StatusBadRequest, code, string(body))
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: true}
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &listed))
+	assert.Len(t, listed.Data, 2)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
+	require.Equal(t, http.StatusOK, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &fetched))
+	assert.Equal(t, otherID.String(), fetched.UUID)
+	assert.Equal(t, "someone", fetched.Username)
+	assert.Equal(t, api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
+
+	s3Client.On("Get", mock.Anything, "uploads/"+created.UUID+"/reproducer.py").Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader("print('hi')"))
+	}, nil)
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/files/reproducer.py"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	assert.Equal(t, "print('hi')", string(body))
+
+	s3Client.On("Get", mock.Anything, "uploads/"+created.UUID+"/vulnerabilities.json").Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader(`{"vulnerabilities":[]}`))
+	}, nil)
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/submission"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	assert.Equal(t, `{"vulnerabilities":[]}`, string(body))
+
+	s3Client.On("Get", mock.Anything, "uploads/"+created.UUID+"/extra.txt").Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader("new"))
+	}, nil)
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/archive"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	require.NoError(t, err)
+	require.Len(t, archive.File, 3)
+	assert.Equal(t, []string{"vulnerabilities.json", "extra.txt", "reproducer.py"}, []string{archive.File[0].Name, archive.File[1].Name, archive.File[2].Name})
+	assert.Equal(t, `{"vulnerabilities":[]}`, readZipEntry(t, archive.File[0]))
+	assert.Equal(t, "new", readZipEntry(t, archive.File[1]))
+	assert.Equal(t, "print('hi')", readZipEntry(t, archive.File[2]))
+
+	stillUploading := uuid.New()
+	uploads.uploads = append(uploads.uploads, dao.ClearinghouseUpload{
+		UUID:     stillUploading,
+		OrgID:    "other-org",
+		Username: "someone",
+		Status:   api.ClearinghouseSubmissionStatusUploading,
+	})
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+stillUploading.String()+"/process"))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	assert.Contains(t, string(body), "must be submitted")
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/process"))
+	require.Equal(t, http.StatusOK, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &fetched))
+	assert.Equal(t, api.ClearinghouseSubmissionStatusProcessed, fetched.Status)
+	require.NotNil(t, fetched.ProcessedBy)
+	assert.Equal(t, "user", *fetched.ProcessedBy)
+	require.NotNil(t, fetched.ProcessedAt)
+	assert.False(t, fetched.ProcessedAt.IsZero())
+	assert.Len(t, fetched.Files, 3)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/process"))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	assert.Contains(t, string(body), "already been processed")
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseUploadRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/files", "files", map[string]string{
+		"late.txt": "nope",
+	}))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID+"/files/extra.txt"))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodDelete, "/clearinghouse/submissions/"+created.UUID))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/submit"))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	s3Client.AssertNumberOfCalls(t, "Delete", 1)
 }
 
 func readZipEntry(t *testing.T, file *zip.File) string {
@@ -330,6 +409,22 @@ func TestClearinghouseDownloadAccess(t *testing.T) {
 	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, downloadPath, otherUser))
 	require.Equal(t, http.StatusOK, code, string(body))
 	assert.Equal(t, "payload", string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodPost, "/clearinghouse/submissions/"+created.UUID+"/process"))
+	require.Equal(t, http.StatusOK, code, string(body))
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, downloadPath, otherUser))
+	require.Equal(t, http.StatusOK, code, string(body))
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequestAs(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID+"/archive", otherUser))
+	require.Equal(t, http.StatusOK, code, string(body))
+	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	require.NoError(t, err)
+	require.Len(t, archive.File, 1)
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: false}
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, downloadPath))
+	assert.Equal(t, http.StatusConflict, code, string(body))
+	assert.Contains(t, string(body), "cannot be downloaded")
 }
 
 func TestClearinghouseCreatePutFailure(t *testing.T) {
