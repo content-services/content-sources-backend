@@ -47,6 +47,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	clearinghouse := checkLightwellClearinghouseAccessible()
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create", h.createSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
 }
 
 // createSubmission godoc
@@ -149,6 +150,99 @@ func (h *ClearinghouseHandler) addSubmissionFiles(c echo.Context) error {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
 	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(upload, files))
+}
+
+// deleteSubmissionFile godoc
+// @Summary      Delete a clearinghouse submission file
+// @ID           deleteClearinghouseSubmissionFile
+// @Description  Delete one file from a clearinghouse submission while it is uploading. Deleting the file that was uploaded with the submission removes the submission and every file stored with it. Only the user who created the submission can delete files. Requires the Lightwell clearinghouse feature.
+// @Tags         lightwell
+// @Param        uuid     path string true "Clearinghouse submission UUID"
+// @Param        filename path string true "File name"
+// @Success      204 "Deleted"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      403 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/files/{filename} [delete]
+func (h *ClearinghouseHandler) deleteSubmissionFile(c echo.Context) error {
+	filename, err := cleanClearinghouseFilename(c.Param("filename"))
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error deleting clearinghouse submission file", err.Error())
+	}
+	upload, err := h.authorUploadingSubmission(c, "Cannot delete clearinghouse submission file", "Only the user who created the submission can delete files")
+	if err != nil {
+		return err
+	}
+	if filename == upload.Filename {
+		err = h.Uploads.DeleteIfUploading(c.Request().Context(), upload.UUID, func(files []dao.ClearinghouseUploadFile) error {
+			for _, file := range files {
+				if err := h.deleteClearinghouseObject(c, file.Filepath); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	} else {
+		err = h.Uploads.DeleteFileIfUploading(c.Request().Context(), upload.UUID, filename, func(file dao.ClearinghouseUploadFile) error {
+			return h.deleteClearinghouseObject(c, file.Filepath)
+		})
+	}
+	if err != nil {
+		return clearinghouseDeleteError(err, "Error deleting clearinghouse submission file", "File not found")
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *ClearinghouseHandler) authorUploadingSubmission(c echo.Context, title, forbidden string) (dao.ClearinghouseUpload, error) {
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return dao.ClearinghouseUpload{}, err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return dao.ClearinghouseUpload{}, clearinghouseStoreError(err, title)
+	}
+	_, orgID := handler.GetAccountIdOrgId(c)
+	if upload.OrgID != orgID {
+		return dao.ClearinghouseUpload{}, ce.NewErrorResponse(http.StatusNotFound, title, "Submission not found")
+	}
+	username, err := clearinghouseUsername(c)
+	if err != nil {
+		return dao.ClearinghouseUpload{}, err
+	}
+	if upload.Username != username {
+		return dao.ClearinghouseUpload{}, ce.NewErrorResponse(http.StatusForbidden, title, forbidden)
+	}
+	if upload.Status != api.ClearinghouseSubmissionStatusUploading {
+		return dao.ClearinghouseUpload{}, ce.NewErrorResponse(http.StatusConflict, title, "Submission has been submitted and can no longer be changed")
+	}
+	return upload, nil
+}
+
+func (h *ClearinghouseHandler) deleteClearinghouseObject(c echo.Context, storageKey string) error {
+	if h.S3 == nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error deleting clearinghouse submission", "s3 not configured")
+	}
+	if err := h.S3.Delete(c.Request().Context(), storageKey); err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error deleting clearinghouse submission", err.Error())
+	}
+	return nil
+}
+
+func clearinghouseDeleteError(err error, title, missing string) error {
+	var response ce.ErrorResponse
+	if errors.As(err, &response) {
+		return response
+	}
+	if errors.Is(err, dao.ErrClearinghouseSubmissionClosed) {
+		return ce.NewErrorResponse(http.StatusConflict, title, "Submission has been submitted and can no longer be changed")
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ce.NewErrorResponse(http.StatusNotFound, title, missing)
+	}
+	return clearinghouseStoreError(err, title)
 }
 
 type preparedClearinghouseFile struct {
