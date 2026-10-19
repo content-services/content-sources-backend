@@ -126,7 +126,7 @@ func UpdateTemplateContentHandler(ctx context.Context, task *models.TaskInfo, qu
 		return err
 	}
 
-	event.SendTemplateEvent(t.orgId, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(t.template)})
+	dao.PublishTemplateEvent(t.ctx, db.DB, t.orgId, event.TemplateUpdated, t.template)
 
 	return nil
 }
