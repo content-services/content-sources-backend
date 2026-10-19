@@ -154,7 +154,7 @@ func (d clearinghouseUploadDaoImpl) CreateFile(ctx context.Context, params Creat
 	return clearinghouseUploadFileFromStore(row), nil
 }
 
-func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams) ([]ClearinghouseUploadFile, error) {
+func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams, beforeCommit func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error) {
 	if err := d.requireQuerier(); err != nil {
 		return nil, err
 	}
@@ -194,6 +194,11 @@ func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []Cr
 			return nil, err
 		}
 		out = append(out, clearinghouseUploadFileFromStore(row))
+	}
+	if beforeCommit != nil {
+		if err := beforeCommit(out); err != nil {
+			return nil, err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
