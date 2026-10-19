@@ -531,6 +531,66 @@ func (s *ClearinghouseSuite) TestSubmit() {
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()))
 	s.Equal(http.StatusConflict, code, string(body))
 }
+func (s *ClearinghouseSuite) TestDownloadAccess() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	current := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	file := clearinghouseFile(id, "vulnerabilities.json", "user", current.CreatedAt)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(func(context.Context, uuid.UUID) (dao.ClearinghouseUpload, error) {
+		return current, nil
+	})
+	s.reg.ClearinghouseUpload.On("GetFileByName", mock.Anything, id, "vulnerabilities.json").Return(file, nil)
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{file}, nil)
+	s.reg.ClearinghouseUpload.On("Submit", mock.Anything, id, "user").
+		Return(func(_ context.Context, _ uuid.UUID, username string) (dao.ClearinghouseUpload, error) {
+			now := time.Now().UTC()
+			current.Status = api.ClearinghouseSubmissionStatusSubmitted
+			current.SubmittedAt = &now
+			current.SubmittedBy = &username
+			return current, nil
+		}).Once()
+	s.s3Client.On("Get", mock.Anything, file.Filepath).Return(func(context.Context, string) io.ReadCloser {
+		return io.NopCloser(strings.NewReader("payload"))
+	}, nil)
+
+	downloadPath := "/clearinghouse/submissions/" + id.String() + "/files/vulnerabilities.json"
+	other := clearinghouseOtherUser()
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Equal("payload", string(body))
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
+	s.Equal(http.StatusForbidden, code, string(body))
+	s.Contains(string(body), "Only the user who created the submission can download it")
+
+	foreignID := uuid.New()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, foreignID).Return(dao.ClearinghouseUpload{
+		UUID:     foreignID,
+		OrgID:    "other-org",
+		Username: "someone",
+		Filename: "vulnerabilities.json",
+		Status:   api.ClearinghouseSubmissionStatusPending,
+	}, nil).Once()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+foreignID.String()+"/files/vulnerabilities.json"))
+	s.Equal(http.StatusNotFound, code, string(body))
+
+	s.enableRead()
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
+	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "must be submitted")
+
+	s.disableRead()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
+	s.Require().Equal(http.StatusOK, code, string(body))
+
+	s.enableRead()
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Equal("payload", string(body))
+
+}
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
 	now := time.Now().UTC()

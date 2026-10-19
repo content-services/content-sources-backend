@@ -53,6 +53,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/files/:filename", h.downloadSubmissionFile, rbac.RbacVerbRead)
 }
 
 // createSubmission godoc
@@ -399,6 +400,100 @@ func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
 	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(upload, files))
+}
+
+// downloadSubmissionFile godoc
+// @Summary      Download a clearinghouse submission file
+// @ID           downloadClearinghouseSubmissionFile
+// @Description  Download a file stored with a clearinghouse submission. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.
+// @Tags         lightwell
+// @Produce      application/octet-stream
+// @Param        uuid     path string true "Clearinghouse submission UUID"
+// @Param        filename path string true "File name"
+// @Success      200 {file} file
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/files/{filename} [get]
+func (h *ClearinghouseHandler) downloadSubmissionFile(c echo.Context) error {
+	filename, err := cleanClearinghouseFilename(c.Param("filename"))
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error downloading clearinghouse submission file", err.Error())
+	}
+	return h.downloadClearinghouseFile(c, filename)
+}
+
+func (h *ClearinghouseHandler) downloadClearinghouseFile(c echo.Context, filename string) error {
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error fetching clearinghouse submission")
+	}
+	if err := authorizeClearinghouseDownload(c, upload); err != nil {
+		return err
+	}
+	file, err := h.Uploads.GetFileByName(c.Request().Context(), uploadID, filename)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ce.NewErrorResponse(http.StatusNotFound, "Error downloading clearinghouse submission file", "File not found")
+		}
+		return clearinghouseStoreError(err, "Error downloading clearinghouse submission file")
+	}
+	if h.S3 == nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission file", "s3 not configured")
+	}
+	body, err := h.S3.Get(c.Request().Context(), file.Filepath)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusInternalServerError, "Error downloading clearinghouse submission file", err.Error())
+	}
+	defer body.Close()
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename=\""+filename+"\"")
+	return c.Stream(http.StatusOK, "application/octet-stream", body)
+}
+
+func authorizeClearinghouseDownload(c echo.Context, upload dao.ClearinghouseUpload) error {
+	readErr := handler.CheckLightwellClearinghouseReadAccessible(c.Request().Context())
+	authorErr := handler.CheckLightwellClearinghouseAccessible(c.Request().Context())
+	if readErr != nil && authorErr != nil {
+		return readErr
+	}
+	username, err := clearinghouseUsername(c)
+	if err != nil {
+		return err
+	}
+	_, orgID := handler.GetAccountIdOrgId(c)
+	isAuthor := authorErr == nil && upload.Username == username && upload.OrgID == orgID
+	hasRead := readErr == nil
+	allowed := false
+	switch upload.Status {
+	case api.ClearinghouseSubmissionStatusPending:
+		allowed = isAuthor
+	case api.ClearinghouseSubmissionStatusSubmitted:
+		allowed = isAuthor || hasRead
+	case api.ClearinghouseSubmissionStatusProcessed:
+		allowed = hasRead
+	}
+	if allowed {
+		return nil
+	}
+	if isAuthor || hasRead {
+		return ce.NewErrorResponse(http.StatusConflict, "Cannot download clearinghouse submission", clearinghouseDownloadConflict(upload.Status))
+	}
+	if authorErr == nil && upload.OrgID == orgID {
+		return ce.NewErrorResponse(http.StatusForbidden, "Cannot download clearinghouse submission", "Only the user who created the submission can download it")
+	}
+	return ce.NewErrorResponse(http.StatusNotFound, "Error fetching clearinghouse submission", "Submission not found")
+}
+
+func clearinghouseDownloadConflict(status string) string {
+	if status == api.ClearinghouseSubmissionStatusPending {
+		return "Submission must be submitted before it can be downloaded"
+	}
+	return "Submission cannot be downloaded"
 }
 
 type preparedClearinghouseFile struct {
