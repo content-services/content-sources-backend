@@ -23,6 +23,7 @@ type MockDaoRegistry struct {
 	LightwellPackage       MockLightwellPackageDao
 	UserPreference         MockUserPreferenceDao
 	CoverageReport         MockCoverageReportDao
+	ClearinghouseUpload    MockClearinghouseUploadDao
 }
 
 func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
@@ -45,6 +46,7 @@ func (m *MockDaoRegistry) ToDaoRegistry() *DaoRegistry {
 		LightwellPackage:       &m.LightwellPackage,
 		UserPreference:         &m.UserPreference,
 		CoverageReport:         &m.CoverageReport,
+		ClearinghouseUpload:    &m.ClearinghouseUpload,
 	}
 	return &r
 }
@@ -69,6 +71,7 @@ func GetMockDaoRegistry(t *testing.T) *MockDaoRegistry {
 		LightwellPackage:       *NewMockLightwellPackageDao(t),
 		UserPreference:         *NewMockUserPreferenceDao(t),
 		CoverageReport:         *NewMockCoverageReportDao(t),
+		ClearinghouseUpload:    *NewMockClearinghouseUploadDao(t),
 	}
 	return &reg
 }
