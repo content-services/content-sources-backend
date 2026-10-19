@@ -48,6 +48,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create", h.createSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
 }
 
 // createSubmission godoc
@@ -185,6 +186,38 @@ func (h *ClearinghouseHandler) deleteSubmissionFile(c echo.Context) error {
 	}
 	if err != nil {
 		return clearinghouseDeleteError(err, "Error deleting clearinghouse submission file", "File not found")
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+// deleteSubmission godoc
+// @Summary      Delete a clearinghouse submission
+// @ID           deleteClearinghouseSubmission
+// @Description  Delete a clearinghouse submission and its files while it is pending. Only the user who created the submission can delete it. Requires the Lightwell clearinghouse feature.
+// @Tags         lightwell
+// @Param        uuid path string true "Clearinghouse submission UUID"
+// @Success      204 "Deleted"
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      403 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid} [delete]
+func (h *ClearinghouseHandler) deleteSubmission(c echo.Context) error {
+	upload, err := h.authorUploadingSubmission(c, "Cannot delete clearinghouse submission", "Only the user who created the submission can delete it")
+	if err != nil {
+		return err
+	}
+	err = h.Uploads.DeleteIfUploading(c.Request().Context(), upload.UUID, func(files []dao.ClearinghouseUploadFile) error {
+		for _, file := range files {
+			if err := h.deleteClearinghouseObject(c, file.Filepath); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return clearinghouseDeleteError(err, "Error deleting clearinghouse submission", "Submission not found")
 	}
 	return c.NoContent(http.StatusNoContent)
 }

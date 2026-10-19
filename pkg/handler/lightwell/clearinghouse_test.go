@@ -340,6 +340,35 @@ func (s *ClearinghouseSuite) TestDeleteOriginalFile() {
 	}))
 	s.Equal(http.StatusNotFound, code, string(body))
 }
+func (s *ClearinghouseSuite) TestDeleteSubmission() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	reproducer := clearinghouseFile(id, "reproducer.py", "user", upload.CreatedAt)
+	original := clearinghouseFile(id, "vulnerabilities.json", "user", upload.CreatedAt)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil).Times(3)
+	s.reg.ClearinghouseUpload.On("DeleteFileIfUploading", mock.Anything, id, "missing.txt", mock.Anything).Return(pgx.ErrNoRows).Once()
+	s.reg.ClearinghouseUpload.On("DeleteFileIfUploading", mock.Anything, id, "reproducer.py", mock.Anything).
+		Return(func(_ context.Context, _ uuid.UUID, _ string, after func(dao.ClearinghouseUploadFile) error) error {
+			return after(reproducer)
+		}).Once()
+	s.reg.ClearinghouseUpload.On("DeleteIfUploading", mock.Anything, id, mock.Anything).
+		Return(func(_ context.Context, _ uuid.UUID, after func([]dao.ClearinghouseUploadFile) error) error {
+			return after([]dao.ClearinghouseUploadFile{original})
+		}).Once()
+	s.s3Client.On("Delete", mock.Anything, mock.AnythingOfType("string")).Return(nil)
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()+"/files/missing.txt"))
+	s.Equal(http.StatusNotFound, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()+"/files/reproducer.py"))
+	s.Equal(http.StatusNoContent, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodDelete, "/clearinghouse/submissions/"+id.String()))
+	s.Equal(http.StatusNoContent, code, string(body))
+	s.s3Client.AssertNumberOfCalls(s.T(), "Delete", 2)
+
+}
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
 	now := time.Now().UTC()
