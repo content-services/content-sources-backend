@@ -52,6 +52,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/submit", h.submitSubmission, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/process", h.processSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
@@ -327,6 +328,62 @@ func (h *ClearinghouseHandler) submitSubmission(c echo.Context) error {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
 	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(updated, files))
+}
+
+// processSubmission godoc
+// @Summary      Process a clearinghouse submission
+// @ID           processClearinghouseSubmission
+// @Description  Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature.
+// @Tags         lightwell
+// @Produce      json
+// @Param        uuid path string true "Clearinghouse submission UUID"
+// @Success      200 {object} api.ClearinghouseSubmission
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      409 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/process [post]
+func (h *ClearinghouseHandler) processSubmission(c echo.Context) error {
+	if err := handler.CheckLightwellClearinghouseReadAccessible(c.Request().Context()); err != nil {
+		return err
+	}
+	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
+	if err != nil {
+		return err
+	}
+	upload, err := h.Uploads.Get(c.Request().Context(), uploadID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error processing clearinghouse submission")
+	}
+	username, err := clearinghouseUsername(c)
+	if err != nil {
+		return err
+	}
+	if upload.Status != api.ClearinghouseSubmissionStatusSubmitted {
+		return ce.NewErrorResponse(http.StatusConflict, "Cannot process clearinghouse submission", clearinghouseProcessConflict(upload.Status))
+	}
+	updated, err := h.Uploads.Process(c.Request().Context(), upload.UUID, username)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ce.NewErrorResponse(http.StatusConflict, "Cannot process clearinghouse submission", "Submission cannot be processed")
+		}
+		return clearinghouseStoreError(err, "Error processing clearinghouse submission")
+	}
+	files, err := h.Uploads.ListFiles(c.Request().Context(), upload.UUID)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
+	}
+	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(updated, files))
+}
+
+func clearinghouseProcessConflict(status string) string {
+	if status == api.ClearinghouseSubmissionStatusPending {
+		return "Submission must be submitted before it can be processed"
+	}
+	if status == api.ClearinghouseSubmissionStatusProcessed {
+		return "Submission has already been processed"
+	}
+	return "Submission cannot be processed"
 }
 
 // listSubmissions godoc
