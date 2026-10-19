@@ -369,6 +369,60 @@ func (s *ClearinghouseSuite) TestDeleteSubmission() {
 	s.s3Client.AssertNumberOfCalls(s.T(), "Delete", 2)
 
 }
+func (s *ClearinghouseSuite) TestListAndGet() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	otherID := uuid.New()
+	now := time.Now().UTC()
+	mine := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	other := dao.ClearinghouseUpload{
+		UUID:      otherID,
+		OrgID:     "other-org",
+		Username:  "someone",
+		Filename:  "vulnerabilities.json",
+		Status:    api.ClearinghouseSubmissionStatusSubmitted,
+		CreatedAt: now,
+	}
+	files := []dao.ClearinghouseUploadFile{
+		clearinghouseFile(id, "vulnerabilities.json", "user", now),
+		clearinghouseFile(id, "reproducer.py", "user", now),
+		clearinghouseFile(id, "extra.txt", "user", now),
+	}
+	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseOrgParams(test_handler.MockOrgId))).
+		Return([]dao.ClearinghouseUpload{mine}, nil).Once()
+	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(func(orgID *string) bool {
+		return orgID != nil && *orgID == test_handler.MockOrgId
+	})).Return(int64(1), nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id}).Return(files, nil).Once()
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var listed api.ClearinghouseSubmissionCollectionResponse
+	s.Require().NoError(json.Unmarshal(body, &listed))
+	s.Require().Len(listed.Data, 1)
+	s.Equal(id.String(), listed.Data[0].UUID)
+	s.Equal("user", listed.Data[0].Username)
+	s.False(listed.Data[0].CreatedAt.IsZero())
+	s.Nil(listed.Data[0].SubmittedAt)
+	s.Nil(listed.Data[0].SubmittedBy)
+	s.Require().Len(listed.Data[0].Files, 3)
+	for _, submissionFile := range listed.Data[0].Files {
+		s.Equal("user", submissionFile.Username)
+		s.False(submissionFile.CreatedAt.IsZero())
+	}
+
+	s.enableRead()
+	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(func(params dao.ListClearinghouseUploadsParams) bool {
+		return params.OrgID == nil && params.Limit == 100 && params.Offset == 0
+	})).Return([]dao.ClearinghouseUpload{mine, other}, nil).Once()
+	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(func(orgID *string) bool {
+		return orgID == nil
+	})).Return(int64(2), nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id, otherID}).Return(files, nil).Once()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Require().NoError(json.Unmarshal(body, &listed))
+	s.Len(listed.Data, 2)
+}
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {
 	now := time.Now().UTC()
