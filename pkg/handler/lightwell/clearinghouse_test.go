@@ -149,6 +149,13 @@ func TestClearinghouseSubmissions(t *testing.T) {
 	assert.Equal(t, created.UUID, listed.Data[0].UUID)
 	assert.Equal(t, "user", listed.Data[0].Username)
 	assert.Len(t, listed.Data[0].Files, 3)
+
+	code, body = serveClearinghouse(t, uploads, s3Client, clearinghouseRequest(t, http.MethodGet, "/clearinghouse/submissions/"+created.UUID))
+	require.Equal(t, http.StatusOK, code, string(body))
+	require.NoError(t, json.Unmarshal(body, &fetched))
+	assert.Equal(t, created.UUID, fetched.UUID)
+	assert.Equal(t, api.ClearinghouseSubmissionStatusUploading, fetched.Status)
+	assert.Len(t, fetched.Files, 3)
 }
 
 func TestClearinghouseCreatePutFailure(t *testing.T) {
