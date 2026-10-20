@@ -11,11 +11,12 @@ const metricsNamespace = "content_sources"
 const metricsSubsystem = "jfrog_bridge"
 
 type bridgeMetrics struct {
-	messagesReceived  prometheus.Counter
-	messagesProcessed prometheus.Counter
-	messagesFailed    prometheus.Counter
-	embargoRejections prometheus.Counter
-	pipelineDuration  prometheus.Histogram
+	messagesReceived   prometheus.Counter
+	messagesProcessed  prometheus.Counter
+	messagesFailed     prometheus.Counter
+	embargoRejections  prometheus.Counter
+	checksumRejections prometheus.Counter
+	pipelineDuration   prometheus.Histogram
 }
 
 var (
@@ -61,6 +62,12 @@ func newBridgeMetrics(reg prometheus.Registerer) *bridgeMetrics {
 			Subsystem: metricsSubsystem,
 			Name:      "embargo_rejections_total",
 			Help:      "Total remediations rejected by embargo gate",
+		}),
+		checksumRejections: factory.NewCounter(prometheus.CounterOpts{
+			Namespace: metricsNamespace,
+			Subsystem: metricsSubsystem,
+			Name:      "checksum_rejections_total",
+			Help:      "Remediations rejected due to JAR checksum mismatch",
 		}),
 		pipelineDuration: factory.NewHistogram(prometheus.HistogramOpts{
 			Namespace: metricsNamespace,

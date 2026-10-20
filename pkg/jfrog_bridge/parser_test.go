@@ -69,6 +69,56 @@ func TestParseRemediations_CloudEvent(t *testing.T) {
 	assert.Equal(t, []string{"CVE-2026-2222"}, rems[2].CVEsFixed)
 }
 
+func TestParseRemediations_WithChecksums(t *testing.T) {
+	msg := `{
+		"specversion": "1.0",
+		"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+		"data": [{
+			"metadata": {},
+			"payload": {
+				"package_name": "org.springframework:spring-core",
+				"releases": [{
+					"release_names": [{"name": "5.3.18.rhlw-00003"}],
+					"related_cve": [{"cve": "CVE-2025-41249", "severity": "important"}],
+					"artifact_checksums": {
+						"spring-core-5.3.18.rhlw-00003.jar": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+					}
+				}]
+			}
+		}]
+	}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 1)
+	require.NotNil(t, rems[0].Checksums)
+	assert.Equal(t,
+		"abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+		rems[0].Checksums["spring-core-5.3.18.rhlw-00003.jar"])
+}
+
+func TestParseRemediations_WithoutChecksums(t *testing.T) {
+	msg := `{
+		"specversion": "1.0",
+		"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+		"data": [{
+			"metadata": {},
+			"payload": {
+				"package_name": "org.springframework:spring-core",
+				"releases": [{
+					"release_names": [{"name": "5.3.18.rhlw-00003"}],
+					"related_cve": [{"cve": "CVE-2025-41249", "severity": "important"}]
+				}]
+			}
+		}]
+	}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 1)
+	assert.Nil(t, rems[0].Checksums, "Checksums should be nil when absent from JSON")
+}
+
 func TestStripRHLWSuffix(t *testing.T) {
 	tests := []struct {
 		input    string

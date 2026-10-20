@@ -16,6 +16,14 @@ type EmbargoError struct {
 
 func (e *EmbargoError) Error() string { return e.msg }
 
+// ChecksumMismatchError is a non-retryable integrity failure.
+// The Kafka offset should be committed so the consumer moves on.
+type ChecksumMismatchError struct {
+	msg string
+}
+
+func (e *ChecksumMismatchError) Error() string { return e.msg }
+
 // ValidateNotificationCVEs checks the CVE list from a Kafka notification.
 // Every entry must be a well-formed public CVE ID.  A mixed list such as
 // ["CVE-2026-1111", "LTWL-0001"] is rejected because the non-CVE entry

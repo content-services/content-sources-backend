@@ -6,6 +6,8 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -83,6 +85,13 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 					h.metrics.messagesFailed.Inc()
 					continue
 				}
+				var checksumErr *ChecksumMismatchError
+				if errors.As(err, &checksumErr) {
+					log.Error().Err(err).Str("gav", gav).Msg("JAR checksum mismatch")
+					h.metrics.checksumRejections.Inc()
+					h.metrics.messagesFailed.Inc()
+					continue
+				}
 				log.Error().Err(err).Str("gav", gav).Msg("pipeline failed")
 				h.metrics.messagesFailed.Inc()
 				allSucceeded = false
@@ -132,10 +141,16 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	gav := gavKey(rem)
 	log.Info().Str("gav", gav).Msg("processing remediation")
 
-	// 1. Fetch JAR + POM from registry
+	// 1a. Fetch JAR from registry
 	jarData, jarSHA256, err := h.registry.FetchJAR(ctx, rem.GroupID, rem.ArtifactID, rem.Version)
 	if err != nil {
 		return fmt.Errorf("fetch JAR: %w", err)
+	}
+
+	// 1b. Verify JAR integrity against notification checksum
+	jarFilename := fmt.Sprintf("%s-%s.jar", rem.ArtifactID, rem.Version)
+	if err := verifyJARChecksum(jarFilename, jarSHA256, rem.Checksums); err != nil {
+		return fmt.Errorf("checksum verification: %w", err)
 	}
 
 	pomData, err := h.registry.FetchPOM(ctx, rem.GroupID, rem.ArtifactID, rem.Version)
@@ -262,4 +277,32 @@ func generateMavenMetadata(groupID, artifactID, version string) []byte {
 		return []byte{}
 	}
 	return append([]byte(xml.Header), data...)
+}
+
+// verifyJARChecksum compares the fetched JAR's SHA-256 against the checksum
+// carried in the Kafka notification. If the checksums map is nil or empty
+// (older producers), verification is skipped for backward compatibility.
+func verifyJARChecksum(filename, actualSHA256 string, checksums map[string]string) error {
+	if len(checksums) == 0 {
+		log.Warn().Str("file", filename).Msg("no checksums in notification, skipping verification")
+		return nil
+	}
+	expected, ok := checksums[filename]
+	if !ok {
+		keys := make([]string, 0, len(checksums))
+		for k := range checksums {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		return &ChecksumMismatchError{
+			msg: fmt.Sprintf("JAR %s absent from checksums map (available: %s)",
+				filename, strings.Join(keys, ", ")),
+		}
+	}
+	if actualSHA256 != expected {
+		return &ChecksumMismatchError{
+			msg: fmt.Sprintf("JAR checksum mismatch for %s: expected %s, got %s", filename, expected, actualSHA256),
+		}
+	}
+	return nil
 }
