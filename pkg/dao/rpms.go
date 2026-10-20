@@ -75,11 +75,10 @@ func (r *rpmDaoImpl) List(
 		return api.RepositoryRpmCollectionResponse{}, 0, notFound
 	}
 
-	owned, err := isOwnedRepository(r.db, orgID, repositoryConfigUUID)
-	if err != nil {
-		return api.RepositoryRpmCollectionResponse{}, 0, RepositoryDBErrorToApi(err, &repositoryConfigUUID)
-	}
-
+	owned := repositoryConfig.OrgID == orgID || slices.Contains(
+		[]string{config.RedHatOrg, config.CommunityOrg, config.LightwellOrg, config.LightwellDemoOrg},
+		repositoryConfig.OrgID,
+	)
 	if owned {
 		return r.listOwnedRpms(ctx, repositoryConfig, limit, offset, search, sortBy)
 	}
@@ -125,15 +124,20 @@ func (r *rpmDaoImpl) listOwnedRpms(
 
 	order := convertSortByToSQL(sortBy, sortMap, "name asc")
 
-	filteredDB = filteredDB.
-		Order(order).
-		Count(&totalRpms).
-		Offset(offset).
-		Limit(limit).
-		Find(&repoRpms)
+	// Without a name filter, the association table's primary key can count the
+	// repository's RPMs without visiting every matching row in rpms.
+	if search == "" {
+		if err := r.db.WithContext(ctx).Model(&models.RepositoryRpm{}).
+			Where("repository_uuid = ?", repositoryConfig.Repository.UUID).
+			Count(&totalRpms).Error; err != nil {
+			return api.RepositoryRpmCollectionResponse{}, 0, err
+		}
+	} else if err := filteredDB.Count(&totalRpms).Error; err != nil {
+		return api.RepositoryRpmCollectionResponse{}, 0, err
+	}
 
-	if filteredDB.Error != nil {
-		return api.RepositoryRpmCollectionResponse{}, totalRpms, filteredDB.Error
+	if err := filteredDB.Order(order).Offset(offset).Limit(limit).Find(&repoRpms).Error; err != nil {
+		return api.RepositoryRpmCollectionResponse{}, totalRpms, err
 	}
 
 	// Return the rpm list
