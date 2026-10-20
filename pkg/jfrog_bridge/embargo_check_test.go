@@ -223,6 +223,16 @@ func TestOSVRecords_ReturnsEmbargoError(t *testing.T) {
 	assert.True(t, errors.As(err, &embargoErr), "should be *EmbargoError")
 }
 
+func TestChecksumMismatchError_IsNonRetryable(t *testing.T) {
+	inner := &ChecksumMismatchError{msg: "test mismatch"}
+	wrapped := fmt.Errorf("integrity check: %w", inner)
+
+	var checksumErr *ChecksumMismatchError
+	assert.True(t, errors.As(wrapped, &checksumErr),
+		"errors.As should unwrap *ChecksumMismatchError through fmt.Errorf %%w")
+	assert.Equal(t, "test mismatch", checksumErr.Error())
+}
+
 func TestEmbargoError_UnwrapsThroughFmtErrorf(t *testing.T) {
 	records := []OSVRecord{{CVEID: "LTWL-0042"}}
 	inner := ValidateOSVRecords(records)

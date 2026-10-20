@@ -15,6 +15,7 @@ type Remediation struct {
 	Version     string
 	BaseVersion string
 	CVEsFixed   []string
+	Checksums   map[string]string // filename → sha256hex (nil if absent)
 }
 
 var rhlwSuffix = regexp.MustCompile(`\.rhlw[-.]\d+$`)
@@ -43,6 +44,7 @@ type payloadFull struct {
 			CVE      string `json:"cve"`
 			Severity string `json:"severity"`
 		} `json:"related_cve"`
+		ArtifactChecksums map[string]string `json:"artifact_checksums,omitempty"`
 	} `json:"releases"`
 }
 
@@ -80,6 +82,7 @@ func ParseRemediations(data []byte) ([]Remediation, error) {
 					Version:     rn.Name,
 					BaseVersion: stripRHLWSuffix(rn.Name),
 					CVEsFixed:   cves,
+					Checksums:   rel.ArtifactChecksums,
 				})
 			}
 		}

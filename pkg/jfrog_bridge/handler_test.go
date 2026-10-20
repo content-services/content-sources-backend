@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,10 +21,78 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/IBM/sarama"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// mockConsumerGroupSession is a minimal test double for sarama.ConsumerGroupSession.
+type mockConsumerGroupSession struct {
+	ctx    context.Context
+	marked []*sarama.ConsumerMessage
+}
+
+func (m *mockConsumerGroupSession) Claims() map[string][]int32               { return nil }
+func (m *mockConsumerGroupSession) MemberID() string                         { return "test" }
+func (m *mockConsumerGroupSession) GenerationID() int32                      { return 1 }
+func (m *mockConsumerGroupSession) MarkOffset(string, int32, int64, string)  {}
+func (m *mockConsumerGroupSession) Commit()                                  {}
+func (m *mockConsumerGroupSession) ResetOffset(string, int32, int64, string) {}
+func (m *mockConsumerGroupSession) Context() context.Context                 { return m.ctx }
+func (m *mockConsumerGroupSession) MarkMessage(msg *sarama.ConsumerMessage, _ string) {
+	m.marked = append(m.marked, msg)
+}
+
+// mockConsumerGroupClaim feeds a fixed set of messages then closes the channel.
+type mockConsumerGroupClaim struct {
+	ch chan *sarama.ConsumerMessage
+}
+
+func (m *mockConsumerGroupClaim) Topic() string                            { return "test-topic" }
+func (m *mockConsumerGroupClaim) Partition() int32                         { return 0 }
+func (m *mockConsumerGroupClaim) InitialOffset() int64                     { return 0 }
+func (m *mockConsumerGroupClaim) HighWaterMarkOffset() int64               { return 0 }
+func (m *mockConsumerGroupClaim) Messages() <-chan *sarama.ConsumerMessage { return m.ch }
+
+func TestVerifyJARChecksum_Match(t *testing.T) {
+	checksums := map[string]string{
+		"spring-core-5.3.18.rhlw-00003.jar": "abcdef1234567890",
+	}
+	err := verifyJARChecksum("spring-core-5.3.18.rhlw-00003.jar", "abcdef1234567890", checksums)
+	assert.NoError(t, err)
+}
+
+func TestVerifyJARChecksum_Mismatch(t *testing.T) {
+	checksums := map[string]string{
+		"spring-core-5.3.18.rhlw-00003.jar": "expected_hash",
+	}
+	err := verifyJARChecksum("spring-core-5.3.18.rhlw-00003.jar", "actual_hash", checksums)
+	require.Error(t, err)
+	var checksumErr *ChecksumMismatchError
+	assert.True(t, errors.As(err, &checksumErr))
+	assert.Contains(t, err.Error(), "expected_hash")
+	assert.Contains(t, err.Error(), "actual_hash")
+}
+
+func TestVerifyJARChecksum_NoChecksums(t *testing.T) {
+	assert.NoError(t, verifyJARChecksum("test.jar", "abc123", nil),
+		"nil checksums should skip verification")
+	assert.NoError(t, verifyJARChecksum("test.jar", "abc123", map[string]string{}),
+		"empty checksums should skip verification")
+}
+
+func TestVerifyJARChecksum_MissingKey(t *testing.T) {
+	checksums := map[string]string{
+		"other-artifact-1.0.jar": "somehash",
+	}
+	err := verifyJARChecksum("spring-core-5.3.18.rhlw-00003.jar", "abc123", checksums)
+	require.Error(t, err)
+	var checksumErr *ChecksumMismatchError
+	assert.True(t, errors.As(err, &checksumErr))
+	assert.Contains(t, err.Error(), "absent from checksums map")
+	assert.Contains(t, err.Error(), "other-artifact-1.0.jar")
+}
 
 func TestProcessRemediation_SpringCore(t *testing.T) {
 	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
@@ -487,6 +556,72 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 	handler.processed.Add(gav)
 
 	assert.True(t, handler.processed.Contains(gav), "GAV should be in processed set after successful pipeline")
+}
+
+func TestConsumeClaim_ChecksumMismatchCommitsOffset(t *testing.T) {
+	// A message whose checksums map does not match the fetched JAR should
+	// increment checksumRejections, increment messagesFailed, and still
+	// commit the Kafka offset (non-retryable).
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
+
+	pomData, err := os.ReadFile(testdataPath("registry", "org", "springframework",
+		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom"))
+	require.NoError(t, err)
+	jarData := pomData
+
+	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, ".jar") {
+			_, _ = w.Write(jarData)
+		} else if strings.HasSuffix(r.URL.Path, ".pom") {
+			_, _ = w.Write(pomData)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer registryServer.Close()
+
+	registry := &httpRegistryClient{
+		httpClient:  registryServer.Client(),
+		registryURL: registryServer.URL,
+		osvURL:      registryServer.URL,
+		maxRetries:  0,
+	}
+
+	reg := prometheus.NewRegistry()
+	metrics := newBridgeMetrics(reg)
+	handler := NewBridgeHandler(registry, nil, nil, metrics)
+
+	// Build a CloudEvents message with a wrong checksum.
+	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.springframework:spring-core","releases":[{"release_names":[{"name":"5.3.18.rhlw-00003"}],"related_cve":[{"cve":"CVE-2025-41249","severity":"important"}],"artifact_checksums":{"spring-core-5.3.18.rhlw-00003.jar":"0000000000000000000000000000000000000000000000000000000000000000"}}]}}]}`
+
+	ch := make(chan *sarama.ConsumerMessage, 1)
+	ch <- &sarama.ConsumerMessage{Value: []byte(payload)}
+	close(ch)
+
+	session := &mockConsumerGroupSession{ctx: context.Background()}
+	claim := &mockConsumerGroupClaim{ch: ch}
+
+	err = handler.ConsumeClaim(session, claim)
+	require.NoError(t, err)
+
+	// Offset should have been committed (message marked).
+	assert.Len(t, session.marked, 1, "offset should be committed for non-retryable checksum error")
+
+	// checksumRejections should be 1.
+	gathered, gatherErr := reg.Gather()
+	require.NoError(t, gatherErr)
+	var checksumCount float64
+	var failedCount float64
+	for _, mf := range gathered {
+		switch mf.GetName() {
+		case "content_sources_jfrog_bridge_checksum_rejections_total":
+			checksumCount = mf.GetMetric()[0].GetCounter().GetValue()
+		case "content_sources_jfrog_bridge_messages_failed_total":
+			failedCount = mf.GetMetric()[0].GetCounter().GetValue()
+		}
+	}
+	assert.Equal(t, float64(1), checksumCount, "checksumRejections should be incremented")
+	assert.Equal(t, float64(1), failedCount, "messagesFailed should be incremented")
 }
 
 func TestGenerateMavenMetadata_SpecialChars(t *testing.T) {
