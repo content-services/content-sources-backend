@@ -89,6 +89,8 @@ CREATE TABLE lightwell_vulnerabilities (
     duplicate BOOLEAN NOT NULL DEFAULT false,
     duplicate_of TEXT,
     resolution_reason TEXT,
+    jira_status TEXT,
+    jira_resolution TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

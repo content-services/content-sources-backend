@@ -18,6 +18,14 @@ const ignoredResolutionLog = "beacon_ignored_resolution"
 // VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
 const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
 
+// ComponentUpgradeJQL - JQL for the shipped Component Upgrade (CT) issues whose
+// "Incorporates" links drive CID inheritance onto their member IVTs.
+const ComponentUpgradeJQL = "project = LTWL AND issuetype = \"Component Upgrade\" AND component in (\"Backport\", \"Novel Fix\") AND status = Closed AND resolution = Done ORDER BY created ASC"
+
+// componentUpgradeFields are the Jira fields fetched for CTs. Only the issue links
+// are needed; member CID labels and status are read from the fetched IVT set.
+var componentUpgradeFields = []string{"issuelinks"}
+
 var vulnerabilityFields = []string{
 	"summary",
 	"description",
@@ -101,6 +109,12 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 
 	i.prefetchRelationships(ctx, issues, accountFieldID)
 
+	cts, err := i.searchCTs(ctx)
+	if err != nil {
+		return SyncSummary{}, err
+	}
+	inheritedCIDs := buildInheritedCIDs(issues, cts)
+
 	advisories, err := i.loadAdvisories(ctx)
 	if err != nil {
 		return SyncSummary{}, err
@@ -109,7 +123,7 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 	var summary SyncSummary
 	confirmedByIssue := i.verifyBreadcrumbPackages(ctx, issues, &summary)
 	for _, issue := range issues {
-		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], &summary); err != nil {
+		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], inheritedCIDs[issue.Key], &summary); err != nil {
 			summary.Failed++
 			summary.Failures = append(summary.Failures, err.Error())
 		}
@@ -144,6 +158,11 @@ func (i *Ingestor) prefetchRelationships(ctx context.Context, vulnerabilities []
 	batchKeys := make(map[string]struct{})
 	for _, vulnerability := range vulnerabilities {
 		if beaconDiscarded(vulnerability.Fields) {
+			continue
+		}
+		// Customers come from CID labels; a vulnerability without them links no
+		// support tickets, so there is no batch/epic walk to prefetch.
+		if len(customerIDsFromLabels(vulnerability.Fields["labels"])) == 0 {
 			continue
 		}
 		for _, key := range linkedIssueKeys(vulnerability, "relates to") {
@@ -263,11 +282,22 @@ func (i *Ingestor) loadAdvisories(ctx context.Context) ([]PublishedAdvisory, err
 }
 
 func (i *Ingestor) searchAll(ctx context.Context) ([]jira_client.JiraIssue, error) {
+	return i.searchPaged(ctx, VulnerabilityJQL, vulnerabilityFields)
+}
+
+// searchCTs fetches all shipped Component Upgrade issues (Closed/Done) whose
+// "Incorporates" links drive CID inheritance.
+func (i *Ingestor) searchCTs(ctx context.Context) ([]jira_client.JiraIssue, error) {
+	return i.searchPaged(ctx, ComponentUpgradeJQL, componentUpgradeFields)
+}
+
+// searchPaged paginates a Jira search over all result pages.
+func (i *Ingestor) searchPaged(ctx context.Context, jql string, fields []string) ([]jira_client.JiraIssue, error) {
 	issues := make([]jira_client.JiraIssue, 0)
 	nextPageToken := ""
 	seenTokens := make(map[string]struct{})
 	for {
-		page, err := i.jira.Search(ctx, VulnerabilityJQL, vulnerabilityFields, nextPageToken)
+		page, err := i.jira.Search(ctx, jql, fields, nextPageToken)
 		if err != nil {
 			return nil, err
 		}
@@ -309,6 +339,7 @@ func (i *Ingestor) syncIssue(
 	accountFieldID string,
 	advisories []PublishedAdvisory,
 	confirmedVersions []string,
+	inheritedCIDs []string,
 	summary *SyncSummary,
 ) error {
 	if resolution, detail, discarded := beaconDiscardReason(issue.Fields); discarded {
@@ -327,6 +358,10 @@ func (i *Ingestor) syncIssue(
 	}
 
 	applyPublishedStage(&vulnerability, confirmedVersions, advisories)
+
+	if vulnerability.Stage == "Lightwell Network" {
+		tickets = mergeInheritedCustomers(tickets, inheritedCIDs)
+	}
 
 	outcome, err := i.vulnerabilities.Save(ctx, vulnerabilityInput(vulnerability, tickets))
 	if err != nil {
@@ -392,6 +427,8 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 		LastUpdated:        vulnerability.LastUpdated,
 		Embargo:            vulnerability.Embargo,
 		Duplicate:          vulnerability.Duplicate,
+		JiraStatus:         vulnerability.JiraStatus,
+		JiraResolution:     vulnerability.JiraResolution,
 	}
 	for _, ticket := range tickets {
 		input.Tickets = append(input.Tickets, dao.LightwellVulnerabilityTicket{
@@ -417,23 +454,47 @@ func applyPublishedStage(vulnerability *Vulnerability, confirmedVersions []strin
 	vulnerability.Stage = "Lightwell Network"
 }
 
-// issueRelationships resolves the support-ticket links for a vulnerability. A
-// vulnerability can relate to several batch tickets, each of which rolls up to
-// an epic. The epic maps to one customer account, and the stored ticket id is
-// the issue that epic is triggered by. This walks every "relates to" link and
-// returns one TicketLink per distinct epic.
+// issueRelationships resolves the customer and support-ticket links for a
+// vulnerability. The customer accounts (CIDs) are the authoritative set encoded
+// in the vulnerability's own CID-<number> labels. Support tickets are still
+// discovered by walking each "relates to" batch up to its epic: the epic's
+// account number identifies which customer the epic's "is triggered by" support
+// ticket belongs to. A support ticket is linked to a customer only when an epic
+// account number matches one of the vulnerability's CID labels; otherwise the
+// customer is stored without a support ticket.
 func (i *Ingestor) issueRelationships(ctx context.Context, vulnerability jira_client.JiraIssue, accountFieldID string) ([]TicketLink, error) {
-	if accountFieldID == "" {
-		return nil, nil
-	}
-	batchKeys := linkedIssueKeys(vulnerability, "relates to")
-	if len(batchKeys) == 0 {
+	customerIDs := customerIDsFromLabels(vulnerability.Fields["labels"])
+	if len(customerIDs) == 0 {
 		return nil, nil
 	}
 
-	tickets := make([]TicketLink, 0, len(batchKeys))
-	seenEpics := make(map[string]struct{}, len(batchKeys))
-	for _, batchKey := range batchKeys {
+	ticketByCustomer, err := i.supportTicketsByCustomer(ctx, vulnerability, accountFieldID)
+	if err != nil {
+		return nil, err
+	}
+
+	tickets := make([]TicketLink, 0, len(customerIDs))
+	for _, customerID := range customerIDs {
+		tickets = append(tickets, TicketLink{
+			TicketID:   ticketByCustomer[customerID],
+			CustomerID: customerID,
+		})
+	}
+	return tickets, nil
+}
+
+// supportTicketsByCustomer walks a vulnerability's "relates to" batches up to
+// their epics and maps each epic's account number to the support ticket that
+// epic is triggered by. The map lets issueRelationships pair a CID label with
+// its support ticket. It is empty when no Account Number field is configured.
+func (i *Ingestor) supportTicketsByCustomer(ctx context.Context, vulnerability jira_client.JiraIssue, accountFieldID string) (map[string]string, error) {
+	ticketByCustomer := make(map[string]string)
+	if accountFieldID == "" {
+		return ticketByCustomer, nil
+	}
+
+	seenEpics := make(map[string]struct{})
+	for _, batchKey := range linkedIssueKeys(vulnerability, "relates to") {
 		batch, err := i.issue(ctx, batchKey, []string{"parent", "issuelinks"})
 		if err != nil {
 			return nil, err
@@ -455,17 +516,20 @@ func (i *Ingestor) issueRelationships(ctx context.Context, vulnerability jira_cl
 		if err != nil {
 			return nil, err
 		}
-		ticketID := linkedIssueKey(epic, "is triggered by")
 		// A support ticket (epic) maps to exactly one customer account, so the
-		// first account number on the epic identifies the customer even when no
-		// support ticket is linked.
+		// first account number on the epic identifies the customer.
 		customers := normalizedValues(epic.Fields[accountFieldID])
 		if len(customers) == 0 {
 			continue
 		}
-		tickets = append(tickets, TicketLink{TicketID: ticketID, CustomerID: customers[0]})
+		// The epic Account Number carries the customer as "CID-<number>" while
+		// customers are stored as the bare number, so normalize before pairing.
+		customerID := normalizeCustomerID(customers[0])
+		if _, exists := ticketByCustomer[customerID]; !exists {
+			ticketByCustomer[customerID] = linkedIssueKey(epic, "is triggered by")
+		}
 	}
-	return tickets, nil
+	return ticketByCustomer, nil
 }
 
 func (i *Ingestor) issue(ctx context.Context, key string, fields []string) (jira_client.JiraIssue, error) {

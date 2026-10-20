@@ -45,6 +45,9 @@ func TestMapVulnerability(t *testing.T) {
 	assert.Equal(t, "Title: Example vulnerability\nComponent: example-component\nversion: 1.2.3\nDetails\nsecond line", *vulnerability.Description)
 	assert.Equal(t, time.Date(2026, 8, 16, 1, 30, 0, 0, time.UTC), vulnerability.SubmittedDate)
 	assert.Equal(t, time.Date(2026, 8, 17, 1, 40, 0, 0, time.UTC), vulnerability.LastUpdated)
+	require.NotNil(t, vulnerability.JiraStatus)
+	assert.Equal(t, "New", *vulnerability.JiraStatus)
+	assert.Nil(t, vulnerability.JiraResolution)
 }
 
 func TestMapVulnerabilitySkipsMalformedOptionalFields(t *testing.T) {
@@ -87,7 +90,14 @@ func TestVulnerabilityIDFromSummary(t *testing.T) {
 		{name: "CVE ID", summary: "CVE-2025-12345 Example product", want: "CVE-2025-12345"},
 		{name: "CVE backport", summary: "[CVE Backport] Example product CVE-2025-12345", want: "CVE-2025-12345"},
 		{name: "CVE backport without CVE", summary: "[CVE Backport] Example product"},
-		{name: "CVE outside backport summary", summary: "Example product CVE-2025-12345"},
+		{name: "ID anywhere in summary", summary: "Example product CVE-2025-12345", want: "CVE-2025-12345"},
+		{name: "cloned CVE", summary: "CLONE - CVE-2026-50193 jackson-databind: StackOverflowError", want: "CVE-2026-50193"},
+		{name: "cloned LW", summary: "CLONE - LW-2026-0066 jackson-databind: DNS lookup", want: "LW-2026-0066"},
+		{name: "nested clone", summary: "CLONE - CLONE - CVE-2026-50193 example", want: "CVE-2026-50193"},
+		{name: "cloned backport", summary: "CLONE - [CVE Backport] Example product CVE-2025-12345", want: "CVE-2025-12345"},
+		{name: "first id wins", summary: "LW-2026-0066 related to CVE-2025-12345", want: "LW-2026-0066"},
+		{name: "lowercase normalized", summary: "clone - cve-2026-50193 example", want: "CVE-2026-50193"},
+		{name: "no id", summary: "Just a product description"},
 	}
 
 	for _, tt := range tests {
@@ -316,6 +326,25 @@ func TestStage(t *testing.T) {
 	assert.Equal(t, "Submitted", stage(json.RawMessage(`{"name":"Unknown"}`)))
 }
 
+func TestReleasedOrDone(t *testing.T) {
+	fields := func(status, resolution string) map[string]json.RawMessage {
+		f := map[string]json.RawMessage{"status": json.RawMessage(`{"name":"` + status + `"}`)}
+		if resolution != "" {
+			f["resolution"] = json.RawMessage(`{"name":"` + resolution + `"}`)
+		}
+		return f
+	}
+	assert.True(t, releasedOrDone(fields("Released", "")))
+	assert.True(t, releasedOrDone(fields("released", "")))
+	assert.True(t, releasedOrDone(fields("Closed", "Done")))
+	assert.True(t, releasedOrDone(fields("Closed", "done")))
+	assert.False(t, releasedOrDone(fields("Closed", "Won't Do")))
+	assert.False(t, releasedOrDone(fields("Closed", "")))
+	assert.False(t, releasedOrDone(fields("Verified", "Done")))
+	assert.False(t, releasedOrDone(fields("Release Pending", "")))
+	assert.False(t, releasedOrDone(fields("New", "")))
+}
+
 func TestParseCVSSNumeric(t *testing.T) {
 	score, vector := parseCVSS(json.RawMessage(`"7.5"`))
 	require.NotNil(t, score)
@@ -331,6 +360,29 @@ func TestLinkedIssueKeyUsesDirectionLabel(t *testing.T) {
 		]`),
 	}}
 	assert.Equal(t, "BATCH-1", linkedIssueKey(issue, "is related to"))
+}
+
+func TestCustomerIDsFromLabels(t *testing.T) {
+	cases := []struct {
+		name   string
+		labels string
+		want   []string
+	}{
+		{name: "single", labels: `["CID-12345"]`, want: []string{"12345"}},
+		{name: "case insensitive prefix", labels: `["cid-42"]`, want: []string{"42"}},
+		{name: "multiple distinct", labels: `["CID-1","other","CID-2"]`, want: []string{"1", "2"}},
+		{name: "dedupes", labels: `["CID-7","CID-7"]`, want: []string{"7"}},
+		{name: "ignores non-digit suffix", labels: `["CID-abc","CID-12x"]`, want: []string{}},
+		{name: "ignores unprefixed and partial", labels: `["12345","severity::low","CID-"]`, want: []string{}},
+		{name: "trims whitespace", labels: `[" CID-9 "]`, want: []string{"9"}},
+		{name: "no labels field", labels: ``, want: nil},
+		{name: "empty list", labels: `[]`, want: []string{}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, customerIDsFromLabels(json.RawMessage(tc.labels)))
+		})
+	}
 }
 
 func validJiraIssue(key string) jira_client.JiraIssue {
