@@ -18,12 +18,12 @@ type LightwellAdvisoryHandler struct {
 	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient) {
+func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, fsClient *feature_service_client.FeatureServiceClient, middleware ...echo.MiddlewareFunc) {
 	h := LightwellAdvisoryHandler{
 		DaoRegistry:          *daoReg,
 		FeatureServiceClient: *fsClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.ListAdvisories, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/advisories", h.ListAdvisories, rbac.RbacVerbRead, middleware...)
 }
 
 // listLightwellAdvisories godoc
@@ -44,6 +44,7 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Param        offset           query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellAdvisoryCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/advisories [get]
 func (h *LightwellAdvisoryHandler) ListAdvisories(c echo.Context) error {

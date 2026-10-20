@@ -25,7 +25,7 @@ func checkLightwellBeaconAccessible(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegistry) {
+func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegistry, middleware ...echo.MiddlewareFunc) {
 	if group == nil {
 		panic("engine is nil")
 	}
@@ -34,10 +34,11 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 	}
 
 	h := LightwellVulnerabilityHandler{DaoRegistry: *daoReg}
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/status/", h.beaconStatus, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
-	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead, checkLightwellBeaconAccessible)
+	routeMiddleware := append([]echo.MiddlewareFunc{checkLightwellBeaconAccessible}, middleware...)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/status/", h.beaconStatus, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead, routeMiddleware...)
 }
 
 // GetLightwellBeaconStatus godoc
@@ -50,6 +51,7 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 // @Success      200 {object} api.LightwellBeaconStatusResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/beacon/status/ [get]
 func (h *LightwellVulnerabilityHandler) beaconStatus(c echo.Context) error {
@@ -70,6 +72,7 @@ func (h *LightwellVulnerabilityHandler) beaconStatus(c echo.Context) error {
 // @Success      200 {object} api.LightwellCustomerIdsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/beacon/vulnerabilities/customers/ [get]
 func (h *LightwellVulnerabilityHandler) listCustomerIds(c echo.Context) error {
@@ -94,6 +97,7 @@ func (h *LightwellVulnerabilityHandler) listCustomerIds(c echo.Context) error {
 // @Success      200 {object} api.LightwellLtwlsuptTicketIdsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/ [get]
 func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) error {
@@ -131,6 +135,7 @@ func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) er
 // @Success      200 {object} api.LightwellVulnerabilityCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/beacon/vulnerabilities/ [get]
 func (h *LightwellVulnerabilityHandler) listVulnerabilities(c echo.Context) error {

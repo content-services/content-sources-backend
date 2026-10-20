@@ -21,6 +21,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/jfrog_bridge"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
@@ -87,6 +88,11 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		}
 	}
 
+	var termsMiddleware []echo.MiddlewareFunc
+	if termsClientReady {
+		termsMiddleware = append(termsMiddleware, middleware.RequireTermsAcceptance(tsClient, fsClient))
+	}
+
 	var s3Client s3_client.S3Client
 	if config.Get().Clients.Lightwell.S3.CoverageUploads.Name == "" {
 		log.Warn().Msg("s3 not configured")
@@ -122,9 +128,9 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterCandlepinRoutes(group, &cpClient, &ch)
 		RegisterModuleStreamsRoutes(group, daoReg)
 		RegisterUserPreferencesRoutes(group, daoReg)
-		RegisterLightwellVulnerabilityRoutes(group, daoReg)
-		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client, &fsClient)
-		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
+		RegisterLightwellVulnerabilityRoutes(group, daoReg, termsMiddleware...)
+		RegisterCoverageReportRoutes(group, daoReg, &taskClient, s3Client, &fsClient, termsMiddleware...)
+		RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient, termsMiddleware...)
 		if termsClientReady {
 			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
 		}
@@ -137,8 +143,8 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 			}
 		}
 		if config.Tang != nil {
-			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient)
-			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient)
+			RegisterPackageRoutes(group, daoReg, *config.Tang, pulpClient, termsMiddleware...)
+			RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient, termsMiddleware...)
 		}
 	}
 

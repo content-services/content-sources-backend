@@ -32,19 +32,19 @@ type PackageHandler struct {
 	PulpClient  pulp_client.PulpClient
 }
 
-func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient) {
+func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient, middleware ...echo.MiddlewareFunc) {
 	ph := PackageHandler{
 		DaoRegistry: *daoReg,
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.ListPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.ListMavenPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.GetMavenPackageDetail, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.ListPackages, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.ListMavenPackageVersions, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.GetMavenPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
 }
 
 func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
@@ -80,6 +80,7 @@ func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.R
 // @Success      200 {object} api.PackageResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/packages [get]
 func (ph *PackageHandler) ListPackages(c echo.Context) error {
@@ -331,6 +332,7 @@ func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.Packag
 // @Success      200 {object} api.MavenPackageVersionsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name} [get]
 func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
@@ -398,6 +400,7 @@ func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 // @Success      200 {object} api.MavenPackageDetailResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
 func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
@@ -505,6 +508,7 @@ func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, nam
 // @Success      200 {object} api.PythonPackageVersionsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/python_packages/{name} [get]
 func (ph *PackageHandler) GetPythonPackageVersions(c echo.Context) error {
@@ -562,6 +566,7 @@ func (ph *PackageHandler) GetPythonPackageVersions(c echo.Context) error {
 // @Success      200 {object} api.PythonPackageDetailResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/python_packages/{name}/{version} [get]
 func (ph *PackageHandler) GetPythonPackageDetail(c echo.Context) error {
@@ -709,6 +714,7 @@ func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageRespo
 // @Success      200 {object} api.NpmPackageVersionsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/npm_packages/{scope}/{name} [get]
 func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
@@ -770,6 +776,7 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 // @Success      200 {object} api.NpmPackageDetailResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/npm_packages/{scope}/{name}/{version} [get]
 func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {

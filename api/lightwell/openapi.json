@@ -953,6 +953,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1061,6 +1071,16 @@
                         },
                         "description": "Bad Request"
                     },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1152,6 +1172,16 @@
                             }
                         },
                         "description": "Bad Request"
+                    },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
                     },
                     "500": {
                         "content": {
@@ -1326,6 +1356,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1416,6 +1456,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1503,6 +1553,16 @@
                         },
                         "description": "Not Found"
                     },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
                     "500": {
                         "content": {
                             "application/json": {
@@ -1574,6 +1634,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
                     },
                     "500": {
                         "content": {
@@ -1655,6 +1725,16 @@
                             }
                         },
                         "description": "Not Found"
+                    },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
                     },
                     "500": {
                         "content": {

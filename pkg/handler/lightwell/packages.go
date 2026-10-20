@@ -24,7 +24,7 @@ type LightwellPackageHandler struct {
 	PackageHandler handler.PackageHandler
 }
 
-func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient, fsClient *feature_service_client.FeatureServiceClient) {
+func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient, fsClient *feature_service_client.FeatureServiceClient, middleware ...echo.MiddlewareFunc) {
 	h := LightwellPackageHandler{
 		LightwellPackagesHandler: handler.LightwellPackagesHandler{
 			DaoRegistry:          *daoReg,
@@ -38,13 +38,13 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 			PulpClient:  pulpClient,
 		},
 	}
-	addLightwellRoute(engine, http.MethodGet, "/packages", h.listPackages, rbac.RbacVerbRead)
-	addLightwellRoute(engine, http.MethodGet, "/package_versions", h.listPackageVersions, rbac.RbacVerbRead)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/packages", h.listRepoPackages, rbac.RbacVerbRead)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", h.listMavenPackageVersions, rbac.RbacVerbRead)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", h.getMavenPackageDetail, rbac.RbacVerbRead)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead)
+	addLightwellRoute(engine, http.MethodGet, "/packages", h.listPackages, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/package_versions", h.listPackageVersions, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/packages", h.listRepoPackages, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", h.listMavenPackageVersions, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", h.getMavenPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead, middleware...)
 }
 
 // listPackages godoc
@@ -62,6 +62,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /packages [get]
 func (h *LightwellPackageHandler) listPackages(c echo.Context) error {
@@ -85,6 +86,7 @@ func (h *LightwellPackageHandler) listPackages(c echo.Context) error {
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageVersionCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /package_versions [get]
 func (h *LightwellPackageHandler) listPackageVersions(c echo.Context) error {
@@ -105,6 +107,7 @@ func (h *LightwellPackageHandler) listPackageVersions(c echo.Context) error {
 // @Success      200 {object} api.PackageResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/packages [get]
 func (h *LightwellPackageHandler) listRepoPackages(c echo.Context) error {
@@ -124,6 +127,7 @@ func (h *LightwellPackageHandler) listRepoPackages(c echo.Context) error {
 // @Success      200 {object} api.MavenPackageVersionsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name} [get]
 func (h *LightwellPackageHandler) listMavenPackageVersions(c echo.Context) error {
@@ -144,6 +148,7 @@ func (h *LightwellPackageHandler) listMavenPackageVersions(c echo.Context) error
 // @Success      200 {object} api.MavenPackageDetailResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
 func (h *LightwellPackageHandler) getMavenPackageDetail(c echo.Context) error {
@@ -163,6 +168,7 @@ func (h *LightwellPackageHandler) getMavenPackageDetail(c echo.Context) error {
 // @Success      200 {object} api.PythonPackageDetailResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/python_packages/{name}/{version} [get]
 func (h *LightwellPackageHandler) getPythonPackageDetail(c echo.Context) error {
@@ -181,6 +187,7 @@ func (h *LightwellPackageHandler) getPythonPackageDetail(c echo.Context) error {
 // @Success      200 {object} api.PythonPackageVersionsResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /repositories/{uuid}/python_packages/{name} [get]
 func (h *LightwellPackageHandler) getPythonPackageVersions(c echo.Context) error {

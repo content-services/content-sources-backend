@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -49,8 +50,8 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 	}
 
 	RegisterLightwellRepositoryRoutes(group, daoReg)
-	RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient)
 
+	var termsMiddleware []echo.MiddlewareFunc
 	if config.TermsServiceConfigured() {
 		var tsClient terms_service_client.TermsServiceClient
 		tsClient, err = terms_service_client.NewTermsServiceClient()
@@ -58,8 +59,11 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 			log.Error().Err(err).Msg("failed to create terms service client; terms routes will not be registered")
 		} else {
 			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
+			termsMiddleware = append(termsMiddleware, middleware.RequireTermsAcceptance(tsClient, fsClient))
 		}
 	}
+
+	RegisterLightwellAdvisoryRoutes(group, daoReg, &fsClient, termsMiddleware...)
 
 	pulpClient := pulp_client.GetPulpClientWithDomain("")
 	if config.Tang == nil {
@@ -69,7 +73,7 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 		}
 	}
 	if config.Tang != nil {
-		RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient)
+		RegisterLightwellPackageRoutes(group, daoReg, *config.Tang, pulpClient, &fsClient, termsMiddleware...)
 	}
 }
 
