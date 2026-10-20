@@ -1,4 +1,4 @@
-package middleware
+package middleware_test
 
 import (
 	"encoding/base64"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
@@ -24,14 +25,14 @@ func TestSkipLivenessTrue(t *testing.T) {
 	}
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipMiddleware))
+	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
 		c.SetPath(route)
-		result := SkipAuth(route)
+		result := middleware.SkipAuth(route)
 		assert.True(t, result)
 	}
 }
@@ -43,14 +44,14 @@ func TestSkipLivenessFalse(t *testing.T) {
 	}
 	e := echo.New()
 	handler.RegisterPing(e)
-	e.Use(WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipMiddleware))
+	e.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 
 	for _, route := range listRoutes {
 		req := httptest.NewRequest(http.MethodGet, route, nil)
 		res := httptest.NewRecorder()
 		c := e.NewContext(req, res)
 		c.SetPath(route)
-		result := SkipAuth(route)
+		result := middleware.SkipAuth(route)
 		assert.False(t, result)
 	}
 }
@@ -65,7 +66,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 		listSuccessPaths []string
 	)
 	e := echo.New()
-	m := WrapMiddlewareWithSkipper(identity.EnforceIdentity, SkipMiddleware)
+	m := middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware)
 
 	IdentityHeader := "X-Rh-Identity"
 	xrhidentityHeaderSuccess := `{"identity":{"type":"Associate","account_number":"2093","internal":{"org_id":"7066"}}}`
@@ -142,7 +143,7 @@ func TestWrapMiddlewareWithSkipper(t *testing.T) {
 
 func TestEnforceOrgId(t *testing.T) {
 	e := echo.New()
-	e.Use(EnforceOrgId)
+	e.Use(middleware.EnforceOrgId)
 	e.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	e.Add("GET", "/ping", handleItWorked)
 	e.Add("GET", urlPrefix+"/v1/repository_parameters/", handleItWorked)
@@ -253,7 +254,7 @@ func TestSkipRbacForInternalUser(t *testing.T) {
 			req = req.WithContext(identity.WithIdentity(req.Context(), xrhid))
 
 			c := echo.New().NewContext(req, httptest.NewRecorder())
-			assert.Equal(t, tt.expected, SkipRbac(c, tt.path))
+			assert.Equal(t, tt.expected, middleware.SkipRbac(c, tt.path))
 		})
 	}
 }

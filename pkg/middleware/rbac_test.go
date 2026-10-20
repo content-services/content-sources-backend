@@ -1,4 +1,4 @@
-package middleware
+package middleware_test
 
 import (
 	"context"
@@ -9,8 +9,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
@@ -76,7 +78,7 @@ func rbacServe(t *testing.T, req *http.Request, resource rbac.Resource, verb rba
 
 	// Add ClientWrapper middleware
 	e.Use(
-		NewRbac(Rbac{
+		middleware.NewRbac(middleware.Rbac{
 			BaseUrl:        config.Get().Clients.RbacBaseUrl,
 			Skipper:        skipper,
 			PermissionsMap: rbac.ServicePermissions,
@@ -93,7 +95,7 @@ func rbacServe(t *testing.T, req *http.Request, resource rbac.Resource, verb rba
 	require.NotNil(t, rw)
 
 	if generateIdentity {
-		req.Header.Set(xrhidHeader, xrhid)
+		req.Header.Set(api.IdentityHeader, xrhid)
 	}
 
 	e.ServeHTTP(rw, req)
@@ -115,7 +117,7 @@ func TestNewRbacPanics(t *testing.T) {
 	var client = rbac.NewMockClientWrapper(t)
 	var skipper echo_middleware.Skipper = skipperTrue
 	require.Panics(t, func() {
-		NewRbac(Rbac{
+		middleware.NewRbac(middleware.Rbac{
 			BaseUrl:        "http://localhost:8800/api/rbac/v1",
 			Skipper:        skipper,
 			PermissionsMap: nil,
@@ -123,7 +125,7 @@ func TestNewRbacPanics(t *testing.T) {
 		})
 	})
 	require.Panics(t, func() {
-		NewRbac(Rbac{
+		middleware.NewRbac(middleware.Rbac{
 			BaseUrl:        "http://localhost:8800/api/rbac/v1",
 			Skipper:        skipper,
 			PermissionsMap: pm,

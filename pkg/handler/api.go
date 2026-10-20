@@ -21,6 +21,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/jfrog_bridge"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
@@ -89,7 +90,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 
 	var termsMiddleware []echo.MiddlewareFunc
 	if termsClientReady {
-		termsMiddleware = append(termsMiddleware, RequireTermsAcceptance(tsClient, fsClient))
+		termsMiddleware = append(termsMiddleware, middleware.RequireTermsAcceptance(tsClient, fsClient))
 	}
 
 	var s3Client s3_client.S3Client

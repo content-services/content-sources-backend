@@ -10,7 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -59,7 +59,7 @@ func RegisterRoutes(_ context.Context, engine *echo.Echo) {
 			log.Error().Err(err).Msg("failed to create terms service client; terms routes will not be registered")
 		} else {
 			RegisterLightwellTermsRoutes(group, &tsClient, &fsClient)
-			termsMiddleware = append(termsMiddleware, handler.RequireTermsAcceptance(tsClient, fsClient))
+			termsMiddleware = append(termsMiddleware, middleware.RequireTermsAcceptance(tsClient, fsClient))
 		}
 	}
 

@@ -1,4 +1,4 @@
-package handler
+package middleware
 
 import (
 	"errors"
@@ -54,6 +54,8 @@ func TestRequireTermsAcceptance(t *testing.T) {
 		{name: "unmapped events required", user: user, login: "user", checkFeatures: true, checkTerms: true, events: []string{"unmapped"}, blocked: true},
 		{name: "no mapping requires all events", user: user, login: "user", checkFeatures: true, checkTerms: true, events: networkEvents, noMapping: true, blocked: true},
 		{name: "service account", serviceAccount: serviceAccount, login: "service-account", checkFeatures: true, features: networkFeatures, checkTerms: true, events: networkEvents, blocked: true},
+		{name: "service account terms accepted", serviceAccount: serviceAccount, login: "service-account", checkFeatures: true, features: networkFeatures, checkTerms: true},
+		{name: "service account missing login", serviceAccount: &identity.ServiceAccount{UserId: "service-account-id"}},
 		{name: "empty user falls back to service account", user: &identity.User{}, serviceAccount: serviceAccount, login: "service-account", checkFeatures: true, features: networkFeatures, checkTerms: true, events: networkEvents, blocked: true},
 		{name: "user login takes precedence", user: user, serviceAccount: serviceAccount, login: "user", checkFeatures: true, features: networkFeatures, checkTerms: true, events: networkEvents, blocked: true},
 	} {
