@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/ProtonMail/go-crypto v1.5.2
+	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.31
 	github.com/content-services/yummy v1.0.20
@@ -121,6 +122,7 @@ require (
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	github.com/zitadel/oidc/v3 v3.49.6 // indirect
 	github.com/zitadel/schema v1.3.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

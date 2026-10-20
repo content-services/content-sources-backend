@@ -4,6 +4,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -14,6 +15,9 @@ import (
 var ErrNotFound = errors.New("not found in cache")
 
 type Cache interface {
+	GetTermsNotRequired(ctx context.Context, scope TermsScope) (bool, error)
+	SetTermsNotRequired(ctx context.Context, scope TermsScope, ttl time.Duration) error
+
 	GetAccessList(ctx context.Context) (rbac.AccessList, error)
 	SetAccessList(ctx context.Context, accessList rbac.AccessList) error
 

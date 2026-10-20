@@ -303,6 +303,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -686,6 +690,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -1035,6 +1043,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -1372,6 +1384,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -1712,6 +1728,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -2053,6 +2073,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -2396,6 +2420,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -2737,6 +2765,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -3075,6 +3107,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -3411,6 +3447,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -3749,6 +3789,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -4087,6 +4131,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -4425,6 +4473,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -4786,6 +4838,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -5125,6 +5181,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -5481,6 +5541,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -5816,6 +5880,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -6151,6 +6219,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -6486,6 +6558,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -6821,6 +6897,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -7156,6 +7236,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -7491,6 +7575,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -7826,6 +7914,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -8161,6 +8253,10 @@ objects:
                 value: ${CLIENTS_TERMS_SERVICE_SITE}
               - name: CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP
                 value: ${CLIENTS_TERMS_SERVICE_EVENT_FEATURE_MAP}
+              - name: CLIENTS_REDIS_EXPIRATION_TERMS
+                value: ${CLIENTS_REDIS_EXPIRATION_TERMS}
+              - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+                value: ${CLIENTS_TERMS_SERVICE_CACHE_VERSION}
               - name: CLIENTS_TERMS_SERVICE_CLIENT_CERT
                 valueFrom:
                   secretKeyRef:
@@ -8587,6 +8683,14 @@ parameters:
     description: Comma-separated mapping of terms event to required entitled feature
       name (e.g. network:lightwell-network,academic:lightwell-research-institutions)
     value: ''
+  - name: CLIENTS_REDIS_EXPIRATION_TERMS
+    description: Terms allowance cache lifetime; keep disabled until rollout prerequisites
+      pass (0s disables only caching)
+    value: 0s
+  - name: CLIENTS_TERMS_SERVICE_CACHE_VERSION
+    description: Terms cache namespace version; rotate across all API replicas to invalidate
+      cached allowances
+    value: '1'
   - name: OPTIONS_FEATURE_FILTER
     description: Comma separated list of features that determine which repos to import
   - name: OPTIONS_ENTITLE_ALL

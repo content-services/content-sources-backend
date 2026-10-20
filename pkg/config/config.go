@@ -186,6 +186,7 @@ type TermsService struct {
 	Server          string `mapstructure:"server"`
 	Site            string `mapstructure:"site"`
 	EventFeatureMap string `mapstructure:"event_feature_map"` // "event:feature,event:feature"
+	CacheVersion    string `mapstructure:"cache_version"`     // Rotate across replicas to invalidate terms cache entries.
 	ClientCert      string `mapstructure:"client_cert"`
 	ClientKey       string `mapstructure:"client_key"`
 	CACert          string `mapstructure:"ca_cert"`
@@ -297,6 +298,7 @@ type Expiration struct {
 	SubscriptionCheck time.Duration `mapstructure:"subscription_check"`
 	Roadmap           time.Duration `mapstructure:"roadmap"`
 	ContentCounts     time.Duration `mapstructure:"content_counts"`
+	Terms             time.Duration `mapstructure:"terms"` // Values <= 0 disable only terms caching.
 }
 
 type Sentry struct {
@@ -481,6 +483,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
 	v.SetDefault("clients.redis.expiration.content_counts", 5*time.Minute)
 	v.SetDefault("clients.redis.expiration.roadmap", 24*time.Hour)
+	v.SetDefault("clients.redis.expiration.terms", 24*time.Hour)
 
 	v.SetDefault("clients.feature_service.server", "")
 	v.SetDefault("clients.feature_service.client_cert", "")
@@ -493,6 +496,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.terms_service.server", "")
 	v.SetDefault("clients.terms_service.site", "")
 	v.SetDefault("clients.terms_service.event_feature_map", "")
+	v.SetDefault("clients.terms_service.cache_version", "1")
 	v.SetDefault("clients.terms_service.client_cert", "")
 	v.SetDefault("clients.terms_service.client_key", "")
 	v.SetDefault("clients.terms_service.ca_cert", "")
