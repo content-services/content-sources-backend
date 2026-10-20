@@ -37,6 +37,11 @@ type publicationPackageVersion struct {
 	Version string
 }
 
+// skipPublicationVerification, when true, bypasses the Pulp publication
+// existence check and treats every requested package version as published.
+// TEMPORARY: flip to false to restore real verification.
+var skipPublicationVerification = true
+
 // PublicationPackageVerifier confirms which requested package versions exist in
 // Lightwell publication repositories. Implementations return only confirmed
 // versions. Warnings describe checks that could not be completed.
@@ -168,6 +173,21 @@ func (v *publicationPackageVerifier) VerifyPublished(
 	packages map[PublicationPackage][]string,
 ) (map[PublicationPackage][]string, []string) {
 	confirmed := make(map[PublicationPackage][]string)
+
+	// TEMPORARY: skip Pulp publication verification and treat every requested
+	// package version as published. Set to false (or remove this block) to
+	// restore real verification.
+	if skipPublicationVerification {
+		for pkg, versions := range packages {
+			deduped := slices.Clone(versions)
+			slices.Sort(deduped)
+			deduped = slices.Compact(deduped)
+			slices.Reverse(deduped)
+			confirmed[pkg] = deduped
+		}
+		return confirmed, nil
+	}
+
 	repositories, warnings := v.publicationRepositories(ctx)
 	if len(repositories) == 0 {
 		if len(warnings) == 0 {

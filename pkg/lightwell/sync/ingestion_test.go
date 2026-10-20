@@ -25,6 +25,7 @@ type fakeJira struct {
 	fields         []jira_client.JiraField
 	fieldErr       error
 	pages          map[string]jira_client.JiraPage
+	ctPages        map[string]jira_client.JiraPage
 	searchErr      error
 	batchSearchErr error
 	issues         map[string]jira_client.JiraIssue
@@ -45,6 +46,9 @@ func (f *fakeJira) Search(_ context.Context, jql string, fields []string, token 
 	f.searchFields = append(f.searchFields, fields)
 	if f.searchErr != nil {
 		return jira_client.JiraPage{}, f.searchErr
+	}
+	if jql == ComponentUpgradeJQL {
+		return f.ctPages[token], nil
 	}
 	if jql != VulnerabilityJQL {
 		if f.batchSearchErr != nil {
@@ -95,8 +99,10 @@ func (f *fakeVulnerabilityStore) DeleteByKey(_ context.Context, key string) (boo
 
 func TestIngestorBatchLoadsRelationships(t *testing.T) {
 	first := validJiraIssue("LTWL-1")
+	first.Fields["labels"] = json.RawMessage(`["CID-111"]`)
 	first.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
 	second := validJiraIssue("LTWL-2")
+	second.Fields["labels"] = json.RawMessage(`["CID-222"]`)
 	second.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-2"}}]`)
 	jira := &fakeJira{
 		fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
@@ -122,6 +128,7 @@ func TestIngestorBatchLoadsRelationships(t *testing.T) {
 		VulnerabilityJQL,
 		`key IN ("BATCH-1", "BATCH-2") ORDER BY key ASC`,
 		`key IN ("EPIC-1", "EPIC-2") ORDER BY key ASC`,
+		ComponentUpgradeJQL,
 	}, jira.searchJQLs)
 	assert.Equal(t, 2, summary.Inserted)
 	require.Len(t, store.saved, 2)
@@ -150,6 +157,7 @@ func TestIngestorChunksRelationshipBatchSearches(t *testing.T) {
 
 func TestIngestorFallsBackWhenRelationshipBatchSearchFails(t *testing.T) {
 	vulnerability := validJiraIssue("LTWL-1")
+	vulnerability.Fields["labels"] = json.RawMessage(`["CID-111"]`)
 	vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
 	jira := &fakeJira{
 		fields:         []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
@@ -175,6 +183,7 @@ func TestIngestorFallsBackWhenRelationshipBatchSearchFails(t *testing.T) {
 
 func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
 	vulnerability := validJiraIssue("LTWL-1")
+	vulnerability.Fields["labels"] = json.RawMessage(`["CID-123"]`)
 	vulnerability.Fields["issuelinks"] = json.RawMessage(`[{
 		"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}
 	}]`)
@@ -205,12 +214,13 @@ func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
 	assert.Equal(t, "LTWL-1", store.saved[0].VulnerabilityKey)
 	assert.Equal(t, "LW-0000-0001", store.saved[0].VulnerabilityID)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "123"}}, store.saved[0].Tickets)
-	assert.Equal(t, []string{"", "next", "", ""}, jira.searchCalls)
+	assert.Equal(t, []string{"", "next", "", "", ""}, jira.searchCalls)
 	assert.Empty(t, jira.issueCalls)
 }
 
 func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
 	issue := validJiraIssue("LTWL-1")
+	issue.Fields["labels"] = json.RawMessage(`["CID-123"]`)
 	issue.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
 	batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
 		"parent": json.RawMessage(`{"key":"EPIC-1"}`),
@@ -236,6 +246,7 @@ func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
 
 func TestIngestorLoadsMultipleBatchRelationships(t *testing.T) {
 	vulnerability := validJiraIssue("LTWL-1")
+	vulnerability.Fields["labels"] = json.RawMessage(`["CID-111","CID-222"]`)
 	vulnerability.Fields["issuelinks"] = json.RawMessage(`[
 		{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}},
 		{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-2"}}
@@ -272,7 +283,8 @@ func TestIngestorLoadsMultipleBatchRelationships(t *testing.T) {
 
 func TestIngestorStoresEpicFromBatchParent(t *testing.T) {
 	vulnerability := validJiraIssue("LTWL-1")
-	vulnerability.Fields["issuelinks"] = json.RawMessage(`[{ 
+	vulnerability.Fields["labels"] = json.RawMessage(`["CID-789"]`)
+	vulnerability.Fields["issuelinks"] = json.RawMessage(`[{
 		"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}
 	}]`)
 	batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
@@ -298,6 +310,7 @@ func TestIngestorStoresEpicFromBatchParent(t *testing.T) {
 
 func TestIngestorLinksCustomerWithoutSupportTicket(t *testing.T) {
 	vulnerability := validJiraIssue("LTWL-1")
+	vulnerability.Fields["labels"] = json.RawMessage(`["CID-789"]`)
 	vulnerability.Fields["issuelinks"] = json.RawMessage(`[{
 		"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}
 	}]`)
@@ -318,6 +331,127 @@ func TestIngestorLinksCustomerWithoutSupportTicket(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "789"}}, store.saved[0].Tickets)
+}
+
+// TestIngestorUsesCIDLabelsForCustomers covers the new behaviour where the
+// customer accounts come from the vulnerability's CID-<number> labels rather than
+// from the epic's Account Number field.
+func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
+	t.Run("customer from label without any support ticket walk", func(t *testing.T) {
+		vulnerability := validJiraIssue("LTWL-1")
+		vulnerability.Fields["labels"] = json.RawMessage(`["CID-555"]`)
+		jira := &fakeJira{
+			fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+			pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{vulnerability}}},
+		}
+		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "555"}}, store.saved[0].Tickets)
+		assert.Empty(t, jira.issueCalls)
+	})
+
+	t.Run("label without matching epic keeps customer but drops the ticket", func(t *testing.T) {
+		vulnerability := validJiraIssue("LTWL-1")
+		// The label CID does not match the epic account number (engineering IVT).
+		vulnerability.Fields["labels"] = json.RawMessage(`["CID-999"]`)
+		vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+		batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
+			"parent": json.RawMessage(`{"key":"EPIC-1"}`),
+		}}
+		epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
+			"customfield_account": json.RawMessage(`["789"]`),
+			"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
+		}}
+		jira := &fakeJira{
+			fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+			pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{vulnerability}}},
+			issues: map[string]jira_client.JiraIssue{"BATCH-1": batch, "EPIC-1": epic},
+		}
+		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "999"}}, store.saved[0].Tickets)
+	})
+
+	t.Run("epic account number with CID- prefix pairs the ticket", func(t *testing.T) {
+		vulnerability := validJiraIssue("LTWL-1")
+		vulnerability.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+		vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+		batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
+			"parent": json.RawMessage(`{"key":"EPIC-1"}`),
+		}}
+		// Real data: the epic Account Number carries the "CID-" prefix.
+		epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
+			"customfield_account": json.RawMessage(`["CID-663171"]`),
+			"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
+		}}
+		jira := &fakeJira{
+			fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+			pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{vulnerability}}},
+			issues: map[string]jira_client.JiraIssue{"BATCH-1": batch, "EPIC-1": epic},
+		}
+		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "663171"}}, store.saved[0].Tickets)
+	})
+
+	t.Run("multiple labels pair only the matching epic ticket", func(t *testing.T) {
+		vulnerability := validJiraIssue("LTWL-1")
+		vulnerability.Fields["labels"] = json.RawMessage(`["CID-111","CID-999"]`)
+		vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+		batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
+			"parent": json.RawMessage(`{"key":"EPIC-1"}`),
+		}}
+		epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
+			"customfield_account": json.RawMessage(`["111"]`),
+			"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
+		}}
+		jira := &fakeJira{
+			fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+			pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{vulnerability}}},
+			issues: map[string]jira_client.JiraIssue{"BATCH-1": batch, "EPIC-1": epic},
+		}
+		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{
+			{TicketID: "TICKET-1", CustomerID: "111"},
+			{TicketID: "", CustomerID: "999"},
+		}, store.saved[0].Tickets)
+	})
+
+	t.Run("no CID labels links no customers even with a related epic", func(t *testing.T) {
+		vulnerability := validJiraIssue("LTWL-1")
+		vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+		batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
+			"parent": json.RawMessage(`{"key":"EPIC-1"}`),
+		}}
+		epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
+			"customfield_account": json.RawMessage(`["789"]`),
+		}}
+		jira := &fakeJira{
+			fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
+			pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{vulnerability}}},
+			issues: map[string]jira_client.JiraIssue{"BATCH-1": batch, "EPIC-1": epic},
+		}
+		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Empty(t, store.saved[0].Tickets)
+		assert.Empty(t, jira.issueCalls)
+	})
 }
 
 func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
@@ -437,6 +571,37 @@ func TestIngestorSavesIssueWithOtherResolution(t *testing.T) {
 	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
 	require.Len(t, store.saved, 1)
 	assert.Empty(t, store.deleted)
+}
+
+func TestIngestorPromotesReleasedOrDoneByJiraState(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		status     string
+		resolution string
+		wantStage  string
+	}{
+		{name: "released promotes to network", status: "Released", wantStage: "Lightwell Network"},
+		{name: "closed with done promotes to network", status: "Closed", resolution: "Done", wantStage: "Lightwell Network"},
+		{name: "verified stays in validation", status: "Verified", wantStage: "Validation"},
+		{name: "release pending stays in validation", status: "Release Pending", wantStage: "Validation"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			issue := validJiraIssue("LTWL-1")
+			issue.Fields["status"] = json.RawMessage(`{"name":"` + tt.status + `"}`)
+			if tt.resolution != "" {
+				issue.Fields["resolution"] = resolutionJSON(tt.resolution)
+			}
+			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+			_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+			require.NoError(t, err)
+			require.Len(t, store.saved, 1)
+			assert.Equal(t, tt.wantStage, store.saved[0].Stage)
+			require.NotNil(t, store.saved[0].JiraStatus)
+			assert.Equal(t, tt.status, *store.saved[0].JiraStatus)
+		})
+	}
 }
 
 func resolutionJSON(name string) json.RawMessage {
@@ -813,4 +978,73 @@ func validationIssueWithBreadcrumbs(t *testing.T, key string, purls ...string) j
 	require.NoError(t, err)
 	issue.Fields["description"] = descriptionJSON
 	return issue
+}
+
+func savedByKey(store *fakeVulnerabilityStore, key string) dao.LightwellVulnerabilityInput {
+	for _, input := range store.saved {
+		if input.VulnerabilityKey == key {
+			return input
+		}
+	}
+	return dao.LightwellVulnerabilityInput{}
+}
+
+func TestIngestorInheritsCIDForDoneSibling(t *testing.T) {
+	v1 := validJiraIssue("LTWL-1")
+	v1.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	v1.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	v2 := validJiraIssue("LTWL-2")
+	v2.Fields["labels"] = json.RawMessage(`[]`)
+	v2.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	ct := ctIncorporating("CT-1", "LTWL-1", "LTWL-2")
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{v1, v2}}},
+		ctPages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ct}}},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	saved2 := savedByKey(store, "LTWL-2")
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "663171"}}, saved2.Tickets)
+	assert.Contains(t, jira.searchJQLs, ComponentUpgradeJQL)
+}
+
+func TestIngestorDoesNotInheritForNonDoneSibling(t *testing.T) {
+	v1 := validJiraIssue("LTWL-1")
+	v1.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	v1.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	v2 := validJiraIssue("LTWL-2")
+	v2.Fields["labels"] = json.RawMessage(`[]`)
+	v2.Fields["status"] = json.RawMessage(`{"name":"Verified"}`)
+	ct := ctIncorporating("CT-1", "LTWL-1", "LTWL-2")
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{v1, v2}}},
+		ctPages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ct}}},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, savedByKey(store, "LTWL-2").Tickets)
+}
+
+func TestIngestorDedupesOwnAndInheritedCID(t *testing.T) {
+	v1 := validJiraIssue("LTWL-1")
+	v1.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	v1.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	v2 := validJiraIssue("LTWL-2")
+	v2.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	v2.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	ct := ctIncorporating("CT-1", "LTWL-1", "LTWL-2")
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{v1, v2}}},
+		ctPages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ct}}},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "663171"}},
+		savedByKey(store, "LTWL-1").Tickets)
 }

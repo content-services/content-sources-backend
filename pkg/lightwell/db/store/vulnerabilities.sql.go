@@ -165,7 +165,7 @@ func (q *Queries) DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg Delet
 }
 
 const getVulnerabilityByKey = `-- name: GetVulnerabilityByKey :one
-SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason, created_at, updated_at
+SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason, jira_status, jira_resolution, created_at, updated_at
 FROM lightwell_vulnerabilities
 WHERE vulnerability_key = $1
 `
@@ -199,6 +199,8 @@ func (q *Queries) GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey st
 		&i.Duplicate,
 		&i.DuplicateOf,
 		&i.ResolutionReason,
+		&i.JiraStatus,
+		&i.JiraResolution,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -426,14 +428,14 @@ const upsertVulnerability = `-- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
     uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,
     severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage,
-    language, complexity, submitted_date, last_updated, embargo, duplicate, resolution_reason
+    language, complexity, submitted_date, last_updated, embargo, duplicate, resolution_reason, jira_status, jira_resolution
 ) VALUES (
     $1, $2, $3, $4, $5,
     $6, COALESCE($7::text[], '{}'::text[]), $8, $9, $10,
     $11, $12, $13, $14,
     $15, $16, $17,
     $18, $19, $20, $21,
-    $22, $23, $24
+    $22, $23, $24, $25, $26
 )
 ON CONFLICT (vulnerability_key) DO UPDATE SET
     vulnerability_id = EXCLUDED.vulnerability_id,
@@ -462,6 +464,8 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
     embargo = EXCLUDED.embargo,
     duplicate = EXCLUDED.duplicate,
     resolution_reason = EXCLUDED.resolution_reason,
+    jira_status = EXCLUDED.jira_status,
+    jira_resolution = EXCLUDED.jira_resolution,
     updated_at = NOW()
 WHERE (
     lightwell_vulnerabilities.vulnerability_id, lightwell_vulnerabilities.purl,
@@ -475,7 +479,8 @@ WHERE (
     lightwell_vulnerabilities.language, lightwell_vulnerabilities.complexity,
     lightwell_vulnerabilities.submitted_date, lightwell_vulnerabilities.last_updated,
     lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate,
-    lightwell_vulnerabilities.resolution_reason
+    lightwell_vulnerabilities.resolution_reason,
+    lightwell_vulnerabilities.jira_status, lightwell_vulnerabilities.jira_resolution
 ) IS DISTINCT FROM (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
     EXCLUDED.component_version, EXCLUDED.published_versions, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
@@ -487,7 +492,8 @@ WHERE (
         ELSE EXCLUDED.stage
     END,
     EXCLUDED.language, EXCLUDED.complexity, EXCLUDED.submitted_date, EXCLUDED.last_updated,
-    EXCLUDED.embargo, EXCLUDED.duplicate, EXCLUDED.resolution_reason
+    EXCLUDED.embargo, EXCLUDED.duplicate, EXCLUDED.resolution_reason,
+    EXCLUDED.jira_status, EXCLUDED.jira_resolution
 )
 RETURNING uuid, (xmax = 0) AS inserted
 `
@@ -517,6 +523,8 @@ type UpsertVulnerabilityParams struct {
 	Embargo            bool      `json:"embargo"`
 	Duplicate          bool      `json:"duplicate"`
 	ResolutionReason   *string   `json:"resolution_reason"`
+	JiraStatus         *string   `json:"jira_status"`
+	JiraResolution     *string   `json:"jira_resolution"`
 }
 
 type UpsertVulnerabilityRow struct {
@@ -550,6 +558,8 @@ func (q *Queries) UpsertVulnerability(ctx context.Context, arg UpsertVulnerabili
 		arg.Embargo,
 		arg.Duplicate,
 		arg.ResolutionReason,
+		arg.JiraStatus,
+		arg.JiraResolution,
 	)
 	var i UpsertVulnerabilityRow
 	err := row.Scan(&i.Uuid, &i.Inserted)

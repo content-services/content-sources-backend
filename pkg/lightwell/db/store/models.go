@@ -102,6 +102,8 @@ type LightwellVulnerability struct {
 	Duplicate          bool      `json:"duplicate"`
 	DuplicateOf        *string   `json:"duplicate_of"`
 	ResolutionReason   *string   `json:"resolution_reason"`
+	JiraStatus         *string   `json:"jira_status"`
+	JiraResolution     *string   `json:"jira_resolution"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
