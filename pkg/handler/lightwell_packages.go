@@ -24,15 +24,15 @@ type LightwellPackagesHandler struct {
 	FeatureServiceClient feature_service_client.FeatureServiceClient
 }
 
-func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient, fsClient *feature_service_client.FeatureServiceClient) {
+func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClient tangy.Tangy, pulpClient pulp_client.PulpClient, fsClient *feature_service_client.FeatureServiceClient, middleware ...echo.MiddlewareFunc) {
 	h := LightwellPackagesHandler{
 		DaoRegistry:          *daoReg,
 		TangClient:           tangClient,
 		PulpClient:           pulpClient,
 		FeatureServiceClient: *fsClient,
 	}
-	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.ListPackages, rbac.RbacVerbRead)
-	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.ListPackageVersions, rbac.RbacVerbRead)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/packages", h.ListPackages, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/lightwell/package_versions", h.ListPackageVersions, rbac.RbacVerbRead, middleware...)
 }
 
 // listLightwellPackages godoc
@@ -50,6 +50,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 // @Param        offset          query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/packages [get]
 func (h *LightwellPackagesHandler) ListPackages(c echo.Context) error {
@@ -173,6 +174,7 @@ func lightwellAPIVersion(stored, upstream string) string {
 // @Param        offset               query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellPackageVersionCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /lightwell/package_versions [get]
 func (h *LightwellPackagesHandler) ListPackageVersions(c echo.Context) error {

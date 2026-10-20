@@ -42,7 +42,7 @@ func checkLightwellLensAccessible(fsClient feature_service_client.FeatureService
 	}
 }
 
-func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient, s3Client s3_client.S3Client, fsClient *feature_service_client.FeatureServiceClient) {
+func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, taskClient *client.TaskClient, s3Client s3_client.S3Client, fsClient *feature_service_client.FeatureServiceClient, middleware ...echo.MiddlewareFunc) {
 	if fsClient == nil {
 		panic("fsClient is nil")
 	}
@@ -52,10 +52,10 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, t
 		S3:                   s3Client,
 		FeatureServiceClient: *fsClient,
 	}
-	lensAccessMiddleware := checkLightwellLensAccessible(ch.FeatureServiceClient)
-	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbRead, lensAccessMiddleware)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, lensAccessMiddleware)
-	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, lensAccessMiddleware)
+	routeMiddleware := append([]echo.MiddlewareFunc{checkLightwellLensAccessible(ch.FeatureServiceClient)}, middleware...)
+	addRepoRoute(engine, http.MethodPost, "/coverage_reports/", ch.createCoverageReport, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid", ch.getCoverageReport, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(engine, http.MethodGet, "/coverage_reports/:uuid/packages", ch.listCoverageReportPackages, rbac.RbacVerbRead, routeMiddleware...)
 }
 
 // CreateCoverageReport godoc
@@ -70,6 +70,7 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, t
 // @Success      201 {object} api.CoverageReportResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/ [post]
 func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
@@ -160,6 +161,7 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 // @Param        uuid path string true "Coverage report UUID"
 // @Success      200 {object} api.CoverageReportResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/{uuid} [get]
 func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
@@ -188,6 +190,7 @@ func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
 // @Success      200 {object} api.CoverageReportPackageCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
 // @Router       /coverage_reports/{uuid}/packages [get]
 func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) error {

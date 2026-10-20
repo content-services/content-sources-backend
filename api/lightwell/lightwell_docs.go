@@ -102,6 +102,12 @@ const docTemplatelightwell = `{
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -188,6 +194,12 @@ const docTemplatelightwell = `{
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -258,6 +270,12 @@ const docTemplatelightwell = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -401,6 +419,12 @@ const docTemplatelightwell = `{
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -469,6 +493,12 @@ const docTemplatelightwell = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -542,6 +572,12 @@ const docTemplatelightwell = `{
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
                     },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -596,6 +632,12 @@ const docTemplatelightwell = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
@@ -661,6 +703,12 @@ const docTemplatelightwell = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
                         "schema": {
                             "$ref": "#/definitions/errors.ErrorResponse"
                         }
