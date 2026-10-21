@@ -591,10 +591,13 @@ func TestIngestorPromotesReleasedOrDoneByJiraState(t *testing.T) {
 			if tt.resolution != "" {
 				issue.Fields["resolution"] = resolutionJSON(tt.resolution)
 			}
-			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			jira := &fakeJira{
+				pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+				ctPages: ctPagesFor("LTWL-1"),
+			}
 			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-			_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+			_, err := NewIngestor(jira, store, nil, nil, WithPromoteByJiraState(true)).Sync(context.Background())
 			require.NoError(t, err)
 			require.Len(t, store.saved, 1)
 			assert.Equal(t, tt.wantStage, store.saved[0].Stage)
@@ -656,7 +659,10 @@ func TestIngestorPromotesEveryValidationStatusWhenPublished(t *testing.T) {
 	for _, status := range []string{"Closed", "Verified", "Release Pending", "Released"} {
 		t.Run(status, func(t *testing.T) {
 			issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", status, "java", "com.example:demo-lib", "1.2.3")
-			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			jira := &fakeJira{
+				pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+				ctPages: ctPagesFor("LTWL-1"),
+			}
 			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
 			_, err := NewIngestor(jira, store, advisories, nil).Sync(context.Background())
@@ -675,7 +681,10 @@ func TestIngestorDoesNotMissMatchingClosedIssues(t *testing.T) {
 		publishedJiraIssue("LTWL-3", "LW-0000-0003 Example", "Closed", "java", "com.example:other-lib", "9.9.9"),
 		publishedJiraIssue("LTWL-4", "LW-0000-0001 Example", "In Progress", "java", "com.example:demo-lib", "1.2.3"),
 	}
-	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: issues}}}
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: issues}},
+		ctPages: ctPagesFor("LTWL-1", "LTWL-2"),
+	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 	advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{
 		matchingJavaAdvisory("LW-0000-0001"),
@@ -710,7 +719,10 @@ func TestIngestorPromoteByJiraStateOption(t *testing.T) {
 	// local promote-by-Jira-state option is enabled.
 	newStore := func() (*fakeJira, *fakeVulnerabilityStore) {
 		issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Released", "java", "com.example:demo-lib", "1.2.3")
-		jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+		jira := &fakeJira{
+			pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+			ctPages: ctPagesFor("LTWL-1"),
+		}
 		return jira, &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 	}
 
@@ -816,7 +828,10 @@ func TestIngestorPublicationFlow(t *testing.T) {
 			"pkg:maven/org.example/demo@9.9.9",
 			"pkg:pypi/zope.interface@6.0-rhlw-00001",
 		)
-		jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+		jira := &fakeJira{
+			pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+			ctPages: ctPagesFor("LTWL-1"),
+		}
 		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 		advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{{
 			RepoName: "java/remediated", AdvisoryID: "LW-0000-0001-1.2.3",
@@ -856,7 +871,10 @@ func TestIngestorPublicationFlow(t *testing.T) {
 	t.Run("verification error falls back to advisories", func(t *testing.T) {
 		ctx := context.Background()
 		issue := validationIssueWithBreadcrumbs(t, "LTWL-1", "pkg:maven/org.example/demo@1.2.3.rhlw-00002")
-		jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+		jira := &fakeJira{
+			pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+			ctPages: ctPagesFor("LTWL-1"),
+		}
 		store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 		advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{{
 			RepoName: "java/remediated", AdvisoryID: "LW-0000-0001-1.2.3",
@@ -902,7 +920,10 @@ func TestIngestorCommonsIOBareBreadcrumbsUseAdvisories(t *testing.T) {
 		t.Run(test.key, func(t *testing.T) {
 			issue := validationIssueWithBreadcrumbs(t, test.key, test.breadcrumb...)
 			issue.Fields["description"] = jsonString(t, "Component: commons-io:commons-io\nversion: 2.11.0\nLightwell Fixed Versions:\n"+strings.Join(test.breadcrumb, "\n"))
-			jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+			jira := &fakeJira{
+				pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+				ctPages: ctPagesFor(test.key),
+			}
 			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 			advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{{
 				RepoName: "java/remediated", AdvisoryID: "LW-0000-0001-2.11.0",
@@ -925,7 +946,10 @@ func TestIngestorCommonsIOBareBreadcrumbsUseAdvisories(t *testing.T) {
 
 func TestIngestorFallsBackToAdvisoriesForMissingBreadcrumb(t *testing.T) {
 	issue := validationIssueWithBreadcrumbs(t, "LTWL-1", "pkg:maven/org.example/demo@1.2.3.rhlw-00001")
-	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+		ctPages: ctPagesFor("LTWL-1"),
+	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 	advisories := fakeAdvisories{rows: []dao.LightwellAdvisoryInput{{
 		RepoName: "java/remediated", AdvisoryID: "LW-0000-0001-1.2.3",
@@ -974,7 +998,10 @@ func TestIngestorDoesNotVerifyNonValidationOrDiscardedIssues(t *testing.T) {
 func TestIngestorVerificationWarningsDoNotPreventOtherIssuesFromSaving(t *testing.T) {
 	first := validationIssueWithBreadcrumbs(t, "LTWL-1", "pkg:maven/org.example/demo@1.0.0.rhlw-00001")
 	second := validationIssueWithBreadcrumbs(t, "LTWL-2", "pkg:pypi/demo@2.0.0-rhlw-00001")
-	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{first, second}}}}
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{first, second}}},
+		ctPages: ctPagesFor("LTWL-2"),
+	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 	verifier := &fakePublicationVerifier{
 		confirmed: map[PublicationPackage][]string{
@@ -1006,6 +1033,13 @@ func validationIssueWithBreadcrumbs(t *testing.T, key string, purls ...string) j
 	return issue
 }
 
+// ctPagesFor builds a fakeJira ctPages map with a single Closed/Done CT that
+// incorporates the given IVT keys — the membership beacon now requires before an
+// IVT can reach the Lightwell Network (done) stage.
+func ctPagesFor(keys ...string) map[string]jira_client.JiraPage {
+	return map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ctIncorporating("CT-1", keys...)}}}
+}
+
 func savedByKey(store *fakeVulnerabilityStore, key string) dao.LightwellVulnerabilityInput {
 	for _, input := range store.saved {
 		if input.VulnerabilityKey == key {
@@ -1029,7 +1063,7 @@ func TestIngestorInheritsCIDForDoneSibling(t *testing.T) {
 	}
 	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
 
-	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	_, err := NewIngestor(jira, store, nil, nil, WithPromoteByJiraState(true)).Sync(context.Background())
 	require.NoError(t, err)
 	saved2 := savedByKey(store, "LTWL-2")
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "663171"}}, saved2.Tickets)
@@ -1073,4 +1107,40 @@ func TestIngestorDedupesOwnAndInheritedCID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "663171"}},
 		savedByKey(store, "LTWL-1").Tickets)
+}
+
+func TestIngestorDoesNotPromoteIVTWithoutCT(t *testing.T) {
+	// A Released IVT that is NOT a member of any Closed/Done CT must stay in
+	// Validation — beacon counts an IVT as "done" only when it shipped via a CT.
+	v := validJiraIssue("LTWL-1")
+	v.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	v.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{v}}},
+		ctPages: map[string]jira_client.JiraPage{}, // no CTs
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil, WithPromoteByJiraState(true)).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Validation", store.saved[0].Stage)
+}
+
+func TestIngestorPromotesIVTWithCT(t *testing.T) {
+	// The same Released IVT, now a member of a Closed/Done CT, promotes to done.
+	v := validJiraIssue("LTWL-1")
+	v.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	v.Fields["status"] = json.RawMessage(`{"name":"Released"}`)
+	ct := ctIncorporating("CT-1", "LTWL-1")
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{v}}},
+		ctPages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ct}}},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil, WithPromoteByJiraState(true)).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
 }

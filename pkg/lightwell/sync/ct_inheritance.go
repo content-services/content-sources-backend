@@ -24,6 +24,19 @@ func isShipReady(status string) bool {
 	return ok
 }
 
+// ctMemberKeys returns the set of IVT keys incorporated by any of the given
+// (Closed/Done) Component Upgrades. An IVT is "shipped" only if it is a member of
+// one of these CTs.
+func ctMemberKeys(cts []jira_client.JiraIssue) map[string]struct{} {
+	members := make(map[string]struct{})
+	for _, ct := range cts {
+		for _, k := range linkedIssueKeys(ct, "incorporates") {
+			members[k] = struct{}{}
+		}
+	}
+	return members
+}
+
 // mergeInheritedCustomers appends a ticket-less customer link for each inherited
 // CID not already present among the IVT's existing customer links, de-duplicating
 // by customer id so an IVT never gains a duplicate customer row.
