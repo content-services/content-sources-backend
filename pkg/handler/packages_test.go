@@ -1119,59 +1119,37 @@ func TestMavenRebuildQualifier(t *testing.T) {
 func (suite *PackagesSuite) TestGetPythonPackageVersionsSuccess() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	packageName := "django"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	tangDetails := []tangy.PythonPackageDetail{
-		{
-			Name:           "Django",
-			NameNormalized: packageName,
-			Version:        "4.2",
-			Summary:        "A high-level Python web framework",
-			LastUpdated:    "2024-01-01T12:00:00Z",
-			Versions:       []string{"4.2", "5.0"},
-			Distributions: []tangy.PythonDistributionListItem{
-				{
-					Filename:    "django-4.2-py3-none-any.whl",
-					PackageType: "bdist_wheel",
-				},
-			},
-		},
-		{
-			Name:           "Django",
-			NameNormalized: packageName,
-			Version:        "5.0",
-			Summary:        "A high-level Python web framework",
-			LastUpdated:    "2024-02-01T12:00:00Z",
-			Versions:       []string{"4.2", "5.0"},
-			Distributions: []tangy.PythonDistributionListItem{
-				{
-					Filename:    "django-5.0-py3-none-any.whl",
-					PackageType: "bdist_wheel",
-				},
-			},
-		},
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return(tangDetails, nil)
+	suite.reg.LightwellPackage.On("ListPythonPackageVersions", test.MockCtx(), repoUUID, packageName).Return(api.PythonPackageVersionsResponse{
+		Name: packageName,
+		Versions: []api.PythonPackageDetailResponse{
+			{
+				Name:            packageName,
+				Version:         "4.25.7+rhlw.3",
+				Summary:         "A high-level Python web framework",
+				LastUpdated:     "2024-01-01T12:00:00Z",
+				UpstreamVersion: "4.25.7",
+				Distributions:   []api.PythonDistribution{},
+			},
+			{
+				Name:            packageName,
+				Version:         "5.0",
+				Summary:         "A high-level Python web framework",
+				LastUpdated:     "2024-02-01T12:00:00Z",
+				UpstreamVersion: "5.0",
+				Distributions:   []api.PythonDistribution{},
+			},
+		},
+	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1186,8 +1164,11 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsSuccess() {
 	assert.Nil(t, err)
 	assert.Equal(t, packageName, response.Name)
 	require.Len(t, response.Versions, 2)
-	assert.Equal(t, "4.2", response.Versions[0].Version)
+	assert.Equal(t, "4.25.7+rhlw.3", response.Versions[0].Version)
+	assert.Equal(t, "4.25.7", response.Versions[0].UpstreamVersion)
+	assert.Empty(t, response.Versions[0].Distributions)
 	assert.Equal(t, "5.0", response.Versions[1].Version)
+	assert.Empty(t, response.Versions[1].Distributions)
 }
 
 func (suite *PackagesSuite) TestGetPythonPackageVersionsNonPythonRepo() {
@@ -1214,28 +1195,18 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNonPythonRepo() {
 func (suite *PackagesSuite) TestGetPythonPackageVersionsNotFound() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	packageName := "nonexistent"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return([]tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
+	suite.reg.LightwellPackage.On("ListPythonPackageVersions", test.MockCtx(), repoUUID, packageName).
+		Return(api.PythonPackageVersionsResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1246,31 +1217,21 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsNotFound() {
 	assert.Equal(t, http.StatusNotFound, code)
 }
 
-func (suite *PackagesSuite) TestGetPythonPackageVersionsTangError() {
+func (suite *PackagesSuite) TestGetPythonPackageVersionsDaoError() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	packageName := "django"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return([]tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package versions"))
+	suite.reg.LightwellPackage.On("ListPythonPackageVersions", test.MockCtx(), repoUUID, packageName).
+		Return(api.PythonPackageVersionsResponse{}, fmt.Errorf("failed to list lightwell python package versions"))
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1306,9 +1267,9 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 			Name:  "Django Software Foundation",
 			Email: "foundation@djangoproject.com",
 		},
-		ProjectURL:       "https://www.djangoproject.com/",
-		UpstreamVersions: []string{"4.2", "5.0"},
-		Distributions:    []api.PythonDistribution{},
+		ProjectURL:      "https://www.djangoproject.com/",
+		UpstreamVersion: "5.0",
+		Distributions:   []api.PythonDistribution{},
 	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
@@ -1330,7 +1291,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 	assert.Equal(t, "BSD-3-Clause", response.License)
 	assert.Equal(t, "Django Software Foundation", response.Author.Name)
 	assert.Equal(t, "foundation@djangoproject.com", response.Author.Email)
-	assert.Equal(t, []string{"4.2", "5.0"}, response.UpstreamVersions)
+	assert.Equal(t, "5.0", response.UpstreamVersion)
 	assert.Equal(t, "https://www.djangoproject.com/", response.ProjectURL)
 	assert.Empty(t, response.Distributions)
 }

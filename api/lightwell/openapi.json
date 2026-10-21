@@ -366,11 +366,8 @@
                     "summary": {
                         "type": "string"
                     },
-                    "upstream_versions": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
+                    "upstream_version": {
+                        "type": "string"
                     },
                     "version": {
                         "type": "string"

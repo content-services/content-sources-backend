@@ -1111,11 +1111,8 @@ const docTemplatelightwell = `{
                 "summary": {
                     "type": "string"
                 },
-                "upstream_versions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "upstream_version": {
+                    "type": "string"
                 },
                 "version": {
                     "type": "string"
