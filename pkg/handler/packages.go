@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -14,12 +13,10 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/tang/pkg/tangy"
 	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 )
 
 var errDistributionNotFound = errors.New("repository distribution not found")
@@ -236,56 +233,6 @@ func mapMavenPackageReleases(releases []zest.MavenPackageReleaseResponse) []api.
 	return out
 }
 
-// Pulp content/maven/package/ returns one MavenPackage unit per rebuild:
-//
-//	version="5.3.18.rhlw-00003"  base_version="5.3.18"  pulp_created=...
-//
-// CS versions/detail JSON wants that nested as:
-//
-//	{ "version": "5.3.18", "builds": [{ "version": "5.3.18", "release": "rhlw-00003", "created_at": "..." }] }
-func toMavenBuild(pkg zest.MavenMavenPackageResponse) api.ReleaseInfo {
-	base := pkg.GetBaseVersion()
-	createdAt := ""
-	if pkg.HasPulpCreated() {
-		createdAt = pkg.GetPulpCreated().Format(time.RFC3339)
-	}
-	return api.ReleaseInfo{
-		Version:   base,
-		Release:   mavenRebuildQualifier(pkg.GetVersion(), base),
-		CreatedAt: createdAt,
-	}
-}
-
-// mavenRebuildQualifier is the rebuild suffix after base_version.
-// "5.3.18.rhlw-00003" / "5.3.18" → "rhlw-00003"; equal versions → "".
-func mavenRebuildQualifier(fullVersion, baseVersion string) string {
-	if baseVersion == "" || fullVersion == baseVersion {
-		return ""
-	}
-	suffix, ok := strings.CutPrefix(fullVersion, baseVersion+".")
-	if !ok {
-		return ""
-	}
-	return suffix
-}
-
-func newestMavenUnitsFirst(pkgs []zest.MavenMavenPackageResponse) []zest.MavenMavenPackageResponse {
-	out := slices.Clone(pkgs)
-	slices.SortStableFunc(out, func(a, b zest.MavenMavenPackageResponse) int {
-		return b.GetPulpCreated().Compare(a.GetPulpCreated())
-	})
-	return out
-}
-
-func toMavenBuilds(pkgs []zest.MavenMavenPackageResponse) []api.ReleaseInfo {
-	pkgs = newestMavenUnitsFirst(pkgs)
-	builds := make([]api.ReleaseInfo, len(pkgs))
-	for i, pkg := range pkgs {
-		builds[i] = toMavenBuild(pkg)
-	}
-	return builds
-}
-
 func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.PackageResponse {
 	results := make([]api.PackageItem, len(tangResp.Results))
 	for i, item := range tangResp.Results {
@@ -386,39 +333,12 @@ func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Maven repository")
 	}
 
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	pulpClient, repositoryHref, err := ph.resolveRepository(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	detail, err := ph.DaoRegistry.LightwellPackage.GetMavenPackageDetail(ctx, repo.UUID, groupID, name, version)
 	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package builds", err.Error())
 	}
 
-	pkgs, err := pulpClient.ListMavenPackageContent(ctx, repositoryHref, groupID, name, version)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package builds", err.Error())
-	}
-
-	builds := toMavenBuilds(pkgs)
-
-	response := api.MavenPackageDetailResponse{
-		Group:   groupID,
-		Name:    name,
-		Version: version,
-		Builds:  builds,
-	}
-
-	summary, license, projectURL, author, err := ph.mavenPackageMetadata(ctx, groupID, name, version)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package metadata from maven", err.Error())
-	}
-	response.Summary = summary
-	response.License = license
-	response.ProjectURL = projectURL
-	response.Author = author
-
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, detail)
 }
 
 // ListJavaPackageVersions godoc
@@ -460,48 +380,6 @@ func (ph *PackageHandler) ListJavaPackageVersions(c echo.Context) error {
 // @Router       /repositories/{uuid}/java_packages/{group}/{name}/{version} [get]
 func (ph *PackageHandler) GetJavaPackageDetail(c echo.Context) error {
 	return ph.GetMavenPackageDetail(c)
-}
-
-func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, name, version string) (summary, license, projectURL, author *string, err error) {
-	existing, err := ph.DaoRegistry.MavenPackages.Fetch(ctx, groupID, name)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if existing != nil {
-		return existing.Summary, existing.License, existing.ProjectURL, existing.Author, nil
-	}
-
-	upstreamVersion := stripLightwellVersionSuffix(version)
-	if !isValid(groupID) || !isValid(name) || !isValid(upstreamVersion) {
-		return nil, nil, nil, nil, nil
-	}
-
-	metadata, fetchErr := fetchMavenCentralMetadata(ctx, nil, groupID, name, version)
-	if fetchErr == nil || isMavenCentralPomNotFound(fetchErr) {
-		if createErr := ph.DaoRegistry.MavenPackages.Create(ctx, &models.MavenPackage{
-			GroupID:    groupID,
-			Name:       name,
-			Summary:    metadata.Summary,
-			License:    metadata.License,
-			ProjectURL: metadata.ProjectURL,
-			Author:     metadata.Author,
-		}); createErr != nil {
-			log.Warn().Err(createErr).Str("artifact", name).Msg("Failed to cache maven package metadata")
-		}
-	} else {
-		log.Warn().
-			Err(fetchErr).
-			Str("group", groupID).
-			Str("artifact", name).
-			Str("version", version).
-			Msg("Failed to fetch maven package metadata from Maven Central")
-	}
-
-	if fetchErr != nil {
-		return nil, nil, nil, nil, nil
-	}
-
-	return metadata.Summary, metadata.License, metadata.ProjectURL, metadata.Author, nil
 }
 
 // GetPythonPackageVersions godoc
