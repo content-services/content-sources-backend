@@ -1054,3 +1054,143 @@ func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
 	assert.Equal(s.T(), "9.9.9", missing.Version)
 	assert.Empty(s.T(), missing.Builds)
 }
+
+func (s *LightwellPackageSuite) TestListRepositoryPackages() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("repo-packages-%s", uuid.NewString()),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+
+	type versionRow struct {
+		version, release, upstream, published string
+	}
+	packages := []struct {
+		group, name string
+		versions    []versionRow
+	}{
+		{group: "aaa", name: "aaa-empty"},
+		{group: "", name: "django", versions: []versionRow{
+			{version: "4.25.7+rhlw.1", release: "rhlw.1", upstream: "4.25.7", published: "2024-01-01T00:00:00Z"},
+			{version: "4.25.7+rhlw.3", release: "rhlw.3", upstream: "4.25.7", published: "2024-04-01T00:00:00Z"},
+		}},
+		{group: "@types", name: "is-odd", versions: []versionRow{
+			{version: "3.0.0", upstream: "3.0.0", published: "2024-05-01T00:00:00Z"},
+		}},
+		{group: "org.example", name: "lib-a", versions: []versionRow{
+			{version: "1.0.0", upstream: "1.0.0", published: "2024-06-01T00:00:00Z"},
+		}},
+		{group: "org.example", name: "lib-b", versions: []versionRow{
+			{version: "1.0.0.rhlw-00001", release: "rhlw-00001", upstream: "1.0.0", published: "2024-01-01T00:00:00Z"},
+			{version: "1.0.0.rhlw-00003", release: "rhlw-00003", upstream: "1.0.0", published: "2024-03-01T00:00:00Z"},
+			{version: "2.0.0", upstream: "2.0.0", published: "2024-02-01T00:00:00Z"},
+		}},
+	}
+	for _, pkg := range packages {
+		pkgUUID := uuid.NewString()
+		err := db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+			VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+			pkgUUID, repoConfigUUID, pkg.name, pkg.group,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+		})
+		for _, version := range pkg.versions {
+			versionUUID := uuid.NewString()
+			err = db.DB.WithContext(ctx).Exec(`
+				INSERT INTO lightwell_package_versions (
+					uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+					version, release, upstream_version, published_at, purl
+				) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '')`,
+				versionUUID, pkgUUID, repoConfigUUID, version.version, version.release, version.upstream, version.published,
+			).Error
+			s.Require().NoError(err)
+			s.T().Cleanup(func() {
+				_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+			})
+		}
+	}
+
+	names := func(resp api.PackageResponse) []string {
+		out := make([]string, len(resp.Results))
+		for i, item := range resp.Results {
+			out[i] = item.Name
+		}
+		return out
+	}
+
+	got, err := pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), 5, got.Total)
+	assert.Equal(s.T(), []string{"django", "aaa-empty", "lib-a", "lib-b", "is-odd"}, names(got))
+
+	byName := map[string]api.PackageItem{}
+	for _, item := range got.Results {
+		byName[item.Name] = item
+	}
+	assert.Equal(s.T(), []string{}, byName["aaa-empty"].Versions)
+	assert.Equal(s.T(), []api.ReleaseInfo{}, byName["aaa-empty"].LatestReleases)
+	assert.Equal(s.T(), []string{"4.25.7"}, byName["django"].Versions)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
+	}, byName["django"].LatestReleases)
+	assert.Equal(s.T(), []string{"1.0.0", "2.0.0"}, byName["lib-b"].Versions)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "1.0.0", Release: "rhlw-00003", CreatedAt: "2024-03-01T00:00:00Z"},
+		{Version: "2.0.0", Release: "", CreatedAt: "2024-02-01T00:00:00Z"},
+	}, byName["lib-b"].LatestReleases)
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"aaa-empty", "django", "is-odd", "lib-a", "lib-b"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "name", "desc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-b", "lib-a", "is-odd", "django", "aaa-empty"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "scope/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"django", "aaa-empty", "lib-a", "lib-b", "is-odd"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "last_updated", "desc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-a", "is-odd", "django", "lib-b", "aaa-empty"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "last_updated", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-b", "django", "is-odd", "lib-a", "aaa-empty"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "lib-", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-a", "lib-b"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "org.example:lib-a", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-a"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "@types/", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"is-odd"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "DJANGO", "name", "asc", 1, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), 1, got.Total)
+	assert.Equal(s.T(), []string{"django"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "name", "asc", 1, 1)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), 5, got.Total)
+	assert.Equal(s.T(), 1, got.Limit)
+	assert.Equal(s.T(), 1, got.Offset)
+	assert.Equal(s.T(), []string{"django"}, names(got))
+
+	_, err = pkgDao.ListRepositoryPackages(ctx, "not-a-uuid", "", "name", "asc", 10, 0)
+	var daoErr *ce.DaoError
+	s.Require().ErrorAs(err, &daoErr)
+	assert.True(s.T(), daoErr.BadValidation)
+}

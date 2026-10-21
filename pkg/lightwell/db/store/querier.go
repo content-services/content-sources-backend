@@ -32,6 +32,7 @@ type Querier interface {
 	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)
 	ListLightwellPythonPackageDetail(ctx context.Context, arg ListLightwellPythonPackageDetailParams) ([]ListLightwellPythonPackageDetailRow, error)
 	ListLightwellPythonPackageVersions(ctx context.Context, arg ListLightwellPythonPackageVersionsParams) ([]ListLightwellPythonPackageVersionsRow, error)
+	ListLightwellRepositoryPackages(ctx context.Context, arg ListLightwellRepositoryPackagesParams) ([]ListLightwellRepositoryPackagesRow, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)
 	RecordBeaconSync(ctx context.Context, lastProcessedAt time.Time) error

@@ -96,6 +96,7 @@ export interface ListPackagesRequest {
     offset?: number;
     limit?: number;
     search?: string;
+    sortBy?: string;
 }
 
 /**
@@ -512,6 +513,10 @@ export class PackagesApi extends runtime.BaseAPI {
 
         if (requestParameters['search'] != null) {
             queryParameters['search'] = requestParameters['search'];
+        }
+
+        if (requestParameters['sortBy'] != null) {
+            queryParameters['sort_by'] = requestParameters['sortBy'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

@@ -551,6 +551,12 @@ const docTemplatelightwell = `{
                         "description": "Search term to filter packages.",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort field. Valid fields are name and last_updated. Append :asc or :desc. Default is last_updated:desc.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {

@@ -90,48 +90,25 @@ func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte,
 func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	pulpResp := zest.PaginatedMavenRepositoryPackageListResponse{
-		Count: 1,
-		Results: []zest.MavenRepositoryPackageResponse{
-			{
-				GroupId:    "io.smallrye.reactive",
-				ArtifactId: "smallrye-mutiny-vertx-core",
-				Versions:   []string{"3.16.0", "3.15.0"},
-				LatestReleases: []zest.MavenPackageReleaseResponse{
-					{
-						Version:   "3.15.0",
-						Release:   "rhlw-3001",
-						CreatedAt: parseTestTime("2024-01-15T10:30:00Z"),
-					},
-					{
-						Version:   "3.16.0",
-						Release:   "rhlw-4000",
-						CreatedAt: parseTestTime("2024-02-01T14:20:00Z"),
-					},
-				},
-			},
-		},
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackages", test.MockCtx(), repositoryHref, "", 100, 0).Return(pulpResp, nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Group:          "io.smallrye.reactive",
+				Name:           "smallrye-mutiny-vertx-core",
+				Versions:       []string{"3.15.0", "3.16.0"},
+				LatestReleases: []api.ReleaseInfo{{Version: "3.16.0", Release: "rhlw-4000", CreatedAt: "2024-02-01T14:20:00Z"}},
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -148,7 +125,8 @@ func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
 	assert.Equal(t, "io.smallrye.reactive", response.Results[0].Group)
 	assert.Equal(t, "smallrye-mutiny-vertx-core", response.Results[0].Name)
 	assert.Equal(t, 2, len(response.Results[0].Versions))
-	assert.Equal(t, 2, len(response.Results[0].LatestReleases))
+	assert.Equal(t, 1, len(response.Results[0].LatestReleases))
+	assert.Equal(t, "rhlw-4000", response.Results[0].LatestReleases[0].Release)
 	assert.Equal(t, 1, response.Total)
 	assert.Equal(t, 100, response.Limit)
 	assert.Equal(t, 0, response.Offset)
@@ -157,46 +135,27 @@ func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
 func (suite *PackagesSuite) TestListPackagesMavenWithFilter() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440007"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	search := "smallrye"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	pulpResp := zest.PaginatedMavenRepositoryPackageListResponse{
-		Count: 1,
-		Results: []zest.MavenRepositoryPackageResponse{
-			{
-				GroupId:    "io.smallrye.reactive",
-				ArtifactId: "smallrye-mutiny-vertx-core",
-				Versions:   []string{"3.16.0"},
-				LatestReleases: []zest.MavenPackageReleaseResponse{
-					{
-						Version:   "3.16.0",
-						Release:   "rhlw-4000",
-						CreatedAt: parseTestTime("2024-02-01T14:20:00Z"),
-					},
-				},
-			},
-		},
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, search, "group/name", "desc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Group:    "io.smallrye.reactive",
+				Name:     "smallrye-mutiny-vertx-core",
+				Versions: []string{"3.16.0"},
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackages", test.MockCtx(), repositoryHref, search, 100, 0).Return(pulpResp, nil)
-
-	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s&sort_by=name:desc", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -383,47 +342,27 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 func (suite *PackagesSuite) TestListPackagesPythonSuccess() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440005"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f5/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	tangResp := tangy.PythonPackageListResponse{
-		Results: []tangy.PythonPackageListItem{
-			{
-				Name:           "shelf-reader",
-				NameNormalized: "shelf-reader",
-				Versions:       []string{"0.1", "0.2"},
-				LatestVersions: []tangy.PythonVersionInfo{
-					{
-						Version:   "0.1",
-						CreatedAt: "2024-01-15T10:30:00Z",
-					},
-					{
-						Version:   "0.2",
-						CreatedAt: "2024-02-01T14:20:00Z",
-					},
-				},
-			},
-		},
-		Total:  1,
-		Limit:  100,
-		Offset: 0,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Name:     "shelf-reader",
+				Versions: []string{"0.1", "0.2"},
+				LatestReleases: []api.ReleaseInfo{
+					{Version: "0.1", CreatedAt: "2024-01-15T10:30:00Z"},
+					{Version: "0.2", CreatedAt: "2024-02-01T14:20:00Z"},
+				},
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -452,46 +391,26 @@ func (suite *PackagesSuite) TestListPackagesPythonSuccess() {
 func (suite *PackagesSuite) TestListPackagesPythonWithFilter() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440008"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f5/"
-	domainName := "test-domain"
 	search := "shelf"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	tangResp := tangy.PythonPackageListResponse{
-		Results: []tangy.PythonPackageListItem{
-			{
-				Name:           "shelf-reader",
-				NameNormalized: "shelf-reader",
-				Versions:       []string{"0.1"},
-				LatestVersions: []tangy.PythonVersionInfo{
-					{
-						Version:   "0.1",
-						CreatedAt: "2024-01-15T10:30:00Z",
-					},
-				},
-			},
-		},
-		Total:  1,
-		Limit:  100,
-		Offset: 0,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, search, "name", "desc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Name:     "shelf-reader",
+				Versions: []string{"0.1"},
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s&sort_by=name:desc", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -509,28 +428,18 @@ func (suite *PackagesSuite) TestListPackagesPythonWithFilter() {
 	assert.Equal(t, 1, response.Total)
 }
 
-func (suite *PackagesSuite) TestListPackagesPythonTangClientError() {
+func (suite *PackagesSuite) TestListPackagesPythonDaoError() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440006"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f5/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
 
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageList", test.MockCtx(), repositoryHref, tangy.PythonPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.PythonPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{}, fmt.Errorf("failed to list lightwell repository packages"))
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -567,6 +476,7 @@ func (suite *PackagesSuite) TestListPackagesNonMavenReturnsEmpty() {
 	assert.Equal(t, 0, response.Total)
 	assert.Equal(t, 100, response.Limit)
 	assert.Equal(t, 0, response.Offset)
+	suite.reg.LightwellPackage.AssertNotCalled(t, "ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0)
 }
 
 func (suite *PackagesSuite) TestListPackagesMissingDistBasePath() {
@@ -576,10 +486,12 @@ func (suite *PackagesSuite) TestListPackagesMissingDistBasePath() {
 	repo := api.RepositoryResponse{
 		UUID:                  repoUUID,
 		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: "", // Empty distribution base path
+		PublishedDistBasePath: "",
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{Results: []api.PackageItem{}, Total: 0, Limit: 100, Offset: 0}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -587,7 +499,7 @@ func (suite *PackagesSuite) TestListPackagesMissingDistBasePath() {
 
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusInternalServerError, code)
+	assert.Equal(t, http.StatusOK, code)
 }
 
 func (suite *PackagesSuite) TestListPackagesRepositoryNotFound() {
@@ -604,28 +516,18 @@ func (suite *PackagesSuite) TestListPackagesRepositoryNotFound() {
 	assert.Equal(t, http.StatusNotFound, code)
 }
 
-func (suite *PackagesSuite) TestListPackagesMavenPulpClientError() {
+func (suite *PackagesSuite) TestListPackagesMavenDaoError() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440004"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackages", test.MockCtx(), repositoryHref, "", 100, 0).Return(zest.PaginatedMavenRepositoryPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{}, fmt.Errorf("failed to list lightwell repository packages"))
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -634,6 +536,27 @@ func (suite *PackagesSuite) TestListPackagesMavenPulpClientError() {
 	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, code)
+}
+
+func (suite *PackagesSuite) TestListPackagesInvalidSortBy() {
+	t := suite.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440004"
+
+	for _, sortBy := range []string{"version:desc", "group/name", "scope/name"} {
+		path := fmt.Sprintf("%s/repositories/%s/packages?sort_by=%s", api.FullRootPath(), repoUUID, sortBy)
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+		code, body, err := suite.servePackagesRouter(req)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, code)
+
+		var response ce.ErrorResponse
+		assert.Nil(t, json.Unmarshal(body, &response))
+		require.NotEmpty(t, response.Errors)
+		assert.Contains(t, response.Errors[0].Detail, "valid fields are name and last_updated")
+	}
+	suite.reg.LightwellPackage.AssertNotCalled(t, "ListRepositoryPackages")
 }
 
 func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
@@ -839,31 +762,27 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 func (suite *PackagesSuite) TestListPackagesMavenSearchGroupArtifact() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440010"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	search := "io.smallrye.reactive:smallrye-mutiny-vertx-core"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
-	}
-
-	pulpResp := zest.PaginatedMavenRepositoryPackageListResponse{
-		Count: 1,
-		Results: []zest.MavenRepositoryPackageResponse{
-			{GroupId: "io.smallrye.reactive", ArtifactId: "smallrye-mutiny-vertx-core", Versions: []string{"3.16.0"}},
-		},
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackages", test.MockCtx(), repositoryHref, search, 100, 0).Return(pulpResp, nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, search, "group/name", "asc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Group:    "io.smallrye.reactive",
+				Name:     "smallrye-mutiny-vertx-core",
+				Versions: []string{"3.16.0"},
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s&sort_by=name", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -881,31 +800,25 @@ func (suite *PackagesSuite) TestListPackagesMavenSearchGroupArtifact() {
 func (suite *PackagesSuite) TestListPackagesMavenPagination() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440011"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
-	}
-
-	pulpResp := zest.PaginatedMavenRepositoryPackageListResponse{
-		Count: 5,
-		Results: []zest.MavenRepositoryPackageResponse{
-			{GroupId: "org.example", ArtifactId: "lib-a", Versions: []string{"1.0.0"}},
-			{GroupId: "org.example", ArtifactId: "lib-b", Versions: []string{"2.0.0"}},
-		},
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackages", test.MockCtx(), repositoryHref, "", 2, 1).Return(pulpResp, nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 2, 1).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{
+				{Group: "org.example", Name: "lib-a", Versions: []string{"1.0.0"}},
+				{Group: "org.example", Name: "lib-b", Versions: []string{"2.0.0"}},
+			},
+			Total:  5,
+			Limit:  2,
+			Offset: 1,
+		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/packages?limit=2&offset=1", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=2&offset=1&sort_by=last_updated:desc", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1284,40 +1197,25 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailDaoError() {
 func (suite *PackagesSuite) TestListPackagesNpmSuccess() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440009"
-	basePath := "npm/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeNpm,
-		PublishedDistBasePath: basePath,
-	}
-
-	tangResp := tangy.NpmPackageListResponse{
-		Results: []tangy.NpmPackageListItem{
-			{
-				Name:     "@types/is-odd",
-				Versions: []string{"3.0.0"},
-				LatestVersions: []tangy.NpmVersionInfo{
-					{
-						Version:   "3.0.0",
-						CreatedAt: "2024-01-15T10:30:00Z",
-					},
-				},
-			},
-		},
-		Total:  1,
-		Limit:  100,
-		Offset: 0,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeNpm,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Group:          "@types",
+				Name:           "is-odd",
+				Versions:       []string{"3.0.0"},
+				LatestReleases: []api.ReleaseInfo{{Version: "3.0.0", CreatedAt: "2024-01-15T10:30:00Z"}},
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1341,43 +1239,26 @@ func (suite *PackagesSuite) TestListPackagesNpmSuccess() {
 func (suite *PackagesSuite) TestListPackagesNpmWithFilter() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440010"
-	basePath := "npm/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
-	domainName := "test-domain"
 	search := "@types/"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeNpm,
-		PublishedDistBasePath: basePath,
-	}
-
-	tangResp := tangy.NpmPackageListResponse{
-		Results: []tangy.NpmPackageListItem{
-			{
-				Name:     "@types/is-odd",
-				Versions: []string{"3.0.0"},
-				LatestVersions: []tangy.NpmVersionInfo{
-					{
-						Version:   "3.0.0",
-						CreatedAt: "2024-01-15T10:30:00Z",
-					},
-				},
-			},
-		},
-		Total:  1,
-		Limit:  100,
-		Offset: 0,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeNpm,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, search, "group/name", "asc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Group: "@types",
+				Name:  "is-odd",
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
 
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{Search: search}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangResp, nil)
-
-	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s", api.FullRootPath(), repoUUID, search)
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0&search=%s&sort_by=name", api.FullRootPath(), repoUUID, search)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1393,25 +1274,18 @@ func (suite *PackagesSuite) TestListPackagesNpmWithFilter() {
 	assert.Equal(t, "is-odd", response.Results[0].Name)
 }
 
-func (suite *PackagesSuite) TestListPackagesNpmTangClientError() {
+func (suite *PackagesSuite) TestListPackagesNpmDaoError() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440011"
-	basePath := "npm/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/npm/npm/018c1c95-4281-76eb-b277-842cbad524f6/"
-	domainName := "test-domain"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeNpm,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeNpm,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("NpmPackageList", test.MockCtx(), repositoryHref, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: 100}).Return(tangy.NpmPackageListResponse{}, fmt.Errorf("failed to fetch packages"))
+	suite.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "", "last_updated", "desc", 100, 0).
+		Return(api.PackageResponse{}, fmt.Errorf("failed to list lightwell repository packages"))
 
 	path := fmt.Sprintf("%s/repositories/%s/packages?limit=100&offset=0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)

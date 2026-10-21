@@ -150,6 +150,105 @@ func (d lightwellPackageDaoImpl) ListPackages(ctx context.Context, opts ListLigh
 	return out, total, nil
 }
 
+func (d lightwellPackageDaoImpl) ListRepositoryPackages(ctx context.Context, repoConfigUUID string, search string, sortField string, sortDir string, limit int, offset int) (api.PackageResponse, error) {
+	resp := api.PackageResponse{
+		Results: []api.PackageItem{},
+		Limit:   limit,
+		Offset:  offset,
+	}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	rows, err := d.querier.ListLightwellRepositoryPackages(ctx, store.ListLightwellRepositoryPackagesParams{
+		RepositoryConfigurationUuid: repoUUID,
+		Search:                      search,
+		SortField:                   sortField,
+		SortDir:                     sortDir,
+		PageLimit:                   int32(limit),  //nolint:gosec // pagination limit is capped at MaxLimit
+		PageOffset:                  int32(offset), //nolint:gosec // offset comes from parsed pagination
+	})
+	if err != nil {
+		return resp, fmt.Errorf("failed to list lightwell repository packages: %w", err)
+	}
+	if len(rows) == 0 {
+		return resp, nil
+	}
+
+	results := make([]api.PackageItem, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, repositoryPackageItem(
+			row.Name,
+			row.PackageGroup,
+			interfaceToStringSlice(row.Versions),
+			interfaceToStringSlice(row.Releases),
+			interfaceToStringSlice(row.PublishedAts),
+			interfaceToStringSlice(row.UpstreamVersions),
+		))
+	}
+	resp.Results = results
+	resp.Total = int(rows[0].TotalCount)
+	return resp, nil
+}
+
+func repositoryPackageItem(name, group string, versions, releases, publishedAts, upstreams []string) api.PackageItem {
+	type latestRelease struct {
+		release     string
+		publishedAt string
+	}
+	order := make([]string, 0)
+	latest := make(map[string]latestRelease)
+	for i, stored := range versions {
+		if stored == "" {
+			continue
+		}
+		public := stored
+		if i < len(upstreams) && upstreams[i] != "" {
+			public = upstreams[i]
+		}
+		release := ""
+		if i < len(releases) {
+			release = releases[i]
+		}
+		publishedAt := ""
+		if i < len(publishedAts) {
+			publishedAt = publishedAts[i]
+		}
+		prev, ok := latest[public]
+		if !ok {
+			order = append(order, public)
+			latest[public] = latestRelease{release: release, publishedAt: publishedAt}
+			continue
+		}
+		if publishedAt >= prev.publishedAt {
+			latest[public] = latestRelease{release: release, publishedAt: publishedAt}
+		}
+	}
+
+	itemVersions := make([]string, 0, len(order))
+	itemReleases := make([]api.ReleaseInfo, 0, len(order))
+	for _, version := range order {
+		rel := latest[version]
+		itemVersions = append(itemVersions, version)
+		itemReleases = append(itemReleases, api.ReleaseInfo{
+			Version:   version,
+			Release:   rel.release,
+			CreatedAt: rel.publishedAt,
+		})
+	}
+	return api.PackageItem{
+		Group:          group,
+		Name:           name,
+		Versions:       itemVersions,
+		LatestReleases: itemReleases,
+	}
+}
+
 func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts ListLightwellPackageVersionsOptions) ([]LightwellPackageVersionRow, int64, error) {
 	if d.querier == nil {
 		return nil, 0, fmt.Errorf("lightwell querier is not initialized")

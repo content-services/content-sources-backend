@@ -347,6 +347,40 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsNoLightwellFeatures() {
 	s.reg.LightwellPackage.AssertNotCalled(t, "ListPackageVersions", mock.Anything, mock.Anything)
 }
 
+func (s *LightwellPackagesSuite) TestListRepoPackagesReadsMirror() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440020"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypeMaven,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("ListRepositoryPackages", test.MockCtx(), repoUUID, "lib", "last_updated", "asc", 100, 0).
+		Return(api.PackageResponse{
+			Results: []api.PackageItem{{
+				Group: "org.example",
+				Name:  "lib",
+			}},
+			Total:  1,
+			Limit:  100,
+			Offset: 0,
+		}, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/packages?search=lib&sort_by=last_updated:asc", LightwellAPIPath, repoUUID)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PackageResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	require.Len(t, response.Results, 1)
+	assert.Equal(t, "lib", response.Results[0].Name)
+}
+
 func (s *LightwellPackagesSuite) TestListPackageVersionsInvalidEcosystem() {
 	t := s.T()
 	s.stubLightwellAccess()
