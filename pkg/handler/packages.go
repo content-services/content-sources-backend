@@ -286,26 +286,6 @@ func toMavenBuilds(pkgs []zest.MavenMavenPackageResponse) []api.ReleaseInfo {
 	return builds
 }
 
-func toMavenVersions(pkgs []zest.MavenMavenPackageResponse, group, name string) []api.MavenPackageDetailResponse {
-	versions := make([]api.MavenPackageDetailResponse, 0)
-	seen := make(map[string]int)
-	for _, pkg := range newestMavenUnitsFirst(pkgs) {
-		build := toMavenBuild(pkg)
-		if i, ok := seen[build.Version]; ok {
-			versions[i].Builds = append(versions[i].Builds, build)
-			continue
-		}
-		seen[build.Version] = len(versions)
-		versions = append(versions, api.MavenPackageDetailResponse{
-			Group:   group,
-			Name:    name,
-			Version: build.Version,
-			Builds:  []api.ReleaseInfo{build},
-		})
-	}
-	return versions
-}
-
 func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.PackageResponse {
 	results := make([]api.PackageItem, len(tangResp.Results))
 	for i, item := range tangResp.Results {
@@ -364,40 +344,12 @@ func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Maven repository")
 	}
 
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	pulpClient, repositoryHref, err := ph.resolveRepository(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	versions, err := ph.DaoRegistry.LightwellPackage.ListMavenPackageVersions(ctx, repo.UUID, groupID, name)
 	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package versions", err.Error())
 	}
 
-	pkgs, err := pulpClient.ListMavenPackageContent(ctx, repositoryHref, groupID, name, "")
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
-	}
-
-	versions := toMavenVersions(pkgs, groupID, name)
-
-	if len(versions) > 0 {
-		summary, license, projectURL, author, err := ph.mavenPackageMetadata(ctx, groupID, name, versions[0].Version)
-		if err != nil {
-			return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package metadata from maven", err.Error())
-		}
-		for i := range versions {
-			versions[i].Summary = summary
-			versions[i].License = license
-			versions[i].ProjectURL = projectURL
-			versions[i].Author = author
-		}
-	}
-
-	return c.JSON(http.StatusOK, api.MavenPackageVersionsResponse{
-		Group:    groupID,
-		Name:     name,
-		Versions: versions,
-	})
+	return c.JSON(http.StatusOK, versions)
 }
 
 // GetMavenPackageDetail godoc

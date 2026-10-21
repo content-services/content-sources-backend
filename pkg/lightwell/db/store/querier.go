@@ -27,6 +27,7 @@ type Querier interface {
 	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLensCatalog(ctx context.Context, orgID string) ([]ListLensCatalogRow, error)
+	ListLightwellMavenPackageVersions(ctx context.Context, arg ListLightwellMavenPackageVersionsParams) ([]ListLightwellMavenPackageVersionsRow, error)
 	ListLightwellPackageVersions(ctx context.Context, arg ListLightwellPackageVersionsParams) ([]ListLightwellPackageVersionsRow, error)
 	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)
 	ListLightwellPythonPackageVersions(ctx context.Context, arg ListLightwellPythonPackageVersionsParams) ([]ListLightwellPythonPackageVersionsRow, error)
