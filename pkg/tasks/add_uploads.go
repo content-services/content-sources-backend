@@ -235,14 +235,8 @@ func (ur *AddUploads) ConvertUploadsToArtifacts() ([]api.Artifact, error) {
 	return artifacts, nil
 }
 
-type pendingPackage struct {
-	Artifact api.Artifact
-	TaskHref string
-}
-
 func (ur *AddUploads) ConvertArtifactsToPackages(artifacts []api.Artifact) (contentHrefs []string, err error) {
 	contentHrefs = []string{}
-	pendingPackages := []pendingPackage{}
 
 	for _, artifact := range artifacts {
 		pkg, err := ur.pulpClient.LookupPackage(ur.ctx, artifact.Sha256)
@@ -251,31 +245,20 @@ func (ur *AddUploads) ConvertArtifactsToPackages(artifacts []api.Artifact) (cont
 		}
 		if pkg == nil {
 			// package doesn't exist, so convert the artifact to a package
-			task, err := ur.pulpClient.CreatePackage(ur.ctx, &artifact.Href, nil)
+			pkgHref, err := ur.pulpClient.UploadPackage(ur.ctx, &artifact.Href, nil)
 			if err != nil {
-				return contentHrefs, fmt.Errorf("could not create package %w", err)
+				return contentHrefs, fmt.Errorf("could not upload package %w", err)
 			}
-			pendingPackages = append(pendingPackages, pendingPackage{
-				Artifact: artifact,
-				TaskHref: task,
-			})
+			if pkgHref == nil {
+				return contentHrefs, fmt.Errorf("upload package returned nil href")
+			}
+			contentHrefs = append(contentHrefs, *pkgHref)
 		} else {
 			contentHrefs = append(contentHrefs, *pkg)
 		}
 	}
 
-	for _, pendArt := range pendingPackages {
-		result, err := ur.pulpClient.PollTask(ur.ctx, pendArt.TaskHref)
-		if err != nil {
-			return contentHrefs, fmt.Errorf("finish upload task failed unexpectedly : %w", err)
-		}
-		if len(result.CreatedResources) != 1 {
-			return contentHrefs, fmt.Errorf("expected one created resource but got %d", len(result.CreatedResources))
-		}
-		contentHrefs = append(contentHrefs, result.CreatedResources[0])
-	}
-
-	return contentHrefs, err
+	return contentHrefs, nil
 }
 
 func (ur *AddUploads) UpdatePayload() error {

@@ -17,10 +17,19 @@ func NewMockS3Client(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockS3Client {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &MockS3Client{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -74,7 +83,7 @@ type MockS3Client_Get_Call struct {
 // Get is a helper method to define mock.On call
 //   - ctx context.Context
 //   - storageKey string
-func (_e *MockS3Client_Expecter) Get(ctx interface{}, storageKey interface{}) *MockS3Client_Get_Call {
+func (_e *MockS3Client_Expecter) Get(ctx any, storageKey any) *MockS3Client_Get_Call {
 	return &MockS3Client_Get_Call{Call: _e.mock.On("Get", ctx, storageKey)}
 }
 
@@ -133,7 +142,7 @@ type MockS3Client_Put_Call struct {
 //   - storageKey string
 //   - body io.Reader
 //   - contentLength int64
-func (_e *MockS3Client_Expecter) Put(ctx interface{}, storageKey interface{}, body interface{}, contentLength interface{}) *MockS3Client_Put_Call {
+func (_e *MockS3Client_Expecter) Put(ctx any, storageKey any, body any, contentLength any) *MockS3Client_Put_Call {
 	return &MockS3Client_Put_Call{Call: _e.mock.On("Put", ctx, storageKey, body, contentLength)}
 }
 
