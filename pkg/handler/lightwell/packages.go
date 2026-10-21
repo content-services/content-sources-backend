@@ -158,7 +158,7 @@ func (h *LightwellPackageHandler) getMavenPackageDetail(c echo.Context) error {
 // getPythonPackageDetail godoc
 // @Summary      Get Python Package Detail
 // @ID           getLightwellPythonPackageDetail
-// @Description  Get metadata and distributions for a specific Python package by name and version.
+// @Description  Get metadata and builds for a specific Python package by name and version.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        name path string true "Python package normalized name"

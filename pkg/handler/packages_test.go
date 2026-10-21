@@ -1150,11 +1150,15 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 	suite.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).Return(api.PythonPackageDetailResponse{
-		Name:        packageName,
-		Version:     packageVersion,
+		Name:    packageName,
+		Version: packageVersion,
+		Builds: []api.ReleaseInfo{
+			{Version: packageVersion, Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+			{Version: packageVersion, Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
+		},
 		Summary:     "A high-level Python web framework",
 		Description: "Django is a high-level Python web framework.",
-		LastUpdated: "2024-01-01T12:00:00Z",
+		LastUpdated: "2024-02-01T00:00:00Z",
 		License:     "BSD-3-Clause",
 		Author: api.PythonPackageAuthor{
 			Name:  "Django Software Foundation",
@@ -1180,12 +1184,16 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 	assert.Equal(t, packageVersion, response.Version)
 	assert.Equal(t, "A high-level Python web framework", response.Summary)
 	assert.Equal(t, "Django is a high-level Python web framework.", response.Description)
-	assert.Equal(t, "2024-01-01T12:00:00Z", response.LastUpdated)
+	assert.Equal(t, "2024-02-01T00:00:00Z", response.LastUpdated)
 	assert.Equal(t, "BSD-3-Clause", response.License)
 	assert.Equal(t, "Django Software Foundation", response.Author.Name)
 	assert.Equal(t, "foundation@djangoproject.com", response.Author.Email)
 	assert.Equal(t, "5.0", response.UpstreamVersion)
 	assert.Equal(t, "https://www.djangoproject.com/", response.ProjectURL)
+	assert.Equal(t, []api.ReleaseInfo{
+		{Version: packageVersion, Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+		{Version: packageVersion, Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
+	}, response.Builds)
 	assert.Empty(t, response.Distributions)
 }
 
@@ -1225,15 +1233,26 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 	suite.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).
-		Return(api.PythonPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
+		Return(api.PythonPackageDetailResponse{
+			Name:          packageName,
+			Version:       packageVersion,
+			Builds:        []api.ReleaseInfo{},
+			Distributions: []api.PythonDistribution{},
+		}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := suite.servePackagesRouter(req)
+	code, body, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusNotFound, code)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PythonPackageDetailResponse
+	assert.Nil(t, json.Unmarshal(body, &response))
+	assert.Equal(t, packageName, response.Name)
+	assert.Equal(t, packageVersion, response.Version)
+	assert.Equal(t, []api.ReleaseInfo{}, response.Builds)
 }
 
 func (suite *PackagesSuite) TestGetPythonPackageDetailDaoError() {

@@ -371,7 +371,7 @@ func (ph *PackageHandler) GetPythonPackageVersions(c echo.Context) error {
 // GetPythonPackageDetail godoc
 // @Summary      Get Python Package Detail
 // @ID           getPythonPackageDetail
-// @Description  Get metadata and distributions for a specific Python package by name and version.
+// @Description  Get metadata and builds for a specific Python package by name and version.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        name path string true "Python package normalized name"

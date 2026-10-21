@@ -1221,6 +1221,12 @@
                     "author": {
                         "$ref": "#/components/schemas/api.PythonPackageAuthor"
                     },
+                    "builds": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ReleaseInfo"
+                        },
+                        "type": "array"
+                    },
                     "description": {
                         "type": "string"
                     },
@@ -7006,7 +7012,7 @@
         },
         "/repositories/{uuid}/python_packages/{name}/{version}": {
             "get": {
-                "description": "Get metadata and distributions for a specific Python package by name and version.",
+                "description": "Get metadata and builds for a specific Python package by name and version.",
                 "operationId": "getPythonPackageDetail",
                 "parameters": [
                     {

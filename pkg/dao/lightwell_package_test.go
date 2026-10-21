@@ -761,32 +761,39 @@ func (s *LightwellPackageSuite) TestGetPythonPackageDetail() {
 		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
 	})
 
-	for _, version := range []string{"4.2", "5.0"} {
+	rows := []struct {
+		version, release, upstream, published, summary, description, license, author, authorEmail, projectURL string
+	}{
+		{
+			version: "4.25.7+rhlw.1", release: "rhlw.1", upstream: "4.25.7", published: "2024-01-01T00:00:00Z",
+			summary: "older summary", license: "BSD-3-Clause", author: "Django Software Foundation",
+			authorEmail: "foundation@djangoproject.com", projectURL: "https://www.djangoproject.com/",
+		},
+		{
+			version: "4.25.7+rhlw.3", release: "rhlw.3", upstream: "4.25.7", published: "2024-02-01T00:00:00Z",
+			summary: "A high-level Python web framework", description: "Django is a high-level Python web framework.",
+		},
+		{
+			version: "4.25.70+rhlw.1", release: "rhlw.1", upstream: "4.25.70", published: "2024-03-01T00:00:00Z",
+			summary: "must not match 4.25.7",
+		},
+		{
+			version: "4.2", release: "", upstream: "", published: "2023-01-01T00:00:00Z",
+		},
+		{
+			version: "5.0", release: "", upstream: "5.0", published: "2024-01-01T12:00:00Z",
+			summary: "Django 5",
+		},
+	}
+	for _, row := range rows {
 		versionUUID := uuid.NewString()
-		summary := ""
-		description := ""
-		license := ""
-		author := ""
-		authorEmail := ""
-		projectURL := ""
-		publishedAt := "2024-01-01T00:00:00Z"
-		upstreamVersion := "4.2"
-		if version == "5.0" {
-			summary = "A high-level Python web framework"
-			description = "Django is a high-level Python web framework."
-			license = "BSD-3-Clause"
-			author = "Django Software Foundation"
-			authorEmail = "foundation@djangoproject.com"
-			projectURL = "https://www.djangoproject.com/"
-			publishedAt = "2024-01-01T12:00:00Z"
-			upstreamVersion = "5.0"
-		}
 		err = db.DB.WithContext(ctx).Exec(`
 			INSERT INTO lightwell_package_versions (
 				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
 				version, release, upstream_version, published_at, purl, summary, description, license, author, author_email, project_url
-			) VALUES (?, NOW(), NOW(), ?, ?, ?, '', ?, ?, '', ?, ?, ?, ?, ?, ?)`,
-			versionUUID, pkgUUID, repoConfigUUID, version, upstreamVersion, publishedAt, summary, description, license, author, authorEmail, projectURL,
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.published,
+			row.summary, row.description, row.license, row.author, row.authorEmail, row.projectURL,
 		).Error
 		s.Require().NoError(err)
 		s.T().Cleanup(func() {
@@ -794,23 +801,45 @@ func (s *LightwellPackageSuite) TestGetPythonPackageDetail() {
 		})
 	}
 
-	got, err := pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "5.0")
+	got, err := pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "4.25.7")
 	s.Require().NoError(err)
 	assert.Equal(s.T(), "django", got.Name)
-	assert.Equal(s.T(), "5.0", got.Version)
+	assert.Equal(s.T(), "4.25.7", got.Version)
 	assert.Equal(s.T(), "A high-level Python web framework", got.Summary)
 	assert.Equal(s.T(), "Django is a high-level Python web framework.", got.Description)
-	assert.Equal(s.T(), "2024-01-01T12:00:00Z", got.LastUpdated)
-	assert.Equal(s.T(), "BSD-3-Clause", got.License)
-	assert.Equal(s.T(), api.PythonPackageAuthor{Name: "Django Software Foundation", Email: "foundation@djangoproject.com"}, got.Author)
-	assert.Equal(s.T(), "https://www.djangoproject.com/", got.ProjectURL)
-	assert.Equal(s.T(), "5.0", got.UpstreamVersion)
+	assert.Equal(s.T(), "2024-02-01T00:00:00Z", got.LastUpdated)
+	assert.Equal(s.T(), "", got.License)
+	assert.Equal(s.T(), api.PythonPackageAuthor{}, got.Author)
+	assert.Equal(s.T(), "", got.ProjectURL)
+	assert.Equal(s.T(), "4.25.7", got.UpstreamVersion)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+		{Version: "4.25.7", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
+	}, got.Builds)
 	assert.Empty(s.T(), got.Distributions)
 
-	_, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "9.9.9")
-	var daoErr *ce.DaoError
-	s.Require().ErrorAs(err, &daoErr)
-	assert.True(s.T(), daoErr.NotFound)
+	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "5.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "5.0", got.Version)
+	assert.Equal(s.T(), "Django 5", got.Summary)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "5.0", Release: "", CreatedAt: "2024-01-01T12:00:00Z"},
+	}, got.Builds)
+
+	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "4.2")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "4.2", got.Version)
+	assert.Equal(s.T(), "", got.UpstreamVersion)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.2", Release: "", CreatedAt: "2023-01-01T00:00:00Z"},
+	}, got.Builds)
+
+	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "9.9.9")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "django", got.Name)
+	assert.Equal(s.T(), "9.9.9", got.Version)
+	assert.Equal(s.T(), []api.ReleaseInfo{}, got.Builds)
+	assert.Empty(s.T(), got.Distributions)
 }
 
 func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
@@ -862,6 +891,7 @@ func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
 	s.Require().Len(got.Versions, 2)
 	assert.Equal(s.T(), "4.2", got.Versions[0].Version)
 	assert.Equal(s.T(), "", got.Versions[0].UpstreamVersion)
+	assert.Equal(s.T(), []api.ReleaseInfo{}, got.Versions[0].Builds)
 	assert.Equal(s.T(), "summary 4.2", got.Versions[0].Summary)
 	assert.Equal(s.T(), "2024-01-01T12:00:00Z", got.Versions[0].LastUpdated)
 	assert.Empty(s.T(), got.Versions[0].Distributions)
