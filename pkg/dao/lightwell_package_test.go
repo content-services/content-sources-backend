@@ -6,8 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -824,4 +826,75 @@ func (s *LightwellPackageSuite) TestSyncPackagesEmptyDeletesAll() {
 	var pkgCount int64
 	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
 	assert.Equal(t, int64(0), pkgCount)
+}
+
+func (s *LightwellPackageSuite) TestGetPythonPackageDetail() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("python-detail-%s", uuid.NewString()),
+		"lightwell-python",
+		"remediated",
+		config.ContentTypePython,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "django", "",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	for _, version := range []string{"4.2", "5.0"} {
+		versionUUID := uuid.NewString()
+		summary := ""
+		description := ""
+		license := ""
+		author := ""
+		authorEmail := ""
+		projectURL := ""
+		publishedAt := "2024-01-01T00:00:00Z"
+		if version == "5.0" {
+			summary = "A high-level Python web framework"
+			description = "Django is a high-level Python web framework."
+			license = "BSD-3-Clause"
+			author = "Django Software Foundation"
+			authorEmail = "foundation@djangoproject.com"
+			projectURL = "https://www.djangoproject.com/"
+			publishedAt = "2024-01-01T12:00:00Z"
+		}
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, published_at, purl, summary, description, license, author, author_email, project_url
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, '', ?, '', ?, ?, ?, ?, ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, version, publishedAt, summary, description, license, author, authorEmail, projectURL,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "5.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "django", got.Name)
+	assert.Equal(s.T(), "5.0", got.Version)
+	assert.Equal(s.T(), "A high-level Python web framework", got.Summary)
+	assert.Equal(s.T(), "Django is a high-level Python web framework.", got.Description)
+	assert.Equal(s.T(), "2024-01-01T12:00:00Z", got.LastUpdated)
+	assert.Equal(s.T(), "BSD-3-Clause", got.License)
+	assert.Equal(s.T(), api.PythonPackageAuthor{Name: "Django Software Foundation", Email: "foundation@djangoproject.com"}, got.Author)
+	assert.Equal(s.T(), "https://www.djangoproject.com/", got.ProjectURL)
+	assert.Equal(s.T(), []string{"4.2", "5.0"}, got.UpstreamVersions)
+	assert.Empty(s.T(), got.Distributions)
+
+	_, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "9.9.9")
+	var daoErr *ce.DaoError
+	s.Require().ErrorAs(err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
 }
