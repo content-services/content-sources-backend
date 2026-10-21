@@ -99,8 +99,8 @@ func (s *NpmPackagesSuite) TestNpmPackageVersionsAPI() {
 	assert.Equal(t, "is-odd", versions.Name)
 	require.Len(t, versions.Versions, 3)
 	assert.Equal(t, "3.0.0", versions.Versions[0].Version)
-	assert.Equal(t, "2024-04-01T00:00:00Z", versions.Versions[0].CreatedAt)
-	assert.Equal(t, []string{"3.0.0"}, versions.Versions[0].UpstreamVersions)
+	assert.Equal(t, "2024-04-01T00:00:00Z", versions.Versions[0].LastUpdated)
+	assert.Equal(t, "3.0.0", versions.Versions[0].UpstreamVersion)
 	assert.Equal(t, []api.ReleaseInfo{
 		{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 		{Version: "3.0.0", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
@@ -109,7 +109,7 @@ func (s *NpmPackagesSuite) TestNpmPackageVersionsAPI() {
 	assert.Equal(t, "3.0.10", versions.Versions[1].Version)
 	require.Len(t, versions.Versions[1].Builds, 1)
 	assert.Equal(t, "1.2.3", versions.Versions[2].Version)
-	assert.Equal(t, []string{""}, versions.Versions[2].UpstreamVersions)
+	assert.Equal(t, "", versions.Versions[2].UpstreamVersion)
 
 	unscoped := s.getPackageVersions(repo.UUID, "-", "left-pad")
 	assert.Equal(t, "-", unscoped.Scope)
@@ -135,8 +135,8 @@ func (s *NpmPackagesSuite) TestNpmPackageDetailAPI() {
 	assert.Equal(t, "@types", detail.Scope)
 	assert.Equal(t, "is-odd", detail.Name)
 	assert.Equal(t, "3.0.0", detail.Version)
-	assert.Equal(t, "2024-04-01T00:00:00Z", detail.CreatedAt)
-	assert.Equal(t, []string{"3.0.0"}, detail.UpstreamVersions)
+	assert.Equal(t, "2024-04-01T00:00:00Z", detail.LastUpdated)
+	assert.Equal(t, "3.0.0", detail.UpstreamVersion)
 	assert.Equal(t, []api.ReleaseInfo{
 		{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 		{Version: "3.0.0", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
@@ -151,13 +151,13 @@ func (s *NpmPackagesSuite) TestNpmPackageDetailAPI() {
 	stored := s.getPackageDetail(repo.UUID, "@types", "is-odd", "1.2.3")
 	require.Len(t, stored.Builds, 1)
 	assert.Equal(t, "1.2.3", stored.Version)
-	assert.Equal(t, []string{""}, stored.UpstreamVersions)
+	assert.Equal(t, "", stored.UpstreamVersion)
 	assert.Equal(t, "", stored.Builds[0].Release)
 
 	missing := s.getPackageDetail(repo.UUID, "@types", "is-odd", "9.9.9")
 	assert.Equal(t, "9.9.9", missing.Version)
 	assert.Empty(t, missing.Builds)
-	assert.Empty(t, missing.UpstreamVersions)
+	assert.Empty(t, missing.UpstreamVersion)
 }
 
 func (s *NpmPackagesSuite) createNpmRepository(orgId string) api.RepositoryResponse {
