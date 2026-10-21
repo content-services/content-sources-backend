@@ -840,7 +840,7 @@ func (suite *PackagesSuite) TestListPackagesMavenPagination() {
 			Offset: 1,
 		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/packages?limit=2&offset=1&sort_by=last_updated:desc", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/packages?limit=2&offset=1&sort_by=last_updated", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 

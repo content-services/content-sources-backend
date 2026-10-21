@@ -83,7 +83,7 @@ func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.R
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
 // @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python and npm, search term can include name (including scoped names like @types/)."
-// @Param        sort_by query string false "Sort field. Valid fields are name and last_updated. Append :asc or :desc. Default is last_updated:desc."
+// @Param        sort_by query string false "Sort field. Valid fields are name and last_updated. Append :asc or :desc. name defaults to asc. last_updated defaults to desc."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PackageResponse
@@ -137,7 +137,7 @@ func parsePackageSortBy(sortBy string) (string, string, error) {
 	}
 
 	field := sortBy
-	dir := "asc"
+	dir := ""
 	if i := strings.LastIndex(sortBy, ":"); i >= 0 {
 		field = strings.TrimSpace(sortBy[:i])
 		dir = strings.TrimSpace(sortBy[i+1:])
@@ -146,6 +146,12 @@ func parsePackageSortBy(sortBy string) (string, string, error) {
 	case "name", "last_updated":
 	default:
 		return "", "", fmt.Errorf("invalid sort_by %q: %s", sortBy, message)
+	}
+	if dir == "" {
+		dir = "asc"
+		if field == "last_updated" {
+			dir = "desc"
+		}
 	}
 	switch dir {
 	case "asc", "desc":
