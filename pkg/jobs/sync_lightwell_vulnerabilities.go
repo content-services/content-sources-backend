@@ -61,6 +61,7 @@ func runLightwellVulnerabilitySync(ctx context.Context) (lightwellsync.SyncSumma
 		daos.LightwellVulnerability,
 		daos.LightwellAdvisory,
 		verifier,
+		lightwellsync.WithPromoteByJiraState(config.Get().Options.LightwellPromoteByJiraState),
 	)
 	summary, err := ingestor.Sync(ctx)
 	if warning != "" {

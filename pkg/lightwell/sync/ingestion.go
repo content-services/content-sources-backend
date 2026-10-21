@@ -72,11 +72,12 @@ type AdvisoryStore interface {
 }
 
 type Ingestor struct {
-	jira            jira_client.JiraClient
-	vulnerabilities VulnerabilityStore
-	advisories      AdvisoryStore
-	packageVerifier PublicationPackageVerifier
-	cache           map[string]cachedIssue
+	jira               jira_client.JiraClient
+	vulnerabilities    VulnerabilityStore
+	advisories         AdvisoryStore
+	packageVerifier    PublicationPackageVerifier
+	cache              map[string]cachedIssue
+	promoteByJiraState bool
 }
 
 type cachedIssue struct {
@@ -84,16 +85,34 @@ type cachedIssue struct {
 	err   error
 }
 
+// Option customizes an Ingestor at construction time.
+type Option func(*Ingestor)
+
+// WithPromoteByJiraState, when enabled, promotes a validation-stage
+// vulnerability to the Lightwell Network stage based solely on its Jira state
+// (status "Released", or "Closed" with resolution "Done"), without consulting
+// the publication package check. This exists so the sync can be exercised
+// locally where Pulp is unreachable but Jira is, pretending every released fix
+// is published. It is intended for local use only and is disabled by default.
+func WithPromoteByJiraState(enabled bool) Option {
+	return func(i *Ingestor) { i.promoteByJiraState = enabled }
+}
+
 func NewIngestor(
 	jira jira_client.JiraClient,
 	vulnerabilities VulnerabilityStore,
 	advisories AdvisoryStore,
 	packageVerifier PublicationPackageVerifier,
+	opts ...Option,
 ) *Ingestor {
-	return &Ingestor{
+	i := &Ingestor{
 		jira: jira, vulnerabilities: vulnerabilities, advisories: advisories,
 		packageVerifier: packageVerifier, cache: make(map[string]cachedIssue),
 	}
+	for _, opt := range opts {
+		opt(i)
+	}
+	return i
 }
 
 func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
@@ -358,6 +377,9 @@ func (i *Ingestor) syncIssue(
 	}
 
 	applyPublishedStage(&vulnerability, confirmedVersions, advisories)
+	if i.promoteByJiraState && vulnerability.Stage == "Validation" && releasedOrDone(issue.Fields) {
+		vulnerability.Stage = "Lightwell Network"
+	}
 
 	if vulnerability.Stage == "Lightwell Network" {
 		tickets = mergeInheritedCustomers(tickets, inheritedCIDs)

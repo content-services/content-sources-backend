@@ -76,6 +76,10 @@ options:
   # To also hide a repo's demo variant, list its "-demo" name explicitly.
   # Example: ["lightwell/java/remediated", "lightwell/java/remediated-demo"]
   lightwell_ignore_repos: []
+  # Local development only: promote a validation-stage vulnerability to the Lightwell Network
+  # stage based solely on its Jira state (Released, or Closed/Done), bypassing the publication
+  # package check. Useful when Pulp is unreachable but Jira is. Leave false in deployment.
+  lightwell_promote_by_jira_state: false
 metrics:
   path: "/metrics"
   port: 9000
