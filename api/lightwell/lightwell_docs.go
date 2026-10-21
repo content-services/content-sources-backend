@@ -971,7 +971,7 @@ const docTemplatelightwell = `{
         },
         "/repositories/{uuid}/python_packages/{name}/{version}": {
             "get": {
-                "description": "Get metadata and distributions for a specific Python package by name and version.",
+                "description": "Get metadata and builds for a specific Python package by name and version.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1474,6 +1474,12 @@ const docTemplatelightwell = `{
             "properties": {
                 "author": {
                     "$ref": "#/definitions/api.PythonPackageAuthor"
+                },
+                "builds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReleaseInfo"
+                    }
                 },
                 "description": {
                     "type": "string"

@@ -19,7 +19,6 @@ type Querier interface {
 	DeleteVulnerabilityCustomersNotIn(ctx context.Context, arg DeleteVulnerabilityCustomersNotInParams) error
 	DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg DeleteVulnerabilityTicketsNotInParams) error
 	GetBeaconSync(ctx context.Context) (time.Time, error)
-	GetLightwellPythonPackageDetail(ctx context.Context, arg GetLightwellPythonPackageDetailParams) (GetLightwellPythonPackageDetailRow, error)
 	GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (LightwellVulnerability, error)
 	InsertVulnerabilityCustomer(ctx context.Context, arg InsertVulnerabilityCustomerParams) error
 	ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) ([]ListAdvisoriesRow, error)
@@ -31,6 +30,7 @@ type Querier interface {
 	ListLightwellMavenPackageVersions(ctx context.Context, arg ListLightwellMavenPackageVersionsParams) ([]ListLightwellMavenPackageVersionsRow, error)
 	ListLightwellPackageVersions(ctx context.Context, arg ListLightwellPackageVersionsParams) ([]ListLightwellPackageVersionsRow, error)
 	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)
+	ListLightwellPythonPackageDetail(ctx context.Context, arg ListLightwellPythonPackageDetailParams) ([]ListLightwellPythonPackageDetailRow, error)
 	ListLightwellPythonPackageVersions(ctx context.Context, arg ListLightwellPythonPackageVersionsParams) ([]ListLightwellPythonPackageVersionsRow, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)

@@ -203,6 +203,9 @@ func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
 	assert.Equal(t, "2024-01-01T12:00:00Z", detail.LastUpdated)
 	assert.Equal(t, "MIT", detail.License)
 	assert.Equal(t, "0.1", detail.UpstreamVersion)
+	assert.Equal(t, []api.ReleaseInfo{
+		{Version: "0.1", Release: "", CreatedAt: "2024-01-01T12:00:00Z"},
+	}, detail.Builds)
 	assert.Empty(t, detail.Distributions)
 }
 

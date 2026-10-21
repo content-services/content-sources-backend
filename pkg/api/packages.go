@@ -74,6 +74,7 @@ type PythonPackageVersionsResponse struct {
 type PythonPackageDetailResponse struct {
 	Name            string               `json:"name"`
 	Version         string               `json:"version"`
+	Builds          []ReleaseInfo        `json:"builds"`
 	Summary         string               `json:"summary"`
 	Description     string               `json:"description"`
 	LastUpdated     string               `json:"last_updated"`

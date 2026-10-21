@@ -128,10 +128,11 @@ WHERE rc.org_id = sqlc.arg(org_id)::text
     AND lower(r.security_level) IN ('validated', 'remediated')
 ORDER BY r.content_type, p.package_group, p.name, pv.version;
 
--- name: GetLightwellPythonPackageDetail :one
+-- name: ListLightwellPythonPackageDetail :many
 SELECT
     p.name,
     pv.version,
+    pv.release,
     pv.upstream_version,
     pv.summary,
     pv.description,
@@ -145,7 +146,11 @@ JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
     AND p.package_group = ''
     AND p.name = sqlc.arg(name)
-    AND pv.version = sqlc.arg(version);
+    AND (
+        pv.upstream_version = sqlc.arg(version)
+        OR (pv.upstream_version = '' AND pv.version = sqlc.arg(version))
+    )
+ORDER BY pv.published_at DESC, pv.version DESC;
 
 -- name: ListLightwellPythonPackageVersions :many
 SELECT

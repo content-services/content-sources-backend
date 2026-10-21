@@ -20,6 +20,13 @@ import {
     ApiPythonDistributionToJSON,
     ApiPythonDistributionToJSONTyped,
 } from './ApiPythonDistribution';
+import type { ApiReleaseInfo } from './ApiReleaseInfo';
+import {
+    ApiReleaseInfoFromJSON,
+    ApiReleaseInfoFromJSONTyped,
+    ApiReleaseInfoToJSON,
+    ApiReleaseInfoToJSONTyped,
+} from './ApiReleaseInfo';
 import type { ApiPythonPackageAuthor } from './ApiPythonPackageAuthor';
 import {
     ApiPythonPackageAuthorFromJSON,
@@ -40,6 +47,12 @@ export interface ApiPythonPackageDetailResponse {
      * @memberof ApiPythonPackageDetailResponse
      */
     author?: ApiPythonPackageAuthor;
+    /**
+     * 
+     * @type {Array<ApiReleaseInfo>}
+     * @memberof ApiPythonPackageDetailResponse
+     */
+    builds?: Array<ApiReleaseInfo>;
     /**
      * 
      * @type {string}
@@ -114,6 +127,7 @@ export function ApiPythonPackageDetailResponseFromJSONTyped(json: any, ignoreDis
     return {
         
         'author': json['author'] == null ? undefined : ApiPythonPackageAuthorFromJSON(json['author']),
+        'builds': json['builds'] == null ? undefined : ((json['builds'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'description': json['description'] == null ? undefined : json['description'],
         'distributions': json['distributions'] == null ? undefined : ((json['distributions'] as Array<any>).map(ApiPythonDistributionFromJSON)),
         'lastUpdated': json['last_updated'] == null ? undefined : json['last_updated'],
@@ -138,6 +152,7 @@ export function ApiPythonPackageDetailResponseToJSONTyped(value?: ApiPythonPacka
     return {
         
         'author': ApiPythonPackageAuthorToJSON(value['author']),
+        'builds': value['builds'] == null ? undefined : ((value['builds'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'description': value['description'],
         'distributions': value['distributions'] == null ? undefined : ((value['distributions'] as Array<any>).map(ApiPythonDistributionToJSON)),
         'last_updated': value['lastUpdated'],
