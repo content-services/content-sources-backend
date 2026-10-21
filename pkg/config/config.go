@@ -329,6 +329,10 @@ type Options struct {
 	SeedLightwellCoverageReports  bool     `mapstructure:"seed_lightwell_coverage_reports"`
 	LightwellPackageImportForceAt string   `mapstructure:"lightwell_package_import_force_at"`
 	LightwellIgnoreRepos          []string `mapstructure:"lightwell_ignore_repos"` // Lightwell repository names (as defined in the seed allowlist) to hide from the lightwell list API.
+	// LightwellPromoteByJiraState, when true, promotes a validation-stage vulnerability to the
+	// Lightwell Network stage based solely on its Jira state, without the publication package check.
+	// Intended for local development where Pulp is unreachable but Jira is. Do not enable in deployment.
+	LightwellPromoteByJiraState bool `mapstructure:"lightwell_promote_by_jira_state"`
 }
 
 type Metrics struct {
@@ -409,6 +413,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.seed_lightwell_coverage_reports", false)
 	v.SetDefault("options.lightwell_package_import_force_at", "")
 	v.SetDefault("options.lightwell_ignore_repos", []string{})
+	v.SetDefault("options.lightwell_promote_by_jira_state", false)
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")
