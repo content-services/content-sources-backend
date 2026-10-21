@@ -292,6 +292,51 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 	})
 }
 
+func (d lightwellPackageDaoImpl) ListPythonPackageVersions(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error) {
+	resp := api.PythonPackageVersionsResponse{Name: name, Versions: []api.PythonPackageDetailResponse{}}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	rows, err := d.querier.ListLightwellPythonPackageVersions(ctx, store.ListLightwellPythonPackageVersionsParams{
+		RepositoryConfigurationUuid: repoUUID,
+		Name:                        name,
+	})
+	if err != nil {
+		return resp, fmt.Errorf("failed to list lightwell python package versions: %w", err)
+	}
+	if len(rows) == 0 {
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
+	}
+
+	versions := make([]api.PythonPackageDetailResponse, 0, len(rows))
+	for _, row := range rows {
+		versions = append(versions, api.PythonPackageDetailResponse{
+			Name:        row.Name,
+			Version:     row.Version,
+			Summary:     row.Summary,
+			Description: row.Description,
+			LastUpdated: row.PublishedAt,
+			License:     row.License,
+			Author: api.PythonPackageAuthor{
+				Name:  row.Author,
+				Email: row.AuthorEmail,
+			},
+			UpstreamVersion: row.UpstreamVersion,
+			ProjectURL:      row.ProjectUrl,
+			Distributions:   []api.PythonDistribution{},
+		})
+	}
+	resp.Name = rows[0].Name
+	resp.Versions = versions
+	return resp, nil
+}
+
 func (d lightwellPackageDaoImpl) GetPythonPackageDetail(ctx context.Context, repoConfigUUID string, name string, version string) (api.PythonPackageDetailResponse, error) {
 	resp := api.PythonPackageDetailResponse{}
 	if d.querier == nil {
@@ -315,9 +360,6 @@ func (d lightwellPackageDaoImpl) GetPythonPackageDetail(ctx context.Context, rep
 		return resp, fmt.Errorf("failed to get lightwell python package detail: %w", err)
 	}
 
-	if row.Versions == nil {
-		row.Versions = []string{}
-	}
 	return api.PythonPackageDetailResponse{
 		Name:        row.Name,
 		Version:     row.Version,
@@ -329,9 +371,9 @@ func (d lightwellPackageDaoImpl) GetPythonPackageDetail(ctx context.Context, rep
 			Name:  row.Author,
 			Email: row.AuthorEmail,
 		},
-		UpstreamVersions: row.Versions,
-		ProjectURL:       row.ProjectUrl,
-		Distributions:    []api.PythonDistribution{},
+		UpstreamVersion: row.UpstreamVersion,
+		ProjectURL:      row.ProjectUrl,
+		Distributions:   []api.PythonDistribution{},
 	}, nil
 }
 

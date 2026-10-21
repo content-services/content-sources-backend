@@ -581,32 +581,17 @@ func (ph *PackageHandler) GetPythonPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Python repository")
 	}
 
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	versions, err := ph.DaoRegistry.LightwellPackage.ListPythonPackageVersions(ctx, repo.UUID, name)
 	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
-	}
-
-	tangResp, err := ph.TangClient.PythonPackageVersionsGet(ctx, repositoryHref, name)
-	if err != nil {
-		if errors.Is(err, tangy.ErrPythonPackageNotFound) {
-			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
+		title := "Error retrieving package versions"
+		var daoErr *ce.DaoError
+		if errors.As(err, &daoErr) && daoErr.NotFound {
+			title = "Package not found"
 		}
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), title, err.Error())
 	}
 
-	versions := make([]api.PythonPackageDetailResponse, len(tangResp))
-	for i, detail := range tangResp {
-		versions[i] = mapPythonPackageDetailToAPI(detail)
-	}
-
-	return c.JSON(http.StatusOK, api.PythonPackageVersionsResponse{
-		Name:     name,
-		Versions: versions,
-	})
+	return c.JSON(http.StatusOK, versions)
 }
 
 // GetPythonPackageDetail godoc
@@ -651,37 +636,6 @@ func (ph *PackageHandler) GetPythonPackageDetail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, detail)
-}
-
-func mapPythonPackageDetailToAPI(tangDetail tangy.PythonPackageDetail) api.PythonPackageDetailResponse {
-	distributions := make([]api.PythonDistribution, len(tangDetail.Distributions))
-	for i, dist := range tangDetail.Distributions {
-		distributions[i] = api.PythonDistribution{
-			Name:          dist.Name,
-			Filename:      dist.Filename,
-			PackageType:   dist.PackageType,
-			PythonVersion: dist.PythonVersion,
-			Sha256:        dist.Sha256,
-			Size:          dist.Size,
-			CreatedAt:     dist.CreatedAt,
-		}
-	}
-
-	return api.PythonPackageDetailResponse{
-		Name:        tangDetail.NameNormalized,
-		Version:     tangDetail.Version,
-		Summary:     tangDetail.Summary,
-		Description: tangDetail.Description,
-		LastUpdated: tangDetail.LastUpdated,
-		License:     tangDetail.License,
-		Author: api.PythonPackageAuthor{
-			Name:  tangDetail.Author,
-			Email: tangDetail.AuthorEmail,
-		},
-		UpstreamVersions: tangDetail.Versions,
-		ProjectURL:       tangDetail.ProjectURL,
-		Distributions:    distributions,
-	}
 }
 
 func npmPackageName(scope, name string) string {

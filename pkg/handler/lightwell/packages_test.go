@@ -426,9 +426,9 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailReadsMirror() {
 				Name:  "Django Software Foundation",
 				Email: "foundation@djangoproject.com",
 			},
-			ProjectURL:       "https://www.djangoproject.com/",
-			UpstreamVersions: []string{"4.2", "5.0"},
-			Distributions:    []api.PythonDistribution{},
+			ProjectURL:      "https://www.djangoproject.com/",
+			UpstreamVersion: "5.0",
+			Distributions:   []api.PythonDistribution{},
 		}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", LightwellAPIPath, repoUUID, packageName, packageVersion)
@@ -443,8 +443,70 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailReadsMirror() {
 	require.NoError(t, json.Unmarshal(body, &response))
 	assert.Equal(t, packageName, response.Name)
 	assert.Equal(t, packageVersion, response.Version)
-	assert.Equal(t, []string{"4.2", "5.0"}, response.UpstreamVersions)
+	assert.Equal(t, "5.0", response.UpstreamVersion)
 	assert.Empty(t, response.Distributions)
+}
+
+func (s *LightwellPackagesSuite) TestGetPythonPackageVersionsReadsMirror() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+	packageName := "django"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypePython,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("ListPythonPackageVersions", test.MockCtx(), repoUUID, packageName).
+		Return(api.PythonPackageVersionsResponse{
+			Name: packageName,
+			Versions: []api.PythonPackageDetailResponse{
+				{
+					Name:            packageName,
+					Version:         "4.25.7+rhlw.3",
+					LastUpdated:     "2024-01-01T12:00:00Z",
+					UpstreamVersion: "4.25.7",
+					Distributions:   []api.PythonDistribution{},
+				},
+			},
+		}, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", LightwellAPIPath, repoUUID, packageName)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PythonPackageVersionsResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, packageName, response.Name)
+	require.Len(t, response.Versions, 1)
+	assert.Equal(t, "4.25.7+rhlw.3", response.Versions[0].Version)
+	assert.Equal(t, "4.25.7", response.Versions[0].UpstreamVersion)
+	assert.Empty(t, response.Versions[0].Distributions)
+}
+
+func (s *LightwellPackagesSuite) TestGetPythonPackageVersionsNotFound() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypePython,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("ListPythonPackageVersions", test.MockCtx(), repoUUID, "missing").
+		Return(api.PythonPackageVersionsResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s", LightwellAPIPath, repoUUID, "missing")
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (s *LightwellPackagesSuite) TestGetPythonPackageDetailNotFound() {

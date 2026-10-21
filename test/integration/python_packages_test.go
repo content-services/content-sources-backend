@@ -170,26 +170,19 @@ func (s *PythonPackagesSuite) TestPythonPackageVersionsAPI() {
 	t := s.T()
 
 	repo := s.createPythonRepository(config.LightwellOrg)
+	s.seedPythonPackageMirror(repo.UUID)
 	versions := s.getPackageVersions(repo.UUID, testPythonPackageName)
 
 	assert.Equal(t, testPythonPackageName, versions.Name)
-	require.NotEmpty(t, versions.Versions)
-
-	for _, detail := range versions.Versions {
-		assert.Equal(t, testPythonPackageName, detail.Name)
-		assert.NotEmpty(t, detail.Version)
-		assert.NotEmpty(t, detail.LastUpdated)
-		require.NotEmpty(t, detail.Distributions)
-
-		for _, dist := range detail.Distributions {
-			assert.NotEmpty(t, dist.Filename)
-			assert.Contains(t, dist.Filename, detail.Version)
-			assert.NotEmpty(t, dist.PackageType)
-			assert.NotEmpty(t, dist.Sha256)
-			assert.NotZero(t, dist.Size)
-			assert.NotEmpty(t, dist.CreatedAt)
-		}
-	}
+	require.Len(t, versions.Versions, 2)
+	assert.Equal(t, "0.1", versions.Versions[0].Version)
+	assert.Equal(t, "shelf reader summary", versions.Versions[0].Summary)
+	assert.Equal(t, "2024-01-01T12:00:00Z", versions.Versions[0].LastUpdated)
+	assert.Equal(t, "0.1", versions.Versions[0].UpstreamVersion)
+	assert.Empty(t, versions.Versions[0].Distributions)
+	assert.Equal(t, "0.2", versions.Versions[1].Version)
+	assert.Equal(t, "0.2", versions.Versions[1].UpstreamVersion)
+	assert.Empty(t, versions.Versions[1].Distributions)
 }
 
 func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
@@ -209,7 +202,7 @@ func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
 	assert.Equal(t, "shelf reader summary", detail.Summary)
 	assert.Equal(t, "2024-01-01T12:00:00Z", detail.LastUpdated)
 	assert.Equal(t, "MIT", detail.License)
-	assert.Equal(t, []string{"0.1", "0.2"}, detail.UpstreamVersions)
+	assert.Equal(t, "0.1", detail.UpstreamVersion)
 	assert.Empty(t, detail.Distributions)
 }
 
@@ -390,6 +383,7 @@ func (s *PythonPackagesSuite) seedPythonPackageMirror(repoConfigUUID string) {
 			Version:                     version,
 			PublishedAt:                 "2024-01-01T12:00:00Z",
 		}
+		row.UpstreamVersion = version
 		if version == "0.1" {
 			row.Summary = "shelf reader summary"
 			row.License = "MIT"

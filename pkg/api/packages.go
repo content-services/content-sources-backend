@@ -72,16 +72,16 @@ type PythonPackageVersionsResponse struct {
 
 // PythonPackageDetailResponse represents the detail response for a specific Python package.
 type PythonPackageDetailResponse struct {
-	Name             string               `json:"name"`
-	Version          string               `json:"version"`
-	Summary          string               `json:"summary"`
-	Description      string               `json:"description"`
-	LastUpdated      string               `json:"last_updated"`
-	License          string               `json:"license"`
-	Author           PythonPackageAuthor  `json:"author"`
-	UpstreamVersions []string             `json:"upstream_versions"`
-	ProjectURL       string               `json:"project_url"`
-	Distributions    []PythonDistribution `json:"distributions"`
+	Name            string               `json:"name"`
+	Version         string               `json:"version"`
+	Summary         string               `json:"summary"`
+	Description     string               `json:"description"`
+	LastUpdated     string               `json:"last_updated"`
+	License         string               `json:"license"`
+	Author          PythonPackageAuthor  `json:"author"`
+	UpstreamVersion string               `json:"upstream_version"`
+	ProjectURL      string               `json:"project_url"`
+	Distributions   []PythonDistribution `json:"distributions"`
 }
 
 // NpmTarball represents tarball metadata for an npm package version.

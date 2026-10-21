@@ -132,24 +132,36 @@ ORDER BY r.content_type, p.package_group, p.name, pv.version;
 SELECT
     p.name,
     pv.version,
+    pv.upstream_version,
     pv.summary,
     pv.description,
     pv.published_at,
     pv.license,
     pv.author,
     pv.author_email,
-    pv.project_url,
-    COALESCE(
-        (
-            SELECT array_agg(sib.version ORDER BY sib.version)
-            FROM lightwell_package_versions sib
-            WHERE sib.lightwell_package_uuid = p.uuid
-        ),
-        '{}'::text[]
-    )::text[] AS versions
+    pv.project_url
 FROM lightwell_packages p
 JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
     AND p.package_group = ''
     AND p.name = sqlc.arg(name)
     AND pv.version = sqlc.arg(version);
+
+-- name: ListLightwellPythonPackageVersions :many
+SELECT
+    p.name,
+    pv.version,
+    pv.upstream_version,
+    pv.summary,
+    pv.description,
+    pv.published_at,
+    pv.license,
+    pv.author,
+    pv.author_email,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = ''
+    AND p.name = sqlc.arg(name)
+ORDER BY pv.version;

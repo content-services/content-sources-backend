@@ -16,21 +16,14 @@ const getLightwellPythonPackageDetail = `-- name: GetLightwellPythonPackageDetai
 SELECT
     p.name,
     pv.version,
+    pv.upstream_version,
     pv.summary,
     pv.description,
     pv.published_at,
     pv.license,
     pv.author,
     pv.author_email,
-    pv.project_url,
-    COALESCE(
-        (
-            SELECT array_agg(sib.version ORDER BY sib.version)
-            FROM lightwell_package_versions sib
-            WHERE sib.lightwell_package_uuid = p.uuid
-        ),
-        '{}'::text[]
-    )::text[] AS versions
+    pv.project_url
 FROM lightwell_packages p
 JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE p.repository_configuration_uuid = $1::uuid
@@ -46,16 +39,16 @@ type GetLightwellPythonPackageDetailParams struct {
 }
 
 type GetLightwellPythonPackageDetailRow struct {
-	Name        string   `json:"name"`
-	Version     string   `json:"version"`
-	Summary     string   `json:"summary"`
-	Description string   `json:"description"`
-	PublishedAt string   `json:"published_at"`
-	License     string   `json:"license"`
-	Author      string   `json:"author"`
-	AuthorEmail string   `json:"author_email"`
-	ProjectUrl  string   `json:"project_url"`
-	Versions    []string `json:"versions"`
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	UpstreamVersion string `json:"upstream_version"`
+	Summary         string `json:"summary"`
+	Description     string `json:"description"`
+	PublishedAt     string `json:"published_at"`
+	License         string `json:"license"`
+	Author          string `json:"author"`
+	AuthorEmail     string `json:"author_email"`
+	ProjectUrl      string `json:"project_url"`
 }
 
 func (q *Queries) GetLightwellPythonPackageDetail(ctx context.Context, arg GetLightwellPythonPackageDetailParams) (GetLightwellPythonPackageDetailRow, error) {
@@ -64,6 +57,7 @@ func (q *Queries) GetLightwellPythonPackageDetail(ctx context.Context, arg GetLi
 	err := row.Scan(
 		&i.Name,
 		&i.Version,
+		&i.UpstreamVersion,
 		&i.Summary,
 		&i.Description,
 		&i.PublishedAt,
@@ -71,7 +65,6 @@ func (q *Queries) GetLightwellPythonPackageDetail(ctx context.Context, arg GetLi
 		&i.Author,
 		&i.AuthorEmail,
 		&i.ProjectUrl,
-		&i.Versions,
 	)
 	return i, err
 }
@@ -382,6 +375,75 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 			&i.UpstreamVersions,
 			&i.LastPublication,
 			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLightwellPythonPackageVersions = `-- name: ListLightwellPythonPackageVersions :many
+SELECT
+    p.name,
+    pv.version,
+    pv.upstream_version,
+    pv.summary,
+    pv.description,
+    pv.published_at,
+    pv.license,
+    pv.author,
+    pv.author_email,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = $1::uuid
+    AND p.package_group = ''
+    AND p.name = $2
+ORDER BY pv.version
+`
+
+type ListLightwellPythonPackageVersionsParams struct {
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	Name                        string    `json:"name"`
+}
+
+type ListLightwellPythonPackageVersionsRow struct {
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	UpstreamVersion string `json:"upstream_version"`
+	Summary         string `json:"summary"`
+	Description     string `json:"description"`
+	PublishedAt     string `json:"published_at"`
+	License         string `json:"license"`
+	Author          string `json:"author"`
+	AuthorEmail     string `json:"author_email"`
+	ProjectUrl      string `json:"project_url"`
+}
+
+func (q *Queries) ListLightwellPythonPackageVersions(ctx context.Context, arg ListLightwellPythonPackageVersionsParams) ([]ListLightwellPythonPackageVersionsRow, error) {
+	rows, err := q.db.Query(ctx, listLightwellPythonPackageVersions, arg.RepositoryConfigurationUuid, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLightwellPythonPackageVersionsRow{}
+	for rows.Next() {
+		var i ListLightwellPythonPackageVersionsRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Version,
+			&i.UpstreamVersion,
+			&i.Summary,
+			&i.Description,
+			&i.PublishedAt,
+			&i.License,
+			&i.Author,
+			&i.AuthorEmail,
+			&i.ProjectUrl,
 		); err != nil {
 			return nil, err
 		}
