@@ -347,7 +347,7 @@ const (
 	DefaultIntrospectApiTimeLimitSec = 30
 )
 
-var featureFilter = [...]string{"RHEL-OS-x86_64", "RHEL-OS-aarch64"}
+var featureFilter = [...]string{"RHEL-OS-x86_64"}
 
 var LoadedConfig Configuration
 
