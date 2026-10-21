@@ -3028,6 +3028,12 @@ const docTemplate = `{
                         "description": "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python and npm, search term can include name (including scoped names like @types/).",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort field. Valid fields are name and last_updated. Append :asc or :desc. Default is last_updated:desc.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {

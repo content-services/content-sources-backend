@@ -136,6 +136,7 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 
 	// Pull-through GET skips MavenPackage creation; upload + modify runs finalize with packages.
 	s.seedMavenPackages(mavenRepo)
+	s.seedMavenPackageMirror(mavenRepo.repo.UUID)
 
 	// Test the packages API endpoint
 	packages := s.listPackages(mavenRepo.repo.UUID)
@@ -147,7 +148,6 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 
 	// Test the package versions endpoint using data from the list.
 	// java_packages is the canonical path; maven_packages stays as a deprecated alias.
-	s.seedMavenPackageMirror(mavenRepo.repo.UUID)
 	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, "maven_packages")
 	javaVersions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, "java_packages")
 	assert.Equal(t, versions, javaVersions)

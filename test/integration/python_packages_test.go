@@ -132,6 +132,7 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 	t := s.T()
 
 	repo := s.createPythonRepository(config.LightwellOrg)
+	s.seedPythonPackageMirror(repo.UUID)
 	packages := s.listPackages(repo.UUID)
 
 	assert.NotNil(t, packages)

@@ -624,3 +624,91 @@ func (q *Queries) ListLightwellPythonPackageVersions(ctx context.Context, arg Li
 	}
 	return items, nil
 }
+
+const listLightwellRepositoryPackages = `-- name: ListLightwellRepositoryPackages :many
+SELECT
+    p.name,
+    p.package_group,
+    array_agg(pv.version ORDER BY pv.version) AS versions,
+    array_agg(pv.release ORDER BY pv.version) AS releases,
+    array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
+    array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
+    COUNT(*) OVER() AS total_count
+FROM lightwell_packages p
+LEFT JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = $1::uuid
+    AND (
+        $2::text = ''
+        OR p.name ILIKE '%' || $2::text || '%'
+        OR p.package_group ILIKE '%' || $2::text || '%'
+        OR (p.package_group <> '' AND (p.package_group || ':' || p.name) ILIKE '%' || $2::text || '%')
+        OR (p.package_group <> '' AND (p.package_group || '/' || p.name) ILIKE '%' || $2::text || '%')
+    )
+GROUP BY p.uuid, p.name, p.package_group
+ORDER BY
+    CASE WHEN $3::text = 'name' AND $4::text = 'asc' THEN p.name END ASC,
+    CASE WHEN $3::text = 'name' AND $4::text = 'desc' THEN p.name END DESC,
+    CASE WHEN $3::text IN ('group/name', 'scope/name') AND $4::text = 'asc' THEN p.package_group END ASC,
+    CASE WHEN $3::text IN ('group/name', 'scope/name') AND $4::text = 'asc' THEN p.name END ASC,
+    CASE WHEN $3::text IN ('group/name', 'scope/name') AND $4::text = 'desc' THEN p.package_group END DESC,
+    CASE WHEN $3::text IN ('group/name', 'scope/name') AND $4::text = 'desc' THEN p.name END DESC,
+    CASE WHEN $3::text = 'last_updated' AND $4::text = 'asc' THEN MAX(pv.published_at) END ASC NULLS LAST,
+    CASE WHEN $3::text = 'last_updated' AND $4::text = 'desc' THEN MAX(pv.published_at) END DESC NULLS LAST,
+    p.package_group ASC,
+    p.name ASC
+LIMIT $6 OFFSET $5
+`
+
+type ListLightwellRepositoryPackagesParams struct {
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	Search                      string    `json:"search"`
+	SortField                   string    `json:"sort_field"`
+	SortDir                     string    `json:"sort_dir"`
+	PageOffset                  int32     `json:"page_offset"`
+	PageLimit                   int32     `json:"page_limit"`
+}
+
+type ListLightwellRepositoryPackagesRow struct {
+	Name             string      `json:"name"`
+	PackageGroup     string      `json:"package_group"`
+	Versions         interface{} `json:"versions"`
+	Releases         interface{} `json:"releases"`
+	PublishedAts     interface{} `json:"published_ats"`
+	UpstreamVersions interface{} `json:"upstream_versions"`
+	TotalCount       int64       `json:"total_count"`
+}
+
+func (q *Queries) ListLightwellRepositoryPackages(ctx context.Context, arg ListLightwellRepositoryPackagesParams) ([]ListLightwellRepositoryPackagesRow, error) {
+	rows, err := q.db.Query(ctx, listLightwellRepositoryPackages,
+		arg.RepositoryConfigurationUuid,
+		arg.Search,
+		arg.SortField,
+		arg.SortDir,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLightwellRepositoryPackagesRow{}
+	for rows.Next() {
+		var i ListLightwellRepositoryPackagesRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.PackageGroup,
+			&i.Versions,
+			&i.Releases,
+			&i.PublishedAts,
+			&i.UpstreamVersions,
+			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

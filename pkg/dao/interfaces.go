@@ -320,6 +320,7 @@ type LightwellVulnerabilityDao interface {
 
 type LightwellPackageDao interface {
 	ListPackages(ctx context.Context, opts ListLightwellPackagesOptions) ([]LightwellPackageRow, int64, error)
+	ListRepositoryPackages(ctx context.Context, repoConfigUUID string, search string, sortField string, sortDir string, limit int, offset int) (api.PackageResponse, error)
 	ListPackageVersions(ctx context.Context, opts ListLightwellPackageVersionsOptions) ([]LightwellPackageVersionRow, int64, error)
 	GetPythonPackageDetail(ctx context.Context, repoConfigUUID string, name string, version string) (api.PythonPackageDetailResponse, error)
 	ListPythonPackageVersions(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error)

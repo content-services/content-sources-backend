@@ -212,3 +212,36 @@ WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid):
         OR (pv.upstream_version = '' AND pv.version = sqlc.arg(version))
     )
 ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellRepositoryPackages :many
+SELECT
+    p.name,
+    p.package_group,
+    array_agg(pv.version ORDER BY pv.version) AS versions,
+    array_agg(pv.release ORDER BY pv.version) AS releases,
+    array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
+    array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
+    COUNT(*) OVER() AS total_count
+FROM lightwell_packages p
+LEFT JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND (
+        sqlc.arg(search)::text = ''
+        OR p.name ILIKE '%' || sqlc.arg(search)::text || '%'
+        OR p.package_group ILIKE '%' || sqlc.arg(search)::text || '%'
+        OR (p.package_group <> '' AND (p.package_group || ':' || p.name) ILIKE '%' || sqlc.arg(search)::text || '%')
+        OR (p.package_group <> '' AND (p.package_group || '/' || p.name) ILIKE '%' || sqlc.arg(search)::text || '%')
+    )
+GROUP BY p.uuid, p.name, p.package_group
+ORDER BY
+    CASE WHEN sqlc.arg(sort_field)::text = 'name' AND sqlc.arg(sort_dir)::text = 'asc' THEN p.name END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'name' AND sqlc.arg(sort_dir)::text = 'desc' THEN p.name END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text IN ('group/name', 'scope/name') AND sqlc.arg(sort_dir)::text = 'asc' THEN p.package_group END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text IN ('group/name', 'scope/name') AND sqlc.arg(sort_dir)::text = 'asc' THEN p.name END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text IN ('group/name', 'scope/name') AND sqlc.arg(sort_dir)::text = 'desc' THEN p.package_group END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text IN ('group/name', 'scope/name') AND sqlc.arg(sort_dir)::text = 'desc' THEN p.name END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'last_updated' AND sqlc.arg(sort_dir)::text = 'asc' THEN MAX(pv.published_at) END ASC NULLS LAST,
+    CASE WHEN sqlc.arg(sort_field)::text = 'last_updated' AND sqlc.arg(sort_dir)::text = 'desc' THEN MAX(pv.published_at) END DESC NULLS LAST,
+    p.package_group ASC,
+    p.name ASC
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
