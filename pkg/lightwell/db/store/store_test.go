@@ -870,17 +870,28 @@ func TestStore_ListAdvisoriesFilterByRepoName(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)
 
-	insertTestAdvisories(t, ctx, tx)
+	repoConfigUUID := insertTestAdvisories(t, ctx, tx)
 
-	repoName := "lightwell/python/remediated"
+	// A name that is not one of the shared seed repositories, so existing
+	// lightwell/python/remediated rows do not satisfy the filter.
+	repoName := "lightwell/python/remediated-filter-" + uuid.NewString()
+	tag, err := tx.Exec(ctx, `
+		UPDATE lightwell_advisories
+		SET repo_name = $1
+		WHERE repository_configuration_uuid = $2 AND package_name = $3`,
+		repoName, repoConfigUUID, "requests")
+	require.NoError(t, err)
+	require.Equal(t, int64(1), tag.RowsAffected())
+
 	rows, err := q.ListAdvisories(ctx, store.ListAdvisoriesParams{
 		RepoName:   &repoName,
 		PageLimit:  100,
 		PageOffset: 0,
 	})
 	require.NoError(t, err)
-	assert.Len(t, rows, 1)
+	require.Len(t, rows, 1)
 	assert.Equal(t, "requests", rows[0].PackageName)
+	assert.Equal(t, repoName, rows[0].RepoName)
 }
 
 func TestStore_ListAdvisoriesFilterByNameAlias(t *testing.T) {
