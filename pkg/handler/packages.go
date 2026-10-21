@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -15,7 +14,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/content-services/tang/pkg/tangy"
-	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 )
 
@@ -85,6 +83,7 @@ func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.R
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
 // @Param        search query string false "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python and npm, search term can include name (including scoped names like @types/)."
+// @Param        sort_by query string false "Sort field. Valid fields are name and last_updated. Append :asc or :desc. Default is last_updated:desc."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PackageResponse
@@ -99,9 +98,13 @@ func (ph *PackageHandler) ListPackages(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusInternalServerError, "Error binding parameters", err.Error())
 	}
 
-	uuid := c.Param("uuid")
 	pageData := ParsePagination(c)
-	filterData := listPackagesRequest.Search
+	sortField, sortDir, err := parsePackageSortBy(pageData.SortBy)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Invalid sort_by", err.Error())
+	}
+
+	uuid := c.Param("uuid")
 	ctx := c.Request().Context()
 
 	repo, err := ph.fetchLightwellRepo(c, uuid)
@@ -110,12 +113,12 @@ func (ph *PackageHandler) ListPackages(c echo.Context) error {
 	}
 
 	switch repo.ContentType {
-	case config.ContentTypeMaven:
-		return ph.listMavenPackages(c, ctx, repo, filterData, pageData)
-	case config.ContentTypePython:
-		return ph.listPythonPackages(c, ctx, repo, filterData, pageData)
-	case config.ContentTypeNpm:
-		return ph.listNpmPackages(c, ctx, repo, filterData, pageData)
+	case config.ContentTypeMaven, config.ContentTypePython, config.ContentTypeNpm:
+		resp, err := ph.DaoRegistry.LightwellPackage.ListRepositoryPackages(ctx, repo.UUID, listPackagesRequest.Search, packageSortField(repo.ContentType, sortField), sortDir, pageData.Limit, pageData.Offset)
+		if err != nil {
+			return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving packages", err.Error())
+		}
+		return c.JSON(http.StatusOK, resp)
 	default:
 		return c.JSON(http.StatusOK, api.PackageResponse{
 			Results: []api.PackageItem{},
@@ -126,43 +129,37 @@ func (ph *PackageHandler) ListPackages(c echo.Context) error {
 	}
 }
 
-func (ph *PackageHandler) listMavenPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+func parsePackageSortBy(sortBy string) (string, string, error) {
+	const message = "valid fields are name and last_updated, each optionally followed by :asc or :desc"
+	sortBy = strings.TrimSpace(sortBy)
+	if sortBy == "" {
+		return "last_updated", "desc", nil
 	}
 
-	pulpClient, repositoryHref, err := ph.resolveRepository(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
-	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
+	field := sortBy
+	dir := "asc"
+	if i := strings.LastIndex(sortBy, ":"); i >= 0 {
+		field = strings.TrimSpace(sortBy[:i])
+		dir = strings.TrimSpace(sortBy[i+1:])
 	}
-
-	pulpResp, err := pulpClient.ListMavenPackages(ctx, repositoryHref, filterData, pageData.Limit, pageData.Offset)
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
+	switch field {
+	case "name", "last_updated":
+	default:
+		return "", "", fmt.Errorf("invalid sort_by %q: %s", sortBy, message)
 	}
-
-	return c.JSON(http.StatusOK, mapMavenPackagesToAPI(pulpResp, pageData.Limit, pageData.Offset))
+	switch dir {
+	case "asc", "desc":
+	default:
+		return "", "", fmt.Errorf("invalid sort_by %q: %s", sortBy, message)
+	}
+	return field, dir, nil
 }
 
-func (ph *PackageHandler) listPythonPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
+func packageSortField(contentType, field string) string {
+	if field == "name" && (contentType == config.ContentTypeMaven || contentType == config.ContentTypeNpm) {
+		return "group/name"
 	}
-
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
-	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
-	}
-
-	tangResp, err := ph.TangClient.PythonPackageList(ctx, repositoryHref, tangy.PythonPackageListFilters{Search: filterData}, tangy.PageOptions{
-		Offset: pageData.Offset,
-		Limit:  pageData.Limit,
-	})
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
-	}
-
-	return c.JSON(http.StatusOK, mapPythonPackagesToAPI(tangResp))
+	return field
 }
 
 func (ph *PackageHandler) resolveRepository(ctx context.Context, orgID, basePath, repoUUID string) (pulp_client.PulpClient, string, error) {
@@ -200,63 +197,6 @@ func (ph *PackageHandler) repositoryHrefErrorResponse(err error) error {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching or creating domain", err.Error())
 	}
 	return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
-}
-
-func mapMavenPackagesToAPI(pulpResp zest.PaginatedMavenRepositoryPackageListResponse, limit, offset int) api.PackageResponse {
-	results := make([]api.PackageItem, len(pulpResp.Results))
-	for i, item := range pulpResp.Results {
-		results[i] = api.PackageItem{
-			Group:          item.GroupId,
-			Name:           item.ArtifactId,
-			Versions:       item.Versions,
-			LatestReleases: mapMavenPackageReleases(item.LatestReleases),
-		}
-	}
-
-	return api.PackageResponse{
-		Results: results,
-		Total:   int(pulpResp.Count),
-		Limit:   limit,
-		Offset:  offset,
-	}
-}
-
-func mapMavenPackageReleases(releases []zest.MavenPackageReleaseResponse) []api.ReleaseInfo {
-	out := make([]api.ReleaseInfo, len(releases))
-	for i, rel := range releases {
-		out[i] = api.ReleaseInfo{
-			Version:   rel.Version,
-			Release:   rel.Release,
-			CreatedAt: rel.CreatedAt.Format(time.RFC3339),
-		}
-	}
-	return out
-}
-
-func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.PackageResponse {
-	results := make([]api.PackageItem, len(tangResp.Results))
-	for i, item := range tangResp.Results {
-		releases := make([]api.ReleaseInfo, len(item.LatestVersions))
-		for j, ver := range item.LatestVersions {
-			releases[j] = api.ReleaseInfo{
-				Version:   ver.Version,
-				CreatedAt: ver.CreatedAt,
-			}
-		}
-
-		results[i] = api.PackageItem{
-			Name:           item.NameNormalized,
-			Versions:       item.Versions,
-			LatestReleases: releases,
-		}
-	}
-
-	return api.PackageResponse{
-		Results: results,
-		Total:   tangResp.Total,
-		Limit:   tangResp.Limit,
-		Offset:  tangResp.Offset,
-	}
 }
 
 // ListMavenPackageVersions godoc
@@ -483,55 +423,6 @@ func ParseNpmPackageName(fullName string) (scope, name string) {
 		}
 	}
 	return "-", fullName
-}
-
-func (ph *PackageHandler) listNpmPackages(c echo.Context, ctx context.Context, repo api.RepositoryResponse, filterData string, pageData api.PaginationData) error {
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
-	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
-	}
-
-	tangResp, err := ph.TangClient.NpmPackageList(ctx, repositoryHref, tangy.NpmPackageListFilters{Search: filterData}, tangy.PageOptions{
-		Offset: pageData.Offset,
-		Limit:  pageData.Limit,
-	})
-	if err != nil {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving packages", err.Error())
-	}
-
-	return c.JSON(http.StatusOK, mapNpmPackagesToAPI(tangResp))
-}
-
-func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageResponse {
-	results := make([]api.PackageItem, len(tangResp.Results))
-	for i, item := range tangResp.Results {
-		scope, name := ParseNpmPackageName(item.Name)
-		releases := make([]api.ReleaseInfo, len(item.LatestVersions))
-		for j, ver := range item.LatestVersions {
-			releases[j] = api.ReleaseInfo{
-				Version:   ver.Version,
-				CreatedAt: ver.CreatedAt,
-			}
-		}
-
-		results[i] = api.PackageItem{
-			Group:          scope,
-			Name:           name,
-			Versions:       item.Versions,
-			LatestReleases: releases,
-		}
-	}
-
-	return api.PackageResponse{
-		Results: results,
-		Total:   tangResp.Total,
-		Limit:   tangResp.Limit,
-		Offset:  tangResp.Offset,
-	}
 }
 
 // GetNpmPackageVersions godoc
