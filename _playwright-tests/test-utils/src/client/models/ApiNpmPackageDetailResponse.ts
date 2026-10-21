@@ -45,7 +45,7 @@ export interface ApiNpmPackageDetailResponse {
      * @type {string}
      * @memberof ApiNpmPackageDetailResponse
      */
-    createdAt?: string;
+    lastUpdated?: string;
     /**
      * 
      * @type {string}
@@ -66,10 +66,10 @@ export interface ApiNpmPackageDetailResponse {
     tarball?: ApiNpmTarball;
     /**
      * 
-     * @type {Array<string>}
+     * @type {string}
      * @memberof ApiNpmPackageDetailResponse
      */
-    upstreamVersions?: Array<string>;
+    upstreamVersion?: string;
     /**
      * 
      * @type {string}
@@ -96,11 +96,11 @@ export function ApiNpmPackageDetailResponseFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'builds': json['builds'] == null ? undefined : ((json['builds'] as Array<any>).map(ApiReleaseInfoFromJSON)),
-        'createdAt': json['created_at'] == null ? undefined : json['created_at'],
+        'lastUpdated': json['last_updated'] == null ? undefined : json['last_updated'],
         'name': json['name'] == null ? undefined : json['name'],
         'scope': json['scope'] == null ? undefined : json['scope'],
         'tarball': json['tarball'] == null ? undefined : ApiNpmTarballFromJSON(json['tarball']),
-        'upstreamVersions': json['upstream_versions'] == null ? undefined : json['upstream_versions'],
+        'upstreamVersion': json['upstream_version'] == null ? undefined : json['upstream_version'],
         'version': json['version'] == null ? undefined : json['version'],
     };
 }
@@ -117,11 +117,11 @@ export function ApiNpmPackageDetailResponseToJSONTyped(value?: ApiNpmPackageDeta
     return {
         
         'builds': value['builds'] == null ? undefined : ((value['builds'] as Array<any>).map(ApiReleaseInfoToJSON)),
-        'created_at': value['createdAt'],
+        'last_updated': value['lastUpdated'],
         'name': value['name'],
         'scope': value['scope'],
         'tarball': ApiNpmTarballToJSON(value['tarball']),
-        'upstream_versions': value['upstreamVersions'],
+        'upstream_version': value['upstreamVersion'],
         'version': value['version'],
     };
 }

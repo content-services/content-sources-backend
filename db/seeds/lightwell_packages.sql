@@ -7,7 +7,8 @@
 -- Validated versions are catalog upstream builds (see validated_catalog below).
 -- Maven name is the artifact id and package_group is the group id. The
 -- group:artifact coordinate stays on the advisory and is not stored in name.
--- JavaScript and C# advisories stay on lightwell/seed, and there is no npm repo.
+-- npm name is the package name and package_group is the scope, or "-" when
+-- the package is unscoped. C# advisories stay on lightwell/seed.
 BEGIN;
 
 DELETE FROM lightwell_package_versions
@@ -21,7 +22,9 @@ WHERE repository_configuration_uuid IN (
             'lightwell/java/predisclosure',
             'lightwell/python/validated',
             'lightwell/python/remediated',
-            'lightwell/python/predisclosure'
+            'lightwell/python/predisclosure',
+            'lightwell/npm/validated',
+            'lightwell/npm/remediated'
         )
 );
 
@@ -36,7 +39,9 @@ WHERE repository_configuration_uuid IN (
             'lightwell/java/predisclosure',
             'lightwell/python/validated',
             'lightwell/python/remediated',
-            'lightwell/python/predisclosure'
+            'lightwell/python/predisclosure',
+            'lightwell/npm/validated',
+            'lightwell/npm/remediated'
         )
 );
 
@@ -47,10 +52,13 @@ WITH seed_advisories AS (
         r.content_type,
         CASE
             WHEN r.content_type = 'maven' THEN split_part(la.package_name, ':', 1)
+            WHEN r.content_type = 'npm' AND la.package_name LIKE '@%/%' THEN split_part(la.package_name, '/', 1)
+            WHEN r.content_type = 'npm' THEN '-'
             ELSE ''
         END AS package_group,
         CASE
             WHEN r.content_type = 'maven' THEN split_part(la.package_name, ':', 2)
+            WHEN r.content_type = 'npm' AND la.package_name LIKE '@%/%' THEN split_part(la.package_name, '/', 2)
             ELSE la.package_name
         END AS package_name,
         ver AS stored_version,
@@ -65,7 +73,8 @@ WITH seed_advisories AS (
             'lightwell/java/remediated',
             'lightwell/python/remediated',
             'lightwell/java/predisclosure',
-            'lightwell/python/predisclosure'
+            'lightwell/python/predisclosure',
+            'lightwell/npm/remediated'
         )
 ),
 split_versions AS (
@@ -104,7 +113,10 @@ validated_catalog AS (
             ('python', '', 'lxml', '4.9.3'),
             ('python', '', 'pyyaml', '6.0.1'),
             ('python', '', 'setuptools', '67.1.0'),
-            ('python', '', 'werkzeug', '2.2.4')
+            ('python', '', 'werkzeug', '2.2.4'),
+            ('npm', '-', 'express', '4.18.2'),
+            ('npm', '-', 'lodash', '4.17.21'),
+            ('npm', '@types', 'node', '20.11.0')
     ) AS v(content_type, package_group, package_name, version)
 ),
 validated_rows AS (
@@ -124,6 +136,7 @@ validated_rows AS (
         AND rc.name = CASE vc.content_type
             WHEN 'maven' THEN 'lightwell/java/validated'
             WHEN 'python' THEN 'lightwell/python/validated'
+            WHEN 'npm' THEN 'lightwell/npm/validated'
         END
 )
 SELECT
@@ -211,6 +224,8 @@ SELECT
     to_char(published AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
     CASE
         WHEN content_type = 'maven' THEN 'pkg:maven/' || package_group || '/' || package_name || '@' || version
+        WHEN content_type = 'npm' AND package_group NOT IN ('', '-') THEN 'pkg:npm/' || replace(package_group, '@', '%40') || '/' || package_name || '@' || version
+        WHEN content_type = 'npm' THEN 'pkg:npm/' || package_name || '@' || version
         ELSE 'pkg:pypi/' || package_name || '@' || version
     END,
     upstream_version,
