@@ -133,6 +133,7 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 		return SyncSummary{}, err
 	}
 	inheritedCIDs := buildInheritedCIDs(issues, cts)
+	ctMembers := ctMemberKeys(cts)
 
 	advisories, err := i.loadAdvisories(ctx)
 	if err != nil {
@@ -142,7 +143,8 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 	var summary SyncSummary
 	confirmedByIssue := i.verifyBreadcrumbPackages(ctx, issues, &summary)
 	for _, issue := range issues {
-		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], inheritedCIDs[issue.Key], &summary); err != nil {
+		_, inCT := ctMembers[issue.Key]
+		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], inheritedCIDs[issue.Key], inCT, &summary); err != nil {
 			summary.Failed++
 			summary.Failures = append(summary.Failures, err.Error())
 		}
@@ -359,6 +361,7 @@ func (i *Ingestor) syncIssue(
 	advisories []PublishedAdvisory,
 	confirmedVersions []string,
 	inheritedCIDs []string,
+	inCT bool,
 	summary *SyncSummary,
 ) error {
 	if resolution, detail, discarded := beaconDiscardReason(issue.Fields); discarded {
@@ -379,6 +382,13 @@ func (i *Ingestor) syncIssue(
 	applyPublishedStage(&vulnerability, confirmedVersions, advisories)
 	if i.promoteByJiraState && vulnerability.Stage == "Validation" && releasedOrDone(issue.Fields) {
 		vulnerability.Stage = "Lightwell Network"
+	}
+
+	// Count an IVT as shipped (Lightwell Network) only when it is a member of a
+	// Closed/Done Component Upgrade — an IVT with no CT is not "done", matching the
+	// remediation-dashboard's shipped definition.
+	if vulnerability.Stage == "Lightwell Network" && !inCT {
+		vulnerability.Stage = "Validation"
 	}
 
 	if vulnerability.Stage == "Lightwell Network" {
