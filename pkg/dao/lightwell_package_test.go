@@ -962,3 +962,76 @@ func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
 	s.Require().ErrorAs(err, &daoErr)
 	assert.True(s.T(), daoErr.NotFound)
 }
+
+func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("maven-versions-%s", uuid.NewString()),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "lib", "org.example",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+		summary     string
+		license     string
+	}{
+		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z"},
+		{version: "5.3.18.rhlw-00003", release: "rhlw-00003", upstream: "5.3.18", publishedAt: "2024-03-03T00:00:00Z", summary: "A library", license: "Apache-2.0"},
+		{version: "3.15.0", publishedAt: "2024-01-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl, summary, license
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt, row.summary, row.license,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "lib")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "org.example", got.Group)
+	assert.Equal(s.T(), "lib", got.Name)
+	s.Require().Len(got.Versions, 2)
+	assert.Equal(s.T(), "5.3.18", got.Versions[0].Version)
+	s.Require().Len(got.Versions[0].Builds, 2)
+	assert.Equal(s.T(), "rhlw-00003", got.Versions[0].Builds[0].Release)
+	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.Versions[0].Builds[0].CreatedAt)
+	assert.Equal(s.T(), "5.3.18", got.Versions[0].Builds[0].Version)
+	assert.Equal(s.T(), "rhlw-00001", got.Versions[0].Builds[1].Release)
+	s.Require().NotNil(got.Versions[0].Summary)
+	assert.Equal(s.T(), "A library", *got.Versions[0].Summary)
+	s.Require().NotNil(got.Versions[0].License)
+	assert.Equal(s.T(), "Apache-2.0", *got.Versions[0].License)
+	assert.Equal(s.T(), "3.15.0", got.Versions[1].Version)
+	s.Require().Len(got.Versions[1].Builds, 1)
+	assert.Equal(s.T(), "", got.Versions[1].Builds[0].Release)
+	assert.Nil(s.T(), got.Versions[1].Summary)
+
+	missing, err := pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "missing")
+	s.Require().NoError(err)
+	assert.Empty(s.T(), missing.Versions)
+}

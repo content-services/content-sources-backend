@@ -165,3 +165,22 @@ WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid):
     AND p.package_group = ''
     AND p.name = sqlc.arg(name)
 ORDER BY pv.version;
+
+-- name: ListLightwellMavenPackageVersions :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at,
+    pv.summary,
+    pv.license,
+    pv.author,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+ORDER BY pv.published_at DESC, pv.version DESC;
