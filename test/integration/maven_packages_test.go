@@ -146,6 +146,7 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	assert.NotEmpty(t, firstPackage.Name)
 
 	// Test the package versions endpoint using data from the list
+	s.seedMavenPackageMirror(mavenRepo.repo.UUID)
 	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name)
 	assert.Equal(t, firstPackage.Group, versions.Group)
 	assert.Equal(t, firstPackage.Name, versions.Name)
@@ -390,6 +391,36 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	assert.Contains(t, names, "blissed")
 
 	return resp
+}
+
+func (s *MavenPackagesSuite) seedMavenPackageMirror(repoConfigUUID string) {
+	t := s.T()
+	for _, seed := range []struct {
+		group   string
+		name    string
+		version string
+	}{
+		{group: "blissed", name: "blissed", version: "1.0-beta-3"},
+		{group: "avalon-util", name: "avalon-util-exception", version: "1.0.0"},
+	} {
+		pkg := models.LightwellPackage{
+			RepositoryConfigurationUUID: repoConfigUUID,
+			Name:                        seed.name,
+			Group:                       seed.group,
+		}
+		require.NoError(t, db.DB.Create(&pkg).Error)
+		t.Cleanup(func() {
+			_ = db.DB.Delete(&models.LightwellPackage{}, "uuid = ?", pkg.UUID).Error
+		})
+		row := models.LightwellPackageVersion{
+			LightwellPackageUUID:        pkg.UUID,
+			RepositoryConfigurationUUID: repoConfigUUID,
+			Version:                     seed.version,
+			UpstreamVersion:             seed.version,
+			PublishedAt:                 "2024-01-01T12:00:00Z",
+		}
+		require.NoError(t, db.DB.Create(&row).Error)
+	}
 }
 
 func (s *MavenPackagesSuite) listPackageVersions(repoUUID, group, name string) api.MavenPackageVersionsResponse {

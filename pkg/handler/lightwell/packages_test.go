@@ -404,6 +404,53 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailReadsMirror() {
 	assert.Empty(t, response.Distributions)
 }
 
+func (s *LightwellPackagesSuite) TestListMavenPackageVersionsReadsMirror() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440013"
+	groupID := "org.example"
+	packageName := "lib"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypeMaven,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("ListMavenPackageVersions", test.MockCtx(), repoUUID, groupID, packageName).
+		Return(api.MavenPackageVersionsResponse{
+			Group: groupID,
+			Name:  packageName,
+			Versions: []api.MavenPackageDetailResponse{
+				{
+					Group:   groupID,
+					Name:    packageName,
+					Version: "5.3.18",
+					Builds: []api.ReleaseInfo{
+						{Version: "5.3.18", Release: "rhlw-00003", CreatedAt: "2024-03-03T00:00:00Z"},
+						{Version: "5.3.18", Release: "rhlw-00001", CreatedAt: "2024-03-01T00:00:00Z"},
+					},
+				},
+			},
+		}, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", LightwellAPIPath, repoUUID, groupID, packageName)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.MavenPackageVersionsResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, groupID, response.Group)
+	assert.Equal(t, packageName, response.Name)
+	require.Len(t, response.Versions, 1)
+	assert.Equal(t, "5.3.18", response.Versions[0].Version)
+	require.Len(t, response.Versions[0].Builds, 2)
+	assert.Equal(t, "rhlw-00003", response.Versions[0].Builds[0].Release)
+	assert.Equal(t, "rhlw-00001", response.Versions[0].Builds[1].Release)
+}
+
 func (s *LightwellPackagesSuite) TestGetPythonPackageVersionsReadsMirror() {
 	t := s.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"

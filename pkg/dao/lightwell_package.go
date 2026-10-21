@@ -273,6 +273,83 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 	})
 }
 
+func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) (api.MavenPackageVersionsResponse, error) {
+	resp := api.MavenPackageVersionsResponse{Group: group, Name: name, Versions: []api.MavenPackageDetailResponse{}}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	rows, err := d.querier.ListLightwellMavenPackageVersions(ctx, store.ListLightwellMavenPackageVersionsParams{
+		RepositoryConfigurationUuid: repoUUID,
+		PackageGroup:                group,
+		Name:                        name,
+	})
+	if err != nil {
+		return resp, fmt.Errorf("failed to list lightwell maven package versions: %w", err)
+	}
+
+	versions := make([]api.MavenPackageDetailResponse, 0)
+	index := make(map[string]int, len(rows))
+	for _, row := range rows {
+		version := row.UpstreamVersion
+		if version == "" {
+			version = row.Version
+		}
+		build := api.ReleaseInfo{
+			Version:   version,
+			Release:   row.Release,
+			CreatedAt: row.PublishedAt,
+		}
+		if i, ok := index[version]; ok {
+			versions[i].Builds = append(versions[i].Builds, build)
+			fillMavenPackageMetadata(&versions[i], row)
+			continue
+		}
+		index[version] = len(versions)
+		detail := api.MavenPackageDetailResponse{
+			Group:   row.PackageGroup,
+			Name:    row.Name,
+			Version: version,
+			Builds:  []api.ReleaseInfo{build},
+		}
+		fillMavenPackageMetadata(&detail, row)
+		versions = append(versions, detail)
+	}
+	if len(rows) > 0 {
+		resp.Group = rows[0].PackageGroup
+		resp.Name = rows[0].Name
+	}
+	resp.Versions = versions
+	return resp, nil
+}
+
+func fillMavenPackageMetadata(dst *api.MavenPackageDetailResponse, row store.ListLightwellMavenPackageVersionsRow) {
+	if dst.Summary == nil {
+		dst.Summary = optionalString(row.Summary)
+	}
+	if dst.License == nil {
+		dst.License = optionalString(row.License)
+	}
+	if dst.ProjectURL == nil {
+		dst.ProjectURL = optionalString(row.ProjectUrl)
+	}
+	if dst.Author == nil {
+		dst.Author = optionalString(row.Author)
+	}
+}
+
+func optionalString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
 func (d lightwellPackageDaoImpl) ListPythonPackageVersions(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error) {
 	resp := api.PythonPackageVersionsResponse{Name: name, Versions: []api.PythonPackageDetailResponse{}}
 	if d.querier == nil {
