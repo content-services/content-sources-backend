@@ -59,7 +59,7 @@ Jira workflow status is stored as a Beacon status. A published fix promotes **Va
 | To Do | Classified |
 | In Progress | Fix in Progress |
 | Review | Fix in Progress |
-| On Hold | Fix in Progress |
+| On Hold | On Hold |
 | Verified | Validation |
 | Release Pending | Validation |
 | Released | Validation |
