@@ -12,63 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getLightwellPythonPackageDetail = `-- name: GetLightwellPythonPackageDetail :one
-SELECT
-    p.name,
-    pv.version,
-    pv.upstream_version,
-    pv.summary,
-    pv.description,
-    pv.published_at,
-    pv.license,
-    pv.author,
-    pv.author_email,
-    pv.project_url
-FROM lightwell_packages p
-JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
-WHERE p.repository_configuration_uuid = $1::uuid
-    AND p.package_group = ''
-    AND p.name = $2
-    AND pv.version = $3
-`
-
-type GetLightwellPythonPackageDetailParams struct {
-	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
-	Name                        string    `json:"name"`
-	Version                     string    `json:"version"`
-}
-
-type GetLightwellPythonPackageDetailRow struct {
-	Name            string `json:"name"`
-	Version         string `json:"version"`
-	UpstreamVersion string `json:"upstream_version"`
-	Summary         string `json:"summary"`
-	Description     string `json:"description"`
-	PublishedAt     string `json:"published_at"`
-	License         string `json:"license"`
-	Author          string `json:"author"`
-	AuthorEmail     string `json:"author_email"`
-	ProjectUrl      string `json:"project_url"`
-}
-
-func (q *Queries) GetLightwellPythonPackageDetail(ctx context.Context, arg GetLightwellPythonPackageDetailParams) (GetLightwellPythonPackageDetailRow, error) {
-	row := q.db.QueryRow(ctx, getLightwellPythonPackageDetail, arg.RepositoryConfigurationUuid, arg.Name, arg.Version)
-	var i GetLightwellPythonPackageDetailRow
-	err := row.Scan(
-		&i.Name,
-		&i.Version,
-		&i.UpstreamVersion,
-		&i.Summary,
-		&i.Description,
-		&i.PublishedAt,
-		&i.License,
-		&i.Author,
-		&i.AuthorEmail,
-		&i.ProjectUrl,
-	)
-	return i, err
-}
-
 const listLensCatalog = `-- name: ListLensCatalog :many
 SELECT
     r.content_type AS ecosystem,
@@ -525,6 +468,83 @@ func (q *Queries) ListLightwellPackages(ctx context.Context, arg ListLightwellPa
 			&i.UpstreamVersions,
 			&i.LastPublication,
 			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLightwellPythonPackageDetail = `-- name: ListLightwellPythonPackageDetail :many
+SELECT
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.summary,
+    pv.description,
+    pv.published_at,
+    pv.license,
+    pv.author,
+    pv.author_email,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = $1::uuid
+    AND p.package_group = ''
+    AND p.name = $2
+    AND (
+        pv.upstream_version = $3
+        OR (pv.upstream_version = '' AND pv.version = $3)
+    )
+ORDER BY pv.published_at DESC, pv.version DESC
+`
+
+type ListLightwellPythonPackageDetailParams struct {
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	Name                        string    `json:"name"`
+	Version                     string    `json:"version"`
+}
+
+type ListLightwellPythonPackageDetailRow struct {
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	Release         string `json:"release"`
+	UpstreamVersion string `json:"upstream_version"`
+	Summary         string `json:"summary"`
+	Description     string `json:"description"`
+	PublishedAt     string `json:"published_at"`
+	License         string `json:"license"`
+	Author          string `json:"author"`
+	AuthorEmail     string `json:"author_email"`
+	ProjectUrl      string `json:"project_url"`
+}
+
+func (q *Queries) ListLightwellPythonPackageDetail(ctx context.Context, arg ListLightwellPythonPackageDetailParams) ([]ListLightwellPythonPackageDetailRow, error) {
+	rows, err := q.db.Query(ctx, listLightwellPythonPackageDetail, arg.RepositoryConfigurationUuid, arg.Name, arg.Version)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLightwellPythonPackageDetailRow{}
+	for rows.Next() {
+		var i ListLightwellPythonPackageDetailRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Version,
+			&i.Release,
+			&i.UpstreamVersion,
+			&i.Summary,
+			&i.Description,
+			&i.PublishedAt,
+			&i.License,
+			&i.Author,
+			&i.AuthorEmail,
+			&i.ProjectUrl,
 		); err != nil {
 			return nil, err
 		}

@@ -416,11 +416,14 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailReadsMirror() {
 		}}}, int64(1), nil)
 	s.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).
 		Return(api.PythonPackageDetailResponse{
-			Name:        packageName,
-			Version:     packageVersion,
+			Name:    packageName,
+			Version: packageVersion,
+			Builds: []api.ReleaseInfo{
+				{Version: packageVersion, Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+			},
 			Summary:     "A high-level Python web framework",
 			Description: "Django is a high-level Python web framework.",
-			LastUpdated: "2024-01-01T12:00:00Z",
+			LastUpdated: "2024-02-01T00:00:00Z",
 			License:     "BSD-3-Clause",
 			Author: api.PythonPackageAuthor{
 				Name:  "Django Software Foundation",
@@ -444,6 +447,8 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailReadsMirror() {
 	assert.Equal(t, packageName, response.Name)
 	assert.Equal(t, packageVersion, response.Version)
 	assert.Equal(t, "5.0", response.UpstreamVersion)
+	require.Len(t, response.Builds, 1)
+	assert.Equal(t, "rhlw.3", response.Builds[0].Release)
 	assert.Empty(t, response.Distributions)
 }
 
@@ -605,13 +610,24 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailNotFound() {
 			ContentType: config.ContentTypePython,
 		}}}, int64(1), nil)
 	s.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, "django", "9.9.9").
-		Return(api.PythonPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
+		Return(api.PythonPackageDetailResponse{
+			Name:          "django",
+			Version:       "9.9.9",
+			Builds:        []api.ReleaseInfo{},
+			Distributions: []api.PythonDistribution{},
+		}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", LightwellAPIPath, repoUUID, "django", "9.9.9")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, _, err := s.serveRouter(req)
+	code, body, err := s.serveRouter(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusNotFound, code)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PythonPackageDetailResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, "django", response.Name)
+	assert.Equal(t, "9.9.9", response.Version)
+	assert.Equal(t, []api.ReleaseInfo{}, response.Builds)
 }
