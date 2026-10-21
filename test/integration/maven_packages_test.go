@@ -138,8 +138,12 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	s.seedMavenPackages(mavenRepo)
 	s.seedMavenPackageMirror(mavenRepo.repo.UUID)
 
-	// Test the packages API endpoint
-	packages := s.listPackages(mavenRepo.repo.UUID)
+	// Default order is last_updated descending. blissed was published later.
+	packages := s.listPackages(mavenRepo.repo.UUID, "")
+	assert.Equal(t, []string{"blissed", "avalon-util-exception"}, packageNames(packages))
+	assert.Equal(t, []string{"avalon-util-exception", "blissed"}, packageNames(s.listPackages(mavenRepo.repo.UUID, "name")))
+	assert.Equal(t, []string{"blissed", "avalon-util-exception"}, packageNames(s.listPackages(mavenRepo.repo.UUID, "name:desc")))
+	assert.Equal(t, []string{"avalon-util-exception", "blissed"}, packageNames(s.listPackages(mavenRepo.repo.UUID, "last_updated:asc")))
 	require.NotNil(t, packages.Results)
 	require.NotEmpty(t, packages.Results)
 	firstPackage := packages.Results[0]
@@ -369,10 +373,21 @@ func (s *MavenPackagesSuite) seedMavenPackages(mavenRepo mavenPulpRepository) {
 	require.Equal(t, "completed", *task.State)
 }
 
-func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
+func packageNames(resp api.PackageResponse) []string {
+	names := make([]string, len(resp.Results))
+	for i, pkg := range resp.Results {
+		names[i] = pkg.Name
+	}
+	return names
+}
+
+func (s *MavenPackagesSuite) listPackages(repoUUID string, sortBy string) api.PackageResponse {
 	t := s.T()
 
 	path := api.FullRootPath() + "/repositories/" + repoUUID + "/packages"
+	if sortBy != "" {
+		path += "?sort_by=" + sortBy
+	}
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
@@ -385,26 +400,19 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	err = json.Unmarshal(body, &resp)
 	require.NoError(t, err)
 
-	assert.Len(t, resp.Results, 2)
-	names := []string{}
-	for _, pkg := range resp.Results {
-		names = append(names, pkg.Name)
-	}
-	assert.Contains(t, names, "avalon-util-exception")
-	assert.Contains(t, names, "blissed")
-
 	return resp
 }
 
 func (s *MavenPackagesSuite) seedMavenPackageMirror(repoConfigUUID string) {
 	t := s.T()
 	for _, seed := range []struct {
-		group   string
-		name    string
-		version string
+		group     string
+		name      string
+		version   string
+		published string
 	}{
-		{group: "blissed", name: "blissed", version: "1.0-beta-3"},
-		{group: "avalon-util", name: "avalon-util-exception", version: "1.0.0"},
+		{group: "blissed", name: "blissed", version: "1.0-beta-3", published: "2024-06-01T12:00:00Z"},
+		{group: "avalon-util", name: "avalon-util-exception", version: "1.0.0", published: "2024-01-01T12:00:00Z"},
 	} {
 		pkg := models.LightwellPackage{
 			RepositoryConfigurationUUID: repoConfigUUID,
@@ -420,7 +428,7 @@ func (s *MavenPackagesSuite) seedMavenPackageMirror(repoConfigUUID string) {
 			RepositoryConfigurationUUID: repoConfigUUID,
 			Version:                     seed.version,
 			UpstreamVersion:             seed.version,
-			PublishedAt:                 "2024-01-01T12:00:00Z",
+			PublishedAt:                 seed.published,
 		}
 		require.NoError(t, db.DB.Create(&row).Error)
 	}

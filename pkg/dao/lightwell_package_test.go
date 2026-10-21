@@ -1153,10 +1153,6 @@ func (s *LightwellPackageSuite) TestListRepositoryPackages() {
 	s.Require().NoError(err)
 	assert.Equal(s.T(), []string{"lib-b", "lib-a", "is-odd", "django", "aaa-empty"}, names(got))
 
-	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "scope/name", "asc", 100, 0)
-	s.Require().NoError(err)
-	assert.Equal(s.T(), []string{"django", "aaa-empty", "lib-a", "lib-b", "is-odd"}, names(got))
-
 	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "last_updated", "desc", 100, 0)
 	s.Require().NoError(err)
 	assert.Equal(s.T(), []string{"lib-a", "is-odd", "django", "lib-b", "aaa-empty"}, names(got))

@@ -102,7 +102,7 @@ func (h *LightwellPackageHandler) listPackageVersions(c echo.Context) error {
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
 // @Param        search query string false "Search term to filter packages."
-// @Param        sort_by query string false "Sort field. Valid fields are name and last_updated. Append :asc or :desc. Default is last_updated:desc."
+// @Param        sort_by query string false "Sort field. Valid fields are name and last_updated. Append :asc or :desc. name defaults to asc. last_updated defaults to desc."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PackageResponse
