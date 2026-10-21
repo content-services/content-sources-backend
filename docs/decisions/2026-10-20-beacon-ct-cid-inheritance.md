@@ -1,3 +1,5 @@
+{% raw %}
+
 # Beacon CT-based CID Inheritance Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -218,4 +220,5 @@ git commit -m "feat(beacon): credit inherited CIDs onto done IVTs from Closed/Do
 
 - A CT fetch failure should fail the sync like `searchAll` does (return the error from `Sync`), consistent with the existing fetch's error handling.
 - Do not touch the `promoteByJiraState` / `skipPublicationVerification` toggles — out of scope.
-- Residual gap vs the dashboard (coverage #2, done-definition #3) is expected and documented in the spec; do not attempt to close it here.
+- Residual gap vs the dashboard (coverage #2, done-definition #3) is expected and documented in the spec; do not attempt to close it here.{% endraw %}
+
