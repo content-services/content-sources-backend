@@ -705,6 +705,32 @@ func TestIngestorDoesNotMissMatchingClosedIssues(t *testing.T) {
 	assert.Empty(t, byKey["LTWL-4"].PublishedVersions)
 }
 
+func TestIngestorPromoteByJiraStateOption(t *testing.T) {
+	// A released issue with no matching advisory stays in Validation unless the
+	// local promote-by-Jira-state option is enabled.
+	newStore := func() (*fakeJira, *fakeVulnerabilityStore) {
+		issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Released", "java", "com.example:demo-lib", "1.2.3")
+		jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+		return jira, &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	}
+
+	t.Run("disabled by default", func(t *testing.T) {
+		jira, store := newStore()
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Equal(t, "Validation", store.saved[0].Stage)
+	})
+
+	t.Run("enabled", func(t *testing.T) {
+		jira, store := newStore()
+		_, err := NewIngestor(jira, store, nil, nil, WithPromoteByJiraState(true)).Sync(context.Background())
+		require.NoError(t, err)
+		require.Len(t, store.saved, 1)
+		assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+	})
+}
+
 func publishedJiraIssue(key, summary, status, lang, component, version string) jira_client.JiraIssue {
 	issue := validJiraIssue(key)
 	summaryJSON, err := json.Marshal(summary)
