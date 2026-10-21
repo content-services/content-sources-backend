@@ -640,11 +640,11 @@ func (s *LightwellPackagesSuite) TestGetNpmPackageVersionsReadsMirror() {
 			Name:  packageName,
 			Versions: []api.NpmPackageDetailResponse{
 				{
-					Scope:            scope,
-					Name:             packageName,
-					Version:          "3.0.0",
-					CreatedAt:        "2024-04-01T00:00:00Z",
-					UpstreamVersions: []string{"3.0.0"},
+					Scope:           scope,
+					Name:            packageName,
+					Version:         "3.0.0",
+					LastUpdated:     "2024-04-01T00:00:00Z",
+					UpstreamVersion: "3.0.0",
 					Builds: []api.ReleaseInfo{
 						{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 					},
@@ -684,11 +684,11 @@ func (s *LightwellPackagesSuite) TestGetNpmPackageDetailReadsMirror() {
 		}}}, int64(1), nil)
 	s.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, scope, packageName, packageVersion).
 		Return(api.NpmPackageDetailResponse{
-			Scope:            scope,
-			Name:             packageName,
-			Version:          packageVersion,
-			CreatedAt:        "2024-04-01T00:00:00Z",
-			UpstreamVersions: []string{"3.0.0"},
+			Scope:           scope,
+			Name:            packageName,
+			Version:         packageVersion,
+			LastUpdated:     "2024-04-01T00:00:00Z",
+			UpstreamVersion: "3.0.0",
 			Builds: []api.ReleaseInfo{
 				{Version: packageVersion, Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 			},
@@ -707,7 +707,8 @@ func (s *LightwellPackagesSuite) TestGetNpmPackageDetailReadsMirror() {
 	assert.Equal(t, scope, response.Scope)
 	assert.Equal(t, packageName, response.Name)
 	assert.Equal(t, packageVersion, response.Version)
-	assert.Equal(t, "2024-04-01T00:00:00Z", response.CreatedAt)
+	assert.Equal(t, "2024-04-01T00:00:00Z", response.LastUpdated)
+	assert.Equal(t, "3.0.0", response.UpstreamVersion)
 	require.Len(t, response.Builds, 1)
 	assert.Equal(t, "rhlw.3", response.Builds[0].Release)
 	assert.Empty(t, response.Tarball.Filename)

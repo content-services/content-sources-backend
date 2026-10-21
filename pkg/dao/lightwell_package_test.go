@@ -934,8 +934,9 @@ func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
 		summary     string
 		license     string
 	}{
-		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z"},
+		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z", summary: "older library", license: "MIT"},
 		{version: "5.3.18.rhlw-00003", release: "rhlw-00003", upstream: "5.3.18", publishedAt: "2024-03-03T00:00:00Z", summary: "A library", license: "Apache-2.0"},
+		{version: "3.15.0.rhlw-00001", release: "rhlw-00001", upstream: "3.15.0", publishedAt: "2023-06-01T00:00:00Z", summary: "stale", license: "OLD"},
 		{version: "3.15.0", publishedAt: "2024-01-01T00:00:00Z"},
 	}
 	for _, row := range rows {
@@ -973,9 +974,10 @@ func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
 	assert.Equal(s.T(), "3.15.0", got.Versions[1].Version)
 	assert.Equal(s.T(), "", got.Versions[1].UpstreamVersion)
 	assert.Equal(s.T(), "2024-01-01T00:00:00Z", got.Versions[1].LastUpdated)
-	s.Require().Len(got.Versions[1].Builds, 1)
+	s.Require().Len(got.Versions[1].Builds, 2)
 	assert.Equal(s.T(), "", got.Versions[1].Builds[0].Release)
 	assert.Nil(s.T(), got.Versions[1].Summary)
+	assert.Nil(s.T(), got.Versions[1].License)
 
 	missing, err := pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "missing")
 	s.Require().NoError(err)
@@ -1010,9 +1012,10 @@ func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
 		publishedAt string
 		summary     string
 	}{
-		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z"},
+		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z", summary: "older library"},
 		{version: "5.3.18.rhlw-00003", release: "rhlw-00003", upstream: "5.3.18", publishedAt: "2024-03-03T00:00:00Z", summary: "A library"},
 		{version: "5.3.180.rhlw-00003", release: "rhlw-00003", upstream: "5.3.180", publishedAt: "2024-03-04T00:00:00Z"},
+		{version: "3.15.0.rhlw-00001", release: "rhlw-00001", upstream: "3.15.0", publishedAt: "2023-06-01T00:00:00Z", summary: "stale"},
 		{version: "3.15.0", publishedAt: "2024-01-01T00:00:00Z"},
 	}
 	for _, row := range rows {
@@ -1051,11 +1054,12 @@ func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
 
 	stored, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "3.15.0")
 	s.Require().NoError(err)
-	s.Require().Len(stored.Builds, 1)
+	s.Require().Len(stored.Builds, 2)
 	assert.Equal(s.T(), "3.15.0", stored.Builds[0].Version)
 	assert.Equal(s.T(), "", stored.Builds[0].Release)
 	assert.Equal(s.T(), "", stored.UpstreamVersion)
 	assert.Equal(s.T(), "2024-01-01T00:00:00Z", stored.LastUpdated)
+	assert.Nil(s.T(), stored.Summary)
 
 	missing, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "9.9.9")
 	s.Require().NoError(err)
@@ -1116,8 +1120,8 @@ func (s *LightwellPackageSuite) TestListNpmPackageVersions() {
 	assert.Equal(s.T(), "is-odd", got.Name)
 	s.Require().Len(got.Versions, 3)
 	assert.Equal(s.T(), "3.0.0", got.Versions[0].Version)
-	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.Versions[0].CreatedAt)
-	assert.Equal(s.T(), []string{"3.0.0"}, got.Versions[0].UpstreamVersions)
+	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.Versions[0].LastUpdated)
+	assert.Equal(s.T(), "3.0.0", got.Versions[0].UpstreamVersion)
 	s.Require().Len(got.Versions[0].Builds, 2)
 	assert.Equal(s.T(), "rhlw.3", got.Versions[0].Builds[0].Release)
 	assert.Equal(s.T(), "3.0.0", got.Versions[0].Builds[0].Version)
@@ -1125,7 +1129,7 @@ func (s *LightwellPackageSuite) TestListNpmPackageVersions() {
 	assert.Equal(s.T(), "3.0.10", got.Versions[1].Version)
 	s.Require().Len(got.Versions[1].Builds, 1)
 	assert.Equal(s.T(), "1.2.3", got.Versions[2].Version)
-	assert.Equal(s.T(), []string{""}, got.Versions[2].UpstreamVersions)
+	assert.Equal(s.T(), "", got.Versions[2].UpstreamVersion)
 	assert.Equal(s.T(), "", got.Versions[2].Builds[0].Release)
 
 	missing, err := pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "missing")
@@ -1200,8 +1204,8 @@ func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
 	assert.Equal(s.T(), "@types", got.Scope)
 	assert.Equal(s.T(), "is-odd", got.Name)
 	assert.Equal(s.T(), "3.0.0", got.Version)
-	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.CreatedAt)
-	assert.Equal(s.T(), []string{"3.0.0"}, got.UpstreamVersions)
+	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.LastUpdated)
+	assert.Equal(s.T(), "3.0.0", got.UpstreamVersion)
 	s.Require().Len(got.Builds, 2)
 	assert.Equal(s.T(), "rhlw.3", got.Builds[0].Release)
 	assert.Equal(s.T(), "3.0.0", got.Builds[0].Version)
@@ -1218,7 +1222,7 @@ func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
 	s.Require().Len(stored.Builds, 1)
 	assert.Equal(s.T(), "1.2.3", stored.Builds[0].Version)
 	assert.Equal(s.T(), "", stored.Builds[0].Release)
-	assert.Equal(s.T(), []string{""}, stored.UpstreamVersions)
+	assert.Equal(s.T(), "", stored.UpstreamVersion)
 
 	unscoped, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "-", "left-pad", "1.0.0")
 	s.Require().NoError(err)
@@ -1230,7 +1234,7 @@ func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
 	s.Require().NoError(err)
 	assert.Equal(s.T(), "9.9.9", missing.Version)
 	assert.Empty(s.T(), missing.Builds)
-	assert.Empty(s.T(), missing.UpstreamVersions)
+	assert.Empty(s.T(), missing.UpstreamVersion)
 }
 
 func (s *LightwellPackageSuite) TestListRepositoryPackages() {

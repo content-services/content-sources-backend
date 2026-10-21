@@ -404,7 +404,6 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 		}
 		if i, ok := index[version]; ok {
 			versions[i].Builds = append(versions[i].Builds, build)
-			fillMavenPackageMetadata(&versions[i], row.Summary, row.License, row.ProjectUrl, row.Author)
 			continue
 		}
 		index[version] = len(versions)
@@ -428,18 +427,10 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 }
 
 func fillMavenPackageMetadata(dst *api.MavenPackageDetailResponse, summary, license, projectURL, author string) {
-	if dst.Summary == nil {
-		dst.Summary = optionalString(summary)
-	}
-	if dst.License == nil {
-		dst.License = optionalString(license)
-	}
-	if dst.ProjectURL == nil {
-		dst.ProjectURL = optionalString(projectURL)
-	}
-	if dst.Author == nil {
-		dst.Author = optionalString(author)
-	}
+	dst.Summary = optionalString(summary)
+	dst.License = optionalString(license)
+	dst.ProjectURL = optionalString(projectURL)
+	dst.Author = optionalString(author)
 }
 
 func optionalString(value string) *string {
@@ -489,12 +480,12 @@ func (d lightwellPackageDaoImpl) GetMavenPackageDetail(ctx context.Context, repo
 			Release:   row.Release,
 			CreatedAt: row.PublishedAt,
 		})
-		fillMavenPackageMetadata(&resp, row.Summary, row.License, row.ProjectUrl, row.Author)
 	}
 	resp.Group = rows[0].PackageGroup
 	resp.Name = rows[0].Name
 	resp.LastUpdated = rows[0].PublishedAt
 	resp.UpstreamVersion = rows[0].UpstreamVersion
+	fillMavenPackageMetadata(&resp, rows[0].Summary, rows[0].License, rows[0].ProjectUrl, rows[0].Author)
 	resp.Builds = builds
 	return resp, nil
 }
@@ -537,12 +528,12 @@ func (d lightwellPackageDaoImpl) ListNpmPackageVersions(ctx context.Context, rep
 		}
 		index[version] = len(versions)
 		versions = append(versions, api.NpmPackageDetailResponse{
-			Scope:            row.PackageGroup,
-			Name:             row.Name,
-			Version:          version,
-			CreatedAt:        row.PublishedAt,
-			UpstreamVersions: []string{row.UpstreamVersion},
-			Builds:           []api.ReleaseInfo{build},
+			Scope:           row.PackageGroup,
+			Name:            row.Name,
+			Version:         version,
+			LastUpdated:     row.PublishedAt,
+			UpstreamVersion: row.UpstreamVersion,
+			Builds:          []api.ReleaseInfo{build},
 		})
 	}
 	if len(rows) > 0 {
@@ -555,11 +546,10 @@ func (d lightwellPackageDaoImpl) ListNpmPackageVersions(ctx context.Context, rep
 
 func (d lightwellPackageDaoImpl) GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error) {
 	resp := api.NpmPackageDetailResponse{
-		Scope:            scope,
-		Name:             name,
-		Version:          version,
-		UpstreamVersions: []string{},
-		Builds:           []api.ReleaseInfo{},
+		Scope:   scope,
+		Name:    name,
+		Version: version,
+		Builds:  []api.ReleaseInfo{},
 	}
 	if d.querier == nil {
 		return resp, fmt.Errorf("lightwell querier is not initialized")
@@ -597,8 +587,8 @@ func (d lightwellPackageDaoImpl) GetNpmPackageDetail(ctx context.Context, repoCo
 	}
 	resp.Scope = rows[0].PackageGroup
 	resp.Name = rows[0].Name
-	resp.CreatedAt = rows[0].PublishedAt
-	resp.UpstreamVersions = []string{rows[0].UpstreamVersion}
+	resp.LastUpdated = rows[0].PublishedAt
+	resp.UpstreamVersion = rows[0].UpstreamVersion
 	resp.Builds = builds
 	return resp, nil
 }

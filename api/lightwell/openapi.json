@@ -271,7 +271,7 @@
                         },
                         "type": "array"
                     },
-                    "created_at": {
+                    "last_updated": {
                         "type": "string"
                     },
                     "name": {
@@ -283,11 +283,8 @@
                     "tarball": {
                         "$ref": "#/components/schemas/api.NpmTarball"
                     },
-                    "upstream_versions": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
+                    "upstream_version": {
+                        "type": "string"
                     },
                     "version": {
                         "type": "string"

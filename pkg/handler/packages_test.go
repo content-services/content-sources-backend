@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	fsc "github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
@@ -20,7 +19,6 @@ import (
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/content-services/tang/pkg/tangy"
-	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -46,24 +44,6 @@ func (suite *PackagesSuite) SetupTest() {
 	suite.tangClient = tangy.NewMockTangy(suite.T())
 	suite.pulpClient = pulp_client.NewMockPulpClient(suite.T())
 	suite.fsClient = fsc.NewMockFeatureServiceClient(suite.T())
-}
-
-func parseTestTime(value string) time.Time {
-	t, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
-func mavenContentUnit(group, artifact, fullVersion, baseVersion, createdAt string) zest.MavenMavenPackageResponse {
-	pkg := zest.MavenMavenPackageResponse{}
-	pkg.SetGroupId(group)
-	pkg.SetArtifactId(artifact)
-	pkg.SetVersion(fullVersion)
-	pkg.SetBaseVersion(baseVersion)
-	pkg.SetPulpCreated(parseTestTime(createdAt))
-	return pkg
 }
 
 func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte, error) {
@@ -1315,11 +1295,11 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
 		Name:  packageName,
 		Versions: []api.NpmPackageDetailResponse{
 			{
-				Scope:            scope,
-				Name:             packageName,
-				Version:          "3.0.0",
-				CreatedAt:        "2024-04-01T00:00:00Z",
-				UpstreamVersions: []string{"3.0.0"},
+				Scope:           scope,
+				Name:            packageName,
+				Version:         "3.0.0",
+				LastUpdated:     "2024-04-01T00:00:00Z",
+				UpstreamVersion: "3.0.0",
 				Builds: []api.ReleaseInfo{
 					{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 					{Version: "3.0.0", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
@@ -1343,8 +1323,8 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
 	assert.Equal(t, packageName, response.Name)
 	require.Len(t, response.Versions, 1)
 	assert.Equal(t, "3.0.0", response.Versions[0].Version)
-	assert.Equal(t, "2024-04-01T00:00:00Z", response.Versions[0].CreatedAt)
-	assert.Equal(t, []string{"3.0.0"}, response.Versions[0].UpstreamVersions)
+	assert.Equal(t, "2024-04-01T00:00:00Z", response.Versions[0].LastUpdated)
+	assert.Equal(t, "3.0.0", response.Versions[0].UpstreamVersion)
 	assert.Equal(t, []api.ReleaseInfo{
 		{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 		{Version: "3.0.0", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
@@ -1370,10 +1350,10 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsUnscopedSuccess() {
 		Name:  packageName,
 		Versions: []api.NpmPackageDetailResponse{
 			{
-				Scope:            "-",
-				Name:             packageName,
-				Version:          "1.0.0",
-				UpstreamVersions: []string{"1.0.0"},
+				Scope:           "-",
+				Name:            packageName,
+				Version:         "1.0.0",
+				UpstreamVersion: "1.0.0",
 				Builds: []api.ReleaseInfo{
 					{Version: "1.0.0", CreatedAt: "2024-05-01T00:00:00Z"},
 				},
@@ -1493,11 +1473,11 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 	suite.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, scope, packageName, packageVersion).Return(api.NpmPackageDetailResponse{
-		Scope:            scope,
-		Name:             packageName,
-		Version:          packageVersion,
-		CreatedAt:        "2024-04-01T00:00:00Z",
-		UpstreamVersions: []string{"3.0.0"},
+		Scope:           scope,
+		Name:            packageName,
+		Version:         packageVersion,
+		LastUpdated:     "2024-04-01T00:00:00Z",
+		UpstreamVersion: "3.0.0",
 		Builds: []api.ReleaseInfo{
 			{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 			{Version: "3.0.0", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
@@ -1518,9 +1498,9 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
 	assert.Equal(t, scope, response.Scope)
 	assert.Equal(t, packageName, response.Name)
 	assert.Equal(t, packageVersion, response.Version)
-	assert.Equal(t, "2024-04-01T00:00:00Z", response.CreatedAt)
+	assert.Equal(t, "2024-04-01T00:00:00Z", response.LastUpdated)
 	assert.Empty(t, response.Tarball.Filename)
-	assert.Equal(t, []string{"3.0.0"}, response.UpstreamVersions)
+	assert.Equal(t, "3.0.0", response.UpstreamVersion)
 	assert.Equal(t, []api.ReleaseInfo{
 		{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 		{Version: "3.0.0", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
@@ -1562,11 +1542,10 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailEmpty() {
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 	suite.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, "@types", "is-odd", packageVersion).Return(api.NpmPackageDetailResponse{
-		Scope:            "@types",
-		Name:             "is-odd",
-		Version:          packageVersion,
-		UpstreamVersions: []string{},
-		Builds:           []api.ReleaseInfo{},
+		Scope:   "@types",
+		Name:    "is-odd",
+		Version: packageVersion,
+		Builds:  []api.ReleaseInfo{},
 	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)

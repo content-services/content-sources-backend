@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Creates Maven and Python repositories in Pulp and imports them into the
+# Creates Maven, Python, and npm repositories in Pulp and imports them into the
 # application as lightwell repositories, then loads the local vulnerability,
 # advisory, and package-mirror seed onto those repositories.
 #
@@ -16,6 +16,7 @@
 # Intended for local development against the Pulp instance started via docker-compose.
 # Maven catalogs are seeded with uploaded POM + repository modify (pull-through
 # GET does not create MavenPackage units that the packages API lists).
+# npm catalogs are seeded with generated tarballs uploaded the same way.
 #
 # Usage:
 #   ./scripts/create_lightwell_repo.sh [--remote-url URL]
@@ -43,6 +44,7 @@ DOMAIN="${DOMAIN:-lightwell}"
 DEMO_DOMAIN="${DEMO_DOMAIN:-public-lightwell-demo}"
 REMOTE_URL="${REMOTE_URL:-https://repo.maven.apache.org/maven2/}"
 PYTHON_REMOTE_URL="${PYTHON_REMOTE_URL:-https://pypi.org/simple/}"
+NPM_REMOTE_URL="${NPM_REMOTE_URL:-https://registry.npmjs.org}"
 API_ROOT="/api/pulp"
 SUFFIX="$(date +%s)"
 REPO_DIR="$(cd "$(dirname "$0")/.."; pwd)"
@@ -216,9 +218,9 @@ find_distribution_by_base_path() {
 
 # Ensures a remote, repository, and distribution exist in Pulp for the given
 # type. Reuses an existing distribution matched by base_path.
-# Sets REPO_HREF to the maven/python repository href.
+# Sets REPO_HREF to the maven, python, or npm repository href.
 #   ensure_pulp_repo <DOMAIN_NAME> <TYPE> <BASE_PATH> <REMOTE_URL>
-#   TYPE is "maven" or "python"
+#   TYPE is "maven", "python", or "npm"
 ensure_pulp_repo() {
   local domain_name="$1"
   local repo_type="$2"
@@ -229,6 +231,7 @@ ensure_pulp_repo() {
   case "$repo_type" in
     maven)  api_type="maven/maven";   dist_api_type="maven/maven" ;;
     python) api_type="python/python"; dist_api_type="python/pypi" ;;
+    npm)    api_type="npm/npm";       dist_api_type="npm/npm" ;;
     *)      echo "ERROR: Unsupported repo type: ${repo_type}" >&2; exit 1 ;;
   esac
 
@@ -346,7 +349,7 @@ upload_maven_pom() {
   fi
 }
 
-# Removes all content units from a Pulp repository (maven or python).
+# Removes all content units from a Pulp repository (maven, python, or npm).
 #   clear_repository_content <REPO_HREF>
 clear_repository_content() {
   local repo_href="$1"
@@ -569,6 +572,84 @@ seed_python_repo_from_db() {
   done < "$rows_tsv"
 }
 
+# Uploads one generated npm package. Sets RESULT to the content href.
+# name and version use --form-string because curl treats @ in -F values as a file.
+#   upload_npm_package <DOMAIN_NAME> <PACKAGE_NAME> <VERSION>
+upload_npm_package() {
+  local domain_name="$1"
+  local package_name="$2"
+  local version="$3"
+  local work tarball response
+  work="$(mktemp -d)"
+  mkdir -p "${work}/package"
+  jq -n --arg name "$package_name" --arg version "$version" '{name:$name, version:$version}' > "${work}/package/package.json"
+  tarball="${work}/package.tgz"
+  tar -C "$work" -czf "$tarball" package
+
+  local -a args=(-sS -k --fail-with-body --form-string "name=${package_name}" --form-string "version=${version}" -F "file=@${tarball};filename=package.tgz")
+  if [[ -n "$PULP_CLIENT_CERT" ]]; then
+    args+=(--cert "$PULP_CLIENT_CERT")
+    if [[ -n "$PULP_CLIENT_KEY" ]]; then
+      args+=(--key "$PULP_CLIENT_KEY")
+    fi
+    if [[ -n "$PULP_CA_CERT" ]]; then
+      args+=(--cacert "$PULP_CA_CERT")
+    fi
+  elif [[ -n "$PULP_USER" ]]; then
+    args+=(-u "${PULP_USER}:${PULP_PASS}")
+  fi
+
+  response=$(curl "${args[@]}" "$(pulp_url "${API_ROOT}/${domain_name}/api/v3/content/npm/packages/upload/")") || {
+    echo "ERROR: npm upload failed for ${package_name}@${version}" >&2
+    echo "$response" >&2
+    rm -rf "$work"
+    exit 1
+  }
+  RESULT=$(echo "$response" | jq -er '.pulp_href')
+  rm -rf "$work"
+}
+
+# Seeds npm catalog content from rows already in the app database mirror.
+#   seed_npm_repo_from_db <DOMAIN_NAME> <REPO_HREF> <BASE_PATH> <TSV_ROWS>
+seed_npm_repo_from_db() {
+  local domain_name="$1"
+  local repo_href="$2"
+  local base_path="$3"
+  local rows_tsv="$4"
+
+  echo "    Seeding npm packages for ${base_path} from database catalog..."
+  clear_repository_content "$repo_href"
+
+  local -a content_hrefs=()
+  local group name version package_name
+  while IFS=$'\t' read -r group name version; do
+    [[ -n "$name" ]] || continue
+    if [[ -z "$group" || "$group" == "-" ]]; then
+      package_name="$name"
+    else
+      package_name="${group}/${name}"
+    fi
+    upload_npm_package "$domain_name" "$package_name" "$version"
+    content_hrefs+=("$RESULT")
+    echo "      ...${package_name}@${version}"
+  done < "$rows_tsv"
+
+  if (( ${#content_hrefs[@]} == 0 )); then
+    echo "    No npm packages to add for ${base_path}."
+    return 0
+  fi
+
+  local body
+  body=$(jq -n --args '{add_content_units: $ARGS.positional}' "${content_hrefs[@]}")
+  pulp_create "repository modify" "${repo_href}modify/" "$body" '.task'
+  echo "    Waiting for modify task..."
+  if ! wait_for_task_or_warn "$RESULT"; then
+    echo "ERROR: npm seed from database failed for ${repo_href}" >&2
+    exit 1
+  fi
+  echo "    Seeded ${#content_hrefs[@]} npm packages into ${base_path}."
+}
+
 # Loads catalog package versions from Postgres and uploads them into Pulp.
 #   seed_pulp_catalog_from_database <DOMAIN_NAME>
 seed_pulp_catalog_from_database() {
@@ -584,6 +665,8 @@ seed_pulp_catalog_from_database() {
             WHEN 'lightwell/python/validated' THEN 'python/validated'
             WHEN 'lightwell/python/remediated' THEN 'python/remediated'
             WHEN 'lightwell/python/predisclosure' THEN 'python/predisclosure'
+            WHEN 'lightwell/npm/validated' THEN 'npm/validated'
+            WHEN 'lightwell/npm/remediated' THEN 'npm/remediated'
         END AS base_path,
         r.content_type,
         lp.package_group,
@@ -601,13 +684,15 @@ seed_pulp_catalog_from_database() {
             'lightwell/java/predisclosure',
             'lightwell/python/validated',
             'lightwell/python/remediated',
-            'lightwell/python/predisclosure'
+            'lightwell/python/predisclosure',
+            'lightwell/npm/validated',
+            'lightwell/npm/remediated'
         )
     ORDER BY base_path, lp.package_group, lp.name, lpv.version;
   " >"$catalog_tsv"
 
   local base_path content_type
-  for base_path in java/validated java/remediated java/predisclosure python/validated python/remediated python/predisclosure; do
+  for base_path in java/validated java/remediated java/predisclosure python/validated python/remediated python/predisclosure npm/validated npm/remediated; do
     local repo_rows
     repo_rows="$(mktemp)"
     awk -F '\t' -v bp="$base_path" '$1 == bp { print }' "$catalog_tsv" >"$repo_rows"
@@ -618,9 +703,18 @@ seed_pulp_catalog_from_database() {
     content_type=$(head -n1 "$repo_rows" | cut -f2)
     echo ""
     echo "==> Seeding Pulp catalog (${base_path}) from database..."
-    find_distribution_by_base_path "$domain_name" \
-      "$(if [[ "$content_type" == maven ]]; then echo maven/maven; else echo python/pypi; fi)" \
-      "$base_path"
+    local dist_api_type
+    case "$content_type" in
+      maven) dist_api_type="maven/maven" ;;
+      python) dist_api_type="python/pypi" ;;
+      npm) dist_api_type="npm/npm" ;;
+      *)
+        echo "ERROR: Unsupported content type ${content_type} for ${base_path}" >&2
+        rm -f "$repo_rows"
+        exit 1
+        ;;
+    esac
+    find_distribution_by_base_path "$domain_name" "$dist_api_type" "$base_path"
     if [[ -z "$RESULT" ]]; then
       echo "ERROR: Distribution not found for ${base_path} in domain ${domain_name}" >&2
       rm -f "$repo_rows"
@@ -644,10 +738,12 @@ seed_pulp_catalog_from_database() {
         seed_python_repo_from_db "$domain_name" "$repo_href" "$base_path" "$python_rows"
         rm -f "$python_rows"
         ;;
-      *)
-        echo "ERROR: Unsupported content type ${content_type} for ${base_path}" >&2
-        rm -f "$repo_rows"
-        exit 1
+      npm)
+        local npm_rows
+        npm_rows="$(mktemp)"
+        cut -f3,4,5 "$repo_rows" >"$npm_rows"
+        seed_npm_repo_from_db "$domain_name" "$repo_href" "$base_path" "$npm_rows"
+        rm -f "$npm_rows"
         ;;
     esac
     rm -f "$repo_rows"
@@ -683,6 +779,9 @@ create_repos_from_json() {
         ;;
       python)
         ensure_pulp_repo "$domain_name" python "$entry_base_path" "$PYTHON_REMOTE_URL"
+        ;;
+      npm)
+        ensure_pulp_repo "$domain_name" npm "$entry_base_path" "$NPM_REMOTE_URL"
         ;;
       *)
         echo "WARN: Skipping unsupported type '${entry_type}' for ${entry_name}"

@@ -104,11 +104,11 @@ type NpmPackageVersionsResponse struct {
 
 // NpmPackageDetailResponse represents the detail response for a specific npm package.
 type NpmPackageDetailResponse struct {
-	Scope            string        `json:"scope"`
-	Name             string        `json:"name"`
-	Version          string        `json:"version"`
-	CreatedAt        string        `json:"created_at"`
-	Tarball          NpmTarball    `json:"tarball"`
-	UpstreamVersions []string      `json:"upstream_versions"`
-	Builds           []ReleaseInfo `json:"builds"`
+	Scope           string        `json:"scope"`
+	Name            string        `json:"name"`
+	Version         string        `json:"version"`
+	Builds          []ReleaseInfo `json:"builds"`
+	LastUpdated     string        `json:"last_updated"`
+	UpstreamVersion string        `json:"upstream_version"`
+	Tarball         NpmTarball    `json:"tarball"`
 }

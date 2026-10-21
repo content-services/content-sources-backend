@@ -1159,7 +1159,7 @@ const docTemplatelightwell = `{
                         "$ref": "#/definitions/api.ReleaseInfo"
                     }
                 },
-                "created_at": {
+                "last_updated": {
                     "type": "string"
                 },
                 "name": {
@@ -1171,11 +1171,8 @@ const docTemplatelightwell = `{
                 "tarball": {
                     "$ref": "#/definitions/api.NpmTarball"
                 },
-                "upstream_versions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "upstream_version": {
+                    "type": "string"
                 },
                 "version": {
                     "type": "string"
