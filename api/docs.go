@@ -2592,7 +2592,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}": {
             "get": {
-                "description": "Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.",
+                "description": "List versions for an npm package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2663,7 +2663,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}/{version}": {
             "get": {
-                "description": "Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.",
+                "description": "Get an npm package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2699,7 +2699,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "NPM package version",
+                        "description": "NPM package upstream version",
                         "name": "version",
                         "in": "path",
                         "required": true
@@ -6066,6 +6066,9 @@ const docTemplate = `{
                 "group": {
                     "type": "string"
                 },
+                "last_updated": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "string"
                 },
@@ -6076,6 +6079,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "summary": {
+                    "type": "string"
+                },
+                "upstream_version": {
                     "type": "string"
                 },
                 "version": {
@@ -6103,14 +6109,14 @@ const docTemplate = `{
         "api.NpmPackageDetailResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "latest_versions": {
+                "builds": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ReleaseInfo"
                     }
+                },
+                "created_at": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"

@@ -512,6 +512,143 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/repositories/{uuid}/npm_packages/{scope}/{name}": {
+            "get": {
+                "description": "List versions for an npm package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Get NPM Package Versions",
+                "operationId": "getLightwellNpmPackageVersions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NPM package scope (e.g. @types). Use - for unscoped packages.",
+                        "name": "scope",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NPM package name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.NpmPackageVersionsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/repositories/{uuid}/npm_packages/{scope}/{name}/{version}": {
+            "get": {
+                "description": "Get an npm package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Get NPM Package Detail",
+                "operationId": "getLightwellNpmPackageDetail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NPM package scope (e.g. @types). Use - for unscoped packages.",
+                        "name": "scope",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NPM package name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "NPM package upstream version",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.NpmPackageDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/packages": {
             "get": {
                 "description": "List packages for a specific Lightwell repository.",
@@ -973,6 +1110,9 @@ const docTemplatelightwell = `{
                 "group": {
                     "type": "string"
                 },
+                "last_updated": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "string"
                 },
@@ -983,6 +1123,9 @@ const docTemplatelightwell = `{
                     "type": "string"
                 },
                 "summary": {
+                    "type": "string"
+                },
+                "upstream_version": {
                     "type": "string"
                 },
                 "version": {
@@ -1004,6 +1147,72 @@ const docTemplatelightwell = `{
                     "items": {
                         "$ref": "#/definitions/api.MavenPackageDetailResponse"
                     }
+                }
+            }
+        },
+        "api.NpmPackageDetailResponse": {
+            "type": "object",
+            "properties": {
+                "builds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReleaseInfo"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "tarball": {
+                    "$ref": "#/definitions/api.NpmTarball"
+                },
+                "upstream_versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.NpmPackageVersionsResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.NpmPackageDetailResponse"
+                    }
+                }
+            }
+        },
+        "api.NpmTarball": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "relative_path": {
+                    "type": "string"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
                 }
             }
         },

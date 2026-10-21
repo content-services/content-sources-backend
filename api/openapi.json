@@ -858,6 +858,9 @@
                     "group": {
                         "type": "string"
                     },
+                    "last_updated": {
+                        "type": "string"
+                    },
                     "license": {
                         "type": "string"
                     },
@@ -868,6 +871,9 @@
                         "type": "string"
                     },
                     "summary": {
+                        "type": "string"
+                    },
+                    "upstream_version": {
                         "type": "string"
                     },
                     "version": {
@@ -895,14 +901,14 @@
             },
             "api.NpmPackageDetailResponse": {
                 "properties": {
-                    "created_at": {
-                        "type": "string"
-                    },
-                    "latest_versions": {
+                    "builds": {
                         "items": {
                             "$ref": "#/components/schemas/api.ReleaseInfo"
                         },
                         "type": "array"
+                    },
+                    "created_at": {
+                        "type": "string"
                     },
                     "name": {
                         "type": "string"
@@ -6537,7 +6543,7 @@
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}": {
             "get": {
-                "description": "Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.",
+                "description": "List versions for an npm package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "operationId": "getNpmPackageVersions",
                 "parameters": [
                     {
@@ -6628,7 +6634,7 @@
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}/{version}": {
             "get": {
-                "description": "Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.",
+                "description": "Get an npm package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "operationId": "getNpmPackageDetail",
                 "parameters": [
                     {
@@ -6659,7 +6665,7 @@
                         }
                     },
                     {
-                        "description": "NPM package version",
+                        "description": "NPM package upstream version",
                         "in": "path",
                         "name": "version",
                         "required": true,

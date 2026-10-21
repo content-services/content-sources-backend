@@ -28,6 +28,8 @@ type Querier interface {
 	ListLensCatalog(ctx context.Context, orgID string) ([]ListLensCatalogRow, error)
 	ListLightwellMavenPackageDetail(ctx context.Context, arg ListLightwellMavenPackageDetailParams) ([]ListLightwellMavenPackageDetailRow, error)
 	ListLightwellMavenPackageVersions(ctx context.Context, arg ListLightwellMavenPackageVersionsParams) ([]ListLightwellMavenPackageVersionsRow, error)
+	ListLightwellNpmPackageDetail(ctx context.Context, arg ListLightwellNpmPackageDetailParams) ([]ListLightwellNpmPackageDetailRow, error)
+	ListLightwellNpmPackageVersions(ctx context.Context, arg ListLightwellNpmPackageVersionsParams) ([]ListLightwellNpmPackageVersionsRow, error)
 	ListLightwellPackageVersions(ctx context.Context, arg ListLightwellPackageVersionsParams) ([]ListLightwellPackageVersionsRow, error)
 	ListLightwellPackages(ctx context.Context, arg ListLightwellPackagesParams) ([]ListLightwellPackagesRow, error)
 	ListLightwellPythonPackageDetail(ctx context.Context, arg ListLightwellPythonPackageDetailParams) ([]ListLightwellPythonPackageDetailRow, error)

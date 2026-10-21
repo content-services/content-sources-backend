@@ -157,6 +157,8 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	require.NotEmpty(t, versions.Versions)
 	for _, v := range versions.Versions {
 		assert.NotEmpty(t, v.Version)
+		assert.Equal(t, v.Version, v.UpstreamVersion)
+		assert.NotEmpty(t, v.LastUpdated)
 		require.NotEmpty(t, v.Builds)
 		assert.NotEmpty(t, v.Builds[0].CreatedAt)
 	}
@@ -168,6 +170,8 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	assert.Equal(t, firstPackage.Group, detail.Group)
 	assert.Equal(t, firstPackage.Name, detail.Name)
 	assert.Equal(t, detailVersion, detail.Version)
+	assert.Equal(t, detailVersion, detail.UpstreamVersion)
+	assert.NotEmpty(t, detail.LastUpdated)
 	require.NotEmpty(t, detail.Builds)
 	assert.NotEmpty(t, detail.Builds[0].CreatedAt)
 }

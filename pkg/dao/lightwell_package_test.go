@@ -959,6 +959,8 @@ func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
 	assert.Equal(s.T(), "lib", got.Name)
 	s.Require().Len(got.Versions, 2)
 	assert.Equal(s.T(), "5.3.18", got.Versions[0].Version)
+	assert.Equal(s.T(), "5.3.18", got.Versions[0].UpstreamVersion)
+	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.Versions[0].LastUpdated)
 	s.Require().Len(got.Versions[0].Builds, 2)
 	assert.Equal(s.T(), "rhlw-00003", got.Versions[0].Builds[0].Release)
 	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.Versions[0].Builds[0].CreatedAt)
@@ -969,6 +971,8 @@ func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
 	s.Require().NotNil(got.Versions[0].License)
 	assert.Equal(s.T(), "Apache-2.0", *got.Versions[0].License)
 	assert.Equal(s.T(), "3.15.0", got.Versions[1].Version)
+	assert.Equal(s.T(), "", got.Versions[1].UpstreamVersion)
+	assert.Equal(s.T(), "2024-01-01T00:00:00Z", got.Versions[1].LastUpdated)
 	s.Require().Len(got.Versions[1].Builds, 1)
 	assert.Equal(s.T(), "", got.Versions[1].Builds[0].Release)
 	assert.Nil(s.T(), got.Versions[1].Summary)
@@ -1031,6 +1035,8 @@ func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
 	assert.Equal(s.T(), "org.example", got.Group)
 	assert.Equal(s.T(), "lib", got.Name)
 	assert.Equal(s.T(), "5.3.18", got.Version)
+	assert.Equal(s.T(), "5.3.18", got.UpstreamVersion)
+	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.LastUpdated)
 	s.Require().Len(got.Builds, 2)
 	assert.Equal(s.T(), "rhlw-00003", got.Builds[0].Release)
 	assert.Equal(s.T(), "5.3.18", got.Builds[0].Version)
@@ -1048,11 +1054,183 @@ func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
 	s.Require().Len(stored.Builds, 1)
 	assert.Equal(s.T(), "3.15.0", stored.Builds[0].Version)
 	assert.Equal(s.T(), "", stored.Builds[0].Release)
+	assert.Equal(s.T(), "", stored.UpstreamVersion)
+	assert.Equal(s.T(), "2024-01-01T00:00:00Z", stored.LastUpdated)
 
 	missing, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "9.9.9")
 	s.Require().NoError(err)
 	assert.Equal(s.T(), "9.9.9", missing.Version)
 	assert.Empty(s.T(), missing.Builds)
+}
+
+func (s *LightwellPackageSuite) TestListNpmPackageVersions() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("npm-versions-%s", uuid.NewString()),
+		"lightwell-npm",
+		"remediated",
+		config.ContentTypeNpm,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "is-odd", "@types",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+	}{
+		{version: "3.0.0+rhlw.1", release: "rhlw.1", upstream: "3.0.0", publishedAt: "2024-01-01T00:00:00Z"},
+		{version: "3.0.0+rhlw.3", release: "rhlw.3", upstream: "3.0.0", publishedAt: "2024-04-01T00:00:00Z"},
+		{version: "3.0.10+rhlw.1", release: "rhlw.1", upstream: "3.0.10", publishedAt: "2024-02-01T00:00:00Z"},
+		{version: "1.2.3", publishedAt: "2023-12-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '')`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "is-odd")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "@types", got.Scope)
+	assert.Equal(s.T(), "is-odd", got.Name)
+	s.Require().Len(got.Versions, 3)
+	assert.Equal(s.T(), "3.0.0", got.Versions[0].Version)
+	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.Versions[0].CreatedAt)
+	assert.Equal(s.T(), []string{"3.0.0"}, got.Versions[0].UpstreamVersions)
+	s.Require().Len(got.Versions[0].Builds, 2)
+	assert.Equal(s.T(), "rhlw.3", got.Versions[0].Builds[0].Release)
+	assert.Equal(s.T(), "3.0.0", got.Versions[0].Builds[0].Version)
+	assert.Equal(s.T(), "rhlw.1", got.Versions[0].Builds[1].Release)
+	assert.Equal(s.T(), "3.0.10", got.Versions[1].Version)
+	s.Require().Len(got.Versions[1].Builds, 1)
+	assert.Equal(s.T(), "1.2.3", got.Versions[2].Version)
+	assert.Equal(s.T(), []string{""}, got.Versions[2].UpstreamVersions)
+	assert.Equal(s.T(), "", got.Versions[2].Builds[0].Release)
+
+	missing, err := pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "missing")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "@types", missing.Scope)
+	assert.Equal(s.T(), "missing", missing.Name)
+	assert.Empty(s.T(), missing.Versions)
+}
+
+func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("npm-detail-%s", uuid.NewString()),
+		"lightwell-npm",
+		"remediated",
+		config.ContentTypeNpm,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "is-odd", "@types",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	unscopedUUID := uuid.NewString()
+	err = db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		unscopedUUID, repoConfigUUID, "left-pad", "-",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, unscopedUUID).Error
+	})
+
+	rows := []struct {
+		pkgUUID     string
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+	}{
+		{pkgUUID: pkgUUID, version: "3.0.0+rhlw.1", release: "rhlw.1", upstream: "3.0.0", publishedAt: "2024-01-01T00:00:00Z"},
+		{pkgUUID: pkgUUID, version: "3.0.0+rhlw.3", release: "rhlw.3", upstream: "3.0.0", publishedAt: "2024-04-01T00:00:00Z"},
+		{pkgUUID: pkgUUID, version: "3.0.10+rhlw.1", release: "rhlw.1", upstream: "3.0.10", publishedAt: "2024-02-01T00:00:00Z"},
+		{pkgUUID: pkgUUID, version: "1.2.3", publishedAt: "2023-12-01T00:00:00Z"},
+		{pkgUUID: unscopedUUID, version: "1.0.0", upstream: "1.0.0", publishedAt: "2024-05-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '')`,
+			versionUUID, row.pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "3.0.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "@types", got.Scope)
+	assert.Equal(s.T(), "is-odd", got.Name)
+	assert.Equal(s.T(), "3.0.0", got.Version)
+	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.CreatedAt)
+	assert.Equal(s.T(), []string{"3.0.0"}, got.UpstreamVersions)
+	s.Require().Len(got.Builds, 2)
+	assert.Equal(s.T(), "rhlw.3", got.Builds[0].Release)
+	assert.Equal(s.T(), "3.0.0", got.Builds[0].Version)
+	assert.Equal(s.T(), "rhlw.1", got.Builds[1].Release)
+	assert.Empty(s.T(), got.Tarball.Filename)
+
+	other, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "3.0.10")
+	s.Require().NoError(err)
+	s.Require().Len(other.Builds, 1)
+	assert.Equal(s.T(), "3.0.10", other.Builds[0].Version)
+
+	stored, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "1.2.3")
+	s.Require().NoError(err)
+	s.Require().Len(stored.Builds, 1)
+	assert.Equal(s.T(), "1.2.3", stored.Builds[0].Version)
+	assert.Equal(s.T(), "", stored.Builds[0].Release)
+	assert.Equal(s.T(), []string{""}, stored.UpstreamVersions)
+
+	unscoped, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "-", "left-pad", "1.0.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "-", unscoped.Scope)
+	assert.Equal(s.T(), "left-pad", unscoped.Name)
+	s.Require().Len(unscoped.Builds, 1)
+
+	missing, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "9.9.9")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "9.9.9", missing.Version)
+	assert.Empty(s.T(), missing.Builds)
+	assert.Empty(s.T(), missing.UpstreamVersions)
 }
 
 func (s *LightwellPackageSuite) TestListRepositoryPackages() {

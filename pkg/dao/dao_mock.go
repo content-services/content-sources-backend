@@ -11270,6 +11270,32 @@ func (_c *MockLightwellPackageDao_GetMavenPackageDetail_Call) RunAndReturn(run f
 	return _c
 }
 
+// GetNpmPackageDetail provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, scope, name, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetNpmPackageDetail")
+	}
+
+	var r0 api.NpmPackageDetailResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) (api.NpmPackageDetailResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, scope, name, version)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) api.NpmPackageDetailResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, scope, name, version)
+	} else {
+		r0 = ret.Get(0).(api.NpmPackageDetailResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, scope, name, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
 // ListRepositoryPackages provides a mock function for the type MockLightwellPackageDao
 func (_mock *MockLightwellPackageDao) ListRepositoryPackages(ctx context.Context, repoConfigUUID string, search string, sortField string, sortDir string, limit int, offset int) (api.PackageResponse, error) {
 	ret := _mock.Called(ctx, repoConfigUUID, search, sortField, sortDir, limit, offset)
@@ -11378,6 +11404,32 @@ func (_mock *MockLightwellPackageDao) ListMavenPackageVersions(ctx context.Conte
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
 		r1 = returnFunc(ctx, repoConfigUUID, group, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ListNpmPackageVersions provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ListNpmPackageVersions(ctx context.Context, repoConfigUUID string, scope string, name string) (api.NpmPackageVersionsResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, scope, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListNpmPackageVersions")
+	}
+
+	var r0 api.NpmPackageVersionsResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (api.NpmPackageVersionsResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, scope, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) api.NpmPackageVersionsResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, scope, name)
+	} else {
+		r0 = ret.Get(0).(api.NpmPackageVersionsResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, scope, name)
 	} else {
 		r1 = ret.Error(1)
 	}

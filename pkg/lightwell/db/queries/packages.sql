@@ -198,6 +198,40 @@ WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid):
     )
 ORDER BY pv.published_at DESC, pv.version DESC;
 
+-- name: ListLightwellNpmPackageVersions :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellNpmPackageDetail :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+    AND (
+        pv.upstream_version = sqlc.arg(version)
+        OR (pv.upstream_version = '' AND pv.version = sqlc.arg(version))
+    )
+ORDER BY pv.published_at DESC, pv.version DESC;
+
 -- name: ListLightwellRepositoryPackages :many
 SELECT
     p.name,
