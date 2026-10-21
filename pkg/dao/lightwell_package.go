@@ -307,7 +307,7 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 		}
 		if i, ok := index[version]; ok {
 			versions[i].Builds = append(versions[i].Builds, build)
-			fillMavenPackageMetadata(&versions[i], row)
+			fillMavenPackageMetadata(&versions[i], row.Summary, row.License, row.ProjectUrl, row.Author)
 			continue
 		}
 		index[version] = len(versions)
@@ -317,7 +317,7 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 			Version: version,
 			Builds:  []api.ReleaseInfo{build},
 		}
-		fillMavenPackageMetadata(&detail, row)
+		fillMavenPackageMetadata(&detail, row.Summary, row.License, row.ProjectUrl, row.Author)
 		versions = append(versions, detail)
 	}
 	if len(rows) > 0 {
@@ -328,18 +328,18 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 	return resp, nil
 }
 
-func fillMavenPackageMetadata(dst *api.MavenPackageDetailResponse, row store.ListLightwellMavenPackageVersionsRow) {
+func fillMavenPackageMetadata(dst *api.MavenPackageDetailResponse, summary, license, projectURL, author string) {
 	if dst.Summary == nil {
-		dst.Summary = optionalString(row.Summary)
+		dst.Summary = optionalString(summary)
 	}
 	if dst.License == nil {
-		dst.License = optionalString(row.License)
+		dst.License = optionalString(license)
 	}
 	if dst.ProjectURL == nil {
-		dst.ProjectURL = optionalString(row.ProjectUrl)
+		dst.ProjectURL = optionalString(projectURL)
 	}
 	if dst.Author == nil {
-		dst.Author = optionalString(row.Author)
+		dst.Author = optionalString(author)
 	}
 }
 
@@ -348,6 +348,54 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func (d lightwellPackageDaoImpl) GetMavenPackageDetail(ctx context.Context, repoConfigUUID string, group string, name string, version string) (api.MavenPackageDetailResponse, error) {
+	resp := api.MavenPackageDetailResponse{
+		Group:   group,
+		Name:    name,
+		Version: version,
+		Builds:  []api.ReleaseInfo{},
+	}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	rows, err := d.querier.ListLightwellMavenPackageDetail(ctx, store.ListLightwellMavenPackageDetailParams{
+		RepositoryConfigurationUuid: repoUUID,
+		PackageGroup:                group,
+		Name:                        name,
+		Version:                     version,
+	})
+	if err != nil {
+		return resp, fmt.Errorf("failed to get lightwell maven package detail: %w", err)
+	}
+	if len(rows) == 0 {
+		return resp, nil
+	}
+
+	builds := make([]api.ReleaseInfo, 0, len(rows))
+	for _, row := range rows {
+		publicVersion := row.UpstreamVersion
+		if publicVersion == "" {
+			publicVersion = row.Version
+		}
+		builds = append(builds, api.ReleaseInfo{
+			Version:   publicVersion,
+			Release:   row.Release,
+			CreatedAt: row.PublishedAt,
+		})
+		fillMavenPackageMetadata(&resp, row.Summary, row.License, row.ProjectUrl, row.Author)
+	}
+	resp.Group = rows[0].PackageGroup
+	resp.Name = rows[0].Name
+	resp.Builds = builds
+	return resp, nil
 }
 
 func (d lightwellPackageDaoImpl) ListPythonPackageVersions(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error) {

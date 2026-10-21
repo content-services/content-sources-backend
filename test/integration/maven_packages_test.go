@@ -157,12 +157,15 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 		assert.NotEmpty(t, v.Builds[0].CreatedAt)
 	}
 
-	// Test the package detail endpoint using data from the list
-	require.NotEmpty(t, firstPackage.Versions)
-	detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
+	// Test the package detail endpoint using a version returned by the mirror.
+	require.NotEmpty(t, versions.Versions)
+	detailVersion := versions.Versions[0].Version
+	detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, detailVersion)
 	assert.Equal(t, firstPackage.Group, detail.Group)
 	assert.Equal(t, firstPackage.Name, detail.Name)
-	assert.Equal(t, firstPackage.Versions[0], detail.Version)
+	assert.Equal(t, detailVersion, detail.Version)
+	require.NotEmpty(t, detail.Builds)
+	assert.NotEmpty(t, detail.Builds[0].CreatedAt)
 }
 
 type mavenPulpRepository struct {

@@ -16,7 +16,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
-	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/content-services/content-sources-backend/pkg/utils"
@@ -26,7 +25,6 @@ import (
 	echo_middleware "github.com/labstack/echo/v4/middleware"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -641,37 +639,27 @@ func (suite *PackagesSuite) TestListPackagesMavenPulpClientError() {
 func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	groupID := "io.smallrye.reactive"
 	packageName := "smallrye-mutiny-vertx-core"
 	packageVersion := "3.15.0"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	pkgs := []zest.MavenMavenPackageResponse{
-		mavenContentUnit(groupID, packageName, "3.15.0.rhlw-4000", "3.15.0", "2024-02-01T14:20:00Z"),
-		mavenContentUnit(groupID, packageName, "3.15.0.rhlw-3001", "3.15.0", "2024-01-15T10:30:00Z"),
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackageContent", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion).Return(pkgs, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
-	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
+	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).Return(api.MavenPackageDetailResponse{
+		Group:   groupID,
+		Name:    packageName,
+		Version: packageVersion,
+		Builds: []api.ReleaseInfo{
+			{Version: "3.15.0", Release: "rhlw-4000", CreatedAt: "2024-02-01T14:20:00Z"},
+			{Version: "3.15.0", Release: "rhlw-3001", CreatedAt: "2024-01-15T10:30:00Z"},
+		},
+	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -699,39 +687,29 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	groupID := "commons-io"
 	packageName := "commons-io"
 	packageVersion := "2.11.0"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackageContent", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion).Return([]zest.MavenMavenPackageResponse{
-		mavenContentUnit(groupID, packageName, packageVersion, packageVersion, "2024-01-15T10:30:00Z"),
-	}, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(&models.MavenPackage{
-		GroupID:    groupID,
+	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).Return(api.MavenPackageDetailResponse{
+		Group:      groupID,
 		Name:       packageName,
+		Version:    packageVersion,
 		Summary:    utils.Ptr("The Apache Commons IO library contains utility classes."),
 		License:    utils.Ptr("Apache-2.0"),
 		ProjectURL: utils.Ptr("https://commons.apache.org/proper/commons-io/"),
 		Author:     utils.Ptr("The Apache Software Foundation"),
+		Builds: []api.ReleaseInfo{
+			{Version: packageVersion, CreatedAt: "2024-01-15T10:30:00Z"},
+		},
 	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
@@ -755,34 +733,23 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	assert.Equal(t, "The Apache Software Foundation", *response.Author)
 }
 
-func (suite *PackagesSuite) TestGetPackageDetailMetadataFetchError() {
+func (suite *PackagesSuite) TestGetPackageDetailDaoError() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	groupID := "commons-io"
 	packageName := "commons-io"
 	packageVersion := "2.11.0"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackageContent", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion).Return([]zest.MavenMavenPackageResponse{}, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, fmt.Errorf("database unavailable"))
+	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).
+		Return(api.MavenPackageDetailResponse{}, fmt.Errorf("failed to get lightwell maven package detail"))
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -830,71 +797,27 @@ func (suite *PackagesSuite) TestGetPackageDetailRepoNotFound() {
 	assert.Equal(t, http.StatusNotFound, code)
 }
 
-func (suite *PackagesSuite) TestGetPackageDetailPulpError() {
-	t := suite.T()
-	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
-	groupID := "io.smallrye.reactive"
-	packageName := "smallrye-mutiny-vertx-core"
-
-	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	orgID := test_handler.MockOrgId
-
-	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackageContent", test.MockCtx(), repositoryHref, groupID, packageName, "3.15.0").Return([]zest.MavenMavenPackageResponse{}, fmt.Errorf("failed to fetch builds"))
-
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, "3.15.0")
-	req := httptest.NewRequest(http.MethodGet, path, nil)
-	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-
-	code, _, err := suite.servePackagesRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusInternalServerError, code)
-}
-
 func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440000"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	groupID := "io.smallrye.reactive"
 	packageName := "smallrye-mutiny-vertx-core"
 	packageVersion := "3.15.0"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackageContent", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion).Return([]zest.MavenMavenPackageResponse{}, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
-	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
+	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).Return(api.MavenPackageDetailResponse{
+		Group:   groupID,
+		Name:    packageName,
+		Version: packageVersion,
+		Builds:  []api.ReleaseInfo{},
+	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1002,28 +925,24 @@ func (suite *PackagesSuite) TestListPackagesMavenPagination() {
 func (suite *PackagesSuite) TestGetPackageDetailBaseVersionExact() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440012"
-	basePath := "java/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/maven/maven/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	groupID := "org.example"
 	packageName := "lib"
 	packageVersion := "5.3.18"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypeMaven,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypeMaven,
 	}
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.pulpClient.On("ListMavenPackageContent", test.MockCtx(), repositoryHref, groupID, packageName, packageVersion).Return([]zest.MavenMavenPackageResponse{
-		mavenContentUnit(groupID, packageName, "5.3.18.rhlw-00003", "5.3.18", "2024-03-01T00:00:00Z"),
+	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).Return(api.MavenPackageDetailResponse{
+		Group:   groupID,
+		Name:    packageName,
+		Version: packageVersion,
+		Builds: []api.ReleaseInfo{
+			{Version: "5.3.18", Release: "rhlw-00003", CreatedAt: "2024-03-01T00:00:00Z"},
+		},
 	}, nil)
-	suite.reg.MavenPackages.On("Fetch", test.MockCtx(), groupID, packageName).Return(nil, nil)
-	suite.reg.MavenPackages.On("Create", test.MockCtx(), mock.Anything).Return(nil).Maybe()
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1088,21 +1007,6 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsMultipleRebuilds() {
 	assert.Equal(t, "rhlw-00001", response.Versions[0].Builds[1].Release)
 	assert.Equal(t, "5.3.18", response.Versions[0].Builds[0].Version)
 	assert.Equal(t, "5.3.18", response.Versions[0].Builds[1].Version)
-}
-
-func TestMavenRebuildQualifier(t *testing.T) {
-	tests := []struct {
-		full, base, want string
-	}{
-		{full: "5.3.18.rhlw-00003", base: "5.3.18", want: "rhlw-00003"},
-		{full: "5.3.17.rhlw-00001-n0001", base: "5.3.17", want: "rhlw-00001-n0001"},
-		{full: "5.3.18", base: "5.3.18", want: ""},
-		{full: "5.3.180.rhlw-00003", base: "5.3.180", want: "rhlw-00003"},
-		{full: "", base: "5.3.18", want: ""},
-	}
-	for _, tt := range tests {
-		assert.Equal(t, tt.want, mavenRebuildQualifier(tt.full, tt.base), "full=%s base=%s", tt.full, tt.base)
-	}
 }
 
 func (suite *PackagesSuite) TestGetPythonPackageVersionsSuccess() {

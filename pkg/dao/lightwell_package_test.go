@@ -947,3 +947,80 @@ func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
 	s.Require().NoError(err)
 	assert.Empty(s.T(), missing.Versions)
 }
+
+func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("maven-detail-%s", uuid.NewString()),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "lib", "org.example",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+		summary     string
+	}{
+		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z"},
+		{version: "5.3.18.rhlw-00003", release: "rhlw-00003", upstream: "5.3.18", publishedAt: "2024-03-03T00:00:00Z", summary: "A library"},
+		{version: "5.3.180.rhlw-00003", release: "rhlw-00003", upstream: "5.3.180", publishedAt: "2024-03-04T00:00:00Z"},
+		{version: "3.15.0", publishedAt: "2024-01-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl, summary
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt, row.summary,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "5.3.18")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "org.example", got.Group)
+	assert.Equal(s.T(), "lib", got.Name)
+	assert.Equal(s.T(), "5.3.18", got.Version)
+	s.Require().Len(got.Builds, 2)
+	assert.Equal(s.T(), "rhlw-00003", got.Builds[0].Release)
+	assert.Equal(s.T(), "5.3.18", got.Builds[0].Version)
+	assert.Equal(s.T(), "rhlw-00001", got.Builds[1].Release)
+	s.Require().NotNil(got.Summary)
+	assert.Equal(s.T(), "A library", *got.Summary)
+
+	other, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "5.3.180")
+	s.Require().NoError(err)
+	s.Require().Len(other.Builds, 1)
+	assert.Equal(s.T(), "5.3.180", other.Builds[0].Version)
+
+	stored, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "3.15.0")
+	s.Require().NoError(err)
+	s.Require().Len(stored.Builds, 1)
+	assert.Equal(s.T(), "3.15.0", stored.Builds[0].Version)
+	assert.Equal(s.T(), "", stored.Builds[0].Release)
+
+	missing, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "9.9.9")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "9.9.9", missing.Version)
+	assert.Empty(s.T(), missing.Builds)
+}

@@ -121,6 +121,86 @@ func (q *Queries) ListLensCatalog(ctx context.Context, orgID string) ([]ListLens
 	return items, nil
 }
 
+const listLightwellMavenPackageDetail = `-- name: ListLightwellMavenPackageDetail :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at,
+    pv.summary,
+    pv.license,
+    pv.author,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = $1::uuid
+    AND p.package_group = $2
+    AND p.name = $3
+    AND (
+        pv.upstream_version = $4
+        OR (pv.upstream_version = '' AND pv.version = $4)
+    )
+ORDER BY pv.published_at DESC, pv.version DESC
+`
+
+type ListLightwellMavenPackageDetailParams struct {
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	PackageGroup                string    `json:"package_group"`
+	Name                        string    `json:"name"`
+	Version                     string    `json:"version"`
+}
+
+type ListLightwellMavenPackageDetailRow struct {
+	PackageGroup    string `json:"package_group"`
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+	Release         string `json:"release"`
+	UpstreamVersion string `json:"upstream_version"`
+	PublishedAt     string `json:"published_at"`
+	Summary         string `json:"summary"`
+	License         string `json:"license"`
+	Author          string `json:"author"`
+	ProjectUrl      string `json:"project_url"`
+}
+
+func (q *Queries) ListLightwellMavenPackageDetail(ctx context.Context, arg ListLightwellMavenPackageDetailParams) ([]ListLightwellMavenPackageDetailRow, error) {
+	rows, err := q.db.Query(ctx, listLightwellMavenPackageDetail,
+		arg.RepositoryConfigurationUuid,
+		arg.PackageGroup,
+		arg.Name,
+		arg.Version,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLightwellMavenPackageDetailRow{}
+	for rows.Next() {
+		var i ListLightwellMavenPackageDetailRow
+		if err := rows.Scan(
+			&i.PackageGroup,
+			&i.Name,
+			&i.Version,
+			&i.Release,
+			&i.UpstreamVersion,
+			&i.PublishedAt,
+			&i.Summary,
+			&i.License,
+			&i.Author,
+			&i.ProjectUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLightwellMavenPackageVersions = `-- name: ListLightwellMavenPackageVersions :many
 SELECT
     p.package_group,
