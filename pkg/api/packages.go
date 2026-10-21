@@ -37,14 +37,16 @@ type MavenPackageVersionsResponse struct {
 
 // MavenPackageDetailResponse represents the detail response for a specific Maven package.
 type MavenPackageDetailResponse struct {
-	Group      string        `json:"group"`
-	Name       string        `json:"name"`
-	Version    string        `json:"version"`
-	Builds     []ReleaseInfo `json:"builds"`
-	Summary    *string       `json:"summary,omitempty"`
-	License    *string       `json:"license,omitempty"`
-	ProjectURL *string       `json:"project_url,omitempty"`
-	Author     *string       `json:"author,omitempty"`
+	Group           string        `json:"group"`
+	Name            string        `json:"name"`
+	Version         string        `json:"version"`
+	Builds          []ReleaseInfo `json:"builds"`
+	LastUpdated     string        `json:"last_updated"`
+	UpstreamVersion string        `json:"upstream_version"`
+	Summary         *string       `json:"summary,omitempty"`
+	License         *string       `json:"license,omitempty"`
+	ProjectURL      *string       `json:"project_url,omitempty"`
+	Author          *string       `json:"author,omitempty"`
 }
 
 // PythonPackageAuthor represents package authorship metadata.
@@ -108,5 +110,5 @@ type NpmPackageDetailResponse struct {
 	CreatedAt        string        `json:"created_at"`
 	Tarball          NpmTarball    `json:"tarball"`
 	UpstreamVersions []string      `json:"upstream_versions"`
-	LatestVersions   []ReleaseInfo `json:"latest_versions"`
+	Builds           []ReleaseInfo `json:"builds"`
 }

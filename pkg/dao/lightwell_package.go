@@ -428,10 +428,12 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 		}
 		index[version] = len(versions)
 		detail := api.MavenPackageDetailResponse{
-			Group:   row.PackageGroup,
-			Name:    row.Name,
-			Version: version,
-			Builds:  []api.ReleaseInfo{build},
+			Group:           row.PackageGroup,
+			Name:            row.Name,
+			Version:         version,
+			LastUpdated:     row.PublishedAt,
+			UpstreamVersion: row.UpstreamVersion,
+			Builds:          []api.ReleaseInfo{build},
 		}
 		fillMavenPackageMetadata(&detail, row.Summary, row.License, row.ProjectUrl, row.Author)
 		versions = append(versions, detail)
@@ -510,6 +512,112 @@ func (d lightwellPackageDaoImpl) GetMavenPackageDetail(ctx context.Context, repo
 	}
 	resp.Group = rows[0].PackageGroup
 	resp.Name = rows[0].Name
+	resp.LastUpdated = rows[0].PublishedAt
+	resp.UpstreamVersion = rows[0].UpstreamVersion
+	resp.Builds = builds
+	return resp, nil
+}
+
+func (d lightwellPackageDaoImpl) ListNpmPackageVersions(ctx context.Context, repoConfigUUID string, scope string, name string) (api.NpmPackageVersionsResponse, error) {
+	resp := api.NpmPackageVersionsResponse{Scope: scope, Name: name, Versions: []api.NpmPackageDetailResponse{}}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	rows, err := d.querier.ListLightwellNpmPackageVersions(ctx, store.ListLightwellNpmPackageVersionsParams{
+		RepositoryConfigurationUuid: repoUUID,
+		PackageGroup:                scope,
+		Name:                        name,
+	})
+	if err != nil {
+		return resp, fmt.Errorf("failed to list lightwell npm package versions: %w", err)
+	}
+
+	versions := make([]api.NpmPackageDetailResponse, 0)
+	index := make(map[string]int, len(rows))
+	for _, row := range rows {
+		version := row.UpstreamVersion
+		if version == "" {
+			version = row.Version
+		}
+		build := api.ReleaseInfo{
+			Version:   version,
+			Release:   row.Release,
+			CreatedAt: row.PublishedAt,
+		}
+		if i, ok := index[version]; ok {
+			versions[i].Builds = append(versions[i].Builds, build)
+			continue
+		}
+		index[version] = len(versions)
+		versions = append(versions, api.NpmPackageDetailResponse{
+			Scope:            row.PackageGroup,
+			Name:             row.Name,
+			Version:          version,
+			CreatedAt:        row.PublishedAt,
+			UpstreamVersions: []string{row.UpstreamVersion},
+			Builds:           []api.ReleaseInfo{build},
+		})
+	}
+	if len(rows) > 0 {
+		resp.Scope = rows[0].PackageGroup
+		resp.Name = rows[0].Name
+	}
+	resp.Versions = versions
+	return resp, nil
+}
+
+func (d lightwellPackageDaoImpl) GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error) {
+	resp := api.NpmPackageDetailResponse{
+		Scope:            scope,
+		Name:             name,
+		Version:          version,
+		UpstreamVersions: []string{},
+		Builds:           []api.ReleaseInfo{},
+	}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	rows, err := d.querier.ListLightwellNpmPackageDetail(ctx, store.ListLightwellNpmPackageDetailParams{
+		RepositoryConfigurationUuid: repoUUID,
+		PackageGroup:                scope,
+		Name:                        name,
+		Version:                     version,
+	})
+	if err != nil {
+		return resp, fmt.Errorf("failed to get lightwell npm package detail: %w", err)
+	}
+	if len(rows) == 0 {
+		return resp, nil
+	}
+
+	builds := make([]api.ReleaseInfo, 0, len(rows))
+	for _, row := range rows {
+		publicVersion := row.UpstreamVersion
+		if publicVersion == "" {
+			publicVersion = row.Version
+		}
+		builds = append(builds, api.ReleaseInfo{
+			Version:   publicVersion,
+			Release:   row.Release,
+			CreatedAt: row.PublishedAt,
+		})
+	}
+	resp.Scope = rows[0].PackageGroup
+	resp.Name = rows[0].Name
+	resp.CreatedAt = rows[0].PublishedAt
+	resp.UpstreamVersions = []string{rows[0].UpstreamVersion}
 	resp.Builds = builds
 	return resp, nil
 }

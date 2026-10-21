@@ -532,7 +532,7 @@ const docTemplatelightwell = `{
         },
         "/repositories/{uuid}/js_packages/{scope}/{name}": {
             "get": {
-                "description": "Get tarball info for all versions of a JavaScript package by scope and name. Use \"-\" as the scope for unscoped packages.",
+                "description": "List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
                     "application/json"
                 ],
@@ -603,7 +603,7 @@ const docTemplatelightwell = `{
         },
         "/repositories/{uuid}/js_packages/{scope}/{name}/{version}": {
             "get": {
-                "description": "Get tarball info for a specific JavaScript package by scope, name, and version. Use \"-\" as the scope for unscoped packages.",
+                "description": "Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
                     "application/json"
                 ],
@@ -639,7 +639,7 @@ const docTemplatelightwell = `{
                     },
                     {
                         "type": "string",
-                        "description": "JS package version",
+                        "description": "JS package upstream version",
                         "name": "version",
                         "in": "path",
                         "required": true
@@ -1295,6 +1295,9 @@ const docTemplatelightwell = `{
                 "group": {
                     "type": "string"
                 },
+                "last_updated": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "string"
                 },
@@ -1305,6 +1308,9 @@ const docTemplatelightwell = `{
                     "type": "string"
                 },
                 "summary": {
+                    "type": "string"
+                },
+                "upstream_version": {
                     "type": "string"
                 },
                 "version": {
@@ -1332,14 +1338,14 @@ const docTemplatelightwell = `{
         "api.NpmPackageDetailResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "latest_versions": {
+                "builds": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ReleaseInfo"
                     }
+                },
+                "created_at": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
