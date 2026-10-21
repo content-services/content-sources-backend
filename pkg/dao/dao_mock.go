@@ -11114,6 +11114,78 @@ func (_c *MockLightwellPackageDao_GetPythonPackageDetail_Call) RunAndReturn(run 
 	return _c
 }
 
+// ListPythonPackageVersions provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ListPythonPackageVersions(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPythonPackageVersions")
+	}
+
+	var r0 api.PythonPackageVersionsResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (api.PythonPackageVersionsResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) api.PythonPackageVersionsResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, name)
+	} else {
+		r0 = ret.Get(0).(api.PythonPackageVersionsResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_ListPythonPackageVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPythonPackageVersions'
+type MockLightwellPackageDao_ListPythonPackageVersions_Call struct {
+	*mock.Call
+}
+
+// ListPythonPackageVersions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - name string
+func (_e *MockLightwellPackageDao_Expecter) ListPythonPackageVersions(ctx interface{}, repoConfigUUID interface{}, name interface{}) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	return &MockLightwellPackageDao_ListPythonPackageVersions_Call{Call: _e.mock.On("ListPythonPackageVersions", ctx, repoConfigUUID, name)}
+}
+
+func (_c *MockLightwellPackageDao_ListPythonPackageVersions_Call) Run(run func(ctx context.Context, repoConfigUUID string, name string)) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListPythonPackageVersions_Call) Return(pythonPackageVersionsResponse api.PythonPackageVersionsResponse, err error) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	_c.Call.Return(pythonPackageVersionsResponse, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListPythonPackageVersions_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error)) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InternalOnlyListLensCatalog provides a mock function for the type MockLightwellPackageDao
 func (_mock *MockLightwellPackageDao) InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error) {
 	ret := _mock.Called(ctx)

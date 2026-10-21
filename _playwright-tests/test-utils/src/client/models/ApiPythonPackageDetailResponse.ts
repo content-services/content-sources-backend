@@ -84,10 +84,10 @@ export interface ApiPythonPackageDetailResponse {
     summary?: string;
     /**
      * 
-     * @type {Array<string>}
+     * @type {string}
      * @memberof ApiPythonPackageDetailResponse
      */
-    upstreamVersions?: Array<string>;
+    upstreamVersion?: string;
     /**
      * 
      * @type {string}
@@ -121,7 +121,7 @@ export function ApiPythonPackageDetailResponseFromJSONTyped(json: any, ignoreDis
         'name': json['name'] == null ? undefined : json['name'],
         'projectUrl': json['project_url'] == null ? undefined : json['project_url'],
         'summary': json['summary'] == null ? undefined : json['summary'],
-        'upstreamVersions': json['upstream_versions'] == null ? undefined : json['upstream_versions'],
+        'upstreamVersion': json['upstream_version'] == null ? undefined : json['upstream_version'],
         'version': json['version'] == null ? undefined : json['version'],
     };
 }
@@ -145,7 +145,7 @@ export function ApiPythonPackageDetailResponseToJSONTyped(value?: ApiPythonPacka
         'name': value['name'],
         'project_url': value['projectUrl'],
         'summary': value['summary'],
-        'upstream_versions': value['upstreamVersions'],
+        'upstream_version': value['upstreamVersion'],
         'version': value['version'],
     };
 }
