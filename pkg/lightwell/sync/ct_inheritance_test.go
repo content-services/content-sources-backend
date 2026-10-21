@@ -28,6 +28,38 @@ func ctIncorporating(key string, memberKeys ...string) jira_client.JiraIssue {
 	}}
 }
 
+// ctIncorporatingInward builds a CT whose members appear on the INWARD side of the
+// "Incorporates" link (the reverse direction seen on real Backport CTs, e.g.
+// LTWL-5852), to verify membership detection is direction-agnostic.
+func ctIncorporatingInward(key string, memberKeys ...string) jira_client.JiraIssue {
+	links := make([]string, 0, len(memberKeys))
+	for _, m := range memberKeys {
+		links = append(links, `{"type":{"name":"Incorporates","inward":"is incorporated by","outward":"incorporates"},"inwardIssue":{"key":"`+m+`"}}`)
+	}
+	raw := "[" + join(links, ",") + "]"
+	return jira_client.JiraIssue{Key: key, Fields: map[string]json.RawMessage{
+		"issuelinks": json.RawMessage(raw),
+	}}
+}
+
+func TestBuildInheritedCIDsHandlesInwardIncorporatesLink(t *testing.T) {
+	labelled := ivtWith("LTWL-1", "Released", `["CID-663171"]`)
+	unlabelled := ivtWith("LTWL-2", "Released", `[]`)
+	ct := ctIncorporatingInward("CT-1", "LTWL-1", "LTWL-2")
+	got := buildInheritedCIDs([]jira_client.JiraIssue{labelled, unlabelled}, []jira_client.JiraIssue{ct})
+	assert.Equal(t, []string{"663171"}, got["LTWL-2"])
+}
+
+func TestCTMemberKeysHandlesBothLinkDirections(t *testing.T) {
+	outward := ctIncorporating("CT-1", "LTWL-1")
+	inward := ctIncorporatingInward("CT-2", "LTWL-2")
+	members := ctMemberKeys([]jira_client.JiraIssue{outward, inward})
+	_, hasOut := members["LTWL-1"]
+	_, hasIn := members["LTWL-2"]
+	assert.True(t, hasOut, "outward-direction member")
+	assert.True(t, hasIn, "inward-direction member")
+}
+
 func join(parts []string, sep string) string {
 	out := ""
 	for i, p := range parts {
