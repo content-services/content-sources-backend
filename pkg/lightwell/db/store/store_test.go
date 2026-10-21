@@ -1350,7 +1350,7 @@ func TestStore_UpsertVulnerabilityIsIdempotent(t *testing.T) {
 	assert.Equal(t, 1, ticketCount)
 }
 
-func TestStore_UpsertDoesNotDowngradeLightwellNetworkToValidation(t *testing.T) {
+func TestStore_UpsertDowngradesLightwellNetworkToValidation(t *testing.T) {
 	ctx, tx, q := beginTestTx(t)
 	defer rollbackTestTx(t, tx)
 
@@ -1370,12 +1370,16 @@ func TestStore_UpsertDoesNotDowngradeLightwellNetworkToValidation(t *testing.T) 
 	require.NoError(t, err)
 	assert.True(t, inserted.Inserted)
 
+	// A later sync can demote a vulnerability out of the Lightwell Network stage
+	// (for example, when it loses its Closed/Done Component Upgrade membership),
+	// so the upsert must persist the incoming stage rather than preserve the old one.
 	params.Stage = "Validation"
-	_, err = q.UpsertVulnerability(ctx, params)
-	require.ErrorIs(t, err, pgx.ErrNoRows)
+	updated, err := q.UpsertVulnerability(ctx, params)
+	require.NoError(t, err)
+	assert.False(t, updated.Inserted)
 	after, err := q.GetVulnerabilityByKey(ctx, params.VulnerabilityKey)
 	require.NoError(t, err)
-	assert.Equal(t, "Lightwell Network", after.Stage)
+	assert.Equal(t, "Validation", after.Stage)
 }
 
 func TestStore_UpsertAndListPublishedVersions(t *testing.T) {
