@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,10 +15,6 @@ import (
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/labstack/echo/v4"
 )
-
-var errDistributionNotFound = errors.New("repository distribution not found")
-
-var errRepositoryNotFound = errors.New("repository not found")
 
 type PackageHandler struct {
 	DaoRegistry dao.DaoRegistry
@@ -166,43 +161,6 @@ func packageSortField(contentType, field string) string {
 		return "group/name"
 	}
 	return field
-}
-
-func (ph *PackageHandler) resolveRepository(ctx context.Context, orgID, basePath, repoUUID string) (pulp_client.PulpClient, string, error) {
-	domainName, err := ph.DaoRegistry.Domain.FetchOrCreateDomain(ctx, orgID)
-	if err != nil {
-		return nil, "", err
-	}
-
-	pulpClient := ph.PulpClient.WithDomain(domainName)
-	href, err := pulpClient.ResolveRepositoryFromBasePath(ctx, basePath)
-	if err != nil {
-		return nil, "", fmt.Errorf("repository for UUID %v: %w", repoUUID, err)
-	}
-	if href == nil {
-		return nil, "", fmt.Errorf("repository for UUID %v: %w", repoUUID, errRepositoryNotFound)
-	}
-
-	return pulpClient, *href, nil
-}
-
-func (ph *PackageHandler) resolveRepositoryHref(ctx context.Context, orgID, basePath, repoUUID string) (string, error) {
-	_, href, err := ph.resolveRepository(ctx, orgID, basePath, repoUUID)
-	return href, err
-}
-
-func (ph *PackageHandler) repositoryHrefErrorResponse(err error) error {
-	if errors.Is(err, errDistributionNotFound) {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution not found")
-	}
-	if errors.Is(err, errRepositoryNotFound) {
-		return ce.NewErrorResponse(http.StatusNotFound, "Repository not found", err.Error())
-	}
-	var daoError *ce.DaoError
-	if errors.As(err, &daoError) {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error fetching or creating domain", err.Error())
-	}
-	return ce.NewErrorResponse(http.StatusInternalServerError, "Error finding repository distribution", err.Error())
 }
 
 // ListMavenPackageVersions godoc
@@ -414,13 +372,6 @@ func (ph *PackageHandler) GetPythonPackageDetail(c echo.Context) error {
 	return c.JSON(http.StatusOK, detail)
 }
 
-func npmPackageName(scope, name string) string {
-	if scope == "" || scope == "-" {
-		return name
-	}
-	return scope + "/" + name
-}
-
 func ParseNpmPackageName(fullName string) (scope, name string) {
 	if strings.HasPrefix(fullName, "@") {
 		parts := strings.SplitN(fullName, "/", 2)
@@ -434,7 +385,7 @@ func ParseNpmPackageName(fullName string) (scope, name string) {
 // GetNpmPackageVersions godoc
 // @Summary      Get JS Package Versions
 // @ID           getJsPackageVersions
-// @Description  Get tarball info for all versions of a JavaScript package by scope and name. Use "-" as the scope for unscoped packages.
+// @Description  List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use "-" as the scope for unscoped packages.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
@@ -451,7 +402,6 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")
 	name := c.Param("name")
-	packageName := npmPackageName(scope, name)
 	ctx := c.Request().Context()
 
 	repo, err := ph.fetchLightwellRepo(c, uuid)
@@ -463,44 +413,23 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not an npm repository")
 	}
 
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	versions, err := ph.DaoRegistry.LightwellPackage.ListNpmPackageVersions(ctx, repo.UUID, scope, name)
 	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package versions", err.Error())
 	}
 
-	tangResp, err := ph.TangClient.NpmPackageVersionsGet(ctx, repositoryHref, packageName)
-	if err != nil {
-		if errors.Is(err, tangy.ErrNpmPackageNotFound) {
-			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
-		}
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package versions", err.Error())
-	}
-
-	versions := make([]api.NpmPackageDetailResponse, len(tangResp))
-	for i, detail := range tangResp {
-		versions[i] = mapNpmPackageDetailToAPI(detail, scope, name)
-	}
-
-	return c.JSON(http.StatusOK, api.NpmPackageVersionsResponse{
-		Scope:    scope,
-		Name:     name,
-		Versions: versions,
-	})
+	return c.JSON(http.StatusOK, versions)
 }
 
 // GetNpmPackageDetail godoc
 // @Summary      Get JS Package Detail
 // @ID           getJsPackageDetail
-// @Description  Get tarball info for a specific JavaScript package by scope, name, and version. Use "-" as the scope for unscoped packages.
+// @Description  Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use "-" as the scope for unscoped packages.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
 // @Param        name path string true "JS package name"
-// @Param        version path string true "JS package version"
+// @Param        version path string true "JS package upstream version"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.NpmPackageDetailResponse
@@ -514,7 +443,6 @@ func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {
 	scope := c.Param("scope")
 	name := c.Param("name")
 	version := c.Param("version")
-	packageName := npmPackageName(scope, name)
 	ctx := c.Request().Context()
 
 	repo, err := ph.fetchLightwellRepo(c, uuid)
@@ -526,47 +454,10 @@ func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not an npm repository")
 	}
 
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	detail, err := ph.DaoRegistry.LightwellPackage.GetNpmPackageDetail(ctx, repo.UUID, scope, name, version)
 	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package builds", err.Error())
 	}
 
-	tangResp, err := ph.TangClient.NpmPackageGet(ctx, repositoryHref, packageName, version)
-	if err != nil {
-		if errors.Is(err, tangy.ErrNpmPackageNotFound) {
-			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
-		}
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package detail", err.Error())
-	}
-
-	return c.JSON(http.StatusOK, mapNpmPackageDetailToAPI(tangResp, scope, name))
-}
-
-func mapNpmPackageDetailToAPI(tangDetail tangy.NpmPackageDetail, scope, name string) api.NpmPackageDetailResponse {
-	latestVersions := make([]api.ReleaseInfo, len(tangDetail.LatestVersions))
-	for i, ver := range tangDetail.LatestVersions {
-		latestVersions[i] = api.ReleaseInfo{
-			Version:   ver.Version,
-			CreatedAt: ver.CreatedAt,
-		}
-	}
-
-	return api.NpmPackageDetailResponse{
-		Scope:     scope,
-		Name:      name,
-		Version:   tangDetail.Version,
-		CreatedAt: tangDetail.CreatedAt,
-		Tarball: api.NpmTarball{
-			RelativePath: tangDetail.Tarball.RelativePath,
-			Filename:     tangDetail.Tarball.Filename,
-			Sha256:       tangDetail.Tarball.Sha256,
-			Size:         tangDetail.Tarball.Size,
-		},
-		UpstreamVersions: tangDetail.Versions,
-		LatestVersions:   latestVersions,
-	}
+	return c.JSON(http.StatusOK, detail)
 }

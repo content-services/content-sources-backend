@@ -50,6 +50,12 @@ export interface ApiMavenPackageDetailResponse {
      * @type {string}
      * @memberof ApiMavenPackageDetailResponse
      */
+    lastUpdated?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiMavenPackageDetailResponse
+     */
     license?: string;
     /**
      * 
@@ -69,6 +75,12 @@ export interface ApiMavenPackageDetailResponse {
      * @memberof ApiMavenPackageDetailResponse
      */
     summary?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiMavenPackageDetailResponse
+     */
+    upstreamVersion?: string;
     /**
      * 
      * @type {string}
@@ -97,10 +109,12 @@ export function ApiMavenPackageDetailResponseFromJSONTyped(json: any, ignoreDisc
         'author': json['author'] == null ? undefined : json['author'],
         'builds': json['builds'] == null ? undefined : ((json['builds'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'group': json['group'] == null ? undefined : json['group'],
+        'lastUpdated': json['last_updated'] == null ? undefined : json['last_updated'],
         'license': json['license'] == null ? undefined : json['license'],
         'name': json['name'] == null ? undefined : json['name'],
         'projectUrl': json['project_url'] == null ? undefined : json['project_url'],
         'summary': json['summary'] == null ? undefined : json['summary'],
+        'upstreamVersion': json['upstream_version'] == null ? undefined : json['upstream_version'],
         'version': json['version'] == null ? undefined : json['version'],
     };
 }
@@ -119,10 +133,12 @@ export function ApiMavenPackageDetailResponseToJSONTyped(value?: ApiMavenPackage
         'author': value['author'],
         'builds': value['builds'] == null ? undefined : ((value['builds'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'group': value['group'],
+        'last_updated': value['lastUpdated'],
         'license': value['license'],
         'name': value['name'],
         'project_url': value['projectUrl'],
         'summary': value['summary'],
+        'upstream_version': value['upstreamVersion'],
         'version': value['version'],
     };
 }

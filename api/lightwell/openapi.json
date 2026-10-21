@@ -226,6 +226,9 @@
                     "group": {
                         "type": "string"
                     },
+                    "last_updated": {
+                        "type": "string"
+                    },
                     "license": {
                         "type": "string"
                     },
@@ -236,6 +239,9 @@
                         "type": "string"
                     },
                     "summary": {
+                        "type": "string"
+                    },
+                    "upstream_version": {
                         "type": "string"
                     },
                     "version": {
@@ -263,14 +269,14 @@
             },
             "api.NpmPackageDetailResponse": {
                 "properties": {
-                    "created_at": {
-                        "type": "string"
-                    },
-                    "latest_versions": {
+                    "builds": {
                         "items": {
                             "$ref": "#/components/schemas/api.ReleaseInfo"
                         },
                         "type": "array"
+                    },
+                    "created_at": {
+                        "type": "string"
                     },
                     "name": {
                         "type": "string"
@@ -1582,7 +1588,7 @@
         },
         "/repositories/{uuid}/js_packages/{scope}/{name}": {
             "get": {
-                "description": "Get tarball info for all versions of a JavaScript package by scope and name. Use \"-\" as the scope for unscoped packages.",
+                "description": "List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "operationId": "getLightwellJsPackageVersions",
                 "parameters": [
                     {
@@ -1673,7 +1679,7 @@
         },
         "/repositories/{uuid}/js_packages/{scope}/{name}/{version}": {
             "get": {
-                "description": "Get tarball info for a specific JavaScript package by scope, name, and version. Use \"-\" as the scope for unscoped packages.",
+                "description": "Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "operationId": "getLightwellJsPackageDetail",
                 "parameters": [
                     {
@@ -1704,7 +1710,7 @@
                         }
                     },
                     {
-                        "description": "JS package version",
+                        "description": "JS package upstream version",
                         "in": "path",
                         "name": "version",
                         "required": true,

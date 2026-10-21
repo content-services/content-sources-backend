@@ -36,16 +36,16 @@ import {
 export interface ApiNpmPackageDetailResponse {
     /**
      * 
+     * @type {Array<ApiReleaseInfo>}
+     * @memberof ApiNpmPackageDetailResponse
+     */
+    builds?: Array<ApiReleaseInfo>;
+    /**
+     * 
      * @type {string}
      * @memberof ApiNpmPackageDetailResponse
      */
     createdAt?: string;
-    /**
-     * 
-     * @type {Array<ApiReleaseInfo>}
-     * @memberof ApiNpmPackageDetailResponse
-     */
-    latestVersions?: Array<ApiReleaseInfo>;
     /**
      * 
      * @type {string}
@@ -95,8 +95,8 @@ export function ApiNpmPackageDetailResponseFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
+        'builds': json['builds'] == null ? undefined : ((json['builds'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
-        'latestVersions': json['latest_versions'] == null ? undefined : ((json['latest_versions'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'name': json['name'] == null ? undefined : json['name'],
         'scope': json['scope'] == null ? undefined : json['scope'],
         'tarball': json['tarball'] == null ? undefined : ApiNpmTarballFromJSON(json['tarball']),
@@ -116,8 +116,8 @@ export function ApiNpmPackageDetailResponseToJSONTyped(value?: ApiNpmPackageDeta
 
     return {
         
+        'builds': value['builds'] == null ? undefined : ((value['builds'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'created_at': value['createdAt'],
-        'latest_versions': value['latestVersions'] == null ? undefined : ((value['latestVersions'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'name': value['name'],
         'scope': value['scope'],
         'tarball': ApiNpmTarballToJSON(value['tarball']),

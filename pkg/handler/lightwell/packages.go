@@ -249,12 +249,12 @@ func (h *LightwellPackageHandler) getPythonPackageVersions(c echo.Context) error
 // getJsPackageDetail godoc
 // @Summary      Get JS Package Detail
 // @ID           getLightwellJsPackageDetail
-// @Description  Get tarball info for a specific JavaScript package by scope, name, and version. Use "-" as the scope for unscoped packages.
+// @Description  Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use "-" as the scope for unscoped packages.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
 // @Param        name path string true "JS package name"
-// @Param        version path string true "JS package version"
+// @Param        version path string true "JS package upstream version"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.NpmPackageDetailResponse
@@ -270,7 +270,7 @@ func (h *LightwellPackageHandler) getJsPackageDetail(c echo.Context) error {
 // getJsPackageVersions godoc
 // @Summary      Get JS Package Versions
 // @ID           getLightwellJsPackageVersions
-// @Description  Get tarball info for all versions of a JavaScript package by scope and name. Use "-" as the scope for unscoped packages.
+// @Description  List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use "-" as the scope for unscoped packages.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."

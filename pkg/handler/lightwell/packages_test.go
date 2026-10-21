@@ -665,3 +665,93 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailNotFound() {
 	assert.Equal(t, "9.9.9", response.Version)
 	assert.Equal(t, []api.ReleaseInfo{}, response.Builds)
 }
+
+func (s *LightwellPackagesSuite) TestGetNpmPackageVersionsReadsMirror() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440014"
+	scope := "@types"
+	packageName := "is-odd"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypeNpm,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("ListNpmPackageVersions", test.MockCtx(), repoUUID, scope, packageName).
+		Return(api.NpmPackageVersionsResponse{
+			Scope: scope,
+			Name:  packageName,
+			Versions: []api.NpmPackageDetailResponse{
+				{
+					Scope:            scope,
+					Name:             packageName,
+					Version:          "3.0.0",
+					CreatedAt:        "2024-04-01T00:00:00Z",
+					UpstreamVersions: []string{"3.0.0"},
+					Builds: []api.ReleaseInfo{
+						{Version: "3.0.0", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
+					},
+				},
+			},
+		}, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", LightwellAPIPath, repoUUID, scope, packageName)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.NpmPackageVersionsResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, scope, response.Scope)
+	assert.Equal(t, packageName, response.Name)
+	require.Len(t, response.Versions, 1)
+	assert.Equal(t, "3.0.0", response.Versions[0].Version)
+	require.Len(t, response.Versions[0].Builds, 1)
+	assert.Equal(t, "rhlw.3", response.Versions[0].Builds[0].Release)
+}
+
+func (s *LightwellPackagesSuite) TestGetNpmPackageDetailReadsMirror() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440014"
+	scope := "@types"
+	packageName := "is-odd"
+	packageVersion := "3.0.0"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypeNpm,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, scope, packageName, packageVersion).
+		Return(api.NpmPackageDetailResponse{
+			Scope:            scope,
+			Name:             packageName,
+			Version:          packageVersion,
+			CreatedAt:        "2024-04-01T00:00:00Z",
+			UpstreamVersions: []string{"3.0.0"},
+			Builds: []api.ReleaseInfo{
+				{Version: packageVersion, Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
+			},
+		}, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", LightwellAPIPath, repoUUID, scope, packageName, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.NpmPackageDetailResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, scope, response.Scope)
+	assert.Equal(t, packageName, response.Name)
+	assert.Equal(t, packageVersion, response.Version)
+	assert.Equal(t, "2024-04-01T00:00:00Z", response.CreatedAt)
+	require.Len(t, response.Builds, 1)
+	assert.Equal(t, "rhlw.3", response.Builds[0].Release)
+	assert.Empty(t, response.Tarball.Filename)
+}
