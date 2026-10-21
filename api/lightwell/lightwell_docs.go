@@ -872,7 +872,7 @@ const docTemplatelightwell = `{
                     },
                     {
                         "type": "string",
-                        "description": "Sort field. Valid fields are name and last_updated. Append :asc or :desc. Default is last_updated:desc.",
+                        "description": "Sort field. Valid fields are name and last_updated. Append :asc or :desc. name defaults to asc. last_updated defaults to desc.",
                         "name": "sort_by",
                         "in": "query"
                     }

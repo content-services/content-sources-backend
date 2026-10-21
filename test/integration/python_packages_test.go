@@ -133,7 +133,12 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 
 	repo := s.createPythonRepository(config.LightwellOrg)
 	s.seedPythonPackageMirror(repo.UUID)
-	packages := s.listPackages(repo.UUID)
+	// Default order is last_updated descending. zebra was published later.
+	packages := s.listPackages(repo.UUID, "")
+	assert.Equal(t, []string{"zebra", testPythonPackageName}, packageNames(packages))
+	assert.Equal(t, []string{testPythonPackageName, "zebra"}, packageNames(s.listPackages(repo.UUID, "name")))
+	assert.Equal(t, []string{"zebra", testPythonPackageName}, packageNames(s.listPackages(repo.UUID, "name:desc")))
+	assert.Equal(t, []string{testPythonPackageName, "zebra"}, packageNames(s.listPackages(repo.UUID, "last_updated:asc")))
 
 	assert.NotNil(t, packages)
 	assert.GreaterOrEqual(t, packages.Total, 1)
@@ -331,10 +336,13 @@ func (s *PythonPackagesSuite) createPythonRepository(orgId string) api.Repositor
 	return apiRepoResp[0]
 }
 
-func (s *PythonPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
+func (s *PythonPackagesSuite) listPackages(repoUUID string, sortBy string) api.PackageResponse {
 	t := s.T()
 
 	path := api.FullRootPath() + "/repositories/" + repoUUID + "/packages"
+	if sortBy != "" {
+		path += "?sort_by=" + sortBy
+	}
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
@@ -379,6 +387,22 @@ func (s *PythonPackagesSuite) seedPythonPackageMirror(repoConfigUUID string) {
 	t.Cleanup(func() {
 		_ = db.DB.Delete(&models.LightwellPackage{}, "uuid = ?", pkg.UUID).Error
 	})
+
+	newer := models.LightwellPackage{
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Name:                        "zebra",
+	}
+	require.NoError(t, db.DB.Create(&newer).Error)
+	t.Cleanup(func() {
+		_ = db.DB.Delete(&models.LightwellPackage{}, "uuid = ?", newer.UUID).Error
+	})
+	require.NoError(t, db.DB.Create(&models.LightwellPackageVersion{
+		LightwellPackageUUID:        newer.UUID,
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Version:                     "1.0.0",
+		UpstreamVersion:             "1.0.0",
+		PublishedAt:                 "2024-06-01T12:00:00Z",
+	}).Error)
 
 	for _, version := range []string{"0.1", "0.2"} {
 		row := models.LightwellPackageVersion{
