@@ -2,12 +2,17 @@ package dao
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -266,6 +271,49 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 		}
 		return nil
 	})
+}
+
+func (d lightwellPackageDaoImpl) GetPythonPackageDetail(ctx context.Context, repoConfigUUID string, name string, version string) (api.PythonPackageDetailResponse, error) {
+	resp := api.PythonPackageDetailResponse{}
+	if d.querier == nil {
+		return resp, fmt.Errorf("lightwell querier is not initialized")
+	}
+
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return resp, &ce.DaoError{BadValidation: true, Message: "invalid repository uuid"}
+	}
+
+	row, err := d.querier.GetLightwellPythonPackageDetail(ctx, store.GetLightwellPythonPackageDetailParams{
+		RepositoryConfigurationUuid: repoUUID,
+		Name:                        name,
+		Version:                     version,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
+	}
+	if err != nil {
+		return resp, fmt.Errorf("failed to get lightwell python package detail: %w", err)
+	}
+
+	if row.Versions == nil {
+		row.Versions = []string{}
+	}
+	return api.PythonPackageDetailResponse{
+		Name:        row.Name,
+		Version:     row.Version,
+		Summary:     row.Summary,
+		Description: row.Description,
+		LastUpdated: row.PublishedAt,
+		License:     row.License,
+		Author: api.PythonPackageAuthor{
+			Name:  row.Author,
+			Email: row.AuthorEmail,
+		},
+		UpstreamVersions: row.Versions,
+		ProjectURL:       row.ProjectUrl,
+		Distributions:    []api.PythonDistribution{},
+	}, nil
 }
 
 func (d lightwellPackageDaoImpl) InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error) {

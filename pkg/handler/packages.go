@@ -584,24 +584,17 @@ func (ph *PackageHandler) GetPythonPackageDetail(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Bad Request", "Repository is not a Python repository")
 	}
 
-	if repo.PublishedDistBasePath == "" {
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Internal Server Error", "Repository distribution base path not available")
-	}
-
-	repositoryHref, err := ph.resolveRepositoryHref(ctx, repo.OrgID, repo.PublishedDistBasePath, repo.UUID)
+	detail, err := ph.DaoRegistry.LightwellPackage.GetPythonPackageDetail(ctx, repo.UUID, name, version)
 	if err != nil {
-		return ph.repositoryHrefErrorResponse(err)
-	}
-
-	tangResp, err := ph.TangClient.PythonPackageGet(ctx, repositoryHref, name, version)
-	if err != nil {
-		if errors.Is(err, tangy.ErrPythonPackageNotFound) {
-			return ce.NewErrorResponse(http.StatusNotFound, "Package not found", err.Error())
+		title := "Error retrieving package detail"
+		var daoErr *ce.DaoError
+		if errors.As(err, &daoErr) && daoErr.NotFound {
+			title = "Package not found"
 		}
-		return ce.NewErrorResponse(http.StatusInternalServerError, "Error retrieving package detail", err.Error())
+		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), title, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, mapPythonPackageDetailToAPI(tangResp))
+	return c.JSON(http.StatusOK, detail)
 }
 
 func mapPythonPackageDetailToAPI(tangDetail tangy.PythonPackageDetail) api.PythonPackageDetailResponse {

@@ -10,6 +10,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
@@ -357,4 +358,69 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsInvalidEcosystem() {
 	code, _, err := s.serveRouter(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func (s *LightwellPackagesSuite) TestGetPythonPackageDetailReadsMirror() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+	packageName := "django"
+	packageVersion := "5.0"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypePython,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).
+		Return(api.PythonPackageDetailResponse{
+			Name:        packageName,
+			Version:     packageVersion,
+			Summary:     "A high-level Python web framework",
+			Description: "Django is a high-level Python web framework.",
+			LastUpdated: "2024-01-01T12:00:00Z",
+			License:     "BSD-3-Clause",
+			Author: api.PythonPackageAuthor{
+				Name:  "Django Software Foundation",
+				Email: "foundation@djangoproject.com",
+			},
+			ProjectURL:       "https://www.djangoproject.com/",
+			UpstreamVersions: []string{"4.2", "5.0"},
+			Distributions:    []api.PythonDistribution{},
+		}, nil)
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", LightwellAPIPath, repoUUID, packageName, packageVersion)
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, body, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+
+	var response api.PythonPackageDetailResponse
+	require.NoError(t, json.Unmarshal(body, &response))
+	assert.Equal(t, packageName, response.Name)
+	assert.Equal(t, packageVersion, response.Version)
+	assert.Equal(t, []string{"4.2", "5.0"}, response.UpstreamVersions)
+	assert.Empty(t, response.Distributions)
+}
+
+func (s *LightwellPackagesSuite) TestGetPythonPackageDetailNotFound() {
+	t := s.T()
+	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
+
+	s.reg.RepositoryConfig.On("List", test.MockCtx(), test_handler.MockOrgId, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
+		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{{
+			UUID:        repoUUID,
+			ContentType: config.ContentTypePython,
+		}}}, int64(1), nil)
+	s.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, "django", "9.9.9").
+		Return(api.PythonPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
+
+	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", LightwellAPIPath, repoUUID, "django", "9.9.9")
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, code)
 }

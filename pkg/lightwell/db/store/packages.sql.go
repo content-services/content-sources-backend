@@ -12,6 +12,70 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getLightwellPythonPackageDetail = `-- name: GetLightwellPythonPackageDetail :one
+SELECT
+    p.name,
+    pv.version,
+    pv.summary,
+    pv.description,
+    pv.published_at,
+    pv.license,
+    pv.author,
+    pv.author_email,
+    pv.project_url,
+    COALESCE(
+        (
+            SELECT array_agg(sib.version ORDER BY sib.version)
+            FROM lightwell_package_versions sib
+            WHERE sib.lightwell_package_uuid = p.uuid
+        ),
+        '{}'::text[]
+    )::text[] AS versions
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = $1::uuid
+    AND p.package_group = ''
+    AND p.name = $2
+    AND pv.version = $3
+`
+
+type GetLightwellPythonPackageDetailParams struct {
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	Name                        string    `json:"name"`
+	Version                     string    `json:"version"`
+}
+
+type GetLightwellPythonPackageDetailRow struct {
+	Name        string   `json:"name"`
+	Version     string   `json:"version"`
+	Summary     string   `json:"summary"`
+	Description string   `json:"description"`
+	PublishedAt string   `json:"published_at"`
+	License     string   `json:"license"`
+	Author      string   `json:"author"`
+	AuthorEmail string   `json:"author_email"`
+	ProjectUrl  string   `json:"project_url"`
+	Versions    []string `json:"versions"`
+}
+
+func (q *Queries) GetLightwellPythonPackageDetail(ctx context.Context, arg GetLightwellPythonPackageDetailParams) (GetLightwellPythonPackageDetailRow, error) {
+	row := q.db.QueryRow(ctx, getLightwellPythonPackageDetail, arg.RepositoryConfigurationUuid, arg.Name, arg.Version)
+	var i GetLightwellPythonPackageDetailRow
+	err := row.Scan(
+		&i.Name,
+		&i.Version,
+		&i.Summary,
+		&i.Description,
+		&i.PublishedAt,
+		&i.License,
+		&i.Author,
+		&i.AuthorEmail,
+		&i.ProjectUrl,
+		&i.Versions,
+	)
+	return i, err
+}
+
 const listLensCatalog = `-- name: ListLensCatalog :many
 SELECT
     r.content_type AS ecosystem,

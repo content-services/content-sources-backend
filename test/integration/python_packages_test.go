@@ -201,25 +201,16 @@ func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
 	t := s.T()
 
 	repo := s.createPythonRepository(config.LightwellOrg)
+	s.seedPythonPackageMirror(repo.UUID)
 	detail := s.getPackageDetail(repo.UUID, testPythonPackageName, "0.1")
 
 	assert.Equal(t, testPythonPackageName, detail.Name)
 	assert.Equal(t, "0.1", detail.Version)
-	assert.NotEmpty(t, detail.Summary)
-	assert.NotEmpty(t, detail.LastUpdated)
-	assert.NotEmpty(t, detail.License)
-	assert.Contains(t, detail.UpstreamVersions, "0.1")
-	require.NotEmpty(t, detail.Distributions)
-
-	for _, dist := range detail.Distributions {
-		assert.NotEmpty(t, dist.Name)
-		assert.Contains(t, dist.Filename, "0.1")
-		assert.NotEmpty(t, dist.Filename)
-		assert.NotEmpty(t, dist.PackageType)
-		assert.NotEmpty(t, dist.Sha256)
-		assert.NotZero(t, dist.Size)
-		assert.NotEmpty(t, dist.CreatedAt)
-	}
+	assert.Equal(t, "shelf reader summary", detail.Summary)
+	assert.Equal(t, "2024-01-01T12:00:00Z", detail.LastUpdated)
+	assert.Equal(t, "MIT", detail.License)
+	assert.Equal(t, []string{"0.1", "0.2"}, detail.UpstreamVersions)
+	assert.Empty(t, detail.Distributions)
 }
 
 func (s *PythonPackagesSuite) createPythonRepository(orgId string) api.RepositoryResponse {
@@ -379,6 +370,32 @@ func (s *PythonPackagesSuite) getPackageVersions(repoUUID, name string) api.Pyth
 	require.NoError(t, err)
 
 	return resp
+}
+
+func (s *PythonPackagesSuite) seedPythonPackageMirror(repoConfigUUID string) {
+	t := s.T()
+	pkg := models.LightwellPackage{
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Name:                        testPythonPackageName,
+	}
+	require.NoError(t, db.DB.Create(&pkg).Error)
+	t.Cleanup(func() {
+		_ = db.DB.Delete(&models.LightwellPackage{}, "uuid = ?", pkg.UUID).Error
+	})
+
+	for _, version := range []string{"0.1", "0.2"} {
+		row := models.LightwellPackageVersion{
+			LightwellPackageUUID:        pkg.UUID,
+			RepositoryConfigurationUUID: repoConfigUUID,
+			Version:                     version,
+			PublishedAt:                 "2024-01-01T12:00:00Z",
+		}
+		if version == "0.1" {
+			row.Summary = "shelf reader summary"
+			row.License = "MIT"
+		}
+		require.NoError(t, db.DB.Create(&row).Error)
+	}
 }
 
 func (s *PythonPackagesSuite) getPackageDetail(repoUUID, name, version string) api.PythonPackageDetailResponse {

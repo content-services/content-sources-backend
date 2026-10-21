@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/test"
@@ -1283,56 +1284,32 @@ func (suite *PackagesSuite) TestGetPythonPackageVersionsTangError() {
 func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	packageName := "django"
 	packageVersion := "5.0"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
-	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
-
-	tangDetail := tangy.PythonPackageDetail{
-		Name:           "Django",
-		NameNormalized: packageName,
-		Version:        packageVersion,
-		Summary:        "A high-level Python web framework",
-		Description:    "Django is a high-level Python web framework.",
-		Author:         "Django Software Foundation",
-		AuthorEmail:    "foundation@djangoproject.com",
-		License:        "BSD-3-Clause",
-		ProjectURL:     "https://www.djangoproject.com/",
-		LastUpdated:    "2024-01-01T12:00:00Z",
-		Versions:       []string{"4.2", "5.0"},
-		Distributions: []tangy.PythonDistributionListItem{
-			{
-				Name:           "Django",
-				NameNormalized: packageName,
-				Version:        packageVersion,
-				Filename:       "django-5.0-py3-none-any.whl",
-				PackageType:    "bdist_wheel",
-				PythonVersion:  "py3",
-				Sha256:         "abc123",
-				Size:           1024,
-				CreatedAt:      "2024-01-01T12:00:00Z",
-			},
-		},
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangDetail, nil)
+	suite.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).Return(api.PythonPackageDetailResponse{
+		Name:        packageName,
+		Version:     packageVersion,
+		Summary:     "A high-level Python web framework",
+		Description: "Django is a high-level Python web framework.",
+		LastUpdated: "2024-01-01T12:00:00Z",
+		License:     "BSD-3-Clause",
+		Author: api.PythonPackageAuthor{
+			Name:  "Django Software Foundation",
+			Email: "foundation@djangoproject.com",
+		},
+		ProjectURL:       "https://www.djangoproject.com/",
+		UpstreamVersions: []string{"4.2", "5.0"},
+		Distributions:    []api.PythonDistribution{},
+	}, nil)
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1355,9 +1332,7 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailSuccess() {
 	assert.Equal(t, "foundation@djangoproject.com", response.Author.Email)
 	assert.Equal(t, []string{"4.2", "5.0"}, response.UpstreamVersions)
 	assert.Equal(t, "https://www.djangoproject.com/", response.ProjectURL)
-	require.Len(t, response.Distributions, 1)
-	assert.Equal(t, "django-5.0-py3-none-any.whl", response.Distributions[0].Filename)
-	assert.Equal(t, "bdist_wheel", response.Distributions[0].PackageType)
+	assert.Empty(t, response.Distributions)
 }
 
 func (suite *PackagesSuite) TestGetPythonPackageDetailNonPythonRepo() {
@@ -1384,29 +1359,19 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNonPythonRepo() {
 func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	packageName := "django"
 	packageVersion := "9.9.9"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, tangy.ErrPythonPackageNotFound)
+	suite.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).
+		Return(api.PythonPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -1417,32 +1382,22 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 	assert.Equal(t, http.StatusNotFound, code)
 }
 
-func (suite *PackagesSuite) TestGetPythonPackageDetailTangError() {
+func (suite *PackagesSuite) TestGetPythonPackageDetailDaoError() {
 	t := suite.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440002"
-	basePath := "python/remediated"
-	repositoryHref := "/api/pulp/default/api/v3/repositories/python/python/018c1c95-4281-76eb-b277-842cbad524f4/"
-	domainName := "test-domain"
 	packageName := "django"
 	packageVersion := "5.0"
 
 	repo := api.RepositoryResponse{
-		UUID:                  repoUUID,
-		ContentType:           config.ContentTypePython,
-		PublishedDistBasePath: basePath,
+		UUID:        repoUUID,
+		ContentType: config.ContentTypePython,
 	}
-
-	dist := zest.DistributionResponse{}
-	dist.SetRepository(repositoryHref)
 
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-
-	suite.reg.Domain.On("FetchOrCreateDomain", test.MockCtx(), repo.OrgID).Return(domainName, nil)
-	suite.pulpClient.On("WithDomain", domainName).Return(suite.pulpClient)
-	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
-	suite.tangClient.On("PythonPackageGet", test.MockCtx(), repositoryHref, packageName, packageVersion).Return(tangy.PythonPackageDetail{}, fmt.Errorf("failed to fetch package detail"))
+	suite.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).
+		Return(api.PythonPackageDetailResponse{}, fmt.Errorf("failed to get lightwell python package detail"))
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
