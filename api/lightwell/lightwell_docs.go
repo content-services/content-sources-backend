@@ -117,6 +117,628 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions": {
+            "get": {
+                "description": "Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still uploading. Callers with Lightwell clearinghouse read see every submission. File contents are not included.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "List clearinghouse submissions",
+                "operationId": "listClearinghouseSubmissions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Default value: 100.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Default value: 0.",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmissionCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/create": {
+            "post": {
+                "description": "Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Create a clearinghouse submission",
+                "operationId": "createClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to store with the submission. Maximum size is 50 MiB.",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}": {
+            "get": {
+                "description": "Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch any submission. File contents are not included.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Get a clearinghouse submission",
+                "operationId": "getClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a clearinghouse submission and its files while it is uploading. Only the user who created the submission can delete it. Requires the Lightwell clearinghouse feature.",
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Delete a clearinghouse submission",
+                "operationId": "deleteClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}/archive": {
+            "get": {
+                "description": "Download the submission file and every other file in the submission as a zip archive. The author can download it while it is uploading or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "produces": [
+                    "application/zip"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Download a clearinghouse submission archive",
+                "operationId": "downloadClearinghouseSubmissionArchive",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}/files": {
+            "post": {
+                "description": "Upload more files onto an existing clearinghouse submission while it is uploading. Only the user who created the submission can add files. Requires the Lightwell clearinghouse feature.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Add files to a clearinghouse submission",
+                "operationId": "addClearinghouseSubmissionFiles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Files to add. Repeat the field to upload multiple files.",
+                        "name": "files",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}/files/{filename}": {
+            "get": {
+                "description": "Download a file stored with a clearinghouse submission. The author can download it while it is uploading or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Download a clearinghouse submission file",
+                "operationId": "downloadClearinghouseSubmissionFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File name",
+                        "name": "filename",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete one file from a clearinghouse submission while it is uploading. Deleting the file that was uploaded with the submission removes the submission and every file stored with it. Only the user who created the submission can delete files. Requires the Lightwell clearinghouse feature.",
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Delete a clearinghouse submission file",
+                "operationId": "deleteClearinghouseSubmissionFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "File name",
+                        "name": "filename",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}/process": {
+            "post": {
+                "description": "Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Process a clearinghouse submission",
+                "operationId": "processClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}/submission": {
+            "get": {
+                "description": "Download the file that was uploaded when the clearinghouse submission was created. The author can download it while it is uploading or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Download a clearinghouse submission",
+                "operationId": "downloadClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/clearinghouse/submissions/{uuid}/submit": {
+            "post": {
+                "description": "Conclude a clearinghouse submission. Sets its status from uploading to submitted. Only the user who created the submission can submit it. Requires the Lightwell clearinghouse feature.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Submit a clearinghouse submission",
+                "operationId": "submitClearinghouseSubmission",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/package_versions": {
             "get": {
                 "description": "List package versions aggregated across all Lightwell repositories.",
@@ -745,6 +1367,75 @@ const docTemplatelightwell = `{
         }
     },
     "definitions": {
+        "api.ClearinghouseSubmission": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
+                    }
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "processed_at": {
+                    "type": "string"
+                },
+                "processed_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "vulnerability_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmission"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionFile": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
         "api.LightwellAdvisoryCollectionResponse": {
             "type": "object",
             "properties": {

@@ -146,6 +146,13 @@ clients:
         access_key: minio
         secret_key: minio
         region: minio
+      clearinghouse_uploads:
+        url:
+        name:
+        access_key:
+        secret_key:
+        region:
+        file_prefix:
   pulp_log_parser:
     cloudwatch:
       key:
@@ -261,6 +268,16 @@ features:
     enabled: false
   lightwell:
     enabled: false
+  lightwell_clearinghouse:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
+  lightwell_clearinghouse_read:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
   lightwell_notifications:
     enabled: false
     accounts: #["lightwellNotifAccount"]

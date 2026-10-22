@@ -183,3 +183,20 @@ func (_c *MockS3Client_Put_Call) RunAndReturn(run func(ctx context.Context, stor
 	_c.Call.Return(run)
 	return _c
 }
+
+// Delete provides a mock function for the type MockS3Client
+func (_mock *MockS3Client) Delete(ctx context.Context, storageKey string) error {
+	ret := _mock.Called(ctx, storageKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, storageKey)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
