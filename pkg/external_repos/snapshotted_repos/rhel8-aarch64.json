@@ -5,7 +5,7 @@
         "content_label": "rhel-8-for-aarch64-appstream-rpms",
         "distribution_arch": "aarch64",
         "distribution_version": "8",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -14,7 +14,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/baseos/os",
         "distribution_arch": "aarch64",
         "distribution_version": "8",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -23,7 +23,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/codeready-builder/os",
         "distribution_arch": "aarch64",
         "distribution_version": "8",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -32,7 +32,7 @@
         "url": "https://cdn.redhat.com/content/dist/rhel8/8/aarch64/supplementary/os",
         "distribution_arch": "aarch64",
         "distribution_version": "8",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     },
     {
@@ -41,7 +41,7 @@
         "url": "https://cdn.redhat.com/content/dist/layered/rhel8/aarch64/fast-datapath/os",
         "distribution_arch": "aarch64",
         "distribution_version": "8",
-        "feature_name": "RHEL-OS-x86_64",
+        "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
     }
 ]

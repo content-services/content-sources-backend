@@ -16,8 +16,13 @@ type RepositoryParameterResponse struct {
 	DistributionMinorVersions []config.DistributionMinorVersion `json:"distribution_minor_versions" ` // Minor versions available for repository creation
 	DistributionArches        []config.DistributionArch         `json:"distribution_arches"`          // Architectures available for repository creation
 	ExtendedReleaseStreams    []ExtendedReleaseStream           `json:"extended_release_streams"`     // Extended release streams available
+	FeatureProducts           []FeatureProduct                  `json:"feature_products"`             // Features available (Red Hat products)
 }
 
+type FeatureProduct struct {
+	Name  string `json:"name"`
+	Label string `json:"label"`
+}
 type ExtendedReleaseStream struct {
 	Name          string                        `json:"name"`
 	Label         string                        `json:"label"`

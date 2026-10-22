@@ -78,6 +78,10 @@ func (s *RepositoryParameterSuite) TestListParams() {
 	assert.NotEmpty(t, response.DistributionMinorVersions)
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Name)
 	assert.NotEmpty(t, response.DistributionMinorVersions[0].Label)
+	assert.Equal(t, []api.FeatureProduct{
+		{Name: "RHEL-EUS-x86_64", Label: "Red Hat Enterprise Linux for x86_64 - Extended Update Support"},
+		{Name: "RHEL-E4S-x86_64", Label: "Red Hat Enterprise Linux for x86_64 - Update Services for SAP Solutions"},
+	}, response.FeatureProducts)
 
 	assert.NotEmpty(t, response.ExtendedReleaseStreams)
 	for _, stream := range response.ExtendedReleaseStreams {
@@ -152,6 +156,8 @@ func (s *RepositoryParameterSuite) TestListParamsNoEntitledFeatures() {
 
 	assert.NotEmpty(t, response.DistributionMinorVersions)
 	assert.NotEmpty(t, len(response.ExtendedReleaseStreams))
+	assert.NotNil(t, response.FeatureProducts)
+	assert.Empty(t, response.FeatureProducts)
 
 	for _, stream := range response.ExtendedReleaseStreams {
 		assert.NotEmpty(t, stream.Name)
