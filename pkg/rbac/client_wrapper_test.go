@@ -2,8 +2,9 @@ package rbac
 
 import (
 	"context"
-	"net/http"
+	"net"
 	"testing"
+	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/cache"
@@ -19,36 +20,55 @@ import (
 type RbacTestSuite struct {
 	suite.Suite
 	echo      *echo.Echo
+	baseURL   string
 	rbac      ClientWrapperImpl
 	mockCache *cache.MockCache
 }
 
-func (s *RbacTestSuite) SetupTest() {
-	// Start the mock rbac service
+func (s *RbacTestSuite) SetupSuite() {
+	// Start the mock rbac service once for the suite to avoid fixed-port races
+	// between tests (EADDRINUSE) and asserts from Start's goroutine after teardown.
 	config.Get().Clients.RbacEnabled = true
-	config.Get().Clients.RbacBaseUrl = "http://localhost:9932"
 	config.Get().Mocks.Rbac.UserReadWrite = []string{"foo"}
 
 	s.echo = echo.New()
 	s.echo.HideBanner = true
 	s.echo.Add(echo.GET, mocks_rbac.RbacV1Access, mocks_rbac.MockRbacV1Access)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	s.Require().NoError(err)
+	s.baseURL = "http://" + ln.Addr().String()
+	config.Get().Clients.RbacBaseUrl = s.baseURL
+	s.echo.Listener = ln
+
 	go func() {
-		err := s.echo.Start(":9932")
-		assert.True(s.T(), err == http.ErrServerClosed, "Unexpected error %v", err)
+		// Ignore ErrServerClosed from Shutdown; do not assert here — Go panics if
+		// the test has already finished when Start returns.
+		_ = s.echo.Start("")
 	}()
+
+	s.Require().Eventually(func() bool {
+		conn, err := net.DialTimeout("tcp", ln.Addr().String(), 50*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		_ = conn.Close()
+		return true
+	}, 2*time.Second, 10*time.Millisecond)
+}
+
+func (s *RbacTestSuite) TearDownSuite() {
+	err := s.echo.Shutdown(context.Background())
+	s.Require().NoError(err)
+}
+
+func (s *RbacTestSuite) SetupTest() {
 	s.mockCache = cache.NewMockCache(s.T())
-	// Configure the client to use the mock rbac service
-	//   manually create an ClientWrapperImpl so we can pass in our mock cache
 	s.rbac = ClientWrapperImpl{
-		client:  rbac.NewClient("http://localhost:9932", application),
+		client:  rbac.NewClient(s.baseURL, application),
 		timeout: 0,
 		cache:   s.mockCache,
 	}
-}
-
-func (s *RbacTestSuite) TearDownTest() {
-	err := s.echo.Shutdown(context.Background())
-	assert.NoError(s.T(), err)
 }
 
 func TestRbacSuite(t *testing.T) {
