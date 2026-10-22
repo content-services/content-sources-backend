@@ -404,7 +404,7 @@ func (d *DeleteRepositorySnapshots) deleteTemplateRepoDistributions() error {
 			}
 		}
 
-		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(template)})
+		dao.PublishTemplateEvent(d.ctx, db.DB, template.OrgID, event.TemplateUpdated, template)
 	}
 
 	return errors.Join(errs...)

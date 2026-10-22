@@ -2,22 +2,28 @@ package dao
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
+	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/content-services/tang/pkg/tangy"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -1278,4 +1284,157 @@ func (s *TemplateSuite) TestGetDistributionHref_Null() {
 
 	_, err = templateDao.GetDistributionHref(context.Background(), resp.UUID, repoConfigs[0].UUID)
 	require.NoError(s.T(), err)
+}
+
+type fakeTemplateEventClient struct {
+	events []cloudevents.Event
+}
+
+func (f *fakeTemplateEventClient) Send(_ context.Context, e cloudevents.Event) protocol.Result {
+	f.events = append(f.events, e)
+	return nil
+}
+
+func (f *fakeTemplateEventClient) Request(_ context.Context, _ cloudevents.Event) (*cloudevents.Event, protocol.Result) {
+	return nil, nil
+}
+
+func (f *fakeTemplateEventClient) StartReceiver(_ context.Context, _ any) error {
+	return nil
+}
+
+func (s *TemplateSuite) useFakeTemplateEvents() *fakeTemplateEventClient {
+	fake := &fakeTemplateEventClient{}
+	orig := config.Get().TemplateEventClient
+	config.Get().TemplateEventClient = fake
+	s.T().Cleanup(func() {
+		config.Get().TemplateEventClient = orig
+	})
+	return fake
+}
+
+func templateEventPayload(t *testing.T, e cloudevents.Event) []event.TemplateEvent {
+	t.Helper()
+	var payload []event.TemplateEvent
+	require.NoError(t, e.DataAs(&payload))
+	return payload
+}
+
+func (s *TemplateSuite) TestPublishTemplateEventIncludesAdvisoryIDs() {
+	t := s.T()
+	mTangy, origTangy := mockTangy(t)
+	defer func() { config.Tang = origTangy }()
+	fake := s.useFakeTemplateEvents()
+
+	mTangy.On("RpmRepositoryVersionErrataList", mock.Anything, mock.Anything, tangy.ErrataListFilters{}, mock.Anything).
+		Return([]tangy.ErrataListItem{
+			{Id: "1", ErrataId: "RHSA-2024:2"},
+			{Id: "2", ErrataId: "RHBA-2024:1"},
+		}, 2, nil).Twice()
+
+	templateDao := s.templateDao()
+	orgID := orgIDTest
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(t, err)
+	var repoConfig models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("org_id = ?", orgID).First(&repoConfig).Error)
+	s.createSnapshot(repoConfig)
+
+	timeNow := time.Now()
+	resp, err := templateDao.Create(context.Background(), api.TemplateRequest{
+		Name:            utils.Ptr("advisory event template"),
+		Description:     utils.Ptr("desc"),
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+		Date:            (*api.EmptiableDate)(&timeNow),
+		OrgID:           &orgID,
+		UseLatest:       utils.Ptr(false),
+	})
+	require.NoError(t, err)
+	require.Len(t, fake.events, 1)
+	assert.Equal(t, "com.redhat.console.repositories.template-created", fake.events[0].Type())
+	created := templateEventPayload(t, fake.events[0])
+	require.Len(t, created, 1)
+	require.NotNil(t, created[0].AdvisoryIDs)
+	assert.Equal(t, []string{"RHBA-2024:1", "RHSA-2024:2"}, created[0].AdvisoryIDs)
+
+	_, err = templateDao.Update(context.Background(), orgID, resp.UUID, api.TemplateUpdateRequest{
+		Description: utils.Ptr("updated"),
+	})
+	require.NoError(t, err)
+	require.Len(t, fake.events, 2)
+	assert.Equal(t, "com.redhat.console.repositories.template-updated", fake.events[1].Type())
+	updated := templateEventPayload(t, fake.events[1])
+	require.Len(t, updated, 1)
+	require.NotNil(t, updated[0].AdvisoryIDs)
+	assert.Equal(t, []string{"RHBA-2024:1", "RHSA-2024:2"}, updated[0].AdvisoryIDs)
+}
+
+func (s *TemplateSuite) TestPublishTemplateEventOmitsAdvisoryIDsWhenLookupFails() {
+	t := s.T()
+	mTangy, origTangy := mockTangy(t)
+	defer func() { config.Tang = origTangy }()
+	fake := s.useFakeTemplateEvents()
+
+	mTangy.On("RpmRepositoryVersionErrataList", mock.Anything, mock.Anything, tangy.ErrataListFilters{}, mock.Anything).
+		Return([]tangy.ErrataListItem{}, 0, fmt.Errorf("tang down")).Once()
+
+	templateDao := s.templateDao()
+	orgID := orgIDTest
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(t, err)
+	var repoConfig models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("org_id = ?", orgID).First(&repoConfig).Error)
+	s.createSnapshot(repoConfig)
+
+	timeNow := time.Now()
+	_, err = templateDao.Create(context.Background(), api.TemplateRequest{
+		Name:            utils.Ptr("advisory event failure"),
+		Description:     utils.Ptr("desc"),
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+		Date:            (*api.EmptiableDate)(&timeNow),
+		OrgID:           &orgID,
+		UseLatest:       utils.Ptr(false),
+	})
+	require.NoError(t, err)
+	require.Len(t, fake.events, 1)
+	raw, err := json.Marshal(templateEventPayload(t, fake.events[0]))
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), "advisory_ids")
+}
+
+func (s *TemplateSuite) TestDeleteTemplateEventOmitsAdvisoryIDs() {
+	t := s.T()
+	fake := s.useFakeTemplateEvents()
+	templateDao := s.templateDao()
+	orgID := orgIDTest
+	_, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(t, err)
+	var repoConfig models.RepositoryConfiguration
+	require.NoError(t, s.tx.Where("org_id = ?", orgID).First(&repoConfig).Error)
+	s.createSnapshot(repoConfig)
+
+	timeNow := time.Now()
+	resp, err := templateDao.Create(context.Background(), api.TemplateRequest{
+		Name:            utils.Ptr("delete event template"),
+		Description:     utils.Ptr("desc"),
+		RepositoryUUIDS: []string{repoConfig.UUID},
+		Arch:            utils.Ptr(config.AARCH64),
+		Version:         utils.Ptr(config.El8),
+		Date:            (*api.EmptiableDate)(&timeNow),
+		OrgID:           &orgID,
+		UseLatest:       utils.Ptr(false),
+	})
+	require.NoError(t, err)
+	fake.events = nil
+
+	require.NoError(t, templateDao.SoftDelete(context.Background(), orgID, resp.UUID))
+	require.Len(t, fake.events, 1)
+	assert.Equal(t, "com.redhat.console.repositories.template-deleted", fake.events[0].Type())
+	raw, err := json.Marshal(templateEventPayload(t, fake.events[0]))
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), "advisory_ids")
 }

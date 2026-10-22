@@ -90,7 +90,11 @@ func (t templateDaoImpl) Create(ctx context.Context, reqTemplate api.TemplateReq
 		resp, err = t.create(ctx, tx, reqTemplate)
 		return err
 	})
-	return resp, err
+	if err != nil {
+		return resp, err
+	}
+	PublishTemplateEvent(ctx, t.db, resp.OrgID, event.TemplateCreated, resp)
+	return resp, nil
 }
 
 func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate api.TemplateRequest) (api.TemplateResponse, error) {
@@ -123,8 +127,6 @@ func (t templateDaoImpl) create(ctx context.Context, tx *gorm.DB, reqTemplate ap
 
 	templatesModelToApi(modelTemplate, &respTemplate)
 	respTemplate.RepositoryUUIDS = reqTemplate.RepositoryUUIDS
-
-	event.SendTemplateEvent(*reqTemplate.OrgID, event.TemplateCreated, []event.TemplateEvent{event.MapTemplateResponse(respTemplate)})
 
 	return respTemplate, nil
 }
@@ -273,7 +275,7 @@ func (t templateDaoImpl) Update(ctx context.Context, orgID string, uuid string, 
 		return resp, err
 	}
 
-	event.SendTemplateEvent(orgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(resp)})
+	PublishTemplateEvent(ctx, t.db, orgID, event.TemplateUpdated, resp)
 
 	return resp, err
 }
@@ -461,7 +463,7 @@ func (t templateDaoImpl) SoftDelete(ctx context.Context, orgID string, uuid stri
 
 	var resp api.TemplateResponse
 	templatesModelToApi(modelTemplate, &resp)
-	event.SendTemplateEvent(orgID, event.TemplateDeleted, []event.TemplateEvent{event.MapTemplateResponse(resp)})
+	PublishTemplateEvent(ctx, t.db, orgID, event.TemplateDeleted, resp)
 
 	return nil
 }

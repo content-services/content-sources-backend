@@ -602,7 +602,7 @@ func (ds *DeleteSnapshots) updateTemplatesUsingSnap(templateUpdateMap *map[strin
 
 		(*templateUpdateMap)[template.UUID] = snaps[0]
 
-		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(template)})
+		dao.PublishTemplateEvent(ds.ctx, db.DB, template.OrgID, event.TemplateUpdated, template)
 	}
 
 	return nil
