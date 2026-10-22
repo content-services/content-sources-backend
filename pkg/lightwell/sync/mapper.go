@@ -28,7 +28,11 @@ const (
 	fieldVEXJustification = "customfield_10873" // VEX Justification
 )
 
-var cveBackportPattern = regexp.MustCompile(`\bCVE-\d{4}-\d{4,}\b`)
+// vulnerabilityIDPattern matches a canonical vulnerability id (CVE-YYYY-NNNN or
+// LW-YYYY-NNNN) anywhere in the summary. Matching anywhere rather than only the
+// leading token keeps ingestion robust to Jira prefixes such as "CLONE - " and
+// "[CVE Backport]".
+var vulnerabilityIDPattern = regexp.MustCompile(`(?i)\b(?:CVE-\d{4}-\d{4,}|LW-\d{4}-\d{3,})\b`)
 
 type Vulnerability struct {
 	VulnerabilityKey   string
@@ -54,10 +58,16 @@ type Vulnerability struct {
 	LastUpdated        time.Time
 	Embargo            bool
 	Duplicate          bool
+	// JiraStatus and JiraResolution are the raw Jira state, stored for debugging
+	// stage/promotion mismatches against Jira.
+	JiraStatus     *string
+	JiraResolution *string
 }
 
-// TicketLink associates a vulnerability with a customer account from an epic.
-// TicketID is the issue that epic is triggered by when a support ticket exists.
+// TicketLink associates a vulnerability with a customer account. CustomerID comes
+// from the vulnerability's own CID-<number> labels. TicketID is the support ticket
+// discovered by walking to the matching epic, and is empty when no epic account
+// number matches the customer.
 type TicketLink struct {
 	TicketID   string
 	CustomerID string
@@ -136,6 +146,8 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		SubmittedDate:    created.UTC(),
 		LastUpdated:      updated.UTC(),
 		Embargo:          rawBool(issue.Fields[fieldEmbargo]),
+		JiraStatus:       optionalString(statusName(issue.Fields["status"])),
+		JiraResolution:   optionalString(resolutionName(issue.Fields["resolution"])),
 	}, nil
 }
 
@@ -191,15 +203,7 @@ func renderADF(node adfNode, target *strings.Builder) {
 }
 
 func vulnerabilityIDFromSummary(summary string) string {
-	id, _, _ := strings.Cut(summary, " ")
-	prefix := strings.ToUpper(id)
-	if strings.HasPrefix(prefix, "CVE-") || strings.HasPrefix(prefix, "LW-") {
-		return id
-	}
-	if strings.HasPrefix(summary, "[CVE Backport]") {
-		return cveBackportPattern.FindString(summary)
-	}
-	return ""
+	return strings.ToUpper(vulnerabilityIDPattern.FindString(summary))
 }
 
 func title(description, summary string) string {
@@ -280,6 +284,47 @@ func normalizedValues(raw json.RawMessage) []string {
 	}
 	collect(value)
 	return values
+}
+
+// customerLabelPattern matches a customer account label of the form CID-<number>
+// on a vulnerability (IVT) issue. The account number is always digits.
+var customerLabelPattern = regexp.MustCompile(`(?i)^CID-(\d+)$`)
+
+// customerIDsFromLabels returns the distinct customer account numbers encoded in
+// the vulnerability's labels as CID-<number>. The stored value is the bare
+// number, matching the Account Number custom field it replaces.
+func customerIDsFromLabels(raw json.RawMessage) []string {
+	var labels []string
+	if json.Unmarshal(raw, &labels) != nil {
+		return nil
+	}
+	ids := make([]string, 0, len(labels))
+	seen := make(map[string]struct{}, len(labels))
+	for _, label := range labels {
+		match := customerLabelPattern.FindStringSubmatch(strings.TrimSpace(label))
+		if match == nil {
+			continue
+		}
+		id := match[1]
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// normalizeCustomerID strips the "CID-" prefix so a value matches the stored
+// customer id. Both vulnerability labels and epic Account Number fields carry the
+// customer as "CID-<number>", but customers are stored as the bare number, so
+// this lets an epic's account number be paired with a label-derived customer id.
+func normalizeCustomerID(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if match := customerLabelPattern.FindStringSubmatch(trimmed); match != nil {
+		return match[1]
+	}
+	return trimmed
 }
 
 const severityLabelPrefix = "severity::"
@@ -421,14 +466,28 @@ func closedResolutionStatus(raw json.RawMessage) (string, bool) {
 	return status, ok
 }
 
-func stage(raw json.RawMessage) string {
+func statusName(raw json.RawMessage) string {
 	var status struct {
 		Name string `json:"name"`
 	}
 	if json.Unmarshal(raw, &status) != nil {
 		return ""
 	}
+	return strings.TrimSpace(status.Name)
+}
 
+// releasedOrDone reports whether the issue's Jira state indicates the fix has
+// been released to customers: status "Released", or status "Closed" with
+// resolution "Done".
+func releasedOrDone(fields map[string]json.RawMessage) bool {
+	status := strings.ToLower(statusName(fields["status"]))
+	if status == "released" {
+		return true
+	}
+	return status == "closed" && strings.EqualFold(resolutionName(fields["resolution"]), "Done")
+}
+
+func stage(raw json.RawMessage) string {
 	statusMap := map[string]string{
 		"new":             "Submitted",
 		"backlog":         "Classified",
@@ -442,7 +501,7 @@ func stage(raw json.RawMessage) string {
 		"closed":          "Validation",
 	}
 
-	if s, ok := statusMap[strings.ToLower(strings.TrimSpace(status.Name))]; ok {
+	if s, ok := statusMap[strings.ToLower(statusName(raw))]; ok {
 		return s
 	} else {
 		return "Submitted"

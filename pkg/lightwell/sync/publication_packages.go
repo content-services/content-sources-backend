@@ -168,6 +168,7 @@ func (v *publicationPackageVerifier) VerifyPublished(
 	packages map[PublicationPackage][]string,
 ) (map[PublicationPackage][]string, []string) {
 	confirmed := make(map[PublicationPackage][]string)
+
 	repositories, warnings := v.publicationRepositories(ctx)
 	if len(repositories) == 0 {
 		if len(warnings) == 0 {
