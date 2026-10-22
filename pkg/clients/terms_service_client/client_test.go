@@ -102,7 +102,7 @@ func TestIsTermsAcceptanceRequired_MalformedBody(t *testing.T) {
 
 	client := newTestClient(t, server, "lightwell", []string{"network", "academic"})
 	result, err := client.IsTermsAcceptanceRequired(context.Background(), "testuser")
-	require.NoError(t, err)
+	require.Error(t, err)
 	assert.False(t, result)
 }
 

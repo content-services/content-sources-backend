@@ -6,6 +6,7 @@ package cache
 
 import (
 	"context"
+	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -432,6 +433,72 @@ func (_c *MockCache_GetSubscriptionCheck_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// GetTermsNotRequired provides a mock function for the type MockCache
+func (_mock *MockCache) GetTermsNotRequired(ctx context.Context, scope TermsScope) (bool, error) {
+	ret := _mock.Called(ctx, scope)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTermsNotRequired")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, TermsScope) (bool, error)); ok {
+		return returnFunc(ctx, scope)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, TermsScope) bool); ok {
+		r0 = returnFunc(ctx, scope)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, TermsScope) error); ok {
+		r1 = returnFunc(ctx, scope)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCache_GetTermsNotRequired_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTermsNotRequired'
+type MockCache_GetTermsNotRequired_Call struct {
+	*mock.Call
+}
+
+// GetTermsNotRequired is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope TermsScope
+func (_e *MockCache_Expecter) GetTermsNotRequired(ctx interface{}, scope interface{}) *MockCache_GetTermsNotRequired_Call {
+	return &MockCache_GetTermsNotRequired_Call{Call: _e.mock.On("GetTermsNotRequired", ctx, scope)}
+}
+
+func (_c *MockCache_GetTermsNotRequired_Call) Run(run func(ctx context.Context, scope TermsScope)) *MockCache_GetTermsNotRequired_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 TermsScope
+		if args[1] != nil {
+			arg1 = args[1].(TermsScope)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCache_GetTermsNotRequired_Call) Return(b bool, err error) *MockCache_GetTermsNotRequired_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *MockCache_GetTermsNotRequired_Call) RunAndReturn(run func(ctx context.Context, scope TermsScope) (bool, error)) *MockCache_GetTermsNotRequired_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SetAccessList provides a mock function for the type MockCache
 func (_mock *MockCache) SetAccessList(ctx context.Context, accessList rbac.AccessList) error {
 	ret := _mock.Called(ctx, accessList)
@@ -760,6 +827,69 @@ func (_c *MockCache_SetSubscriptionCheck_Call) Return(err error) *MockCache_SetS
 }
 
 func (_c *MockCache_SetSubscriptionCheck_Call) RunAndReturn(run func(ctx context.Context, response api.SubscriptionCheckResponse) error) *MockCache_SetSubscriptionCheck_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetTermsNotRequired provides a mock function for the type MockCache
+func (_mock *MockCache) SetTermsNotRequired(ctx context.Context, scope TermsScope, ttl time.Duration) error {
+	ret := _mock.Called(ctx, scope, ttl)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetTermsNotRequired")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, TermsScope, time.Duration) error); ok {
+		r0 = returnFunc(ctx, scope, ttl)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockCache_SetTermsNotRequired_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTermsNotRequired'
+type MockCache_SetTermsNotRequired_Call struct {
+	*mock.Call
+}
+
+// SetTermsNotRequired is a helper method to define mock.On call
+//   - ctx context.Context
+//   - scope TermsScope
+//   - ttl time.Duration
+func (_e *MockCache_Expecter) SetTermsNotRequired(ctx interface{}, scope interface{}, ttl interface{}) *MockCache_SetTermsNotRequired_Call {
+	return &MockCache_SetTermsNotRequired_Call{Call: _e.mock.On("SetTermsNotRequired", ctx, scope, ttl)}
+}
+
+func (_c *MockCache_SetTermsNotRequired_Call) Run(run func(ctx context.Context, scope TermsScope, ttl time.Duration)) *MockCache_SetTermsNotRequired_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 TermsScope
+		if args[1] != nil {
+			arg1 = args[1].(TermsScope)
+		}
+		var arg2 time.Duration
+		if args[2] != nil {
+			arg2 = args[2].(time.Duration)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCache_SetTermsNotRequired_Call) Return(err error) *MockCache_SetTermsNotRequired_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockCache_SetTermsNotRequired_Call) RunAndReturn(run func(ctx context.Context, scope TermsScope, ttl time.Duration) error) *MockCache_SetTermsNotRequired_Call {
 	_c.Call.Return(run)
 	return _c
 }

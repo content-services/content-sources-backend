@@ -168,6 +168,8 @@ clients:
       subscription_check: 1h
       roadmap: 24h
       content_counts: 10m
+      # Fixed lifetime of confirmed terms allowances; <= 0 disables only terms caching.
+      terms: 24h
   feature_service:
     server: #https://feature.stage.api.redhat.com/features
     client_cert:
@@ -185,6 +187,8 @@ clients:
     server: #https://terms.stage.api.redhat.com
     site: lightwell
     event_feature_map: "network:lightwell-network,academic:lightwell-research-institutions"
+    # Rotate across all API replicas to invalidate existing terms cache entries.
+    cache_version: "1"
     client_cert:
     client_key:
     ca_cert:
