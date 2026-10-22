@@ -186,8 +186,8 @@ func (_c *MockCache_GetContentCounts_Call) RunAndReturn(run func(ctx context.Con
 }
 
 // GetFeatureStatus provides a mock function for the type MockCache
-func (_mock *MockCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockCache) GetFeatureStatus(ctx context.Context, orgID string) (*api.FeatureStatus, error) {
+	ret := _mock.Called(ctx, orgID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFeatureStatus")
@@ -195,18 +195,18 @@ func (_mock *MockCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatu
 
 	var r0 *api.FeatureStatus
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (*api.FeatureStatus, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*api.FeatureStatus, error)); ok {
+		return returnFunc(ctx, orgID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) *api.FeatureStatus); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *api.FeatureStatus); ok {
+		r0 = returnFunc(ctx, orgID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*api.FeatureStatus)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, orgID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -220,18 +220,24 @@ type MockCache_GetFeatureStatus_Call struct {
 
 // GetFeatureStatus is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCache_Expecter) GetFeatureStatus(ctx any) *MockCache_GetFeatureStatus_Call {
-	return &MockCache_GetFeatureStatus_Call{Call: _e.mock.On("GetFeatureStatus", ctx)}
+//   - orgID string
+func (_e *MockCache_Expecter) GetFeatureStatus(ctx any, orgID any) *MockCache_GetFeatureStatus_Call {
+	return &MockCache_GetFeatureStatus_Call{Call: _e.mock.On("GetFeatureStatus", ctx, orgID)}
 }
 
-func (_c *MockCache_GetFeatureStatus_Call) Run(run func(ctx context.Context)) *MockCache_GetFeatureStatus_Call {
+func (_c *MockCache_GetFeatureStatus_Call) Run(run func(ctx context.Context, orgID string)) *MockCache_GetFeatureStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -242,7 +248,7 @@ func (_c *MockCache_GetFeatureStatus_Call) Return(featureStatus *api.FeatureStat
 	return _c
 }
 
-func (_c *MockCache_GetFeatureStatus_Call) RunAndReturn(run func(ctx context.Context) (*api.FeatureStatus, error)) *MockCache_GetFeatureStatus_Call {
+func (_c *MockCache_GetFeatureStatus_Call) RunAndReturn(run func(ctx context.Context, orgID string) (*api.FeatureStatus, error)) *MockCache_GetFeatureStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -467,7 +473,7 @@ type MockCache_GetTermsNotRequired_Call struct {
 // GetTermsNotRequired is a helper method to define mock.On call
 //   - ctx context.Context
 //   - scope TermsScope
-func (_e *MockCache_Expecter) GetTermsNotRequired(ctx interface{}, scope interface{}) *MockCache_GetTermsNotRequired_Call {
+func (_e *MockCache_Expecter) GetTermsNotRequired(ctx any, scope any) *MockCache_GetTermsNotRequired_Call {
 	return &MockCache_GetTermsNotRequired_Call{Call: _e.mock.On("GetTermsNotRequired", ctx, scope)}
 }
 
@@ -626,16 +632,16 @@ func (_c *MockCache_SetContentCounts_Call) RunAndReturn(run func(ctx context.Con
 }
 
 // SetFeatureStatus provides a mock function for the type MockCache
-func (_mock *MockCache) SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error {
-	ret := _mock.Called(ctx, response)
+func (_mock *MockCache) SetFeatureStatus(ctx context.Context, orgID string, response api.FeatureStatus) error {
+	ret := _mock.Called(ctx, orgID, response)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SetFeatureStatus")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, api.FeatureStatus) error); ok {
-		r0 = returnFunc(ctx, response)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, api.FeatureStatus) error); ok {
+		r0 = returnFunc(ctx, orgID, response)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -649,24 +655,30 @@ type MockCache_SetFeatureStatus_Call struct {
 
 // SetFeatureStatus is a helper method to define mock.On call
 //   - ctx context.Context
+//   - orgID string
 //   - response api.FeatureStatus
-func (_e *MockCache_Expecter) SetFeatureStatus(ctx any, response any) *MockCache_SetFeatureStatus_Call {
-	return &MockCache_SetFeatureStatus_Call{Call: _e.mock.On("SetFeatureStatus", ctx, response)}
+func (_e *MockCache_Expecter) SetFeatureStatus(ctx any, orgID any, response any) *MockCache_SetFeatureStatus_Call {
+	return &MockCache_SetFeatureStatus_Call{Call: _e.mock.On("SetFeatureStatus", ctx, orgID, response)}
 }
 
-func (_c *MockCache_SetFeatureStatus_Call) Run(run func(ctx context.Context, response api.FeatureStatus)) *MockCache_SetFeatureStatus_Call {
+func (_c *MockCache_SetFeatureStatus_Call) Run(run func(ctx context.Context, orgID string, response api.FeatureStatus)) *MockCache_SetFeatureStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 api.FeatureStatus
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(api.FeatureStatus)
+			arg1 = args[1].(string)
+		}
+		var arg2 api.FeatureStatus
+		if args[2] != nil {
+			arg2 = args[2].(api.FeatureStatus)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -677,7 +689,7 @@ func (_c *MockCache_SetFeatureStatus_Call) Return(err error) *MockCache_SetFeatu
 	return _c
 }
 
-func (_c *MockCache_SetFeatureStatus_Call) RunAndReturn(run func(ctx context.Context, response api.FeatureStatus) error) *MockCache_SetFeatureStatus_Call {
+func (_c *MockCache_SetFeatureStatus_Call) RunAndReturn(run func(ctx context.Context, orgID string, response api.FeatureStatus) error) *MockCache_SetFeatureStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -857,7 +869,7 @@ type MockCache_SetTermsNotRequired_Call struct {
 //   - ctx context.Context
 //   - scope TermsScope
 //   - ttl time.Duration
-func (_e *MockCache_Expecter) SetTermsNotRequired(ctx interface{}, scope interface{}, ttl interface{}) *MockCache_SetTermsNotRequired_Call {
+func (_e *MockCache_Expecter) SetTermsNotRequired(ctx any, scope any, ttl any) *MockCache_SetTermsNotRequired_Call {
 	return &MockCache_SetTermsNotRequired_Call{Call: _e.mock.On("SetTermsNotRequired", ctx, scope, ttl)}
 }
 

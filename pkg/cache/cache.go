@@ -24,8 +24,8 @@ type Cache interface {
 	GetSubscriptionCheck(ctx context.Context) (*api.SubscriptionCheckResponse, error)
 	SetSubscriptionCheck(ctx context.Context, response api.SubscriptionCheckResponse) error
 
-	GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error)
-	SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error
+	GetFeatureStatus(ctx context.Context, orgID string) (*api.FeatureStatus, error)
+	SetFeatureStatus(ctx context.Context, orgID string, response api.FeatureStatus) error
 
 	GetRoadmapAppstreams(ctx context.Context) ([]byte, error)
 	SetRoadmapAppstreams(ctx context.Context, roadmapAppstreamsResponse []byte)
