@@ -50,9 +50,8 @@ func subscriptionCheckKey(ctx context.Context) string {
 	return fmt.Sprintf("subscription-check:%v", identity.Identity.OrgID)
 }
 
-func featureStatusKey(ctx context.Context) string {
-	identity := identity.GetIdentity(ctx)
-	return fmt.Sprintf("feature-status:%v", identity.Identity.OrgID)
+func featureStatusKey(orgID string) string {
+	return fmt.Sprintf("feature-status:%v", orgID)
 }
 
 func roadmapAppstreamsKey(ctx context.Context) string {
@@ -156,8 +155,8 @@ func (c *redisCache) SetSubscriptionCheck(ctx context.Context, response api.Subs
 	return nil
 }
 
-func (c *redisCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, error) {
-	key := featureStatusKey(ctx)
+func (c *redisCache) GetFeatureStatus(ctx context.Context, orgID string) (*api.FeatureStatus, error) {
+	key := featureStatusKey(orgID)
 	buf, err := c.get(ctx, key)
 	if err != nil {
 		return nil, fmt.Errorf("redis get error: %w", err)
@@ -171,13 +170,13 @@ func (c *redisCache) GetFeatureStatus(ctx context.Context) (*api.FeatureStatus, 
 	return &check, nil
 }
 
-func (c *redisCache) SetFeatureStatus(ctx context.Context, response api.FeatureStatus) error {
+func (c *redisCache) SetFeatureStatus(ctx context.Context, orgID string, response api.FeatureStatus) error {
 	buf, err := json.Marshal(response)
 	if err != nil {
 		return fmt.Errorf("unable to marshal for Redis cache: %w", err)
 	}
 
-	key := featureStatusKey(ctx)
+	key := featureStatusKey(orgID)
 	c.client.Set(ctx, key, string(buf), config.Get().Clients.Redis.Expiration.SubscriptionCheck)
 	return nil
 }

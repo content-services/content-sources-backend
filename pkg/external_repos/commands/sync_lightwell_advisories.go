@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -18,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	vp "github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
 	"github.com/content-services/content-sources-backend/pkg/models"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -53,6 +55,11 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 		return fmt.Errorf("error loading lightwell allowlist: %w", err)
 	}
 
+	fsClient, err := feature_service_client.NewFeatureServiceClient()
+	if err != nil {
+		return fmt.Errorf("error getting feature service client: %w", err)
+	}
+
 	httpClient := &http.Client{Timeout: 90 * time.Second}
 
 	var errs []error
@@ -61,7 +68,7 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 			continue
 		}
 
-		err := processOSVForEntry(ctx, daoReg, httpClient, entry, force)
+		err := processOSVForEntry(ctx, daoReg, fsClient, httpClient, entry, force)
 		if err != nil {
 			log.Error().Err(err).
 				Str("entry", entry.Name).
@@ -77,6 +84,7 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 func processOSVForEntry(
 	ctx context.Context,
 	daoReg *dao.DaoRegistry,
+	fsClient feature_service_client.FeatureServiceClient,
 	httpClient *http.Client,
 	entry external_repos.LightwellAllowlistEntry,
 	force bool,
@@ -125,12 +133,13 @@ func processOSVForEntry(
 		}
 	}
 
-	return sendAdvisoryNotifications(ctx, daoReg, httpClient, logger, repoConfigUUID, entry)
+	return sendAdvisoryNotifications(ctx, daoReg, fsClient, httpClient, logger, repoConfigUUID, entry)
 }
 
 func sendAdvisoryNotifications(
 	ctx context.Context,
 	daoReg *dao.DaoRegistry,
+	fsClient feature_service_client.FeatureServiceClient,
 	httpClient *http.Client,
 	logger zerolog.Logger,
 	repoConfigUUID string,
@@ -205,7 +214,26 @@ func sendAdvisoryNotifications(
 		return nil
 	}
 
+	// featureTokens is the repository's entitlement gate (e.g. network/academic).
+	// An empty gate means the repository is visible to all orgs, matching the
+	// RepositoryConfig.List semantics, so we skip the per-org entitlement lookup.
+	featureTokens := utils.ParseFeatures(entry.FeatureName)
+
 	for _, orgID := range orgs {
+		if len(featureTokens) > 0 {
+			features, err := fsClient.GetEntitledFeatures(ctx, orgID)
+			if err != nil {
+				// Fail-closed: skip this org on a lookup error and leave its
+				// advisories unnotified so they are retried on the next sync.
+				logger.Error().Err(err).Str("org_id", orgID).Msg("Error checking entitled features for org, skipping notifications")
+				continue
+			}
+			if !utils.ContainsAny(features, featureTokens) {
+				logger.Debug().Str("org_id", orgID).Msg("Org not entitled for repository feature, skipping notifications")
+				continue
+			}
+		}
+
 		unnotified, err := daoReg.LightwellAdvisory.ListUnnotifiedAdvisories(ctx, repoConfigUUID, orgID)
 		if err != nil {
 			logger.Error().Err(err).Str("org_id", orgID).Msg("Error listing unnotified advisories for org")

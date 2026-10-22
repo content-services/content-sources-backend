@@ -12,6 +12,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/clients/feature_service_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/event"
@@ -115,6 +116,13 @@ func mockRepoConfigFetch(mockDao *dao.MockDaoRegistry) {
 	).Return(api.RepositoryResponse{UUID: testRepoConfigUUID}, nil)
 }
 
+// mockFSClient returns a feature service client mock. Entries without a
+// feature gate never trigger a lookup, so an unconfigured mock is sufficient
+// for the common case.
+func mockFSClient(t *testing.T) *feature_service_client.MockFeatureServiceClient {
+	return feature_service_client.NewMockFeatureServiceClient(t)
+}
+
 func testEntry() external_repos.LightwellAllowlistEntry {
 	return external_repos.LightwellAllowlistEntry{
 		Name:     testRepoName,
@@ -163,7 +171,7 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified).Return(nil)
 	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-2", unnotified).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
 	mockDao.LightwellAdvisory.AssertCalled(t, "SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
@@ -182,6 +190,89 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 	mockDao.LightwellAdvisory.AssertCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-2")
 	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified)
 	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-2", unnotified)
+}
+
+// gatedTestEntry returns an entry with a network feature gate.
+func gatedTestEntry() external_repos.LightwellAllowlistEntry {
+	e := testEntry()
+	e.FeatureName = "lightwell-network"
+	return e
+}
+
+// setupGatedSyncMocks wires the common mux/server and DAO expectations shared by
+// the entitlement-gating tests, returning the mock registry and the test server.
+func setupGatedSyncMocks(t *testing.T, orgs []string, unnotified []dao.LightwellNotificationData) (*dao.MockDaoRegistry, *httptest.Server) {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testManifest)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory1)
+	})
+	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, testOSVAdvisory2)
+	})
+	server := setupTestServer(t, mux)
+
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.Anything).Return(nil)
+	mockDao.UserPreference.On("ListDistinctOrgsByPreference", mock.Anything,
+		models.UserPreferenceLightwellNotificationEnabled, "true",
+	).Return(orgs, nil)
+	return mockDao, server
+}
+
+func TestProcessOsvForEntry_SkipsUnentitledOrg(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = true
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
+
+	// Only the entitled org should produce a notification send.
+	setupMockProducer(t, 1)
+
+	unnotified := []dao.LightwellNotificationData{
+		{PackageName: "com.example:lib-a", AdvisoryID: "ADV-001", Severity: "9.8", FixedVersions: []string{"1.0.1"}},
+	}
+	mockDao, server := setupGatedSyncMocks(t, []string{"org-entitled", "org-unentitled"}, unnotified)
+	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-entitled").Return(unnotified, nil)
+	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-entitled", unnotified).Return(nil)
+
+	fsClient := mockFSClient(t)
+	fsClient.On("GetEntitledFeatures", mock.Anything, "org-entitled").Return([]string{"lightwell-network"}, nil)
+	fsClient.On("GetEntitledFeatures", mock.Anything, "org-unentitled").Return([]string{"some-other-feature"}, nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), fsClient, server.Client(), gatedTestEntry(), false)
+	assert.NoError(t, err)
+
+	// Unentitled org must not be queried for advisories or marked notified.
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-unentitled")
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-unentitled", mock.Anything)
+	mockDao.LightwellAdvisory.AssertCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-entitled", unnotified)
+}
+
+func TestProcessOsvForEntry_SkipsOrgOnEntitlementLookupError(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = true
+	defer func() { config.Get().Features.LightwellNotifications.Enabled = false }()
+
+	// No sends expected: the only org fails its entitlement lookup (fail-closed).
+	setupMockProducer(t, 0)
+
+	unnotified := []dao.LightwellNotificationData{
+		{PackageName: "com.example:lib-a", AdvisoryID: "ADV-001", Severity: "9.8", FixedVersions: []string{"1.0.1"}},
+	}
+	mockDao, server := setupGatedSyncMocks(t, []string{"org-err"}, unnotified)
+
+	fsClient := mockFSClient(t)
+	fsClient.On("GetEntitledFeatures", mock.Anything, "org-err").Return([]string(nil), fmt.Errorf("feature service unavailable"))
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), fsClient, server.Client(), gatedTestEntry(), false)
+	assert.NoError(t, err)
+
+	// Advisories stay unnotified so they can be retried next sync.
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-err")
+	mockDao.LightwellAdvisory.AssertNotCalled(t, "MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-err", mock.Anything)
 }
 
 func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
@@ -223,7 +314,7 @@ func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
 		models.UserPreferenceLightwellNotificationEnabled, "true",
 	).Return([]string{}, nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, fakeClient.sent, "bridge event should be sent exactly once")
@@ -275,7 +366,7 @@ func TestProcessOsvForEntry_BridgeSkippedWhenAllNotified(t *testing.T) {
 		models.UserPreferenceLightwellNotificationEnabled, "true",
 	).Return([]string{}, nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 0, fakeClient.sent, "no bridge event should be sent when nothing is unnotified")
@@ -305,7 +396,7 @@ func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) 
 		return len(advisories) == 2
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
 	mockDao.LightwellAdvisory.AssertNotCalled(t, "ListUnnotifiedAdvisories", mock.Anything, mock.Anything, mock.Anything)
@@ -359,7 +450,7 @@ func TestProcessOsvForEntry_PersistsOSVMetadata(t *testing.T) {
 			a.Published != nil && a.Modified != nil
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 }
 
@@ -413,7 +504,7 @@ func TestProcessOsvForEntry_UpdatesWhenChecksumChanges(t *testing.T) {
 			len(a.FixedVersions) == 1 && a.FixedVersions[0] == "1.0.2"
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 }
 
@@ -441,7 +532,7 @@ func TestProcessOsvForEntry_SkipsExistingByChecksum(t *testing.T) {
 		return len(advisories) == 2
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 }
 
@@ -475,7 +566,7 @@ func TestProcessOsvForEntry_SkipsSyncWhenAllChecksumsMatch(t *testing.T) {
 	mockDao.LightwellAdvisory.On("ListUnnotifiedAdvisories", mock.Anything, testRepoConfigUUID, "org-1").Return(unnotified, nil)
 	mockDao.LightwellAdvisory.On("MarkAsNotified", mock.Anything, testRepoConfigUUID, "org-1", unnotified).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 
 	mockDao.LightwellAdvisory.AssertNotCalled(t, "SyncForRepository", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
@@ -512,7 +603,7 @@ func TestProcessOsvForEntry_ForceRefetchesAll(t *testing.T) {
 		return len(advisories) == 2
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), true)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), true)
 	assert.NoError(t, err)
 	assert.True(t, advisory1Fetched, "advisory-1.json should be re-fetched when force is true")
 }
@@ -524,7 +615,7 @@ func TestProcessOsvForEntry_RepoConfigNotFound(t *testing.T) {
 	mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigByName", mock.Anything, mock.Anything, mock.Anything).
 		Return(api.RepositoryResponse{}, fmt.Errorf("Could not find repository with name %s", testRepoName))
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error finding repository")
 }
@@ -539,7 +630,7 @@ func TestProcessOsvForEntry_ManifestFetchError(t *testing.T) {
 	mockDao := dao.GetMockDaoRegistry(t)
 	mockRepoConfigFetch(mockDao)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error fetching manifest")
 }
@@ -567,7 +658,7 @@ func TestProcessOsvForEntry_SkipsFailedOSVFetch(t *testing.T) {
 		return len(advisories) == 1 && advisories[0].AdvisoryID == "ADV-002"
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 }
 
