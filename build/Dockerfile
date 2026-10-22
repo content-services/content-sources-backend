@@ -4,7 +4,7 @@
 #
 #  https://github.com/quay/claircore/actions/workflows/golang-image.yml
 #  https://github.com/quay/claircore/blob/main/.github/workflows/golang-image.yml
-FROM registry.redhat.io/ubi9/go-toolset:9.8-1792010711 as builder
+FROM registry.redhat.io/ubi10/go-toolset:1792583445 as builder
 
 WORKDIR /go/src/app
 COPY . .
@@ -14,8 +14,8 @@ USER 0
 RUN make get-deps build
 
 
-FROM registry.redhat.io/ubi9/ubi-minimal:latest as ca-source
-FROM registry.redhat.io/ubi9/ubi-micro:latest
+FROM registry.redhat.io/ubi10/ubi-minimal:latest as ca-source
+FROM registry.redhat.io/ubi10/ubi-micro:latest
 
 WORKDIR /
 
