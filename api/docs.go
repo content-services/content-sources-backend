@@ -2592,7 +2592,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}": {
             "get": {
-                "description": "Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.",
+                "description": "List versions for an npm package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2663,7 +2663,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}/{version}": {
             "get": {
-                "description": "Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.",
+                "description": "Get an npm package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2699,7 +2699,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "NPM package version",
+                        "description": "NPM package upstream version",
                         "name": "version",
                         "in": "path",
                         "required": true
@@ -2859,6 +2859,12 @@ const docTemplate = `{
                         "description": "Term to filter and retrieve items that match the specified search criteria. For Maven, search term can include name or group. For Python and npm, search term can include name (including scoped names like @types/).",
                         "name": "search",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort field. Valid fields are name and last_updated. Append :asc or :desc. name defaults to asc. last_updated defaults to desc.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2961,7 +2967,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/python_packages/{name}/{version}": {
             "get": {
-                "description": "Get metadata and distributions for a specific Python package by name and version.",
+                "description": "Get metadata and builds for a specific Python package by name and version.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6060,6 +6066,9 @@ const docTemplate = `{
                 "group": {
                     "type": "string"
                 },
+                "last_updated": {
+                    "type": "string"
+                },
                 "license": {
                     "type": "string"
                 },
@@ -6070,6 +6079,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "summary": {
+                    "type": "string"
+                },
+                "upstream_version": {
                     "type": "string"
                 },
                 "version": {
@@ -6097,14 +6109,14 @@ const docTemplate = `{
         "api.NpmPackageDetailResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "latest_versions": {
+                "builds": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ReleaseInfo"
                     }
+                },
+                "last_updated": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -6115,11 +6127,8 @@ const docTemplate = `{
                 "tarball": {
                     "$ref": "#/definitions/api.NpmTarball"
                 },
-                "upstream_versions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "upstream_version": {
+                    "type": "string"
                 },
                 "version": {
                     "type": "string"
@@ -6423,6 +6432,12 @@ const docTemplate = `{
                 "author": {
                     "$ref": "#/definitions/api.PythonPackageAuthor"
                 },
+                "builds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReleaseInfo"
+                    }
+                },
                 "description": {
                     "type": "string"
                 },
@@ -6447,11 +6462,8 @@ const docTemplate = `{
                 "summary": {
                     "type": "string"
                 },
-                "upstream_versions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "upstream_version": {
+                    "type": "string"
                 },
                 "version": {
                     "type": "string"

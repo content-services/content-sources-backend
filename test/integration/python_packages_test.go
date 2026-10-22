@@ -132,7 +132,13 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 	t := s.T()
 
 	repo := s.createPythonRepository(config.LightwellOrg)
-	packages := s.listPackages(repo.UUID)
+	s.seedPythonPackageMirror(repo.UUID)
+	// Default order is last_updated descending. zebra was published later.
+	packages := s.listPackages(repo.UUID, "")
+	assert.Equal(t, []string{"zebra", testPythonPackageName}, packageNames(packages))
+	assert.Equal(t, []string{testPythonPackageName, "zebra"}, packageNames(s.listPackages(repo.UUID, "name")))
+	assert.Equal(t, []string{"zebra", testPythonPackageName}, packageNames(s.listPackages(repo.UUID, "name:desc")))
+	assert.Equal(t, []string{testPythonPackageName, "zebra"}, packageNames(s.listPackages(repo.UUID, "last_updated:asc")))
 
 	assert.NotNil(t, packages)
 	assert.GreaterOrEqual(t, packages.Total, 1)
@@ -170,26 +176,19 @@ func (s *PythonPackagesSuite) TestPythonPackageVersionsAPI() {
 	t := s.T()
 
 	repo := s.createPythonRepository(config.LightwellOrg)
+	s.seedPythonPackageMirror(repo.UUID)
 	versions := s.getPackageVersions(repo.UUID, testPythonPackageName)
 
 	assert.Equal(t, testPythonPackageName, versions.Name)
-	require.NotEmpty(t, versions.Versions)
-
-	for _, detail := range versions.Versions {
-		assert.Equal(t, testPythonPackageName, detail.Name)
-		assert.NotEmpty(t, detail.Version)
-		assert.NotEmpty(t, detail.LastUpdated)
-		require.NotEmpty(t, detail.Distributions)
-
-		for _, dist := range detail.Distributions {
-			assert.NotEmpty(t, dist.Filename)
-			assert.Contains(t, dist.Filename, detail.Version)
-			assert.NotEmpty(t, dist.PackageType)
-			assert.NotEmpty(t, dist.Sha256)
-			assert.NotZero(t, dist.Size)
-			assert.NotEmpty(t, dist.CreatedAt)
-		}
-	}
+	require.Len(t, versions.Versions, 2)
+	assert.Equal(t, "0.1", versions.Versions[0].Version)
+	assert.Equal(t, "shelf reader summary", versions.Versions[0].Summary)
+	assert.Equal(t, "2024-01-01T12:00:00Z", versions.Versions[0].LastUpdated)
+	assert.Equal(t, "0.1", versions.Versions[0].UpstreamVersion)
+	assert.Empty(t, versions.Versions[0].Distributions)
+	assert.Equal(t, "0.2", versions.Versions[1].Version)
+	assert.Equal(t, "0.2", versions.Versions[1].UpstreamVersion)
+	assert.Empty(t, versions.Versions[1].Distributions)
 }
 
 func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
@@ -201,25 +200,19 @@ func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {
 	t := s.T()
 
 	repo := s.createPythonRepository(config.LightwellOrg)
+	s.seedPythonPackageMirror(repo.UUID)
 	detail := s.getPackageDetail(repo.UUID, testPythonPackageName, "0.1")
 
 	assert.Equal(t, testPythonPackageName, detail.Name)
 	assert.Equal(t, "0.1", detail.Version)
-	assert.NotEmpty(t, detail.Summary)
-	assert.NotEmpty(t, detail.LastUpdated)
-	assert.NotEmpty(t, detail.License)
-	assert.Contains(t, detail.UpstreamVersions, "0.1")
-	require.NotEmpty(t, detail.Distributions)
-
-	for _, dist := range detail.Distributions {
-		assert.NotEmpty(t, dist.Name)
-		assert.Contains(t, dist.Filename, "0.1")
-		assert.NotEmpty(t, dist.Filename)
-		assert.NotEmpty(t, dist.PackageType)
-		assert.NotEmpty(t, dist.Sha256)
-		assert.NotZero(t, dist.Size)
-		assert.NotEmpty(t, dist.CreatedAt)
-	}
+	assert.Equal(t, "shelf reader summary", detail.Summary)
+	assert.Equal(t, "2024-01-01T12:00:00Z", detail.LastUpdated)
+	assert.Equal(t, "MIT", detail.License)
+	assert.Equal(t, "0.1", detail.UpstreamVersion)
+	assert.Equal(t, []api.ReleaseInfo{
+		{Version: "0.1", Release: "", CreatedAt: "2024-01-01T12:00:00Z"},
+	}, detail.Builds)
+	assert.Empty(t, detail.Distributions)
 }
 
 func (s *PythonPackagesSuite) createPythonRepository(orgId string) api.RepositoryResponse {
@@ -343,10 +336,13 @@ func (s *PythonPackagesSuite) createPythonRepository(orgId string) api.Repositor
 	return apiRepoResp[0]
 }
 
-func (s *PythonPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
+func (s *PythonPackagesSuite) listPackages(repoUUID string, sortBy string) api.PackageResponse {
 	t := s.T()
 
 	path := api.FullRootPath() + "/repositories/" + repoUUID + "/packages"
+	if sortBy != "" {
+		path += "?sort_by=" + sortBy
+	}
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
@@ -379,6 +375,49 @@ func (s *PythonPackagesSuite) getPackageVersions(repoUUID, name string) api.Pyth
 	require.NoError(t, err)
 
 	return resp
+}
+
+func (s *PythonPackagesSuite) seedPythonPackageMirror(repoConfigUUID string) {
+	t := s.T()
+	pkg := models.LightwellPackage{
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Name:                        testPythonPackageName,
+	}
+	require.NoError(t, db.DB.Create(&pkg).Error)
+	t.Cleanup(func() {
+		_ = db.DB.Delete(&models.LightwellPackage{}, "uuid = ?", pkg.UUID).Error
+	})
+
+	newer := models.LightwellPackage{
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Name:                        "zebra",
+	}
+	require.NoError(t, db.DB.Create(&newer).Error)
+	t.Cleanup(func() {
+		_ = db.DB.Delete(&models.LightwellPackage{}, "uuid = ?", newer.UUID).Error
+	})
+	require.NoError(t, db.DB.Create(&models.LightwellPackageVersion{
+		LightwellPackageUUID:        newer.UUID,
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Version:                     "1.0.0",
+		UpstreamVersion:             "1.0.0",
+		PublishedAt:                 "2024-06-01T12:00:00Z",
+	}).Error)
+
+	for _, version := range []string{"0.1", "0.2"} {
+		row := models.LightwellPackageVersion{
+			LightwellPackageUUID:        pkg.UUID,
+			RepositoryConfigurationUUID: repoConfigUUID,
+			Version:                     version,
+			PublishedAt:                 "2024-01-01T12:00:00Z",
+		}
+		row.UpstreamVersion = version
+		if version == "0.1" {
+			row.Summary = "shelf reader summary"
+			row.License = "MIT"
+		}
+		require.NoError(t, db.DB.Create(&row).Error)
+	}
 }
 
 func (s *PythonPackagesSuite) getPackageDetail(repoUUID, name, version string) api.PythonPackageDetailResponse {

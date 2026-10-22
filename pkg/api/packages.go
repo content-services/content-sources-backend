@@ -37,14 +37,16 @@ type MavenPackageVersionsResponse struct {
 
 // MavenPackageDetailResponse represents the detail response for a specific Maven package.
 type MavenPackageDetailResponse struct {
-	Group      string        `json:"group"`
-	Name       string        `json:"name"`
-	Version    string        `json:"version"`
-	Builds     []ReleaseInfo `json:"builds"`
-	Summary    *string       `json:"summary,omitempty"`
-	License    *string       `json:"license,omitempty"`
-	ProjectURL *string       `json:"project_url,omitempty"`
-	Author     *string       `json:"author,omitempty"`
+	Group           string        `json:"group"`
+	Name            string        `json:"name"`
+	Version         string        `json:"version"`
+	Builds          []ReleaseInfo `json:"builds"`
+	LastUpdated     string        `json:"last_updated"`
+	UpstreamVersion string        `json:"upstream_version"`
+	Summary         *string       `json:"summary,omitempty"`
+	License         *string       `json:"license,omitempty"`
+	ProjectURL      *string       `json:"project_url,omitempty"`
+	Author          *string       `json:"author,omitempty"`
 }
 
 // PythonPackageAuthor represents package authorship metadata.
@@ -72,16 +74,17 @@ type PythonPackageVersionsResponse struct {
 
 // PythonPackageDetailResponse represents the detail response for a specific Python package.
 type PythonPackageDetailResponse struct {
-	Name             string               `json:"name"`
-	Version          string               `json:"version"`
-	Summary          string               `json:"summary"`
-	Description      string               `json:"description"`
-	LastUpdated      string               `json:"last_updated"`
-	License          string               `json:"license"`
-	Author           PythonPackageAuthor  `json:"author"`
-	UpstreamVersions []string             `json:"upstream_versions"`
-	ProjectURL       string               `json:"project_url"`
-	Distributions    []PythonDistribution `json:"distributions"`
+	Name            string               `json:"name"`
+	Version         string               `json:"version"`
+	Builds          []ReleaseInfo        `json:"builds"`
+	Summary         string               `json:"summary"`
+	Description     string               `json:"description"`
+	LastUpdated     string               `json:"last_updated"`
+	License         string               `json:"license"`
+	Author          PythonPackageAuthor  `json:"author"`
+	UpstreamVersion string               `json:"upstream_version"`
+	ProjectURL      string               `json:"project_url"`
+	Distributions   []PythonDistribution `json:"distributions"`
 }
 
 // NpmTarball represents tarball metadata for an npm package version.
@@ -101,11 +104,11 @@ type NpmPackageVersionsResponse struct {
 
 // NpmPackageDetailResponse represents the detail response for a specific npm package.
 type NpmPackageDetailResponse struct {
-	Scope            string        `json:"scope"`
-	Name             string        `json:"name"`
-	Version          string        `json:"version"`
-	CreatedAt        string        `json:"created_at"`
-	Tarball          NpmTarball    `json:"tarball"`
-	UpstreamVersions []string      `json:"upstream_versions"`
-	LatestVersions   []ReleaseInfo `json:"latest_versions"`
+	Scope           string        `json:"scope"`
+	Name            string        `json:"name"`
+	Version         string        `json:"version"`
+	Builds          []ReleaseInfo `json:"builds"`
+	LastUpdated     string        `json:"last_updated"`
+	UpstreamVersion string        `json:"upstream_version"`
+	Tarball         NpmTarball    `json:"tarball"`
 }

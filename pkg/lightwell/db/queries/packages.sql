@@ -112,3 +112,155 @@ WHERE rc.org_id = sqlc.arg(org_id)::text
     AND r.content_type IN ('maven', 'python')
     AND lower(r.security_level) IN ('validated', 'remediated')
 ORDER BY r.content_type, p.package_group, p.name, pv.version;
+
+-- name: ListLightwellPythonPackageDetail :many
+SELECT
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.summary,
+    pv.description,
+    pv.published_at,
+    pv.license,
+    pv.author,
+    pv.author_email,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = ''
+    AND p.name = sqlc.arg(name)
+    AND (
+        pv.upstream_version = sqlc.arg(version)
+        OR (pv.upstream_version = '' AND pv.version = sqlc.arg(version))
+    )
+ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellPythonPackageVersions :many
+SELECT
+    p.name,
+    pv.version,
+    pv.upstream_version,
+    pv.summary,
+    pv.description,
+    pv.published_at,
+    pv.license,
+    pv.author,
+    pv.author_email,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = ''
+    AND p.name = sqlc.arg(name)
+ORDER BY pv.version;
+
+-- name: ListLightwellMavenPackageVersions :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at,
+    pv.summary,
+    pv.license,
+    pv.author,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellMavenPackageDetail :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at,
+    pv.summary,
+    pv.license,
+    pv.author,
+    pv.project_url
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+    AND (
+        pv.upstream_version = sqlc.arg(version)
+        OR (pv.upstream_version = '' AND pv.version = sqlc.arg(version))
+    )
+ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellNpmPackageVersions :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellNpmPackageDetail :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.release,
+    pv.upstream_version,
+    pv.published_at
+FROM lightwell_packages p
+JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND p.package_group = sqlc.arg(package_group)
+    AND p.name = sqlc.arg(name)
+    AND (
+        pv.upstream_version = sqlc.arg(version)
+        OR (pv.upstream_version = '' AND pv.version = sqlc.arg(version))
+    )
+ORDER BY pv.published_at DESC, pv.version DESC;
+
+-- name: ListLightwellRepositoryPackages :many
+SELECT
+    p.name,
+    p.package_group,
+    array_agg(pv.version ORDER BY pv.version) AS versions,
+    array_agg(pv.release ORDER BY pv.version) AS releases,
+    array_agg(pv.published_at ORDER BY pv.version) AS published_ats,
+    array_agg(pv.upstream_version ORDER BY pv.version) AS upstream_versions,
+    COUNT(*) OVER() AS total_count
+FROM lightwell_packages p
+LEFT JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
+WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
+    AND (
+        sqlc.arg(search)::text = ''
+        OR p.name ILIKE '%' || sqlc.arg(search)::text || '%'
+        OR p.package_group ILIKE '%' || sqlc.arg(search)::text || '%'
+        OR (p.package_group <> '' AND (p.package_group || ':' || p.name) ILIKE '%' || sqlc.arg(search)::text || '%')
+        OR (p.package_group <> '' AND (p.package_group || '/' || p.name) ILIKE '%' || sqlc.arg(search)::text || '%')
+    )
+GROUP BY p.uuid, p.name, p.package_group
+ORDER BY
+    CASE WHEN sqlc.arg(sort_field)::text = 'name' AND sqlc.arg(sort_dir)::text = 'asc' THEN p.name END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'name' AND sqlc.arg(sort_dir)::text = 'desc' THEN p.name END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'group/name' AND sqlc.arg(sort_dir)::text = 'asc' THEN p.package_group END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'group/name' AND sqlc.arg(sort_dir)::text = 'asc' THEN p.name END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'group/name' AND sqlc.arg(sort_dir)::text = 'desc' THEN p.package_group END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'group/name' AND sqlc.arg(sort_dir)::text = 'desc' THEN p.name END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'last_updated' AND sqlc.arg(sort_dir)::text = 'asc' THEN MAX(pv.published_at) END ASC NULLS LAST,
+    CASE WHEN sqlc.arg(sort_field)::text = 'last_updated' AND sqlc.arg(sort_dir)::text = 'desc' THEN MAX(pv.published_at) END DESC NULLS LAST,
+    p.package_group ASC,
+    p.name ASC
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);

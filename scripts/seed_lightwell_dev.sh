@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Load local Lightwell vulnerability, advisory, and package seed data.
-# The Java and Python repositories must already exist. scripts/create_lightwell_repo.sh
+# The Java, Python, and npm repositories must already exist. scripts/create_lightwell_repo.sh
 # creates them and then calls this script.
 # Re-running skips the vulnerability inserts when those rows are already present
 # and refreshes advisories and packages.

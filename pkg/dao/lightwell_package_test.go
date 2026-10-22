@@ -6,8 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -736,4 +738,637 @@ func (s *LightwellPackageSuite) TestSyncPackagesEmptyDeletesAll() {
 	var pkgCount int64
 	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
 	assert.Equal(t, int64(0), pkgCount)
+}
+
+func (s *LightwellPackageSuite) TestGetPythonPackageDetail() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("python-detail-%s", uuid.NewString()),
+		"lightwell-python",
+		"remediated",
+		config.ContentTypePython,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "django", "",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version, release, upstream, published, summary, description, license, author, authorEmail, projectURL string
+	}{
+		{
+			version: "4.25.7+rhlw.1", release: "rhlw.1", upstream: "4.25.7", published: "2024-01-01T00:00:00Z",
+			summary: "older summary", license: "BSD-3-Clause", author: "Django Software Foundation",
+			authorEmail: "foundation@djangoproject.com", projectURL: "https://www.djangoproject.com/",
+		},
+		{
+			version: "4.25.7+rhlw.3", release: "rhlw.3", upstream: "4.25.7", published: "2024-02-01T00:00:00Z",
+			summary: "A high-level Python web framework", description: "Django is a high-level Python web framework.",
+		},
+		{
+			version: "4.25.70+rhlw.1", release: "rhlw.1", upstream: "4.25.70", published: "2024-03-01T00:00:00Z",
+			summary: "must not match 4.25.7",
+		},
+		{
+			version: "4.2", release: "", upstream: "", published: "2023-01-01T00:00:00Z",
+		},
+		{
+			version: "5.0", release: "", upstream: "5.0", published: "2024-01-01T12:00:00Z",
+			summary: "Django 5",
+		},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl, summary, description, license, author, author_email, project_url
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.published,
+			row.summary, row.description, row.license, row.author, row.authorEmail, row.projectURL,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "4.25.7")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "django", got.Name)
+	assert.Equal(s.T(), "4.25.7", got.Version)
+	assert.Equal(s.T(), "A high-level Python web framework", got.Summary)
+	assert.Equal(s.T(), "Django is a high-level Python web framework.", got.Description)
+	assert.Equal(s.T(), "2024-02-01T00:00:00Z", got.LastUpdated)
+	assert.Equal(s.T(), "", got.License)
+	assert.Equal(s.T(), api.PythonPackageAuthor{}, got.Author)
+	assert.Equal(s.T(), "", got.ProjectURL)
+	assert.Equal(s.T(), "4.25.7", got.UpstreamVersion)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+		{Version: "4.25.7", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
+	}, got.Builds)
+	assert.Empty(s.T(), got.Distributions)
+
+	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "5.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "5.0", got.Version)
+	assert.Equal(s.T(), "Django 5", got.Summary)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "5.0", Release: "", CreatedAt: "2024-01-01T12:00:00Z"},
+	}, got.Builds)
+
+	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "4.2")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "4.2", got.Version)
+	assert.Equal(s.T(), "", got.UpstreamVersion)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.2", Release: "", CreatedAt: "2023-01-01T00:00:00Z"},
+	}, got.Builds)
+
+	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "9.9.9")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "django", got.Name)
+	assert.Equal(s.T(), "9.9.9", got.Version)
+	assert.Equal(s.T(), []api.ReleaseInfo{}, got.Builds)
+	assert.Empty(s.T(), got.Distributions)
+}
+
+func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("python-versions-%s", uuid.NewString()),
+		"lightwell-python",
+		"remediated",
+		config.ContentTypePython,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "django", "",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	versions := []struct {
+		version  string
+		upstream string
+	}{
+		{version: "4.2", upstream: ""},
+		{version: "4.25.7+rhlw.3", upstream: "4.25.7"},
+	}
+	for _, version := range versions {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl, summary
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, '', ?, ?, '', ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, version.version, version.upstream, "2024-01-01T12:00:00Z", "summary "+version.version,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.ListPythonPackageVersions(ctx, repoConfigUUID, "django")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "django", got.Name)
+	s.Require().Len(got.Versions, 2)
+	assert.Equal(s.T(), "4.2", got.Versions[0].Version)
+	assert.Equal(s.T(), "", got.Versions[0].UpstreamVersion)
+	assert.Equal(s.T(), []api.ReleaseInfo{}, got.Versions[0].Builds)
+	assert.Equal(s.T(), "summary 4.2", got.Versions[0].Summary)
+	assert.Equal(s.T(), "2024-01-01T12:00:00Z", got.Versions[0].LastUpdated)
+	assert.Empty(s.T(), got.Versions[0].Distributions)
+	assert.Equal(s.T(), "4.25.7+rhlw.3", got.Versions[1].Version)
+	assert.Equal(s.T(), "4.25.7", got.Versions[1].UpstreamVersion)
+	assert.Empty(s.T(), got.Versions[1].Distributions)
+
+	_, err = pkgDao.ListPythonPackageVersions(ctx, repoConfigUUID, "missing")
+	var daoErr *ce.DaoError
+	s.Require().ErrorAs(err, &daoErr)
+	assert.True(s.T(), daoErr.NotFound)
+}
+
+func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("maven-versions-%s", uuid.NewString()),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "lib", "org.example",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+		summary     string
+		license     string
+	}{
+		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z", summary: "older library", license: "MIT"},
+		{version: "5.3.18.rhlw-00003", release: "rhlw-00003", upstream: "5.3.18", publishedAt: "2024-03-03T00:00:00Z", summary: "A library", license: "Apache-2.0"},
+		{version: "3.15.0.rhlw-00001", release: "rhlw-00001", upstream: "3.15.0", publishedAt: "2023-06-01T00:00:00Z", summary: "stale", license: "OLD"},
+		{version: "3.15.0", publishedAt: "2024-01-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl, summary, license
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt, row.summary, row.license,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "lib")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "org.example", got.Group)
+	assert.Equal(s.T(), "lib", got.Name)
+	s.Require().Len(got.Versions, 2)
+	assert.Equal(s.T(), "5.3.18", got.Versions[0].Version)
+	assert.Equal(s.T(), "5.3.18", got.Versions[0].UpstreamVersion)
+	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.Versions[0].LastUpdated)
+	s.Require().Len(got.Versions[0].Builds, 2)
+	assert.Equal(s.T(), "rhlw-00003", got.Versions[0].Builds[0].Release)
+	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.Versions[0].Builds[0].CreatedAt)
+	assert.Equal(s.T(), "5.3.18", got.Versions[0].Builds[0].Version)
+	assert.Equal(s.T(), "rhlw-00001", got.Versions[0].Builds[1].Release)
+	s.Require().NotNil(got.Versions[0].Summary)
+	assert.Equal(s.T(), "A library", *got.Versions[0].Summary)
+	s.Require().NotNil(got.Versions[0].License)
+	assert.Equal(s.T(), "Apache-2.0", *got.Versions[0].License)
+	assert.Equal(s.T(), "3.15.0", got.Versions[1].Version)
+	assert.Equal(s.T(), "", got.Versions[1].UpstreamVersion)
+	assert.Equal(s.T(), "2024-01-01T00:00:00Z", got.Versions[1].LastUpdated)
+	s.Require().Len(got.Versions[1].Builds, 2)
+	assert.Equal(s.T(), "", got.Versions[1].Builds[0].Release)
+	assert.Nil(s.T(), got.Versions[1].Summary)
+	assert.Nil(s.T(), got.Versions[1].License)
+
+	missing, err := pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "missing")
+	s.Require().NoError(err)
+	assert.Empty(s.T(), missing.Versions)
+}
+
+func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("maven-detail-%s", uuid.NewString()),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "lib", "org.example",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+		summary     string
+	}{
+		{version: "5.3.18.rhlw-00001", release: "rhlw-00001", upstream: "5.3.18", publishedAt: "2024-03-01T00:00:00Z", summary: "older library"},
+		{version: "5.3.18.rhlw-00003", release: "rhlw-00003", upstream: "5.3.18", publishedAt: "2024-03-03T00:00:00Z", summary: "A library"},
+		{version: "5.3.180.rhlw-00003", release: "rhlw-00003", upstream: "5.3.180", publishedAt: "2024-03-04T00:00:00Z"},
+		{version: "3.15.0.rhlw-00001", release: "rhlw-00001", upstream: "3.15.0", publishedAt: "2023-06-01T00:00:00Z", summary: "stale"},
+		{version: "3.15.0", publishedAt: "2024-01-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl, summary
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt, row.summary,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "5.3.18")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "org.example", got.Group)
+	assert.Equal(s.T(), "lib", got.Name)
+	assert.Equal(s.T(), "5.3.18", got.Version)
+	assert.Equal(s.T(), "5.3.18", got.UpstreamVersion)
+	assert.Equal(s.T(), "2024-03-03T00:00:00Z", got.LastUpdated)
+	s.Require().Len(got.Builds, 2)
+	assert.Equal(s.T(), "rhlw-00003", got.Builds[0].Release)
+	assert.Equal(s.T(), "5.3.18", got.Builds[0].Version)
+	assert.Equal(s.T(), "rhlw-00001", got.Builds[1].Release)
+	s.Require().NotNil(got.Summary)
+	assert.Equal(s.T(), "A library", *got.Summary)
+
+	other, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "5.3.180")
+	s.Require().NoError(err)
+	s.Require().Len(other.Builds, 1)
+	assert.Equal(s.T(), "5.3.180", other.Builds[0].Version)
+
+	stored, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "3.15.0")
+	s.Require().NoError(err)
+	s.Require().Len(stored.Builds, 2)
+	assert.Equal(s.T(), "3.15.0", stored.Builds[0].Version)
+	assert.Equal(s.T(), "", stored.Builds[0].Release)
+	assert.Equal(s.T(), "", stored.UpstreamVersion)
+	assert.Equal(s.T(), "2024-01-01T00:00:00Z", stored.LastUpdated)
+	assert.Nil(s.T(), stored.Summary)
+
+	missing, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "9.9.9")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "9.9.9", missing.Version)
+	assert.Empty(s.T(), missing.Builds)
+}
+
+func (s *LightwellPackageSuite) TestListNpmPackageVersions() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("npm-versions-%s", uuid.NewString()),
+		"lightwell-npm",
+		"remediated",
+		config.ContentTypeNpm,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "is-odd", "@types",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+	}{
+		{version: "3.0.0+rhlw.1", release: "rhlw.1", upstream: "3.0.0", publishedAt: "2024-01-01T00:00:00Z"},
+		{version: "3.0.0+rhlw.3", release: "rhlw.3", upstream: "3.0.0", publishedAt: "2024-04-01T00:00:00Z"},
+		{version: "3.0.10+rhlw.1", release: "rhlw.1", upstream: "3.0.10", publishedAt: "2024-02-01T00:00:00Z"},
+		{version: "1.2.3", publishedAt: "2023-12-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '')`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "is-odd")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "@types", got.Scope)
+	assert.Equal(s.T(), "is-odd", got.Name)
+	s.Require().Len(got.Versions, 3)
+	assert.Equal(s.T(), "3.0.0", got.Versions[0].Version)
+	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.Versions[0].LastUpdated)
+	assert.Equal(s.T(), "3.0.0", got.Versions[0].UpstreamVersion)
+	s.Require().Len(got.Versions[0].Builds, 2)
+	assert.Equal(s.T(), "rhlw.3", got.Versions[0].Builds[0].Release)
+	assert.Equal(s.T(), "3.0.0", got.Versions[0].Builds[0].Version)
+	assert.Equal(s.T(), "rhlw.1", got.Versions[0].Builds[1].Release)
+	assert.Equal(s.T(), "3.0.10", got.Versions[1].Version)
+	s.Require().Len(got.Versions[1].Builds, 1)
+	assert.Equal(s.T(), "1.2.3", got.Versions[2].Version)
+	assert.Equal(s.T(), "", got.Versions[2].UpstreamVersion)
+	assert.Equal(s.T(), "", got.Versions[2].Builds[0].Release)
+
+	missing, err := pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "missing")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "@types", missing.Scope)
+	assert.Equal(s.T(), "missing", missing.Name)
+	assert.Empty(s.T(), missing.Versions)
+}
+
+func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("npm-detail-%s", uuid.NewString()),
+		"lightwell-npm",
+		"remediated",
+		config.ContentTypeNpm,
+	)
+
+	pkgUUID := uuid.NewString()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, "is-odd", "@types",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	unscopedUUID := uuid.NewString()
+	err = db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		unscopedUUID, repoConfigUUID, "left-pad", "-",
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, unscopedUUID).Error
+	})
+
+	rows := []struct {
+		pkgUUID     string
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+	}{
+		{pkgUUID: pkgUUID, version: "3.0.0+rhlw.1", release: "rhlw.1", upstream: "3.0.0", publishedAt: "2024-01-01T00:00:00Z"},
+		{pkgUUID: pkgUUID, version: "3.0.0+rhlw.3", release: "rhlw.3", upstream: "3.0.0", publishedAt: "2024-04-01T00:00:00Z"},
+		{pkgUUID: pkgUUID, version: "3.0.10+rhlw.1", release: "rhlw.1", upstream: "3.0.10", publishedAt: "2024-02-01T00:00:00Z"},
+		{pkgUUID: pkgUUID, version: "1.2.3", publishedAt: "2023-12-01T00:00:00Z"},
+		{pkgUUID: unscopedUUID, version: "1.0.0", upstream: "1.0.0", publishedAt: "2024-05-01T00:00:00Z"},
+	}
+	for _, row := range rows {
+		versionUUID := uuid.NewString()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (
+				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+				version, release, upstream_version, published_at, purl
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '')`,
+			versionUUID, row.pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+
+	got, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "3.0.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "@types", got.Scope)
+	assert.Equal(s.T(), "is-odd", got.Name)
+	assert.Equal(s.T(), "3.0.0", got.Version)
+	assert.Equal(s.T(), "2024-04-01T00:00:00Z", got.LastUpdated)
+	assert.Equal(s.T(), "3.0.0", got.UpstreamVersion)
+	s.Require().Len(got.Builds, 2)
+	assert.Equal(s.T(), "rhlw.3", got.Builds[0].Release)
+	assert.Equal(s.T(), "3.0.0", got.Builds[0].Version)
+	assert.Equal(s.T(), "rhlw.1", got.Builds[1].Release)
+	assert.Empty(s.T(), got.Tarball.Filename)
+
+	other, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "3.0.10")
+	s.Require().NoError(err)
+	s.Require().Len(other.Builds, 1)
+	assert.Equal(s.T(), "3.0.10", other.Builds[0].Version)
+
+	stored, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "1.2.3")
+	s.Require().NoError(err)
+	s.Require().Len(stored.Builds, 1)
+	assert.Equal(s.T(), "1.2.3", stored.Builds[0].Version)
+	assert.Equal(s.T(), "", stored.Builds[0].Release)
+	assert.Equal(s.T(), "", stored.UpstreamVersion)
+
+	unscoped, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "-", "left-pad", "1.0.0")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "-", unscoped.Scope)
+	assert.Equal(s.T(), "left-pad", unscoped.Name)
+	s.Require().Len(unscoped.Builds, 1)
+
+	missing, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "9.9.9")
+	s.Require().NoError(err)
+	assert.Equal(s.T(), "9.9.9", missing.Version)
+	assert.Empty(s.T(), missing.Builds)
+	assert.Empty(s.T(), missing.UpstreamVersion)
+}
+
+func (s *LightwellPackageSuite) TestListRepositoryPackages() {
+	ctx, pkgDao := s.dao()
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("repo-packages-%s", uuid.NewString()),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+
+	type versionRow struct {
+		version, release, upstream, published string
+	}
+	packages := []struct {
+		group, name string
+		versions    []versionRow
+	}{
+		{group: "aaa", name: "aaa-empty"},
+		{group: "", name: "django", versions: []versionRow{
+			{version: "4.25.7+rhlw.1", release: "rhlw.1", upstream: "4.25.7", published: "2024-01-01T00:00:00Z"},
+			{version: "4.25.7+rhlw.3", release: "rhlw.3", upstream: "4.25.7", published: "2024-04-01T00:00:00Z"},
+		}},
+		{group: "@types", name: "is-odd", versions: []versionRow{
+			{version: "3.0.0", upstream: "3.0.0", published: "2024-05-01T00:00:00Z"},
+		}},
+		{group: "org.example", name: "lib-a", versions: []versionRow{
+			{version: "1.0.0", upstream: "1.0.0", published: "2024-06-01T00:00:00Z"},
+		}},
+		{group: "org.example", name: "lib-b", versions: []versionRow{
+			{version: "1.0.0.rhlw-00001", release: "rhlw-00001", upstream: "1.0.0", published: "2024-01-01T00:00:00Z"},
+			{version: "1.0.0.rhlw-00003", release: "rhlw-00003", upstream: "1.0.0", published: "2024-03-01T00:00:00Z"},
+			{version: "2.0.0", upstream: "2.0.0", published: "2024-02-01T00:00:00Z"},
+		}},
+	}
+	for _, pkg := range packages {
+		pkgUUID := uuid.NewString()
+		err := db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+			VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+			pkgUUID, repoConfigUUID, pkg.name, pkg.group,
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+		})
+		for _, version := range pkg.versions {
+			versionUUID := uuid.NewString()
+			err = db.DB.WithContext(ctx).Exec(`
+				INSERT INTO lightwell_package_versions (
+					uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
+					version, release, upstream_version, published_at, purl
+				) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '')`,
+				versionUUID, pkgUUID, repoConfigUUID, version.version, version.release, version.upstream, version.published,
+			).Error
+			s.Require().NoError(err)
+			s.T().Cleanup(func() {
+				_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+			})
+		}
+	}
+
+	names := func(resp api.PackageResponse) []string {
+		out := make([]string, len(resp.Results))
+		for i, item := range resp.Results {
+			out[i] = item.Name
+		}
+		return out
+	}
+
+	got, err := pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), 5, got.Total)
+	assert.Equal(s.T(), []string{"django", "aaa-empty", "lib-a", "lib-b", "is-odd"}, names(got))
+
+	byName := map[string]api.PackageItem{}
+	for _, item := range got.Results {
+		byName[item.Name] = item
+	}
+	assert.Equal(s.T(), []string{}, byName["aaa-empty"].Versions)
+	assert.Equal(s.T(), []api.ReleaseInfo{}, byName["aaa-empty"].LatestReleases)
+	assert.Equal(s.T(), []string{"4.25.7"}, byName["django"].Versions)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
+	}, byName["django"].LatestReleases)
+	assert.Equal(s.T(), []string{"1.0.0", "2.0.0"}, byName["lib-b"].Versions)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "1.0.0", Release: "rhlw-00003", CreatedAt: "2024-03-01T00:00:00Z"},
+		{Version: "2.0.0", Release: "", CreatedAt: "2024-02-01T00:00:00Z"},
+	}, byName["lib-b"].LatestReleases)
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"aaa-empty", "django", "is-odd", "lib-a", "lib-b"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "name", "desc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-b", "lib-a", "is-odd", "django", "aaa-empty"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "last_updated", "desc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-a", "is-odd", "django", "lib-b", "aaa-empty"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "last_updated", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-b", "django", "is-odd", "lib-a", "aaa-empty"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "lib-", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-a", "lib-b"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "org.example:lib-a", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"lib-a"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "@types/", "group/name", "asc", 100, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), []string{"is-odd"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "DJANGO", "name", "asc", 1, 0)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), 1, got.Total)
+	assert.Equal(s.T(), []string{"django"}, names(got))
+
+	got, err = pkgDao.ListRepositoryPackages(ctx, repoConfigUUID, "", "name", "asc", 1, 1)
+	s.Require().NoError(err)
+	assert.Equal(s.T(), 5, got.Total)
+	assert.Equal(s.T(), 1, got.Limit)
+	assert.Equal(s.T(), 1, got.Offset)
+	assert.Equal(s.T(), []string{"django"}, names(got))
+
+	_, err = pkgDao.ListRepositoryPackages(ctx, "not-a-uuid", "", "name", "asc", 10, 0)
+	var daoErr *ce.DaoError
+	s.Require().ErrorAs(err, &daoErr)
+	assert.True(s.T(), daoErr.BadValidation)
 }

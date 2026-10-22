@@ -5,9 +5,10 @@
 -- whose stage is 'Lightwell Network'. package_name comes from the
 -- vulnerability purl, package_version is component_version, and release rows
 -- follow published_versions.
--- Java advisories belong to lightwell/java/remediated or lightwell/java/predisclosure
--- and Python advisories to lightwell/python/remediated or lightwell/python/predisclosure.
--- JavaScript and C# stay on lightwell/seed.
+-- Java advisories belong to lightwell/java/remediated or lightwell/java/predisclosure,
+-- Python advisories to lightwell/python/remediated or lightwell/python/predisclosure,
+-- and JavaScript advisories to lightwell/npm/remediated.
+-- C# stays on lightwell/seed.
 BEGIN;
 
 INSERT INTO repositories (
@@ -114,7 +115,7 @@ SELECT
         WHEN v.vulnerability_id LIKE 'LWL-2026-36%' AND v.language = 'python' THEN 'lightwell/python/predisclosure'
         WHEN v.language = 'java' THEN 'lightwell/java/remediated'
         WHEN v.language = 'python' THEN 'lightwell/python/remediated'
-        WHEN v.language = 'javascript' THEN 'lightwell/seed/npm'
+        WHEN v.language = 'javascript' THEN 'lightwell/npm/remediated'
         WHEN v.language = 'csharp' THEN 'lightwell/seed/nuget'
         ELSE 'lightwell/seed'
     END,
@@ -148,6 +149,10 @@ SELECT
         WHEN v.language = 'python' THEN (
             SELECT rc.uuid FROM repository_configurations rc
             WHERE rc.org_id = '-3' AND rc.name = 'lightwell/python/remediated' AND rc.deleted_at IS NULL
+        )
+        WHEN v.language = 'javascript' THEN (
+            SELECT rc.uuid FROM repository_configurations rc
+            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/npm/remediated' AND rc.deleted_at IS NULL
         )
         ELSE '00000000-0000-4000-8000-0000000000c0'::uuid
     END,

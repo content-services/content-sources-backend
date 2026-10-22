@@ -45,6 +45,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", h.getMavenPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", h.getNpmPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", h.getNpmPackageVersions, rbac.RbacVerbRead, middleware...)
 }
 
 // listPackages godoc
@@ -102,6 +104,7 @@ func (h *LightwellPackageHandler) listPackageVersions(c echo.Context) error {
 // @Param        offset query int false "Starting point for pagination. Default: 0"
 // @Param        limit query int false "Number of items per page. Default: 100"
 // @Param        search query string false "Search term to filter packages."
+// @Param        sort_by query string false "Sort field. Valid fields are name and last_updated. Append :asc or :desc. name defaults to asc. last_updated defaults to desc."
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.PackageResponse
@@ -158,7 +161,7 @@ func (h *LightwellPackageHandler) getMavenPackageDetail(c echo.Context) error {
 // getPythonPackageDetail godoc
 // @Summary      Get Python Package Detail
 // @ID           getLightwellPythonPackageDetail
-// @Description  Get metadata and distributions for a specific Python package by name and version.
+// @Description  Get metadata and builds for a specific Python package by name and version.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        name path string true "Python package normalized name"
@@ -192,4 +195,43 @@ func (h *LightwellPackageHandler) getPythonPackageDetail(c echo.Context) error {
 // @Router       /repositories/{uuid}/python_packages/{name} [get]
 func (h *LightwellPackageHandler) getPythonPackageVersions(c echo.Context) error {
 	return h.PackageHandler.GetPythonPackageVersions(c)
+}
+
+// getNpmPackageDetail godoc
+// @Summary      Get NPM Package Detail
+// @ID           getLightwellNpmPackageDetail
+// @Description  Get an npm package version by scope, name, and upstream version. builds lists each rebuild. Use "-" as the scope for unscoped packages.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository UUID"
+// @Param        scope path string true "NPM package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "NPM package name"
+// @Param        version path string true "NPM package upstream version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.NpmPackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/npm_packages/{scope}/{name}/{version} [get]
+func (h *LightwellPackageHandler) getNpmPackageDetail(c echo.Context) error {
+	return h.PackageHandler.GetNpmPackageDetail(c)
+}
+
+// getNpmPackageVersions godoc
+// @Summary      Get NPM Package Versions
+// @ID           getLightwellNpmPackageVersions
+// @Description  List versions for an npm package by scope and name. The version is the upstream version, and builds lists each rebuild. Use "-" as the scope for unscoped packages.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository UUID"
+// @Param        scope path string true "NPM package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "NPM package name"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.NpmPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/npm_packages/{scope}/{name} [get]
+func (h *LightwellPackageHandler) getNpmPackageVersions(c echo.Context) error {
+	return h.PackageHandler.GetNpmPackageVersions(c)
 }

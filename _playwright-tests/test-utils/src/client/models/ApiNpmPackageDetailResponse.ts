@@ -36,16 +36,16 @@ import {
 export interface ApiNpmPackageDetailResponse {
     /**
      * 
-     * @type {string}
-     * @memberof ApiNpmPackageDetailResponse
-     */
-    createdAt?: string;
-    /**
-     * 
      * @type {Array<ApiReleaseInfo>}
      * @memberof ApiNpmPackageDetailResponse
      */
-    latestVersions?: Array<ApiReleaseInfo>;
+    builds?: Array<ApiReleaseInfo>;
+    /**
+     * 
+     * @type {string}
+     * @memberof ApiNpmPackageDetailResponse
+     */
+    lastUpdated?: string;
     /**
      * 
      * @type {string}
@@ -66,10 +66,10 @@ export interface ApiNpmPackageDetailResponse {
     tarball?: ApiNpmTarball;
     /**
      * 
-     * @type {Array<string>}
+     * @type {string}
      * @memberof ApiNpmPackageDetailResponse
      */
-    upstreamVersions?: Array<string>;
+    upstreamVersion?: string;
     /**
      * 
      * @type {string}
@@ -95,12 +95,12 @@ export function ApiNpmPackageDetailResponseFromJSONTyped(json: any, ignoreDiscri
     }
     return {
         
-        'createdAt': json['created_at'] == null ? undefined : json['created_at'],
-        'latestVersions': json['latest_versions'] == null ? undefined : ((json['latest_versions'] as Array<any>).map(ApiReleaseInfoFromJSON)),
+        'builds': json['builds'] == null ? undefined : ((json['builds'] as Array<any>).map(ApiReleaseInfoFromJSON)),
+        'lastUpdated': json['last_updated'] == null ? undefined : json['last_updated'],
         'name': json['name'] == null ? undefined : json['name'],
         'scope': json['scope'] == null ? undefined : json['scope'],
         'tarball': json['tarball'] == null ? undefined : ApiNpmTarballFromJSON(json['tarball']),
-        'upstreamVersions': json['upstream_versions'] == null ? undefined : json['upstream_versions'],
+        'upstreamVersion': json['upstream_version'] == null ? undefined : json['upstream_version'],
         'version': json['version'] == null ? undefined : json['version'],
     };
 }
@@ -116,12 +116,12 @@ export function ApiNpmPackageDetailResponseToJSONTyped(value?: ApiNpmPackageDeta
 
     return {
         
-        'created_at': value['createdAt'],
-        'latest_versions': value['latestVersions'] == null ? undefined : ((value['latestVersions'] as Array<any>).map(ApiReleaseInfoToJSON)),
+        'builds': value['builds'] == null ? undefined : ((value['builds'] as Array<any>).map(ApiReleaseInfoToJSON)),
+        'last_updated': value['lastUpdated'],
         'name': value['name'],
         'scope': value['scope'],
         'tarball': ApiNpmTarballToJSON(value['tarball']),
-        'upstream_versions': value['upstreamVersions'],
+        'upstream_version': value['upstreamVersion'],
         'version': value['version'],
     };
 }

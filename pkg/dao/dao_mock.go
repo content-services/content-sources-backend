@@ -11036,6 +11036,458 @@ func (_m *MockLightwellPackageDao) EXPECT() *MockLightwellPackageDao_Expecter {
 	return &MockLightwellPackageDao_Expecter{mock: &_m.Mock}
 }
 
+// GetPythonPackageDetail provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) GetPythonPackageDetail(ctx context.Context, repoConfigUUID string, name string, version string) (api.PythonPackageDetailResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, name, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPythonPackageDetail")
+	}
+
+	var r0 api.PythonPackageDetailResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (api.PythonPackageDetailResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, name, version)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) api.PythonPackageDetailResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, name, version)
+	} else {
+		r0 = ret.Get(0).(api.PythonPackageDetailResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, name, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_GetPythonPackageDetail_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPythonPackageDetail'
+type MockLightwellPackageDao_GetPythonPackageDetail_Call struct {
+	*mock.Call
+}
+
+// GetPythonPackageDetail is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - name string
+//   - version string
+func (_e *MockLightwellPackageDao_Expecter) GetPythonPackageDetail(ctx interface{}, repoConfigUUID interface{}, name interface{}, version interface{}) *MockLightwellPackageDao_GetPythonPackageDetail_Call {
+	return &MockLightwellPackageDao_GetPythonPackageDetail_Call{Call: _e.mock.On("GetPythonPackageDetail", ctx, repoConfigUUID, name, version)}
+}
+
+func (_c *MockLightwellPackageDao_GetPythonPackageDetail_Call) Run(run func(ctx context.Context, repoConfigUUID string, name string, version string)) *MockLightwellPackageDao_GetPythonPackageDetail_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_GetPythonPackageDetail_Call) Return(lightwellPythonPackageDetail api.PythonPackageDetailResponse, err error) *MockLightwellPackageDao_GetPythonPackageDetail_Call {
+	_c.Call.Return(lightwellPythonPackageDetail, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_GetPythonPackageDetail_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, name string, version string) (api.PythonPackageDetailResponse, error)) *MockLightwellPackageDao_GetPythonPackageDetail_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListPythonPackageVersions provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ListPythonPackageVersions(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPythonPackageVersions")
+	}
+
+	var r0 api.PythonPackageVersionsResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (api.PythonPackageVersionsResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) api.PythonPackageVersionsResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, name)
+	} else {
+		r0 = ret.Get(0).(api.PythonPackageVersionsResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_ListPythonPackageVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPythonPackageVersions'
+type MockLightwellPackageDao_ListPythonPackageVersions_Call struct {
+	*mock.Call
+}
+
+// ListPythonPackageVersions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - name string
+func (_e *MockLightwellPackageDao_Expecter) ListPythonPackageVersions(ctx interface{}, repoConfigUUID interface{}, name interface{}) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	return &MockLightwellPackageDao_ListPythonPackageVersions_Call{Call: _e.mock.On("ListPythonPackageVersions", ctx, repoConfigUUID, name)}
+}
+
+func (_c *MockLightwellPackageDao_ListPythonPackageVersions_Call) Run(run func(ctx context.Context, repoConfigUUID string, name string)) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListPythonPackageVersions_Call) Return(pythonPackageVersionsResponse api.PythonPackageVersionsResponse, err error) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	_c.Call.Return(pythonPackageVersionsResponse, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListPythonPackageVersions_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, name string) (api.PythonPackageVersionsResponse, error)) *MockLightwellPackageDao_ListPythonPackageVersions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetMavenPackageDetail provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) GetMavenPackageDetail(ctx context.Context, repoConfigUUID string, group string, name string, version string) (api.MavenPackageDetailResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, group, name, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMavenPackageDetail")
+	}
+
+	var r0 api.MavenPackageDetailResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) (api.MavenPackageDetailResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, group, name, version)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) api.MavenPackageDetailResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, group, name, version)
+	} else {
+		r0 = ret.Get(0).(api.MavenPackageDetailResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, group, name, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_GetMavenPackageDetail_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMavenPackageDetail'
+type MockLightwellPackageDao_GetMavenPackageDetail_Call struct {
+	*mock.Call
+}
+
+// GetMavenPackageDetail is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - group string
+//   - name string
+//   - version string
+func (_e *MockLightwellPackageDao_Expecter) GetMavenPackageDetail(ctx interface{}, repoConfigUUID interface{}, group interface{}, name interface{}, version interface{}) *MockLightwellPackageDao_GetMavenPackageDetail_Call {
+	return &MockLightwellPackageDao_GetMavenPackageDetail_Call{Call: _e.mock.On("GetMavenPackageDetail", ctx, repoConfigUUID, group, name, version)}
+}
+
+func (_c *MockLightwellPackageDao_GetMavenPackageDetail_Call) Run(run func(ctx context.Context, repoConfigUUID string, group string, name string, version string)) *MockLightwellPackageDao_GetMavenPackageDetail_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_GetMavenPackageDetail_Call) Return(mavenPackageDetailResponse api.MavenPackageDetailResponse, err error) *MockLightwellPackageDao_GetMavenPackageDetail_Call {
+	_c.Call.Return(mavenPackageDetailResponse, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_GetMavenPackageDetail_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, group string, name string, version string) (api.MavenPackageDetailResponse, error)) *MockLightwellPackageDao_GetMavenPackageDetail_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetNpmPackageDetail provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, scope, name, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetNpmPackageDetail")
+	}
+
+	var r0 api.NpmPackageDetailResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) (api.NpmPackageDetailResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, scope, name, version)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) api.NpmPackageDetailResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, scope, name, version)
+	} else {
+		r0 = ret.Get(0).(api.NpmPackageDetailResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, scope, name, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ListRepositoryPackages provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ListRepositoryPackages(ctx context.Context, repoConfigUUID string, search string, sortField string, sortDir string, limit int, offset int) (api.PackageResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, search, sortField, sortDir, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListRepositoryPackages")
+	}
+
+	var r0 api.PackageResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, int, int) (api.PackageResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, search, sortField, sortDir, limit, offset)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, int, int) api.PackageResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, search, sortField, sortDir, limit, offset)
+	} else {
+		r0 = ret.Get(0).(api.PackageResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, int, int) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, search, sortField, sortDir, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_ListRepositoryPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListRepositoryPackages'
+type MockLightwellPackageDao_ListRepositoryPackages_Call struct {
+	*mock.Call
+}
+
+// ListRepositoryPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - search string
+//   - sortField string
+//   - sortDir string
+//   - limit int
+//   - offset int
+func (_e *MockLightwellPackageDao_Expecter) ListRepositoryPackages(ctx interface{}, repoConfigUUID interface{}, search interface{}, sortField interface{}, sortDir interface{}, limit interface{}, offset interface{}) *MockLightwellPackageDao_ListRepositoryPackages_Call {
+	return &MockLightwellPackageDao_ListRepositoryPackages_Call{Call: _e.mock.On("ListRepositoryPackages", ctx, repoConfigUUID, search, sortField, sortDir, limit, offset)}
+}
+
+func (_c *MockLightwellPackageDao_ListRepositoryPackages_Call) Run(run func(ctx context.Context, repoConfigUUID string, search string, sortField string, sortDir string, limit int, offset int)) *MockLightwellPackageDao_ListRepositoryPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		var arg5 int
+		if args[5] != nil {
+			arg5 = args[5].(int)
+		}
+		var arg6 int
+		if args[6] != nil {
+			arg6 = args[6].(int)
+		}
+		run(arg0, arg1, arg2, arg3, arg4, arg5, arg6)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListRepositoryPackages_Call) Return(packageResponse api.PackageResponse, err error) *MockLightwellPackageDao_ListRepositoryPackages_Call {
+	_c.Call.Return(packageResponse, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListRepositoryPackages_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, search string, sortField string, sortDir string, limit int, offset int) (api.PackageResponse, error)) *MockLightwellPackageDao_ListRepositoryPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListMavenPackageVersions provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ListMavenPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) (api.MavenPackageVersionsResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, group, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListMavenPackageVersions")
+	}
+
+	var r0 api.MavenPackageVersionsResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (api.MavenPackageVersionsResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, group, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) api.MavenPackageVersionsResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, group, name)
+	} else {
+		r0 = ret.Get(0).(api.MavenPackageVersionsResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, group, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ListNpmPackageVersions provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ListNpmPackageVersions(ctx context.Context, repoConfigUUID string, scope string, name string) (api.NpmPackageVersionsResponse, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, scope, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListNpmPackageVersions")
+	}
+
+	var r0 api.NpmPackageVersionsResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (api.NpmPackageVersionsResponse, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, scope, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) api.NpmPackageVersionsResponse); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, scope, name)
+	} else {
+		r0 = ret.Get(0).(api.NpmPackageVersionsResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, scope, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_ListMavenPackageVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListMavenPackageVersions'
+type MockLightwellPackageDao_ListMavenPackageVersions_Call struct {
+	*mock.Call
+}
+
+// ListMavenPackageVersions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - group string
+//   - name string
+func (_e *MockLightwellPackageDao_Expecter) ListMavenPackageVersions(ctx interface{}, repoConfigUUID interface{}, group interface{}, name interface{}) *MockLightwellPackageDao_ListMavenPackageVersions_Call {
+	return &MockLightwellPackageDao_ListMavenPackageVersions_Call{Call: _e.mock.On("ListMavenPackageVersions", ctx, repoConfigUUID, group, name)}
+}
+
+func (_c *MockLightwellPackageDao_ListMavenPackageVersions_Call) Run(run func(ctx context.Context, repoConfigUUID string, group string, name string)) *MockLightwellPackageDao_ListMavenPackageVersions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListMavenPackageVersions_Call) Return(mavenPackageVersionsResponse api.MavenPackageVersionsResponse, err error) *MockLightwellPackageDao_ListMavenPackageVersions_Call {
+	_c.Call.Return(mavenPackageVersionsResponse, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ListMavenPackageVersions_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, group string, name string) (api.MavenPackageVersionsResponse, error)) *MockLightwellPackageDao_ListMavenPackageVersions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InternalOnlyListLensCatalog provides a mock function for the type MockLightwellPackageDao
 func (_mock *MockLightwellPackageDao) InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error) {
 	ret := _mock.Called(ctx)

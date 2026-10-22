@@ -858,6 +858,9 @@
                     "group": {
                         "type": "string"
                     },
+                    "last_updated": {
+                        "type": "string"
+                    },
                     "license": {
                         "type": "string"
                     },
@@ -868,6 +871,9 @@
                         "type": "string"
                     },
                     "summary": {
+                        "type": "string"
+                    },
+                    "upstream_version": {
                         "type": "string"
                     },
                     "version": {
@@ -895,14 +901,14 @@
             },
             "api.NpmPackageDetailResponse": {
                 "properties": {
-                    "created_at": {
-                        "type": "string"
-                    },
-                    "latest_versions": {
+                    "builds": {
                         "items": {
                             "$ref": "#/components/schemas/api.ReleaseInfo"
                         },
                         "type": "array"
+                    },
+                    "last_updated": {
+                        "type": "string"
                     },
                     "name": {
                         "type": "string"
@@ -913,11 +919,8 @@
                     "tarball": {
                         "$ref": "#/components/schemas/api.NpmTarball"
                     },
-                    "upstream_versions": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
+                    "upstream_version": {
+                        "type": "string"
                     },
                     "version": {
                         "type": "string"
@@ -1221,6 +1224,12 @@
                     "author": {
                         "$ref": "#/components/schemas/api.PythonPackageAuthor"
                     },
+                    "builds": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ReleaseInfo"
+                        },
+                        "type": "array"
+                    },
                     "description": {
                         "type": "string"
                     },
@@ -1245,11 +1254,8 @@
                     "summary": {
                         "type": "string"
                     },
-                    "upstream_versions": {
-                        "items": {
-                            "type": "string"
-                        },
-                        "type": "array"
+                    "upstream_version": {
+                        "type": "string"
                     },
                     "version": {
                         "type": "string"
@@ -6534,7 +6540,7 @@
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}": {
             "get": {
-                "description": "Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.",
+                "description": "List versions for an npm package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "operationId": "getNpmPackageVersions",
                 "parameters": [
                     {
@@ -6625,7 +6631,7 @@
         },
         "/repositories/{uuid}/npm_packages/{scope}/{name}/{version}": {
             "get": {
-                "description": "Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.",
+                "description": "Get an npm package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "operationId": "getNpmPackageDetail",
                 "parameters": [
                     {
@@ -6656,7 +6662,7 @@
                         }
                     },
                     {
-                        "description": "NPM package version",
+                        "description": "NPM package upstream version",
                         "in": "path",
                         "name": "version",
                         "required": true,
@@ -6865,6 +6871,14 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "description": "Sort field. Valid fields are name and last_updated. Append :asc or :desc. name defaults to asc. last_updated defaults to desc.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -7009,7 +7023,7 @@
         },
         "/repositories/{uuid}/python_packages/{name}/{version}": {
             "get": {
-                "description": "Get metadata and distributions for a specific Python package by name and version.",
+                "description": "Get metadata and builds for a specific Python package by name and version.",
                 "operationId": "getPythonPackageDetail",
                 "parameters": [
                     {
