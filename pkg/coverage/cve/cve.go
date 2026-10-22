@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 )
 
@@ -54,9 +55,10 @@ type PackageCVE struct {
 //
 // The returned slice is aligned 1:1 with results; packages that are not exact matches,
 // or that have no matching advisories, get a zero Count and a nil Range. Within a package
-// CVEs are de-duplicated by AdvisoryID, and the summary de-duplicates by (package,
-// AdvisoryID) so a CVE spanning multiple versions of the same package is counted once.
-// CVEs scoring below lowThreshold are excluded from both the counts and the range.
+// CVEs are de-duplicated by AdvisoryID. The summary counts each CVE once for the whole
+// report, using the trimmed CVE or LW name inside the advisory id, and keeps the highest
+// score when that CVE appears more than once. CVEs scoring below lowThreshold are
+// excluded from both the counts and the range.
 func Enrich(results []matcher.MatchResult, advisories []Advisory) ([]PackageCVE, Count) {
 	index := buildAdvisoryIndex(advisories)
 
@@ -73,7 +75,10 @@ func Enrich(results []matcher.MatchResult, advisories []Advisory) ([]PackageCVE,
 		}
 		perPackage[i] = computePackageCVE(scores)
 		for advisoryID, score := range scores {
-			summaryScores[key+"\x00"+advisoryID] = score
+			name := api.LightwellAdvisoryName(advisoryID)
+			if prev, ok := summaryScores[name]; !ok || score > prev {
+				summaryScores[name] = score
+			}
 		}
 	}
 
