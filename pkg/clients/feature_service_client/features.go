@@ -164,7 +164,7 @@ func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID stri
 		return entitledFeatures, nil
 	}
 
-	cacheHit, err := fs.cache.GetFeatureStatus(ctx)
+	cacheHit, err := fs.cache.GetFeatureStatus(ctx, orgID)
 	if err != nil && !errors.Is(err, cache.ErrNotFound) {
 		log.Logger.Error().Err(err).Msg("featureStatus: error reading from cache")
 	}
@@ -179,7 +179,7 @@ func (fs featureServiceImpl) GetEntitledFeatures(ctx context.Context, orgID stri
 	}
 	entitledFeatures = append(entitledFeatures, features.FeatureList...)
 
-	err = fs.cache.SetFeatureStatus(ctx, features)
+	err = fs.cache.SetFeatureStatus(ctx, orgID, features)
 	if err != nil {
 		log.Logger.Error().Err(err).Msg("featureStatus: error writing to cache")
 	}
