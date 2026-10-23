@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -235,4 +236,60 @@ func (suite *EnforceSuite) TestSkipEndpoints() {
 
 	// status is 200 because the endpoint is skipped
 	assert.Equal(suite.T(), http.StatusOK, response.StatusCode)
+}
+
+func lightwellTestPrefix() string {
+	parts := strings.Split(strings.Trim(api.FullRootPath(), "/"), "/")
+	parts[1] = "lightwell"
+	return "/" + strings.Join(parts, "/")
+}
+
+func (suite *EnforceSuite) TestClearinghouseReadAllowsOtherOrg() {
+	old := config.Get().Features.LightwellClearinghouseRead
+	suite.T().Cleanup(func() {
+		config.Get().Features.LightwellClearinghouseRead = old
+	})
+
+	router := echo.New()
+	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
+	router.Use(middleware.EnforceConsistentOrgId)
+	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
+
+	prefix := lightwellTestPrefix()
+	group := router.Group(prefix)
+	group.Add(http.MethodGet, "/clearinghouse/submissions", otherOrgClearinghouseResponse)
+	group.Add(http.MethodGet, "/clearinghouse/submissions/:uuid", otherOrgClearinghouseResponse)
+	group.Add(http.MethodPost, "/clearinghouse/submissions/:uuid/process", otherOrgClearinghouseResponse)
+	group.Add(http.MethodGet, "/clearinghouse/submissions/:uuid/submission", otherOrgClearinghouseResponse)
+	group.Add(http.MethodGet, "/clearinghouse/submissions/:uuid/archive", otherOrgClearinghouseResponse)
+	group.Add(http.MethodGet, "/clearinghouse/submissions/:uuid/files/:filename", otherOrgClearinghouseResponse)
+	group.Add(http.MethodPost, "/clearinghouse/submissions/:uuid/files", otherOrgClearinghouseResponse)
+
+	serve := func(method, path string) int {
+		req := httptest.NewRequest(method, prefix+path, nil)
+		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(suite.T()))
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+		return rr.Code
+	}
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{}
+	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodGet, "/clearinghouse/submissions"))
+	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodGet, "/clearinghouse/submissions/abc"))
+	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodPost, "/clearinghouse/submissions/abc/process"))
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc/submission"))
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc/archive"))
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc/files/notes.txt"))
+	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodPost, "/clearinghouse/submissions/abc/files"))
+
+	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: true}
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions"))
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc"))
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodPost, "/clearinghouse/submissions/abc/process"))
+	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc/submission"))
+	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodPost, "/clearinghouse/submissions/abc/files"))
+}
+
+func otherOrgClearinghouseResponse(c echo.Context) error {
+	return c.JSONBlob(http.StatusOK, []byte(`{"data":[{"org_id":"other-org"}]}`))
 }
