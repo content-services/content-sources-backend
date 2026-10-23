@@ -1,7 +1,6 @@
 package lightwell
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -37,6 +36,11 @@ func (s *LightwellSuite) SetupTest() {
 
 // serveRouter sets up a router with all lightwell routes registered
 func (s *LightwellSuite) serveRouter(req *http.Request) (int, []byte, error) {
+	rr := s.record(req)
+	return rr.Code, rr.Body.Bytes(), nil
+}
+
+func (s *LightwellSuite) record(req *http.Request) *httptest.ResponseRecorder {
 	router := echo.New()
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -54,10 +58,5 @@ func (s *LightwellSuite) serveRouter(req *http.Request) (int, []byte, error) {
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
-
-	response := rr.Result()
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	return response.StatusCode, body, err
+	return rr
 }

@@ -81,7 +81,7 @@ func (s *MavenPackagesSuite) TearDownTest() {
 	s.Suite.TearDownTest()
 }
 
-func (s *MavenPackagesSuite) serveRouter(req *http.Request) (int, []byte, error) {
+func (s *MavenPackagesSuite) serveRouter(req *http.Request) (int, []byte, http.Header, error) {
 	rr := httptest.NewRecorder()
 	s.server.Handler.ServeHTTP(rr, req)
 
@@ -91,7 +91,7 @@ func (s *MavenPackagesSuite) serveRouter(req *http.Request) (int, []byte, error)
 	body, err := io.ReadAll(response.Body)
 	require.NoError(s.T(), err)
 
-	return response.StatusCode, body, err
+	return response.StatusCode, body, response.Header, err
 }
 
 func (s *MavenPackagesSuite) getZestClient() (context.Context, *zest.APIClient, error) {
@@ -145,8 +145,11 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	assert.NotEmpty(t, firstPackage.Group)
 	assert.NotEmpty(t, firstPackage.Name)
 
-	// Test the package versions endpoint using data from the list
-	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name)
+	// Test the package versions endpoint using data from the list.
+	// java_packages is the canonical path; maven_packages stays as a deprecated alias.
+	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, "maven_packages")
+	javaVersions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, "java_packages")
+	assert.Equal(t, versions, javaVersions)
 	assert.Equal(t, firstPackage.Group, versions.Group)
 	assert.Equal(t, firstPackage.Name, versions.Name)
 	require.NotEmpty(t, versions.Versions)
@@ -158,7 +161,9 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 
 	// Test the package detail endpoint using data from the list
 	require.NotEmpty(t, firstPackage.Versions)
-	detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0])
+	detail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0], "maven_packages")
+	javaDetail := s.getPackageDetail(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name, firstPackage.Versions[0], "java_packages")
+	assert.Equal(t, detail, javaDetail)
 	assert.Equal(t, firstPackage.Group, detail.Group)
 	assert.Equal(t, firstPackage.Name, detail.Name)
 	assert.Equal(t, firstPackage.Versions[0], detail.Version)
@@ -373,7 +378,7 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
 
-	code, body, err := s.serveRouter(req)
+	code, body, _, err := s.serveRouter(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, code, string(body))
 
@@ -392,17 +397,18 @@ func (s *MavenPackagesSuite) listPackages(repoUUID string) api.PackageResponse {
 	return resp
 }
 
-func (s *MavenPackagesSuite) listPackageVersions(repoUUID, group, name string) api.MavenPackageVersionsResponse {
+func (s *MavenPackagesSuite) listPackageVersions(repoUUID, group, name, segment string) api.MavenPackageVersionsResponse {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, group, name)
+	path := fmt.Sprintf("%s/repositories/%s/%s/%s/%s", api.FullRootPath(), repoUUID, segment, group, name)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
 
-	code, body, err := s.serveRouter(req)
+	code, body, header, err := s.serveRouter(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, code, string(body))
+	s.assertPackagePathDeprecation(header, segment, path)
 
 	var resp api.MavenPackageVersionsResponse
 	err = json.Unmarshal(body, &resp)
@@ -411,23 +417,36 @@ func (s *MavenPackagesSuite) listPackageVersions(repoUUID, group, name string) a
 	return resp
 }
 
-func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version string) api.MavenPackageDetailResponse {
+func (s *MavenPackagesSuite) getPackageDetail(repoUUID, group, name, version, segment string) api.MavenPackageDetailResponse {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, group, name, version)
+	path := fmt.Sprintf("%s/repositories/%s/%s/%s/%s/%s", api.FullRootPath(), repoUUID, segment, group, name, version)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
 
-	code, body, err := s.serveRouter(req)
+	code, body, header, err := s.serveRouter(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, code, string(body))
+	s.assertPackagePathDeprecation(header, segment, path)
 
 	var resp api.MavenPackageDetailResponse
 	err = json.Unmarshal(body, &resp)
 	require.NoError(t, err)
 
 	return resp
+}
+
+func (s *MavenPackagesSuite) assertPackagePathDeprecation(header http.Header, segment, path string) {
+	t := s.T()
+	if segment == "maven_packages" {
+		successor := strings.Replace(path, "/maven_packages/", "/java_packages/", 1)
+		assert.Equal(t, "true", header.Get("Deprecation"))
+		assert.Equal(t, "<"+successor+">; rel=\"successor-version\"", header.Get("Link"))
+		return
+	}
+	assert.Empty(t, header.Get("Deprecation"))
+	assert.Empty(t, header.Get("Link"))
 }
 
 func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
