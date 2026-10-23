@@ -138,7 +138,25 @@ func SkipEnforceConsistentOrgId(c echo.Context) bool {
 		"/environments/names",
 		"/module_streams/search",
 	}
-	return utils.Contains(skipped, path)
+	return utils.Contains(skipped, path) || skipClearinghouseOrgCheck(c, path)
+}
+
+// skipClearinghouseOrgCheck allows responses that legitimately contain another org.
+// File downloads are raw bytes and can look like JSON. List, fetch, and process return
+// another org's submission when the caller has the clearinghouse read feature.
+func skipClearinghouseOrgCheck(c echo.Context, path string) bool {
+	switch path {
+	case "/clearinghouse/submissions/:uuid/submission",
+		"/clearinghouse/submissions/:uuid/archive",
+		"/clearinghouse/submissions/:uuid/files/:filename":
+		return true
+	case "/clearinghouse/submissions",
+		"/clearinghouse/submissions/:uuid",
+		"/clearinghouse/submissions/:uuid/process":
+		return config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellClearinghouseRead)
+	default:
+		return false
+	}
 }
 
 // getAccountIdOrgId extracts account ID and org ID from the request context
