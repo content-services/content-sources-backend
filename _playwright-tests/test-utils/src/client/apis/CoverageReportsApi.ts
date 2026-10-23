@@ -31,6 +31,7 @@ import {
 
 export interface CreateCoverageReportRequest {
     file: Blob;
+    catalogSource?: string;
 }
 
 export interface GetCoverageReportRequest {
@@ -80,6 +81,10 @@ export class CoverageReportsApi extends runtime.BaseAPI {
             formParams = new FormData();
         } else {
             formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['catalogSource'] != null) {
+            formParams.append('catalog_source', requestParameters['catalogSource'] as any);
         }
 
         if (requestParameters['file'] != null) {

@@ -111,6 +111,10 @@
                     "group": {
                         "type": "string"
                     },
+                    "last_publication": {
+                        "description": "LastPublication is the most recent publish time across the package's versions.",
+                        "type": "string"
+                    },
                     "latest_releases": {
                         "items": {
                             "$ref": "#/components/schemas/api.ReleaseInfo"
@@ -1115,6 +1119,30 @@
                         "description": "Filter by package name (substring match)",
                         "in": "query",
                         "name": "name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by package name or group/scope (substring match)",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Sort the results. Valid fields: group/name, name, scope/name, last_publication. Each may be suffixed with :asc or :desc (default asc).",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by repository name",
+                        "in": "query",
+                        "name": "repository",
                         "schema": {
                             "type": "string"
                         }

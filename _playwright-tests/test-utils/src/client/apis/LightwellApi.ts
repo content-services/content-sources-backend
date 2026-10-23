@@ -29,6 +29,11 @@ import {
     ApiLightwellPackageVersionCollectionResponseToJSON,
 } from '../models/ApiLightwellPackageVersionCollectionResponse';
 import {
+    type ApiTermsRequiredResponse,
+    ApiTermsRequiredResponseFromJSON,
+    ApiTermsRequiredResponseToJSON,
+} from '../models/ApiTermsRequiredResponse';
+import {
     type ErrorsErrorResponse,
     ErrorsErrorResponseFromJSON,
     ErrorsErrorResponseToJSON,
@@ -61,6 +66,9 @@ export interface ListLightwellPackageVersionsRequest {
 export interface ListLightwellPackagesRequest {
     ecosystem?: string;
     name?: string;
+    search?: string;
+    sortBy?: string;
+    repository?: string;
     securityLevel?: string;
     demo?: boolean;
     limit?: number;
@@ -71,6 +79,45 @@ export interface ListLightwellPackagesRequest {
  * 
  */
 export class LightwellApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for getLightwellTermsRequired without sending the request
+     */
+    async getLightwellTermsRequiredRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/lightwell/terms/required`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Check whether the current user must accept Lightwell terms before access.
+     * Check if Lightwell terms acceptance is required
+     */
+    async getLightwellTermsRequiredRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiTermsRequiredResponse>> {
+        const requestOptions = await this.getLightwellTermsRequiredRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiTermsRequiredResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Check whether the current user must accept Lightwell terms before access.
+     * Check if Lightwell terms acceptance is required
+     */
+    async getLightwellTermsRequired(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiTermsRequiredResponse> {
+        const response = await this.getLightwellTermsRequiredRaw(initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for listLightwellAdvisories without sending the request
@@ -234,6 +281,18 @@ export class LightwellApi extends runtime.BaseAPI {
 
         if (requestParameters['name'] != null) {
             queryParameters['name'] = requestParameters['name'];
+        }
+
+        if (requestParameters['search'] != null) {
+            queryParameters['search'] = requestParameters['search'];
+        }
+
+        if (requestParameters['sortBy'] != null) {
+            queryParameters['sort_by'] = requestParameters['sortBy'];
+        }
+
+        if (requestParameters['repository'] != null) {
+            queryParameters['repository'] = requestParameters['repository'];
         }
 
         if (requestParameters['securityLevel'] != null) {

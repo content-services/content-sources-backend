@@ -13,6 +13,21 @@
  */
 
 import { mapValues } from '../runtime';
+import type { ApiCveCount } from './ApiCveCount';
+import {
+    ApiCveCountFromJSON,
+    ApiCveCountFromJSONTyped,
+    ApiCveCountToJSON,
+    ApiCveCountToJSONTyped,
+} from './ApiCveCount';
+import type { ApiCveRange } from './ApiCveRange';
+import {
+    ApiCveRangeFromJSON,
+    ApiCveRangeFromJSONTyped,
+    ApiCveRangeToJSON,
+    ApiCveRangeToJSONTyped,
+} from './ApiCveRange';
+
 /**
  * 
  * @export
@@ -25,6 +40,18 @@ export interface ApiCoverageReportPackageResponse {
      * @memberof ApiCoverageReportPackageResponse
      */
     covered?: boolean;
+    /**
+     * Count of CVEs fixed in remediated repos for this package, by severity
+     * @type {ApiCveCount}
+     * @memberof ApiCoverageReportPackageResponse
+     */
+    cveCount?: ApiCveCount;
+    /**
+     * Min/max CVSS severity score across this package's CVEs; omitted when the package has no CVEs
+     * @type {ApiCveRange}
+     * @memberof ApiCoverageReportPackageResponse
+     */
+    cveRange?: ApiCveRange;
     /**
      * Ecosystem of the package
      * @type {string}
@@ -69,6 +96,8 @@ export function ApiCoverageReportPackageResponseFromJSONTyped(json: any, ignoreD
     return {
         
         'covered': json['covered'] == null ? undefined : json['covered'],
+        'cveCount': json['cve_count'] == null ? undefined : ApiCveCountFromJSON(json['cve_count']),
+        'cveRange': json['cve_range'] == null ? undefined : ApiCveRangeFromJSON(json['cve_range']),
         'ecosystem': json['ecosystem'] == null ? undefined : json['ecosystem'],
         'matchStatus': json['match_status'] == null ? undefined : json['match_status'],
         'name': json['name'] == null ? undefined : json['name'],
@@ -88,6 +117,8 @@ export function ApiCoverageReportPackageResponseToJSONTyped(value?: ApiCoverageR
     return {
         
         'covered': value['covered'],
+        'cve_count': ApiCveCountToJSON(value['cveCount']),
+        'cve_range': ApiCveRangeToJSON(value['cveRange']),
         'ecosystem': value['ecosystem'],
         'match_status': value['matchStatus'],
         'name': value['name'],

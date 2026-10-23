@@ -48,6 +48,7 @@ type LightwellPackageRow struct {
 	Releases                    []string
 	PublishedAts                []string
 	UpstreamVersions            []string
+	LastPublication             string
 	TotalCount                  int64
 }
 
@@ -68,12 +69,18 @@ type LightwellPackageVersionRow struct {
 type ListLightwellPackagesOptions struct {
 	Ecosystem        *string
 	Name             *string
+	Search           *string
 	Repository       *string
 	SecurityLevel    *string
 	Demo             bool
 	EntitledFeatures []string
-	Limit            int32
-	Offset           int32
+	// SortColumn is a normalized sort column: "group_name", "name", or "last_publication".
+	// Empty defaults to "group_name".
+	SortColumn string
+	// SortDirection is "asc" or "desc". Empty defaults to "asc".
+	SortDirection string
+	Limit         int32
+	Offset        int32
 }
 
 type ListLightwellPackageVersionsOptions struct {
@@ -110,11 +117,22 @@ func (d lightwellPackageDaoImpl) ListPackages(ctx context.Context, opts ListLigh
 	if d.querier == nil {
 		return nil, 0, fmt.Errorf("lightwell querier is not initialized")
 	}
+	sortColumn := opts.SortColumn
+	if sortColumn == "" {
+		sortColumn = "group_name"
+	}
+	sortDirection := opts.SortDirection
+	if sortDirection == "" {
+		sortDirection = "asc"
+	}
 	params := store.ListLightwellPackagesParams{
 		Ecosystem:     opts.Ecosystem,
 		Name:          opts.Name,
+		Search:        opts.Search,
 		Repository:    opts.Repository,
 		SecurityLevel: opts.SecurityLevel,
+		SortColumn:    sortColumn,
+		SortDirection: sortDirection,
 		DemoOrg:       config.LightwellDemoOrg,
 		IsDemo:        opts.Demo,
 		PageLimit:     opts.Limit,
@@ -141,6 +159,7 @@ func (d lightwellPackageDaoImpl) ListPackages(ctx context.Context, opts ListLigh
 			Releases:                    interfaceToStringSlice(row.Releases),
 			PublishedAts:                interfaceToStringSlice(row.PublishedAts),
 			UpstreamVersions:            interfaceToStringSlice(row.UpstreamVersions),
+			LastPublication:             interfaceToString(row.LastPublication),
 			TotalCount:                  row.TotalCount,
 		})
 	}
@@ -296,6 +315,13 @@ func pgtextToString(t pgtype.Text) string {
 		return ""
 	}
 	return t.String
+}
+
+func interfaceToString(v interface{}) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
 }
 
 func interfaceToStringSlice(v interface{}) []string {
