@@ -203,4 +203,9 @@ SET published_versions = ARRAY[
 ]
 WHERE vulnerability_id = 'LWL-2026-4003';
 
+-- Fixed freshness for this dummy dataset. A timestamp written by a real sync is left as-is.
+INSERT INTO lightwell_beacon_sync (id, last_processed_at)
+VALUES (true, '2026-08-18 07:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
 COMMIT;
