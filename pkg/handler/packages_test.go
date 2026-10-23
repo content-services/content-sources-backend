@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -57,6 +56,12 @@ func parseTestTime(value string) time.Time {
 	return t
 }
 
+func assertMavenPackageDeprecation(t *testing.T, rr *httptest.ResponseRecorder, javaPath string) {
+	t.Helper()
+	assert.Equal(t, "true", rr.Header().Get("Deprecation"))
+	assert.Equal(t, "<"+javaPath+">; rel=\"successor-version\"", rr.Header().Get("Link"))
+}
+
 func mavenContentUnit(group, artifact, fullVersion, baseVersion, createdAt string) zest.MavenMavenPackageResponse {
 	pkg := zest.MavenMavenPackageResponse{}
 	pkg.SetGroupId(group)
@@ -68,6 +73,11 @@ func mavenContentUnit(group, artifact, fullVersion, baseVersion, createdAt strin
 }
 
 func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte, error) {
+	rr := suite.recordPackages(req)
+	return rr.Code, rr.Body.Bytes(), nil
+}
+
+func (suite *PackagesSuite) recordPackages(req *http.Request) *httptest.ResponseRecorder {
 	router := echo.New()
 	router.Use(echo_middleware.RequestIDWithConfig(echo_middleware.RequestIDConfig{
 		TargetHeader: "x-rh-insights-request-id",
@@ -80,12 +90,7 @@ func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte,
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
-
-	response := rr.Result()
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	return response.StatusCode, body, err
+	return rr
 }
 
 func (suite *PackagesSuite) TestListPackagesMavenSuccess() {
@@ -257,12 +262,20 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	rr := suite.recordPackages(req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
+	assertMavenPackageDeprecation(t, rr, javaPath)
+
+	javaReq := httptest.NewRequest(http.MethodGet, javaPath, nil)
+	javaReq.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	javaRR := suite.recordPackages(javaReq)
+	assert.Equal(t, http.StatusOK, javaRR.Code)
+	assert.Empty(t, javaRR.Header().Get("Deprecation"))
+	assert.Equal(t, rr.Body.Bytes(), javaRR.Body.Bytes())
 
 	var response api.MavenPackageVersionsResponse
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.Nil(t, err)
 	assert.Equal(t, groupID, response.Group)
 	assert.Equal(t, packageName, response.Name)
@@ -689,12 +702,13 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	rr := suite.recordPackages(req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	assertMavenPackageDeprecation(t, rr, javaPath)
 
 	var response api.MavenPackageDetailResponse
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.Nil(t, err)
 	assert.Equal(t, groupID, response.Group)
 	assert.Equal(t, packageName, response.Name)
@@ -750,12 +764,20 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
-	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
+	rr := suite.recordPackages(req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	assertMavenPackageDeprecation(t, rr, javaPath)
+
+	javaReq := httptest.NewRequest(http.MethodGet, javaPath, nil)
+	javaReq.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+	javaRR := suite.recordPackages(javaReq)
+	assert.Equal(t, http.StatusOK, javaRR.Code)
+	assert.Empty(t, javaRR.Header().Get("Deprecation"))
+	assert.Equal(t, rr.Body.Bytes(), javaRR.Body.Bytes())
 
 	var response api.MavenPackageDetailResponse
-	err = json.Unmarshal(body, &response)
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.Nil(t, err)
 	require.NotNil(t, response.Summary)
 	require.NotNil(t, response.License)
@@ -1635,7 +1657,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return(tangDetails, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/%s/%s", api.FullRootPath(), repoUUID, scope, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", api.FullRootPath(), repoUUID, scope, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1689,7 +1711,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsUnscopedSuccess() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, packageName).Return(tangDetails, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/-/%s", api.FullRootPath(), repoUUID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/-/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1717,7 +1739,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNonNpmRepo() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1749,7 +1771,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNotFound() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return([]tangy.NpmPackageDetail{}, tangy.ErrNpmPackageNotFound)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1781,7 +1803,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsTangError() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageVersionsGet", test.MockCtx(), repositoryHref, fullName).Return([]tangy.NpmPackageDetail{}, fmt.Errorf("failed to fetch package versions"))
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1830,7 +1852,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangDetail, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1864,7 +1886,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNonNpmRepo() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1896,7 +1918,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNotFound() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangy.NpmPackageDetail{}, tangy.ErrNpmPackageNotFound)
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1928,7 +1950,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailTangError() {
 	suite.pulpClient.On("ResolveRepositoryFromBasePath", test.MockCtx(), basePath).Return(&repositoryHref, nil)
 	suite.tangClient.On("NpmPackageGet", test.MockCtx(), repositoryHref, fullName, packageVersion).Return(tangy.NpmPackageDetail{}, fmt.Errorf("failed to fetch package detail"))
 
-	path := fmt.Sprintf("%s/repositories/%s/npm_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 

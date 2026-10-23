@@ -38,13 +38,26 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
+	mavenMiddleware := append([]echo.MiddlewareFunc{DeprecateMavenPackagePath}, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.ListPackages, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.ListMavenPackageVersions, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.GetMavenPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name", ph.ListJavaPackageVersions, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", ph.GetJavaPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.ListMavenPackageVersions, rbac.RbacVerbRead, mavenMiddleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.GetMavenPackageDetail, rbac.RbacVerbRead, mavenMiddleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/npm_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
+}
+
+// DeprecateMavenPackagePath marks maven_packages responses as deprecated and points clients at java_packages.
+func DeprecateMavenPackagePath(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		successor := strings.Replace(c.Request().URL.RequestURI(), "/maven_packages/", "/java_packages/", 1)
+		c.Response().Header().Set("Deprecation", "true")
+		c.Response().Header().Set("Link", "<"+successor+">; rel=\"successor-version\"")
+		return next(c)
+	}
 }
 
 func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
@@ -322,7 +335,8 @@ func mapPythonPackagesToAPI(tangResp tangy.PythonPackageListResponse) api.Packag
 // ListMavenPackageVersions godoc
 // @Summary      List Maven Package Versions
 // @ID           listMavenPackageVersions
-// @Description  List all versions (builds) for a specific Maven package by group and name.
+// @Deprecated
+// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}. List all versions (builds) for a specific Maven package by group and name.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        group path string true "Maven package group ID"
@@ -389,7 +403,8 @@ func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 // GetMavenPackageDetail godoc
 // @Summary      Get Maven Package Detail
 // @ID           getPackageDetail
-// @Description  Get builds for a specific Maven package by group, name, and version.
+// @Deprecated
+// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}/{version}. Get builds for a specific Maven package by group, name, and version.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        group path string true "Maven package group ID"
@@ -452,6 +467,47 @@ func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
 	response.Author = author
 
 	return c.JSON(http.StatusOK, response)
+}
+
+// ListJavaPackageVersions godoc
+// @Summary      List Java Package Versions
+// @ID           listJavaPackageVersions
+// @Description  List all versions (builds) for a specific Java package by group and name.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        group path string true "Java package group ID"
+// @Param        name path string true "Java package artifact ID"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.MavenPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/java_packages/{group}/{name} [get]
+func (ph *PackageHandler) ListJavaPackageVersions(c echo.Context) error {
+	return ph.ListMavenPackageVersions(c)
+}
+
+// GetJavaPackageDetail godoc
+// @Summary      Get Java Package Detail
+// @ID           getJavaPackageDetail
+// @Description  Get builds for a specific Java package by group, name, and version.
+// @Tags         packages
+// @Param        uuid path string true "Repository UUID"
+// @Param        group path string true "Java package group ID"
+// @Param        name path string true "Java package artifact ID"
+// @Param        version path string true "Java package version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.MavenPackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/java_packages/{group}/{name}/{version} [get]
+func (ph *PackageHandler) GetJavaPackageDetail(c echo.Context) error {
+	return ph.GetMavenPackageDetail(c)
 }
 
 func (ph *PackageHandler) mavenPackageMetadata(ctx context.Context, groupID, name, version string) (summary, license, projectURL, author *string, err error) {
@@ -702,13 +758,13 @@ func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageRespo
 }
 
 // GetNpmPackageVersions godoc
-// @Summary      Get NPM Package Versions
-// @ID           getNpmPackageVersions
-// @Description  Get tarball info for all versions of an npm package by scope and name. Use "-" as the scope for unscoped packages.
+// @Summary      Get JS Package Versions
+// @ID           getJsPackageVersions
+// @Description  Get tarball info for all versions of a JavaScript package by scope and name. Use "-" as the scope for unscoped packages.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
-// @Param        scope path string true "NPM package scope (e.g. @types). Use - for unscoped packages."
-// @Param        name path string true "NPM package name"
+// @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "JS package name"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.NpmPackageVersionsResponse
@@ -716,7 +772,7 @@ func mapNpmPackagesToAPI(tangResp tangy.NpmPackageListResponse) api.PackageRespo
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/npm_packages/{scope}/{name} [get]
+// @Router       /repositories/{uuid}/js_packages/{scope}/{name} [get]
 func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")
@@ -763,14 +819,14 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 }
 
 // GetNpmPackageDetail godoc
-// @Summary      Get NPM Package Detail
-// @ID           getNpmPackageDetail
-// @Description  Get tarball info for a specific npm package by scope, name, and version. Use "-" as the scope for unscoped packages.
+// @Summary      Get JS Package Detail
+// @ID           getJsPackageDetail
+// @Description  Get tarball info for a specific JavaScript package by scope, name, and version. Use "-" as the scope for unscoped packages.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
-// @Param        scope path string true "NPM package scope (e.g. @types). Use - for unscoped packages."
-// @Param        name path string true "NPM package name"
-// @Param        version path string true "NPM package version"
+// @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "JS package name"
+// @Param        version path string true "JS package version"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.NpmPackageDetailResponse
@@ -778,7 +834,7 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/npm_packages/{scope}/{name}/{version} [get]
+// @Router       /repositories/{uuid}/js_packages/{scope}/{name}/{version} [get]
 func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")
