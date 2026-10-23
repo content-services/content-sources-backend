@@ -41,10 +41,15 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addLightwellRoute(engine, http.MethodGet, "/packages", h.listPackages, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/package_versions", h.listPackageVersions, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/packages", h.listRepoPackages, rbac.RbacVerbRead, middleware...)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", h.listMavenPackageVersions, rbac.RbacVerbRead, middleware...)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", h.getMavenPackageDetail, rbac.RbacVerbRead, middleware...)
+	mavenMiddleware := append([]echo.MiddlewareFunc{handler.DeprecateMavenPackagePath}, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name", h.listJavaPackageVersions, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", h.getJavaPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", h.listMavenPackageVersions, rbac.RbacVerbRead, mavenMiddleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", h.getMavenPackageDetail, rbac.RbacVerbRead, mavenMiddleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name/:version", h.getJsPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name", h.getJsPackageVersions, rbac.RbacVerbRead, middleware...)
 }
 
 // listPackages godoc
@@ -117,7 +122,8 @@ func (h *LightwellPackageHandler) listRepoPackages(c echo.Context) error {
 // listMavenPackageVersions godoc
 // @Summary      List Maven Package Versions
 // @ID           listLightwellMavenPackageVersions
-// @Description  List all versions for a specific Maven package by group and name.
+// @Deprecated
+// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}. List all versions for a specific Maven package by group and name.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        group path string true "Maven package group ID"
@@ -137,7 +143,8 @@ func (h *LightwellPackageHandler) listMavenPackageVersions(c echo.Context) error
 // getMavenPackageDetail godoc
 // @Summary      Get Maven Package Detail
 // @ID           getLightwellMavenPackageDetail
-// @Description  Get builds for a specific Maven package by group, name, and version.
+// @Deprecated
+// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}/{version}. Get builds for a specific Maven package by group, name, and version.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        group path string true "Maven package group ID"
@@ -153,6 +160,47 @@ func (h *LightwellPackageHandler) listMavenPackageVersions(c echo.Context) error
 // @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
 func (h *LightwellPackageHandler) getMavenPackageDetail(c echo.Context) error {
 	return h.PackageHandler.GetMavenPackageDetail(c)
+}
+
+// listJavaPackageVersions godoc
+// @Summary      List Java Package Versions
+// @ID           listLightwellJavaPackageVersions
+// @Description  List all versions for a specific Java package by group and name.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository UUID"
+// @Param        group path string true "Java package group ID"
+// @Param        name path string true "Java package artifact ID"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.MavenPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/java_packages/{group}/{name} [get]
+func (h *LightwellPackageHandler) listJavaPackageVersions(c echo.Context) error {
+	return h.PackageHandler.ListJavaPackageVersions(c)
+}
+
+// getJavaPackageDetail godoc
+// @Summary      Get Java Package Detail
+// @ID           getLightwellJavaPackageDetail
+// @Description  Get builds for a specific Java package by group, name, and version.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository UUID"
+// @Param        group path string true "Java package group ID"
+// @Param        name path string true "Java package artifact ID"
+// @Param        version path string true "Java package version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.MavenPackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/java_packages/{group}/{name}/{version} [get]
+func (h *LightwellPackageHandler) getJavaPackageDetail(c echo.Context) error {
+	return h.PackageHandler.GetJavaPackageDetail(c)
 }
 
 // getPythonPackageDetail godoc
@@ -192,4 +240,45 @@ func (h *LightwellPackageHandler) getPythonPackageDetail(c echo.Context) error {
 // @Router       /repositories/{uuid}/python_packages/{name} [get]
 func (h *LightwellPackageHandler) getPythonPackageVersions(c echo.Context) error {
 	return h.PackageHandler.GetPythonPackageVersions(c)
+}
+
+// getJsPackageDetail godoc
+// @Summary      Get JS Package Detail
+// @ID           getLightwellJsPackageDetail
+// @Description  Get tarball info for a specific JavaScript package by scope, name, and version. Use "-" as the scope for unscoped packages.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository UUID"
+// @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "JS package name"
+// @Param        version path string true "JS package version"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.NpmPackageDetailResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/js_packages/{scope}/{name}/{version} [get]
+func (h *LightwellPackageHandler) getJsPackageDetail(c echo.Context) error {
+	return h.PackageHandler.GetNpmPackageDetail(c)
+}
+
+// getJsPackageVersions godoc
+// @Summary      Get JS Package Versions
+// @ID           getLightwellJsPackageVersions
+// @Description  Get tarball info for all versions of a JavaScript package by scope and name. Use "-" as the scope for unscoped packages.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository UUID"
+// @Param        scope path string true "JS package scope (e.g. @types). Use - for unscoped packages."
+// @Param        name path string true "JS package name"
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.NpmPackageVersionsResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/js_packages/{scope}/{name} [get]
+func (h *LightwellPackageHandler) getJsPackageVersions(c echo.Context) error {
+	return h.PackageHandler.GetNpmPackageVersions(c)
 }

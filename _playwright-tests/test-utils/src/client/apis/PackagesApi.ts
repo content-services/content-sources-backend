@@ -54,14 +54,21 @@ import {
     ErrorsErrorResponseToJSON,
 } from '../models/ErrorsErrorResponse';
 
-export interface GetNpmPackageDetailRequest {
+export interface GetJavaPackageDetailRequest {
+    uuid: string;
+    group: string;
+    name: string;
+    version: string;
+}
+
+export interface GetJsPackageDetailRequest {
     uuid: string;
     scope: string;
     name: string;
     version: string;
 }
 
-export interface GetNpmPackageVersionsRequest {
+export interface GetJsPackageVersionsRequest {
     uuid: string;
     scope: string;
     name: string;
@@ -85,6 +92,12 @@ export interface GetPythonPackageVersionsRequest {
     name: string;
 }
 
+export interface ListJavaPackageVersionsRequest {
+    uuid: string;
+    group: string;
+    name: string;
+}
+
 export interface ListMavenPackageVersionsRequest {
     uuid: string;
     group: string;
@@ -104,34 +117,34 @@ export interface ListPackagesRequest {
 export class PackagesApi extends runtime.BaseAPI {
 
     /**
-     * Creates request options for getNpmPackageDetail without sending the request
+     * Creates request options for getJavaPackageDetail without sending the request
      */
-    async getNpmPackageDetailRequestOpts(requestParameters: GetNpmPackageDetailRequest): Promise<runtime.RequestOpts> {
+    async getJavaPackageDetailRequestOpts(requestParameters: GetJavaPackageDetailRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
-                'Required parameter "uuid" was null or undefined when calling getNpmPackageDetail().'
+                'Required parameter "uuid" was null or undefined when calling getJavaPackageDetail().'
             );
         }
 
-        if (requestParameters['scope'] == null) {
+        if (requestParameters['group'] == null) {
             throw new runtime.RequiredError(
-                'scope',
-                'Required parameter "scope" was null or undefined when calling getNpmPackageDetail().'
+                'group',
+                'Required parameter "group" was null or undefined when calling getJavaPackageDetail().'
             );
         }
 
         if (requestParameters['name'] == null) {
             throw new runtime.RequiredError(
                 'name',
-                'Required parameter "name" was null or undefined when calling getNpmPackageDetail().'
+                'Required parameter "name" was null or undefined when calling getJavaPackageDetail().'
             );
         }
 
         if (requestParameters['version'] == null) {
             throw new runtime.RequiredError(
                 'version',
-                'Required parameter "version" was null or undefined when calling getNpmPackageDetail().'
+                'Required parameter "version" was null or undefined when calling getJavaPackageDetail().'
             );
         }
 
@@ -140,7 +153,78 @@ export class PackagesApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/repositories/{uuid}/npm_packages/{scope}/{name}/{version}`;
+        let urlPath = `/repositories/{uuid}/java_packages/{group}/{name}/{version}`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{group}', encodeURIComponent(String(requestParameters['group'])));
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+        urlPath = urlPath.replace('{version}', encodeURIComponent(String(requestParameters['version'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Get builds for a specific Java package by group, name, and version.
+     * Get Java Package Detail
+     */
+    async getJavaPackageDetailRaw(requestParameters: GetJavaPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiMavenPackageDetailResponse>> {
+        const requestOptions = await this.getJavaPackageDetailRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiMavenPackageDetailResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Get builds for a specific Java package by group, name, and version.
+     * Get Java Package Detail
+     */
+    async getJavaPackageDetail(requestParameters: GetJavaPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiMavenPackageDetailResponse> {
+        const response = await this.getJavaPackageDetailRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getJsPackageDetail without sending the request
+     */
+    async getJsPackageDetailRequestOpts(requestParameters: GetJsPackageDetailRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling getJsPackageDetail().'
+            );
+        }
+
+        if (requestParameters['scope'] == null) {
+            throw new runtime.RequiredError(
+                'scope',
+                'Required parameter "scope" was null or undefined when calling getJsPackageDetail().'
+            );
+        }
+
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling getJsPackageDetail().'
+            );
+        }
+
+        if (requestParameters['version'] == null) {
+            throw new runtime.RequiredError(
+                'version',
+                'Required parameter "version" was null or undefined when calling getJsPackageDetail().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/repositories/{uuid}/js_packages/{scope}/{name}/{version}`;
         urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
         urlPath = urlPath.replace('{scope}', encodeURIComponent(String(requestParameters['scope'])));
         urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
@@ -155,47 +239,47 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
-     * Get NPM Package Detail
+     * Get tarball info for a specific JavaScript package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
+     * Get JS Package Detail
      */
-    async getNpmPackageDetailRaw(requestParameters: GetNpmPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageDetailResponse>> {
-        const requestOptions = await this.getNpmPackageDetailRequestOpts(requestParameters);
+    async getJsPackageDetailRaw(requestParameters: GetJsPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageDetailResponse>> {
+        const requestOptions = await this.getJsPackageDetailRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiNpmPackageDetailResponseFromJSON(jsonValue));
     }
 
     /**
-     * Get tarball info for a specific npm package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
-     * Get NPM Package Detail
+     * Get tarball info for a specific JavaScript package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
+     * Get JS Package Detail
      */
-    async getNpmPackageDetail(requestParameters: GetNpmPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageDetailResponse> {
-        const response = await this.getNpmPackageDetailRaw(requestParameters, initOverrides);
+    async getJsPackageDetail(requestParameters: GetJsPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageDetailResponse> {
+        const response = await this.getJsPackageDetailRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Creates request options for getNpmPackageVersions without sending the request
+     * Creates request options for getJsPackageVersions without sending the request
      */
-    async getNpmPackageVersionsRequestOpts(requestParameters: GetNpmPackageVersionsRequest): Promise<runtime.RequestOpts> {
+    async getJsPackageVersionsRequestOpts(requestParameters: GetJsPackageVersionsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
             throw new runtime.RequiredError(
                 'uuid',
-                'Required parameter "uuid" was null or undefined when calling getNpmPackageVersions().'
+                'Required parameter "uuid" was null or undefined when calling getJsPackageVersions().'
             );
         }
 
         if (requestParameters['scope'] == null) {
             throw new runtime.RequiredError(
                 'scope',
-                'Required parameter "scope" was null or undefined when calling getNpmPackageVersions().'
+                'Required parameter "scope" was null or undefined when calling getJsPackageVersions().'
             );
         }
 
         if (requestParameters['name'] == null) {
             throw new runtime.RequiredError(
                 'name',
-                'Required parameter "name" was null or undefined when calling getNpmPackageVersions().'
+                'Required parameter "name" was null or undefined when calling getJsPackageVersions().'
             );
         }
 
@@ -204,7 +288,7 @@ export class PackagesApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/repositories/{uuid}/npm_packages/{scope}/{name}`;
+        let urlPath = `/repositories/{uuid}/js_packages/{scope}/{name}`;
         urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
         urlPath = urlPath.replace('{scope}', encodeURIComponent(String(requestParameters['scope'])));
         urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
@@ -218,27 +302,28 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.
-     * Get NPM Package Versions
+     * Get tarball info for all versions of a JavaScript package by scope and name. Use \"-\" as the scope for unscoped packages.
+     * Get JS Package Versions
      */
-    async getNpmPackageVersionsRaw(requestParameters: GetNpmPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageVersionsResponse>> {
-        const requestOptions = await this.getNpmPackageVersionsRequestOpts(requestParameters);
+    async getJsPackageVersionsRaw(requestParameters: GetJsPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageVersionsResponse>> {
+        const requestOptions = await this.getJsPackageVersionsRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ApiNpmPackageVersionsResponseFromJSON(jsonValue));
     }
 
     /**
-     * Get tarball info for all versions of an npm package by scope and name. Use \"-\" as the scope for unscoped packages.
-     * Get NPM Package Versions
+     * Get tarball info for all versions of a JavaScript package by scope and name. Use \"-\" as the scope for unscoped packages.
+     * Get JS Package Versions
      */
-    async getNpmPackageVersions(requestParameters: GetNpmPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageVersionsResponse> {
-        const response = await this.getNpmPackageVersionsRaw(requestParameters, initOverrides);
+    async getJsPackageVersions(requestParameters: GetJsPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageVersionsResponse> {
+        const response = await this.getJsPackageVersionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      * Creates request options for getPackageDetail without sending the request
+     * @deprecated
      */
     async getPackageDetailRequestOpts(requestParameters: GetPackageDetailRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
@@ -289,8 +374,9 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get builds for a specific Maven package by group, name, and version.
+     * Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}/{version}. Get builds for a specific Maven package by group, name, and version.
      * Get Maven Package Detail
+     * @deprecated
      */
     async getPackageDetailRaw(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiMavenPackageDetailResponse>> {
         const requestOptions = await this.getPackageDetailRequestOpts(requestParameters);
@@ -300,8 +386,9 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get builds for a specific Maven package by group, name, and version.
+     * Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}/{version}. Get builds for a specific Maven package by group, name, and version.
      * Get Maven Package Detail
+     * @deprecated
      */
     async getPackageDetail(requestParameters: GetPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiMavenPackageDetailResponse> {
         const response = await this.getPackageDetailRaw(requestParameters, initOverrides);
@@ -427,7 +514,71 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for listJavaPackageVersions without sending the request
+     */
+    async listJavaPackageVersionsRequestOpts(requestParameters: ListJavaPackageVersionsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['uuid'] == null) {
+            throw new runtime.RequiredError(
+                'uuid',
+                'Required parameter "uuid" was null or undefined when calling listJavaPackageVersions().'
+            );
+        }
+
+        if (requestParameters['group'] == null) {
+            throw new runtime.RequiredError(
+                'group',
+                'Required parameter "group" was null or undefined when calling listJavaPackageVersions().'
+            );
+        }
+
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling listJavaPackageVersions().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/repositories/{uuid}/java_packages/{group}/{name}`;
+        urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
+        urlPath = urlPath.replace('{group}', encodeURIComponent(String(requestParameters['group'])));
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * List all versions (builds) for a specific Java package by group and name.
+     * List Java Package Versions
+     */
+    async listJavaPackageVersionsRaw(requestParameters: ListJavaPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiMavenPackageVersionsResponse>> {
+        const requestOptions = await this.listJavaPackageVersionsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ApiMavenPackageVersionsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * List all versions (builds) for a specific Java package by group and name.
+     * List Java Package Versions
+     */
+    async listJavaPackageVersions(requestParameters: ListJavaPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiMavenPackageVersionsResponse> {
+        const response = await this.listJavaPackageVersionsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for listMavenPackageVersions without sending the request
+     * @deprecated
      */
     async listMavenPackageVersionsRequestOpts(requestParameters: ListMavenPackageVersionsRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['uuid'] == null) {
@@ -470,8 +621,9 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List all versions (builds) for a specific Maven package by group and name.
+     * Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}. List all versions (builds) for a specific Maven package by group and name.
      * List Maven Package Versions
+     * @deprecated
      */
     async listMavenPackageVersionsRaw(requestParameters: ListMavenPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiMavenPackageVersionsResponse>> {
         const requestOptions = await this.listMavenPackageVersionsRequestOpts(requestParameters);
@@ -481,8 +633,9 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List all versions (builds) for a specific Maven package by group and name.
+     * Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}. List all versions (builds) for a specific Maven package by group and name.
      * List Maven Package Versions
+     * @deprecated
      */
     async listMavenPackageVersions(requestParameters: ListMavenPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiMavenPackageVersionsResponse> {
         const response = await this.listMavenPackageVersionsRaw(requestParameters, initOverrides);
