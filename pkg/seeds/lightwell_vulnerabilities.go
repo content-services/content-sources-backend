@@ -46,12 +46,16 @@ func SeedLightwellVulnerabilities(db *gorm.DB) error {
 }
 
 func readLightwellSeedSQL() (string, error) {
+	return readRepoFile(lightwellSeedSQLRelPath)
+}
+
+func readRepoFile(relPath string) (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", fmt.Errorf("could not determine working directory: %w", err)
 	}
 	for {
-		path := filepath.Join(dir, lightwellSeedSQLRelPath)
+		path := filepath.Join(dir, relPath)
 		data, err := os.ReadFile(path)
 		if err == nil {
 			return string(data), nil
@@ -62,7 +66,7 @@ func readLightwellSeedSQL() (string, error) {
 		}
 		dir = parent
 	}
-	return "", fmt.Errorf("could not find %s", lightwellSeedSQLRelPath)
+	return "", fmt.Errorf("could not find %s", relPath)
 }
 
 func statementsFromSQL(sqlText string) []string {
