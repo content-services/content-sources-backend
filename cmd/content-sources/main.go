@@ -39,7 +39,7 @@ func main() {
 
 	args := os.Args
 	if len(args) < 2 {
-		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer] [instrumentation]")
+		log.Fatal().Msg("arguments:  ./content-sources [api] [consumer|task-worker] [instrumentation]")
 	}
 
 	config.Load()
@@ -73,8 +73,9 @@ func main() {
 	// If we're not running an api server, still listen for ping requests for liveliness probes
 	apiServer(ctx, &wg, argsContain(args, "api"), metrics)
 
-	if argsContain(args, "consumer") {
-		kafkaConsumer(ctx, &wg, metrics)
+	// "consumer" is a deprecated alias for "task-worker"; remove once prod is deployed past this rename
+	if argsContain(args, "consumer") || argsContain(args, "task-worker") {
+		taskWorkers(ctx, &wg, metrics)
 	}
 
 	if argsContain(args, "instrumentation") {
@@ -112,7 +113,7 @@ func argsContain(args []string, val string) bool {
 	return false
 }
 
-func kafkaConsumer(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
+func taskWorkers(ctx context.Context, wg *sync.WaitGroup, metrics *m.Metrics) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
