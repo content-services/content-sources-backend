@@ -28,6 +28,7 @@ type Snapshot struct {
 	Published                   bool              `json:"published" gorm:"default:false"`
 	LastPublishTaskUUID         string            `json:"last_publish_task_uuid" gorm:"default:null"`
 	PublishTask                 *TaskInfo         `json:"publish_task,omitempty" gorm:"foreignKey:last_publish_task_uuid"`
+	CoprBuildID                 string            `json:"copr_build_id" gorm:"default:null"`
 }
 
 type ContentCountsType map[string]int64

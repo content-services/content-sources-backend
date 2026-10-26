@@ -13,6 +13,7 @@ const (
 	BulkRemoveRpmsTask            = "bulk-remove-rpms"            // Task to remove RPMs from an upload repository in pulp
 	UpdateSnapshotPublishedTask   = "update-snapshot-published"   // Task to update the content guard on a snapshot distribution for publish/unpublish
 	CoverageAnalysisTask          = "coverage-analysis"           // Task to generate a coverage report from an uploaded SBOM or manifest
+	CreatePartnerSnapshotTask     = "create-partner-snapshot"     // Task to create snapshot for partner repository from Kafka message
 )
 
 const (
@@ -36,13 +37,14 @@ var TaskTypes = []string{
 	BulkRemoveRpmsTask,
 	UpdateSnapshotPublishedTask,
 	CoverageAnalysisTask,
+	CreatePartnerSnapshotTask,
 }
 
 var RequeueableTasks = []string{DeleteTemplatesTask, DeleteRepositorySnapshotsTask, UpdateTemplateContentTask, DeleteSnapshotsTask}
 
 var DeletionTasks = []string{DeleteRepositorySnapshotsTask, DeleteTemplatesTask}
 
-var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTemplateContentTask}
+var CancellableTasks = []string{IntrospectTask, RepositorySnapshotTask, UpdateTemplateContentTask, CreatePartnerSnapshotTask}
 
 const ObjectTypeRepository = "repository"
 const ObjectTypeTemplate = "template"
@@ -56,6 +58,7 @@ var TasksToCleanup = []string{
 	UpdateLatestSnapshotTask,
 	AddUploadsTask,
 	BulkRemoveRpmsTask,
+	CreatePartnerSnapshotTask,
 }
 
 // TasksToCleanupIfCompleted tasks that will get deleted if older than 10 days, only if status is completed

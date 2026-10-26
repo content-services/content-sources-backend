@@ -893,6 +893,23 @@ func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigByName(ctx context.
 	return responses[0], nil
 }
 
+func (r repositoryConfigDaoImpl) InternalOnly_FetchRepoConfigByCoprRepositoryHref(ctx context.Context, orgID string, coprRepoHref string) (api.RepositoryResponse, error) {
+	var repoConfig models.RepositoryConfiguration
+	result := r.db.WithContext(ctx).
+		Where("repository_configurations.org_id = ? AND repository_configurations.copr_repository_href = ?", orgID, coprRepoHref).
+		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid").
+		Preload("Repository").
+		First(&repoConfig)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return api.RepositoryResponse{}, &ce.DaoError{NotFound: true, Message: "Could not find repository with Copr repository href " + coprRepoHref}
+		}
+		return api.RepositoryResponse{}, result.Error
+	}
+	responses := convertToResponses([]models.RepositoryConfiguration{repoConfig}, "")
+	return responses[0], nil
+}
+
 func (r repositoryConfigDaoImpl) Fetch(ctx context.Context, orgID string, uuid string) (api.RepositoryResponse, error) {
 	var repo api.RepositoryResponse
 	var contentPath string
@@ -2303,4 +2320,19 @@ func (r repositoryConfigDaoImpl) InternalOnly_UpdateLastImportRepositoryVersion(
 		Model(&models.RepositoryConfiguration{}).
 		Where("uuid = ?", repoConfigUUID).
 		UpdateColumns(updates).Error
+}
+
+func (r repositoryConfigDaoImpl) InternalOnly_UpdateCoprMetadata(ctx context.Context, repoConfigUUID string, coprProjectID string, coprRepositoryHref string) error {
+	updates := map[string]any{
+		"copr_project_id":      coprProjectID,
+		"copr_repository_href": coprRepositoryHref,
+	}
+	err := r.db.WithContext(ctx).
+		Model(&models.RepositoryConfiguration{}).
+		Where("uuid = ?", repoConfigUUID).
+		UpdateColumns(updates).Error
+	if err != nil {
+		return RepositoryDBErrorToApi(err, &repoConfigUUID)
+	}
+	return nil
 }

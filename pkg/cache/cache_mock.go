@@ -467,7 +467,7 @@ type MockCache_GetTermsNotRequired_Call struct {
 // GetTermsNotRequired is a helper method to define mock.On call
 //   - ctx context.Context
 //   - scope TermsScope
-func (_e *MockCache_Expecter) GetTermsNotRequired(ctx interface{}, scope interface{}) *MockCache_GetTermsNotRequired_Call {
+func (_e *MockCache_Expecter) GetTermsNotRequired(ctx any, scope any) *MockCache_GetTermsNotRequired_Call {
 	return &MockCache_GetTermsNotRequired_Call{Call: _e.mock.On("GetTermsNotRequired", ctx, scope)}
 }
 
@@ -857,7 +857,7 @@ type MockCache_SetTermsNotRequired_Call struct {
 //   - ctx context.Context
 //   - scope TermsScope
 //   - ttl time.Duration
-func (_e *MockCache_Expecter) SetTermsNotRequired(ctx interface{}, scope interface{}, ttl interface{}) *MockCache_SetTermsNotRequired_Call {
+func (_e *MockCache_Expecter) SetTermsNotRequired(ctx any, scope any, ttl any) *MockCache_SetTermsNotRequired_Call {
 	return &MockCache_SetTermsNotRequired_Call{Call: _e.mock.On("SetTermsNotRequired", ctx, scope, ttl)}
 }
 

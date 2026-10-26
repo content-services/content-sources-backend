@@ -128,6 +128,8 @@ clients:
     content_origin: http://pulp.content:8081/
     content_path_prefix: /api/pulp-content/
     proxy:
+    # Pulp domain used for Copr-initiated partner repository snapshots
+    copr_domain: cs-partner
     database:
       host: localhost
       port: 5432

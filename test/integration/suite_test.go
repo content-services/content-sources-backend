@@ -88,6 +88,7 @@ func (s *Suite) SetupTest() {
 	wrk.RegisterHandler(config.AddUploadsTask, tasks.AddUploadsHandler)
 	wrk.RegisterHandler(config.UpdateLatestSnapshotTask, tasks.UpdateLatestSnapshotHandler)
 	wrk.RegisterHandler(config.BulkRemoveRpmsTask, tasks.BulkRemoveRpmsHandler)
+	wrk.RegisterHandler(config.CreatePartnerSnapshotTask, tasks.CreatePartnerSnapshotHandler)
 
 	s.cancel = cancel
 	go wrk.StartWorkerPool(wkrCtx)

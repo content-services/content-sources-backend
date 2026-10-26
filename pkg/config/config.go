@@ -147,6 +147,7 @@ type Pulp struct {
 	LightwellContentOrigin string       `mapstructure:"lightwell_content_origin"` // Used to pull content from lightwell
 	ContentPathPrefix      string       `mapstructure:"content_path_prefix"`
 	Proxy                  string       `mapstructure:"proxy"`
+	CoprDomain             string       `mapstructure:"copr_domain"` // Pulp domain for Copr-initiated snapshots
 }
 
 type Lightwell struct {
@@ -469,6 +470,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.lightwell_content_origin", "")
 	v.SetDefault("clients.pulp.content_path_prefix", "/api/pulp-content/")
 	v.SetDefault("clients.pulp.proxy", "")
+	v.SetDefault("clients.pulp.copr_domain", "cs-partner")
 
 	v.SetDefault("sentry.dsn", "")
 
