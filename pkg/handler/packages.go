@@ -197,7 +197,7 @@ func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 
 	versions, err := ph.DaoRegistry.LightwellPackage.ListMavenPackageVersions(ctx, repo.UUID, groupID, name)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package versions", err.Error())
+		return packageReadError(err, "Error retrieving package versions")
 	}
 
 	return c.JSON(http.StatusOK, versions)
@@ -239,7 +239,7 @@ func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
 
 	detail, err := ph.DaoRegistry.LightwellPackage.GetMavenPackageDetail(ctx, repo.UUID, groupID, name, version)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package builds", err.Error())
+		return packageReadError(err, "Error retrieving package builds")
 	}
 
 	return c.JSON(http.StatusOK, detail)
@@ -317,12 +317,7 @@ func (ph *PackageHandler) GetPythonPackageVersions(c echo.Context) error {
 
 	versions, err := ph.DaoRegistry.LightwellPackage.ListPythonPackageVersions(ctx, repo.UUID, name)
 	if err != nil {
-		title := "Error retrieving package versions"
-		var daoErr *ce.DaoError
-		if errors.As(err, &daoErr) && daoErr.NotFound {
-			title = "Package not found"
-		}
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), title, err.Error())
+		return packageReadError(err, "Error retrieving package versions")
 	}
 
 	return c.JSON(http.StatusOK, versions)
@@ -361,12 +356,7 @@ func (ph *PackageHandler) GetPythonPackageDetail(c echo.Context) error {
 
 	detail, err := ph.DaoRegistry.LightwellPackage.GetPythonPackageDetail(ctx, repo.UUID, name, version)
 	if err != nil {
-		title := "Error retrieving package detail"
-		var daoErr *ce.DaoError
-		if errors.As(err, &daoErr) && daoErr.NotFound {
-			title = "Package not found"
-		}
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), title, err.Error())
+		return packageReadError(err, "Error retrieving package detail")
 	}
 
 	return c.JSON(http.StatusOK, detail)
@@ -415,7 +405,7 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 
 	versions, err := ph.DaoRegistry.LightwellPackage.ListNpmPackageVersions(ctx, repo.UUID, scope, name)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package versions", err.Error())
+		return packageReadError(err, "Error retrieving package versions")
 	}
 
 	return c.JSON(http.StatusOK, versions)
@@ -456,8 +446,16 @@ func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {
 
 	detail, err := ph.DaoRegistry.LightwellPackage.GetNpmPackageDetail(ctx, repo.UUID, scope, name, version)
 	if err != nil {
-		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error retrieving package builds", err.Error())
+		return packageReadError(err, "Error retrieving package builds")
 	}
 
 	return c.JSON(http.StatusOK, detail)
+}
+
+func packageReadError(err error, title string) ce.ErrorResponse {
+	var daoErr *ce.DaoError
+	if errors.As(err, &daoErr) && daoErr.NotFound {
+		title = "Package not found"
+	}
+	return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), title, err.Error())
 }

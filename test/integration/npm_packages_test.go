@@ -117,10 +117,12 @@ func (s *NpmPackagesSuite) TestNpmPackageVersionsAPI() {
 	require.Len(t, unscoped.Versions, 1)
 	assert.Equal(t, "1.0.0", unscoped.Versions[0].Version)
 
-	missing := s.getPackageVersions(repo.UUID, "@types", "missing")
-	assert.Equal(t, "@types", missing.Scope)
-	assert.Equal(t, "missing", missing.Name)
-	assert.Empty(t, missing.Versions)
+	missingPath := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", api.FullRootPath(), repo.UUID, "@types", "missing")
+	missingReq := httptest.NewRequest(http.MethodGet, missingPath, nil)
+	missingReq.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	missingCode, _, err := s.serveRouter(missingReq)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, missingCode)
 }
 
 func (s *NpmPackagesSuite) TestNpmPackageDetailAPI() {
@@ -154,10 +156,12 @@ func (s *NpmPackagesSuite) TestNpmPackageDetailAPI() {
 	assert.Equal(t, "", stored.UpstreamVersion)
 	assert.Equal(t, "", stored.Builds[0].Release)
 
-	missing := s.getPackageDetail(repo.UUID, "@types", "is-odd", "9.9.9")
-	assert.Equal(t, "9.9.9", missing.Version)
-	assert.Empty(t, missing.Builds)
-	assert.Empty(t, missing.UpstreamVersion)
+	missingPath := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", api.FullRootPath(), repo.UUID, "@types", "is-odd", "9.9.9")
+	missingReq := httptest.NewRequest(http.MethodGet, missingPath, nil)
+	missingReq.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
+	missingCode, _, err := s.serveRouter(missingReq)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, missingCode)
 }
 
 func (s *NpmPackagesSuite) createNpmRepository(orgId string) api.RepositoryResponse {

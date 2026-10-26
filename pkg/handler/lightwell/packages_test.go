@@ -644,26 +644,15 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageDetailNotFound() {
 			ContentType: config.ContentTypePython,
 		}}}, int64(1), nil)
 	s.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, "django", "9.9.9").
-		Return(api.PythonPackageDetailResponse{
-			Name:          "django",
-			Version:       "9.9.9",
-			Builds:        []api.ReleaseInfo{},
-			Distributions: []api.PythonDistribution{},
-		}, nil)
+		Return(api.PythonPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", LightwellAPIPath, repoUUID, "django", "9.9.9")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := s.serveRouter(req)
+	code, _, err := s.serveRouter(req)
 	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	var response api.PythonPackageDetailResponse
-	require.NoError(t, json.Unmarshal(body, &response))
-	assert.Equal(t, "django", response.Name)
-	assert.Equal(t, "9.9.9", response.Version)
-	assert.Equal(t, []api.ReleaseInfo{}, response.Builds)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (s *LightwellPackagesSuite) TestGetNpmPackageVersionsReadsMirror() {
