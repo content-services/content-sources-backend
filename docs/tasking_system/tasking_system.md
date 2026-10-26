@@ -55,15 +55,15 @@ Tasks can be cancelled. The worker pool listens on a Postgres channel for UUIDs 
 
 ## Deployment
 
-The tasking system runs in two different processes, the API and the consumer.
+The tasking system runs in two different processes, the API and the task worker.
 
 The API is the main API server, where tasks are enqueued from endpoint handlers.
 
 ![image](images/api_process.svg)
 
-The consumer runs two sets of goroutines: the workers and the heartbeat listener.
+The task worker runs two sets of goroutines: the workers and the heartbeat listener.
 
-![image](images/consumer_process.svg)
+![image](images/tasking_process.svg)
 
 ## How to add a new task type
 
