@@ -30,8 +30,8 @@ clean: ## Clean binaries and testbin generated
 	@[ ! -e "$(GO_OUTPUT)" ] || for item in cmd/*; do rm -vf "$(GO_OUTPUT)/$${item##cmd/}"; done
 
 .PHONY: run
-run: $(GO_OUTPUT)/content-sources ## Run the api & kafka consumer locally
-	"$(GO_OUTPUT)/content-sources" api consumer pulp-data-importer instrumentation mock_rbac
+run: $(GO_OUTPUT)/content-sources ## Run the api & task workers locally
+	"$(GO_OUTPUT)/content-sources" api task-worker pulp-data-importer instrumentation mock_rbac
 
 .PHONY: process-repos
 process-repos: build

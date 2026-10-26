@@ -2,7 +2,7 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  args_bin = ["api", "consumer", "instrumentation", "mock_rbac"]
+  args_bin = ["api", "task-worker", "instrumentation", "mock_rbac"]
   bin = "./release/content-sources"
   cmd = "go build -o ./release/content-sources cmd/content-sources/main.go"
   delay = 1000

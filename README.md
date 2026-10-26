@@ -226,11 +226,11 @@ make prometheus-ui
 
 **Running it**
 
-- Run the application by: `make run` or `./release/content-sources api consumer instrumentation mock_rbac`.
+- Run the application by: `make run` or `./release/content-sources api task-worker instrumentation mock_rbac`.
 - Make some request using: `./scripts/header.sh 12345 jdoe@example.com` for admin or `./scripts/header.sh 12345 tdoe@example.com` for viewer.
 
 > RBAC mock service is started for `make run`
-> To use it running directly the service: `./release/content-sources api consumer instrumentation mock_rbac`
+> To use it running directly the service: `./release/content-sources api task-worker instrumentation mock_rbac`
 > Add the option `mock_rbac`
 
 **Kessel**

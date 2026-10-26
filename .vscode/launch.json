@@ -12,7 +12,7 @@
             "program": "${workspaceFolder}/cmd/content-sources",
             "args": [
                 "api",
-                "consumer",
+                "task-worker",
                 "instrumentation",
                 "mock_rbac"
             ],
@@ -46,7 +46,7 @@
             "program": "${workspaceFolder}/cmd/content-sources",
             "args": [
                 "api",
-                "consumer",
+                "task-worker",
                 "instrumentation",
                 "mock_rbac"
             ],
