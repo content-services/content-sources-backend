@@ -37,7 +37,7 @@ objects:
               runAsUser: 1001
             command:
               - /content-sources
-              - consumer
+              - task-worker
               - instrumentation
             initContainers:
               - name: db-migrate
