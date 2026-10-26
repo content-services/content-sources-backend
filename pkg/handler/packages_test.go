@@ -45,28 +45,10 @@ func (suite *PackagesSuite) SetupTest() {
 	suite.fsClient = fsc.NewMockFeatureServiceClient(suite.T())
 }
 
-func parseTestTime(value string) time.Time {
-	t, err := time.Parse(time.RFC3339, value)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 func assertMavenPackageDeprecation(t *testing.T, rr *httptest.ResponseRecorder, javaPath string) {
 	t.Helper()
 	assert.Equal(t, "true", rr.Header().Get("Deprecation"))
 	assert.Equal(t, "<"+javaPath+">; rel=\"successor-version\"", rr.Header().Get("Link"))
-}
-
-func mavenContentUnit(group, artifact, fullVersion, baseVersion, createdAt string) zest.MavenMavenPackageResponse {
-	pkg := zest.MavenMavenPackageResponse{}
-	pkg.SetGroupId(group)
-	pkg.SetArtifactId(artifact)
-	pkg.SetVersion(fullVersion)
-	pkg.SetBaseVersion(baseVersion)
-	pkg.SetPulpCreated(parseTestTime(createdAt))
-	return pkg
 }
 
 func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte, error) {
@@ -328,26 +310,16 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.LightwellPackage.On("ListMavenPackageVersions", test.MockCtx(), repoUUID, groupID, packageName).Return(api.MavenPackageVersionsResponse{
-		Group:    groupID,
-		Name:     packageName,
-		Versions: []api.MavenPackageDetailResponse{},
-	}, nil)
+	suite.reg.LightwellPackage.On("ListMavenPackageVersions", test.MockCtx(), repoUUID, groupID, packageName).
+		Return(api.MavenPackageVersionsResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
+	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	var response api.MavenPackageVersionsResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(t, err)
-	assert.Equal(t, groupID, response.Group)
-	assert.Equal(t, packageName, response.Name)
-	assert.Equal(t, 0, len(response.Versions))
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (suite *PackagesSuite) TestListPackagesPythonSuccess() {
@@ -755,28 +727,16 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).Return(api.MavenPackageDetailResponse{
-		Group:   groupID,
-		Name:    packageName,
-		Version: packageVersion,
-		Builds:  []api.ReleaseInfo{},
-	}, nil)
+	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).
+		Return(api.MavenPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
+	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	var response api.MavenPackageDetailResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(t, err)
-	assert.Equal(t, groupID, response.Group)
-	assert.Equal(t, packageName, response.Name)
-	assert.Equal(t, packageVersion, response.Version)
-	assert.Equal(t, 0, len(response.Builds))
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (suite *PackagesSuite) TestListPackagesMavenSearchGroupArtifact() {
@@ -1166,26 +1126,15 @@ func (suite *PackagesSuite) TestGetPythonPackageDetailNotFound() {
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 	suite.reg.LightwellPackage.On("GetPythonPackageDetail", test.MockCtx(), repoUUID, packageName, packageVersion).
-		Return(api.PythonPackageDetailResponse{
-			Name:          packageName,
-			Version:       packageVersion,
-			Builds:        []api.ReleaseInfo{},
-			Distributions: []api.PythonDistribution{},
-		}, nil)
+		Return(api.PythonPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/python_packages/%s/%s", api.FullRootPath(), repoUUID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
+	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	var response api.PythonPackageDetailResponse
-	assert.Nil(t, json.Unmarshal(body, &response))
-	assert.Equal(t, packageName, response.Name)
-	assert.Equal(t, packageVersion, response.Version)
-	assert.Equal(t, []api.ReleaseInfo{}, response.Builds)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (suite *PackagesSuite) TestGetPythonPackageDetailDaoError() {
@@ -1451,26 +1400,16 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsEmpty() {
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.LightwellPackage.On("ListNpmPackageVersions", test.MockCtx(), repoUUID, "@types", "is-odd").Return(api.NpmPackageVersionsResponse{
-		Scope:    "@types",
-		Name:     "is-odd",
-		Versions: []api.NpmPackageDetailResponse{},
-	}, nil)
+	suite.reg.LightwellPackage.On("ListNpmPackageVersions", test.MockCtx(), repoUUID, "@types", "is-odd").
+		Return(api.NpmPackageVersionsResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
+	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	var response api.NpmPackageVersionsResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(t, err)
-	assert.Equal(t, "@types", response.Scope)
-	assert.Equal(t, "is-odd", response.Name)
-	assert.Empty(t, response.Versions)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (suite *PackagesSuite) TestGetNpmPackageVersionsDaoError() {
@@ -1581,26 +1520,16 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailEmpty() {
 	orgID := test_handler.MockOrgId
 
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
-	suite.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, "@types", "is-odd", packageVersion).Return(api.NpmPackageDetailResponse{
-		Scope:   "@types",
-		Name:    "is-odd",
-		Version: packageVersion,
-		Builds:  []api.ReleaseInfo{},
-	}, nil)
+	suite.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, "@types", "is-odd", packageVersion).
+		Return(api.NpmPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
 	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
-	code, body, err := suite.servePackagesRouter(req)
+	code, _, err := suite.servePackagesRouter(req)
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, code)
-
-	var response api.NpmPackageDetailResponse
-	err = json.Unmarshal(body, &response)
-	assert.Nil(t, err)
-	assert.Equal(t, packageVersion, response.Version)
-	assert.Empty(t, response.Builds)
+	assert.Equal(t, http.StatusNotFound, code)
 }
 
 func (suite *PackagesSuite) TestGetNpmPackageDetailDaoError() {

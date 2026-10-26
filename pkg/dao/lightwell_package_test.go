@@ -922,12 +922,10 @@ func (s *LightwellPackageSuite) TestGetPythonPackageDetail() {
 		{Version: "4.2", Release: "", CreatedAt: "2023-01-01T00:00:00Z"},
 	}, got.Builds)
 
-	got, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "9.9.9")
-	s.Require().NoError(err)
-	assert.Equal(s.T(), "django", got.Name)
-	assert.Equal(s.T(), "9.9.9", got.Version)
-	assert.Equal(s.T(), []api.ReleaseInfo{}, got.Builds)
-	assert.Empty(s.T(), got.Distributions)
+	_, err = pkgDao.GetPythonPackageDetail(ctx, repoConfigUUID, "django", "9.9.9")
+	var missing *ce.DaoError
+	s.Require().ErrorAs(err, &missing)
+	assert.True(s.T(), missing.NotFound)
 }
 
 func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
@@ -1067,9 +1065,10 @@ func (s *LightwellPackageSuite) TestListMavenPackageVersions() {
 	assert.Nil(s.T(), got.Versions[1].Summary)
 	assert.Nil(s.T(), got.Versions[1].License)
 
-	missing, err := pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "missing")
-	s.Require().NoError(err)
-	assert.Empty(s.T(), missing.Versions)
+	_, err = pkgDao.ListMavenPackageVersions(ctx, repoConfigUUID, "org.example", "missing")
+	var missing *ce.DaoError
+	s.Require().ErrorAs(err, &missing)
+	assert.True(s.T(), missing.NotFound)
 }
 
 func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
@@ -1149,10 +1148,10 @@ func (s *LightwellPackageSuite) TestGetMavenPackageDetail() {
 	assert.Equal(s.T(), "2024-01-01T00:00:00Z", stored.LastUpdated)
 	assert.Nil(s.T(), stored.Summary)
 
-	missing, err := pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "9.9.9")
-	s.Require().NoError(err)
-	assert.Equal(s.T(), "9.9.9", missing.Version)
-	assert.Empty(s.T(), missing.Builds)
+	_, err = pkgDao.GetMavenPackageDetail(ctx, repoConfigUUID, "org.example", "lib", "9.9.9")
+	var missing *ce.DaoError
+	s.Require().ErrorAs(err, &missing)
+	assert.True(s.T(), missing.NotFound)
 }
 
 func (s *LightwellPackageSuite) TestListNpmPackageVersions() {
@@ -1220,11 +1219,10 @@ func (s *LightwellPackageSuite) TestListNpmPackageVersions() {
 	assert.Equal(s.T(), "", got.Versions[2].UpstreamVersion)
 	assert.Equal(s.T(), "", got.Versions[2].Builds[0].Release)
 
-	missing, err := pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "missing")
-	s.Require().NoError(err)
-	assert.Equal(s.T(), "@types", missing.Scope)
-	assert.Equal(s.T(), "missing", missing.Name)
-	assert.Empty(s.T(), missing.Versions)
+	_, err = pkgDao.ListNpmPackageVersions(ctx, repoConfigUUID, "@types", "missing")
+	var missing *ce.DaoError
+	s.Require().ErrorAs(err, &missing)
+	assert.True(s.T(), missing.NotFound)
 }
 
 func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
@@ -1318,11 +1316,10 @@ func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
 	assert.Equal(s.T(), "left-pad", unscoped.Name)
 	s.Require().Len(unscoped.Builds, 1)
 
-	missing, err := pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "9.9.9")
-	s.Require().NoError(err)
-	assert.Equal(s.T(), "9.9.9", missing.Version)
-	assert.Empty(s.T(), missing.Builds)
-	assert.Empty(s.T(), missing.UpstreamVersion)
+	_, err = pkgDao.GetNpmPackageDetail(ctx, repoConfigUUID, "@types", "is-odd", "9.9.9")
+	var missing *ce.DaoError
+	s.Require().ErrorAs(err, &missing)
+	assert.True(s.T(), missing.NotFound)
 }
 
 func (s *LightwellPackageSuite) TestListRepositoryPackages() {

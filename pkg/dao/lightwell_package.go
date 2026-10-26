@@ -408,6 +408,9 @@ func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, r
 	if err != nil {
 		return resp, fmt.Errorf("failed to list lightwell maven package versions: %w", err)
 	}
+	if len(rows) == 0 {
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
+	}
 
 	versions := make([]api.MavenPackageDetailResponse, 0)
 	index := make(map[string]int, len(rows))
@@ -485,7 +488,7 @@ func (d lightwellPackageDaoImpl) GetMavenPackageDetail(ctx context.Context, repo
 		return resp, fmt.Errorf("failed to get lightwell maven package detail: %w", err)
 	}
 	if len(rows) == 0 {
-		return resp, nil
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
 	}
 
 	builds := make([]api.ReleaseInfo, 0, len(rows))
@@ -527,6 +530,9 @@ func (d lightwellPackageDaoImpl) ListNpmPackageVersions(ctx context.Context, rep
 	})
 	if err != nil {
 		return resp, fmt.Errorf("failed to list lightwell npm package versions: %w", err)
+	}
+	if len(rows) == 0 {
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
 	}
 
 	versions := make([]api.NpmPackageDetailResponse, 0)
@@ -589,7 +595,7 @@ func (d lightwellPackageDaoImpl) GetNpmPackageDetail(ctx context.Context, repoCo
 		return resp, fmt.Errorf("failed to get lightwell npm package detail: %w", err)
 	}
 	if len(rows) == 0 {
-		return resp, nil
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
 	}
 
 	builds := make([]api.ReleaseInfo, 0, len(rows))
@@ -683,7 +689,7 @@ func (d lightwellPackageDaoImpl) GetPythonPackageDetail(ctx context.Context, rep
 		return resp, fmt.Errorf("failed to get lightwell python package detail: %w", err)
 	}
 	if len(rows) == 0 {
-		return resp, nil
+		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
 	}
 
 	builds := make([]api.ReleaseInfo, 0, len(rows))
