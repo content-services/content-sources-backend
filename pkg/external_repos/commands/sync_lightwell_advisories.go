@@ -60,6 +60,10 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 		if entry.OsvPath == "" {
 			continue
 		}
+		if external_repos.IgnoredLightwellRepo(entry.Name) {
+			log.Info().Str("entry", entry.Name).Msg("Skipping ignored lightwell repository")
+			continue
+		}
 
 		err := processOSVForEntry(ctx, daoReg, httpClient, entry, force)
 		if err != nil {

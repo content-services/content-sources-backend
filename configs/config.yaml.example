@@ -72,7 +72,9 @@ options:
   seed_lightwell_coverage_reports: true
   # Example: "2026-10-09T13:00:00Z". A new value forces one package import.
   lightwell_package_import_force_at: ""
-  # Lightwell repository names (as in the seed allowlist, matched exactly) to hide from the list API.
+  # Lightwell repository names (as in the seed allowlist, matched exactly) to hide from the list API
+  # and skip during repository import. A skipped repo is not saved, so a missing published
+  # distribution does not fail the import.
   # To also hide a repo's demo variant, list its "-demo" name explicitly.
   # Example: ["lightwell/java/remediated", "lightwell/java/remediated-demo"]
   lightwell_ignore_repos: []
