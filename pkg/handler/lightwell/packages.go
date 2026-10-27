@@ -230,7 +230,7 @@ func (h *LightwellPackageHandler) getPythonPackageDetail(c echo.Context) error {
 // getPythonPackageVersions godoc
 // @Summary      Get Python Package Versions
 // @ID           getLightwellPythonPackageVersions
-// @Description  Get metadata and distributions for all versions of a Python package by name.
+// @Description  List versions for a Python package by name. The version is the upstream version, and builds lists each rebuild.
 // @Tags         lightwell
 // @Param        uuid path string true "Repository UUID"
 // @Param        name path string true "Python package normalized name"

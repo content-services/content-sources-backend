@@ -640,12 +640,27 @@ func (d lightwellPackageDaoImpl) ListPythonPackageVersions(ctx context.Context, 
 		return resp, &ce.DaoError{NotFound: true, Message: "Package not found"}
 	}
 
-	versions := make([]api.PythonPackageDetailResponse, 0, len(rows))
+	versions := make([]api.PythonPackageDetailResponse, 0)
+	index := make(map[string]int, len(rows))
 	for _, row := range rows {
+		version := row.UpstreamVersion
+		if version == "" {
+			version = row.Version
+		}
+		build := api.ReleaseInfo{
+			Version:   version,
+			Release:   row.Release,
+			CreatedAt: row.PublishedAt,
+		}
+		if i, ok := index[version]; ok {
+			versions[i].Builds = append(versions[i].Builds, build)
+			continue
+		}
+		index[version] = len(versions)
 		versions = append(versions, api.PythonPackageDetailResponse{
 			Name:        row.Name,
-			Version:     row.Version,
-			Builds:      []api.ReleaseInfo{},
+			Version:     version,
+			Builds:      []api.ReleaseInfo{build},
 			Summary:     row.Summary,
 			Description: row.Description,
 			LastUpdated: row.PublishedAt,

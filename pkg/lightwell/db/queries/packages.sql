@@ -156,6 +156,7 @@ ORDER BY pv.published_at DESC, pv.version DESC;
 SELECT
     p.name,
     pv.version,
+    pv.release,
     pv.upstream_version,
     pv.summary,
     pv.description,
@@ -169,7 +170,7 @@ JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid
     AND p.package_group = ''
     AND p.name = sqlc.arg(name)
-ORDER BY pv.version;
+ORDER BY pv.published_at DESC, pv.version DESC;
 
 -- name: ListLightwellMavenPackageVersions :many
 SELECT
