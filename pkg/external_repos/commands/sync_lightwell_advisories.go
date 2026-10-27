@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +27,12 @@ import (
 
 const maxResponseBytes = 100 * 1024 * 1024 // 100 MB
 const maxConcurrentFetches = 10
+
+// legacyOSVDir is the repository subdirectory that currently holds the OSV
+// files this importer should read. PULP_MANIFEST stays at the repository root
+// and also lists files outside this directory, so those entries are ignored.
+// This filter is temporary.
+const legacyOSVDir = "legacy"
 
 // bridgeNotificationOrgID is a sentinel org_id used to track which advisories
 // have already been published to the org-independent jfrog-bridge topic. It
@@ -109,7 +116,7 @@ func processOSVForEntry(
 	if err != nil {
 		return fmt.Errorf("error fetching manifest from %s: %w", manifestURL, err)
 	}
-	manifestEntries := vp.ParseManifest(manifestData)
+	manifestEntries := selectLegacyOSVEntries(vp.ParseManifest(manifestData))
 
 	existingAdvisories, err := daoReg.LightwellAdvisory.ListByRepository(ctx, repoConfigUUID)
 	if err != nil {
@@ -329,6 +336,23 @@ func buildAdvisoryInputs(
 		}
 	}
 	return advisories, updated
+}
+
+// selectLegacyOSVEntries keeps manifest paths that live in ./legacy/ and
+// normalizes them so the later fetch uses that relative path. Files at the
+// repository root, and names that merely start with "legacy", are left out.
+func selectLegacyOSVEntries(entries []vp.ManifestEntry) []vp.ManifestEntry {
+	prefix := legacyOSVDir + "/"
+	selected := make([]vp.ManifestEntry, 0, len(entries))
+	for _, entry := range entries {
+		name := path.Clean(entry.Filename)
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		entry.Filename = name
+		selected = append(selected, entry)
+	}
+	return selected
 }
 
 func buildChecksumRequests(inputs []event.LightwellNotificationInput) []event.ArtifactChecksumRequest {
