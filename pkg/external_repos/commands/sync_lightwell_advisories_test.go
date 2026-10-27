@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/IBM/sarama/mocks"
@@ -16,6 +17,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/event"
 	"github.com/content-services/content-sources-backend/pkg/external_repos"
+	vp "github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -74,7 +76,7 @@ func setupMockProducer(t *testing.T, expectedMessages int) *mocks.SyncProducer {
 const testRepoConfigUUID = "test-repo-config-uuid"
 const testRepoName = "lightwell/java/remediated"
 
-const testManifest = "advisory-1.json,checksum-aaa,1500\nadvisory-2.json,checksum-bbb,2500\n"
+const testManifest = "legacy/advisory-1.json,checksum-aaa,1500\nlegacy/advisory-2.json,checksum-bbb,2500\n"
 
 const testOSVAdvisory1 = `{
 	"id": "ADV-001",
@@ -135,10 +137,10 @@ func TestProcessOsvForEntry_Success(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory1)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 
@@ -196,10 +198,10 @@ func TestProcessOsvForEntry_BridgeSendsOnlyUnnotified(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory1)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 	mux.HandleFunc("/java/remediated/com/example/lib-a/1.0.1/lib-a-1.0.1.jar.sha256", func(w http.ResponseWriter, r *http.Request) {
@@ -254,10 +256,10 @@ func TestProcessOsvForEntry_BridgeSkippedWhenAllNotified(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory1)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 
@@ -289,10 +291,10 @@ func TestProcessOsvForEntry_SkipsNotificationsWhenFeatureDisabled(t *testing.T) 
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory1)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 
@@ -333,9 +335,9 @@ func TestProcessOsvForEntry_PersistsOSVMetadata(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "x_RHLW-CVE-2015-6748-1.7.2.json,checksum-jsoup,1500\n")
+		fmt.Fprint(w, "legacy/x_RHLW-CVE-2015-6748-1.7.2.json,checksum-jsoup,1500\n")
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/x_RHLW-CVE-2015-6748-1.7.2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/x_RHLW-CVE-2015-6748-1.7.2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, richOSV)
 	})
 
@@ -380,9 +382,9 @@ func TestProcessOsvForEntry_UpdatesWhenChecksumChanges(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "advisory-1.json,checksum-zzz,1600\n")
+		fmt.Fprint(w, "legacy/advisory-1.json,checksum-zzz,1600\n")
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, updatedOSV)
 	})
 
@@ -424,7 +426,7 @@ func TestProcessOsvForEntry_SkipsExistingByChecksum(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 
@@ -491,11 +493,11 @@ func TestProcessOsvForEntry_ForceRefetchesAll(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		advisory1Fetched = true
 		fmt.Fprint(w, testOSVAdvisory1)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 
@@ -551,10 +553,10 @@ func TestProcessOsvForEntry_SkipsFailedOSVFetch(t *testing.T) {
 	mux.HandleFunc("/lightwell/osv/java/remediated/PULP_MANIFEST", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testManifest)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-1.json", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
-	mux.HandleFunc("/lightwell/osv/java/remediated/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/lightwell/osv/java/remediated/legacy/advisory-2.json", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, testOSVAdvisory2)
 	})
 
@@ -569,6 +571,83 @@ func TestProcessOsvForEntry_SkipsFailedOSVFetch(t *testing.T) {
 
 	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
+}
+
+func TestProcessOsvForEntry_ImportsOnlyLegacyDirectory(t *testing.T) {
+	config.Get().Features.LightwellNotifications.Enabled = false
+
+	const manifest = "new-format/advisory-3.json,checksum-ccc,1800\n" +
+		"advisory-root.json,checksum-root,900\n" +
+		"legacy-not-a-directory.json,checksum-nope,100\n" +
+		"legacy/advisory-1.json,checksum-aaa,1500\n" +
+		"./legacy/advisory-2.json,checksum-bbb,2500\n"
+
+	files := map[string]string{
+		"/lightwell/osv/java/remediated/PULP_MANIFEST":               manifest,
+		"/lightwell/osv/java/remediated/legacy/advisory-1.json":      testOSVAdvisory1,
+		"/lightwell/osv/java/remediated/legacy/advisory-2.json":      testOSVAdvisory2,
+		"/lightwell/osv/java/remediated/new-format/advisory-3.json":  testOSVAdvisory1,
+		"/lightwell/osv/java/remediated/advisory-root.json":          testOSVAdvisory1,
+		"/lightwell/osv/java/remediated/legacy-not-a-directory.json": testOSVAdvisory1,
+	}
+
+	var (
+		requested []string
+		mu        sync.Mutex
+	)
+	server := setupTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		requested = append(requested, r.URL.Path)
+		mu.Unlock()
+		body, ok := files[r.URL.Path]
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		fmt.Fprint(w, body)
+	}))
+
+	mockDao := dao.GetMockDaoRegistry(t)
+	mockRepoConfigFetch(mockDao)
+	mockDao.LightwellAdvisory.On("ListByRepository", mock.Anything, testRepoConfigUUID).Return([]dao.LightwellAdvisoryInput{}, nil)
+	mockDao.LightwellAdvisory.On("SyncForRepository", mock.Anything, testRepoConfigUUID, testRepoName, mock.MatchedBy(func(advisories []dao.LightwellAdvisoryInput) bool {
+		if len(advisories) != 2 {
+			return false
+		}
+		return advisories[0].AdvisoryID == "ADV-001" && advisories[0].Checksum == "checksum-aaa" &&
+			advisories[1].AdvisoryID == "ADV-002" && advisories[1].Checksum == "checksum-bbb"
+	})).Return(nil)
+
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []string{
+		"/lightwell/osv/java/remediated/PULP_MANIFEST",
+		"/lightwell/osv/java/remediated/legacy/advisory-1.json",
+		"/lightwell/osv/java/remediated/legacy/advisory-2.json",
+	}, requested)
+}
+
+func TestSelectLegacyOSVEntries(t *testing.T) {
+	entries := []vp.ManifestEntry{
+		{Filename: "advisory-root.json", Checksum: "root", Size: 1},
+		{Filename: "legacy-not-a-directory.json", Checksum: "nope", Size: 2},
+		{Filename: "new-format/advisory-3.json", Checksum: "new", Size: 3},
+		{Filename: "legacy/advisory-1.json", Checksum: "aaa", Size: 4},
+		{Filename: "./legacy/advisory-2.json", Checksum: "bbb", Size: 5},
+		{Filename: "legacy/nested/advisory-4.json", Checksum: "ccc", Size: 6},
+		{Filename: "legacy/../advisory-root.json", Checksum: "escape", Size: 7},
+		{Filename: "other/legacy/advisory-5.json", Checksum: "other", Size: 8},
+	}
+
+	selected := selectLegacyOSVEntries(entries)
+
+	require.Len(t, selected, 3)
+	assert.Equal(t, "legacy/advisory-1.json", selected[0].Filename)
+	assert.Equal(t, "aaa", selected[0].Checksum)
+	assert.Equal(t, int64(4), selected[0].Size)
+	assert.Equal(t, "legacy/advisory-2.json", selected[1].Filename)
+	assert.Equal(t, "bbb", selected[1].Checksum)
+	assert.Equal(t, "legacy/nested/advisory-4.json", selected[2].Filename)
 }
 
 func TestBuildChecksumRequests(t *testing.T) {
