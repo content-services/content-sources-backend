@@ -3,7 +3,6 @@ package lightwell
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -44,8 +43,6 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 		"/repositories/repo/packages",
 		"/repositories/repo/java_packages/group/name",
 		"/repositories/repo/java_packages/group/name/version",
-		"/repositories/repo/maven_packages/group/name",
-		"/repositories/repo/maven_packages/group/name/version",
 		"/repositories/repo/python_packages/name",
 		"/repositories/repo/python_packages/name/version",
 		"/repositories/repo/js_packages/scope/name",
@@ -57,14 +54,6 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, LightwellAPIPath+path, nil))
 			require.Equal(t, http.StatusPreconditionRequired, recorder.Code)
 			assert.Equal(t, "terms guard invoked", recorder.Body.String())
-			if strings.Contains(path, "/maven_packages/") {
-				successor := strings.Replace(LightwellAPIPath+path, "/maven_packages/", "/java_packages/", 1)
-				assert.Equal(t, "true", recorder.Header().Get("Deprecation"))
-				assert.Equal(t, "<"+successor+">; rel=\"successor-version\"", recorder.Header().Get("Link"))
-			}
-			if strings.Contains(path, "/java_packages/") {
-				assert.Empty(t, recorder.Header().Get("Deprecation"))
-			}
 		})
 	}
 

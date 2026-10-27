@@ -33,29 +33,19 @@ func (s *LightwellPackagesSuite) stubLightwellAccess() {
 		Return([]string{"lightwell-maven"}, nil).Maybe()
 }
 
-func (s *LightwellPackagesSuite) TestJavaPackageRouteMatchesMavenRoute() {
+func (s *LightwellPackagesSuite) TestJavaPackageRouteNotFound() {
 	t := s.T()
 	repoUUID := "550e8400-e29b-41d4-a716-446655440003"
 	orgID := test_handler.MockOrgId
 	s.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).
 		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(0), nil)
 
-	mavenPath := fmt.Sprintf("%s/repositories/%s/maven_packages/com.example/demo", LightwellAPIPath, repoUUID)
 	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/com.example/demo", LightwellAPIPath, repoUUID)
-
-	mavenReq := httptest.NewRequest(http.MethodGet, mavenPath, nil)
-	mavenReq.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	mavenRR := s.record(mavenReq)
-	assert.Equal(t, http.StatusNotFound, mavenRR.Code)
-	assert.Equal(t, "true", mavenRR.Header().Get("Deprecation"))
-	assert.Equal(t, "<"+javaPath+">; rel=\"successor-version\"", mavenRR.Header().Get("Link"))
-
 	javaReq := httptest.NewRequest(http.MethodGet, javaPath, nil)
 	javaReq.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	javaRR := s.record(javaReq)
 	assert.Equal(t, http.StatusNotFound, javaRR.Code)
 	assert.Empty(t, javaRR.Header().Get("Deprecation"))
-	assert.Equal(t, mavenRR.Body.Bytes(), javaRR.Body.Bytes())
 }
 
 func (s *LightwellPackagesSuite) TestJsPackageRouteNotFound() {
@@ -508,7 +498,7 @@ func (s *LightwellPackagesSuite) TestGetMavenPackageDetailReadsMirror() {
 			},
 		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", LightwellAPIPath, repoUUID, groupID, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s", LightwellAPIPath, repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -553,7 +543,7 @@ func (s *LightwellPackagesSuite) TestListMavenPackageVersionsReadsMirror() {
 			},
 		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", LightwellAPIPath, repoUUID, groupID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", LightwellAPIPath, repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 

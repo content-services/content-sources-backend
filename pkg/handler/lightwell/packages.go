@@ -41,11 +41,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addLightwellRoute(engine, http.MethodGet, "/packages", h.listPackages, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/package_versions", h.listPackageVersions, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/packages", h.listRepoPackages, rbac.RbacVerbRead, middleware...)
-	mavenMiddleware := append([]echo.MiddlewareFunc{handler.DeprecateMavenPackagePath}, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name", h.listJavaPackageVersions, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", h.getJavaPackageDetail, rbac.RbacVerbRead, middleware...)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", h.listMavenPackageVersions, rbac.RbacVerbRead, mavenMiddleware...)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", h.getMavenPackageDetail, rbac.RbacVerbRead, mavenMiddleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name/:version", h.getJsPackageDetail, rbac.RbacVerbRead, middleware...)
@@ -121,49 +118,6 @@ func (h *LightwellPackageHandler) listPackageVersions(c echo.Context) error {
 // @Router       /repositories/{uuid}/packages [get]
 func (h *LightwellPackageHandler) listRepoPackages(c echo.Context) error {
 	return h.PackageHandler.ListPackages(c)
-}
-
-// listMavenPackageVersions godoc
-// @Summary      List Maven Package Versions
-// @ID           listLightwellMavenPackageVersions
-// @Deprecated
-// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}. List all versions for a specific Maven package by group and name.
-// @Tags         lightwell
-// @Param        uuid path string true "Repository UUID"
-// @Param        group path string true "Maven package group ID"
-// @Param        name path string true "Maven package artifact ID"
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} api.MavenPackageVersionsResponse
-// @Failure      400 {object} ce.ErrorResponse
-// @Failure      404 {object} ce.ErrorResponse
-// @Failure      428 {object} ce.ErrorResponse
-// @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/maven_packages/{group}/{name} [get]
-func (h *LightwellPackageHandler) listMavenPackageVersions(c echo.Context) error {
-	return h.PackageHandler.ListMavenPackageVersions(c)
-}
-
-// getMavenPackageDetail godoc
-// @Summary      Get Maven Package Detail
-// @ID           getLightwellMavenPackageDetail
-// @Deprecated
-// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}/{version}. Get builds for a specific Maven package by group, name, and version.
-// @Tags         lightwell
-// @Param        uuid path string true "Repository UUID"
-// @Param        group path string true "Maven package group ID"
-// @Param        name path string true "Maven package artifact ID"
-// @Param        version path string true "Maven package version"
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} api.MavenPackageDetailResponse
-// @Failure      400 {object} ce.ErrorResponse
-// @Failure      404 {object} ce.ErrorResponse
-// @Failure      428 {object} ce.ErrorResponse
-// @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
-func (h *LightwellPackageHandler) getMavenPackageDetail(c echo.Context) error {
-	return h.PackageHandler.GetMavenPackageDetail(c)
 }
 
 // listJavaPackageVersions godoc

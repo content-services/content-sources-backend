@@ -45,12 +45,6 @@ func (suite *PackagesSuite) SetupTest() {
 	suite.fsClient = fsc.NewMockFeatureServiceClient(suite.T())
 }
 
-func assertMavenPackageDeprecation(t *testing.T, rr *httptest.ResponseRecorder, javaPath string) {
-	t.Helper()
-	assert.Equal(t, "true", rr.Header().Get("Deprecation"))
-	assert.Equal(t, "<"+javaPath+">; rel=\"successor-version\"", rr.Header().Get("Link"))
-}
-
 func (suite *PackagesSuite) servePackagesRouter(req *http.Request) (int, []byte, error) {
 	rr := suite.recordPackages(req)
 	return rr.Code, rr.Body.Bytes(), nil
@@ -200,21 +194,12 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsSuccess() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	rr := suite.recordPackages(req)
 	assert.Equal(t, http.StatusOK, rr.Code)
-	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
-	assertMavenPackageDeprecation(t, rr, javaPath)
-
-	javaReq := httptest.NewRequest(http.MethodGet, javaPath, nil)
-	javaReq.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	javaRR := suite.recordPackages(javaReq)
-	assert.Equal(t, http.StatusOK, javaRR.Code)
-	assert.Empty(t, javaRR.Header().Get("Deprecation"))
-	assert.Equal(t, rr.Body.Bytes(), javaRR.Body.Bytes())
 
 	var response api.MavenPackageVersionsResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
@@ -245,7 +230,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsNonMavenRepo() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -261,7 +246,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsRepoNotFound() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -287,7 +272,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsDaoError() {
 	suite.reg.LightwellPackage.On("ListMavenPackageVersions", test.MockCtx(), repoUUID, groupID, packageName).
 		Return(api.MavenPackageVersionsResponse{}, fmt.Errorf("failed to list lightwell maven package versions"))
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -313,7 +298,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsEmpty() {
 	suite.reg.LightwellPackage.On("ListMavenPackageVersions", test.MockCtx(), repoUUID, groupID, packageName).
 		Return(api.MavenPackageVersionsResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -567,14 +552,12 @@ func (suite *PackagesSuite) TestGetPackageDetailSuccess() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	rr := suite.recordPackages(req)
 	assert.Equal(t, http.StatusOK, rr.Code)
-	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
-	assertMavenPackageDeprecation(t, rr, javaPath)
 
 	var response api.MavenPackageDetailResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
@@ -619,21 +602,12 @@ func (suite *PackagesSuite) TestGetPackageDetailReturnsCachedMetadata() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
 	rr := suite.recordPackages(req)
 	assert.Equal(t, http.StatusOK, rr.Code)
-	javaPath := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
-	assertMavenPackageDeprecation(t, rr, javaPath)
-
-	javaReq := httptest.NewRequest(http.MethodGet, javaPath, nil)
-	javaReq.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
-	javaRR := suite.recordPackages(javaReq)
-	assert.Equal(t, http.StatusOK, javaRR.Code)
-	assert.Empty(t, javaRR.Header().Get("Deprecation"))
-	assert.Equal(t, rr.Body.Bytes(), javaRR.Body.Bytes())
 
 	var response api.MavenPackageDetailResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
@@ -666,7 +640,7 @@ func (suite *PackagesSuite) TestGetPackageDetailDaoError() {
 	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).
 		Return(api.MavenPackageDetailResponse{}, fmt.Errorf("failed to get lightwell maven package detail"))
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -687,7 +661,7 @@ func (suite *PackagesSuite) TestGetPackageDetailNonMavenRepo() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -703,7 +677,7 @@ func (suite *PackagesSuite) TestGetPackageDetailRepoNotFound() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(0), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s", api.FullRootPath(), repoUUID, "some.group", "some-package", "1.0.0")
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -730,7 +704,7 @@ func (suite *PackagesSuite) TestGetPackageDetailEmptyBuilds() {
 	suite.reg.LightwellPackage.On("GetMavenPackageDetail", test.MockCtx(), repoUUID, groupID, packageName, packageVersion).
 		Return(api.MavenPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s?limit=100&offset=0", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -837,7 +811,7 @@ func (suite *PackagesSuite) TestGetPackageDetailBaseVersionExact() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -882,7 +856,7 @@ func (suite *PackagesSuite) TestListMavenPackageVersionsMultipleRebuilds() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/maven_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/java_packages/%s/%s", api.FullRootPath(), repoUUID, groupID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 

@@ -28,26 +28,13 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 		TangClient:  tangClient,
 		PulpClient:  pulpClient,
 	}
-	mavenMiddleware := append([]echo.MiddlewareFunc{DeprecateMavenPackagePath}, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/packages", ph.ListPackages, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name", ph.ListJavaPackageVersions, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", ph.GetJavaPackageDetail, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name", ph.ListMavenPackageVersions, rbac.RbacVerbRead, mavenMiddleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/maven_packages/:group/:name/:version", ph.GetMavenPackageDetail, rbac.RbacVerbRead, mavenMiddleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
-}
-
-// DeprecateMavenPackagePath marks maven_packages responses as deprecated and points clients at java_packages.
-func DeprecateMavenPackagePath(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		successor := strings.Replace(c.Request().URL.RequestURI(), "/maven_packages/", "/java_packages/", 1)
-		c.Response().Header().Set("Deprecation", "true")
-		c.Response().Header().Set("Link", "<"+successor+">; rel=\"successor-version\"")
-		return next(c)
-	}
 }
 
 func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
@@ -163,15 +150,14 @@ func packageSortField(contentType, field string) string {
 	return field
 }
 
-// ListMavenPackageVersions godoc
-// @Summary      List Maven Package Versions
-// @ID           listMavenPackageVersions
-// @Deprecated
-// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}. List all versions (builds) for a specific Maven package by group and name.
+// ListJavaPackageVersions godoc
+// @Summary      List Java Package Versions
+// @ID           listJavaPackageVersions
+// @Description  List all versions (builds) for a specific Java package by group and name.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
-// @Param        group path string true "Maven package group ID"
-// @Param        name path string true "Maven package artifact ID"
+// @Param        group path string true "Java package group ID"
+// @Param        name path string true "Java package artifact ID"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.MavenPackageVersionsResponse
@@ -179,8 +165,8 @@ func packageSortField(contentType, field string) string {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/maven_packages/{group}/{name} [get]
-func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
+// @Router       /repositories/{uuid}/java_packages/{group}/{name} [get]
+func (ph *PackageHandler) ListJavaPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	groupID := c.Param("group")
 	name := c.Param("name")
@@ -203,16 +189,15 @@ func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 	return c.JSON(http.StatusOK, versions)
 }
 
-// GetMavenPackageDetail godoc
-// @Summary      Get Maven Package Detail
-// @ID           getPackageDetail
-// @Deprecated
-// @Description  Deprecated. Use /repositories/{uuid}/java_packages/{group}/{name}/{version}. Get builds for a specific Maven package by group, name, and version.
+// GetJavaPackageDetail godoc
+// @Summary      Get Java Package Detail
+// @ID           getJavaPackageDetail
+// @Description  Get builds for a specific Java package by group, name, and version.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
-// @Param        group path string true "Maven package group ID"
-// @Param        name path string true "Maven package artifact ID"
-// @Param        version path string true "Maven package version"
+// @Param        group path string true "Java package group ID"
+// @Param        name path string true "Java package artifact ID"
+// @Param        version path string true "Java package version"
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} api.MavenPackageDetailResponse
@@ -220,8 +205,8 @@ func (ph *PackageHandler) ListMavenPackageVersions(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/maven_packages/{group}/{name}/{version} [get]
-func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
+// @Router       /repositories/{uuid}/java_packages/{group}/{name}/{version} [get]
+func (ph *PackageHandler) GetJavaPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	groupID := c.Param("group")
 	name := c.Param("name")
@@ -243,47 +228,6 @@ func (ph *PackageHandler) GetMavenPackageDetail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, detail)
-}
-
-// ListJavaPackageVersions godoc
-// @Summary      List Java Package Versions
-// @ID           listJavaPackageVersions
-// @Description  List all versions (builds) for a specific Java package by group and name.
-// @Tags         packages
-// @Param        uuid path string true "Repository UUID"
-// @Param        group path string true "Java package group ID"
-// @Param        name path string true "Java package artifact ID"
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} api.MavenPackageVersionsResponse
-// @Failure      400 {object} ce.ErrorResponse
-// @Failure      404 {object} ce.ErrorResponse
-// @Failure      428 {object} ce.ErrorResponse
-// @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/java_packages/{group}/{name} [get]
-func (ph *PackageHandler) ListJavaPackageVersions(c echo.Context) error {
-	return ph.ListMavenPackageVersions(c)
-}
-
-// GetJavaPackageDetail godoc
-// @Summary      Get Java Package Detail
-// @ID           getJavaPackageDetail
-// @Description  Get builds for a specific Java package by group, name, and version.
-// @Tags         packages
-// @Param        uuid path string true "Repository UUID"
-// @Param        group path string true "Java package group ID"
-// @Param        name path string true "Java package artifact ID"
-// @Param        version path string true "Java package version"
-// @Accept       json
-// @Produce      json
-// @Success      200 {object} api.MavenPackageDetailResponse
-// @Failure      400 {object} ce.ErrorResponse
-// @Failure      404 {object} ce.ErrorResponse
-// @Failure      428 {object} ce.ErrorResponse
-// @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/java_packages/{group}/{name}/{version} [get]
-func (ph *PackageHandler) GetJavaPackageDetail(c echo.Context) error {
-	return ph.GetMavenPackageDetail(c)
 }
 
 // GetPythonPackageVersions godoc
