@@ -23,19 +23,10 @@ func NewMockRepositoryConfigDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockRepositoryConfigDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockRepositoryConfigDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -2156,19 +2147,10 @@ func NewMockModuleStreamDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockModuleStreamDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockModuleStreamDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -2463,19 +2445,10 @@ func NewMockRpmDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockRpmDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockRpmDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -3394,19 +3367,10 @@ func NewMockRepositoryDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockRepositoryDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockRepositoryDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -3960,19 +3924,10 @@ func NewMockSnapshotDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockSnapshotDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockSnapshotDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -5522,19 +5477,10 @@ func NewMockMetricsDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockMetricsDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockMetricsDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -6286,19 +6232,10 @@ func NewMockTaskInfoDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockTaskInfoDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockTaskInfoDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -6622,19 +6559,10 @@ func NewMockAdminTaskDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockAdminTaskDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockAdminTaskDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -6802,19 +6730,10 @@ func NewMockDomainDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockDomainDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockDomainDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -7095,19 +7014,10 @@ func NewMockPackageGroupDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockPackageGroupDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockPackageGroupDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -7504,19 +7414,10 @@ func NewMockEnvironmentDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockEnvironmentDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockEnvironmentDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -7913,19 +7814,10 @@ func NewMockTemplateDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockTemplateDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockTemplateDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -9361,19 +9253,10 @@ func NewMockMemoDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockMemoDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockMemoDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -9656,19 +9539,10 @@ func NewMockMavenPackagesDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockMavenPackagesDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockMavenPackagesDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -9823,19 +9697,10 @@ func NewMockLightwellAdvisoryDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockLightwellAdvisoryDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockLightwellAdvisoryDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -10501,19 +10366,10 @@ func NewMockLightwellVulnerabilityDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockLightwellVulnerabilityDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockLightwellVulnerabilityDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -11006,19 +10862,10 @@ func NewMockLightwellPackageDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockLightwellPackageDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockLightwellPackageDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -11767,19 +11614,10 @@ func NewMockUserPreferenceDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockUserPreferenceDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockUserPreferenceDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
@@ -12035,19 +11873,10 @@ func NewMockCoverageReportDao(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *MockCoverageReportDao {
-	if helper, ok := t.(interface{ Helper() }); ok {
-		helper.Helper()
-	}
-
 	mock := &MockCoverageReportDao{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() {
-		if helper, ok := t.(interface{ Helper() }); ok {
-			helper.Helper()
-		}
-		mock.AssertExpectations(t)
-	})
+	t.Cleanup(func() { mock.AssertExpectations(t) })
 
 	return mock
 }
