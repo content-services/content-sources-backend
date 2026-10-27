@@ -3072,7 +3072,7 @@ const docTemplate = `{
         },
         "/repositories/{uuid}/python_packages/{name}": {
             "get": {
-                "description": "Get metadata and distributions for all versions of a Python package by name.",
+                "description": "List versions for a Python package by name. The version is the upstream version, and builds lists each rebuild.",
                 "consumes": [
                     "application/json"
                 ],

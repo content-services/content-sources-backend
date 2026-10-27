@@ -177,18 +177,47 @@ func (s *PythonPackagesSuite) TestPythonPackageVersionsAPI() {
 
 	repo := s.createPythonRepository(config.LightwellOrg)
 	s.seedPythonPackageMirror(repo.UUID)
+	var pkg models.LightwellPackage
+	require.NoError(t, db.DB.Where("repository_configuration_uuid = ? AND name = ?", repo.UUID, testPythonPackageName).First(&pkg).Error)
+	require.NoError(t, db.DB.Create(&models.LightwellPackageVersion{
+		LightwellPackageUUID:        pkg.UUID,
+		RepositoryConfigurationUUID: repo.UUID,
+		Version:                     "0.2+rhlw.3",
+		Release:                     "rhlw.3",
+		UpstreamVersion:             "0.2",
+		PublishedAt:                 "2024-04-01T00:00:00Z",
+		Summary:                     "newest shelf reader",
+	}).Error)
+	require.NoError(t, db.DB.Create(&models.LightwellPackageVersion{
+		LightwellPackageUUID:        pkg.UUID,
+		RepositoryConfigurationUUID: repo.UUID,
+		Version:                     "0.20+rhlw.1",
+		Release:                     "rhlw.1",
+		UpstreamVersion:             "0.20",
+		PublishedAt:                 "2024-03-01T00:00:00Z",
+	}).Error)
 	versions := s.getPackageVersions(repo.UUID, testPythonPackageName)
 
 	assert.Equal(t, testPythonPackageName, versions.Name)
-	require.Len(t, versions.Versions, 2)
-	assert.Equal(t, "0.1", versions.Versions[0].Version)
-	assert.Equal(t, "shelf reader summary", versions.Versions[0].Summary)
-	assert.Equal(t, "2024-01-01T12:00:00Z", versions.Versions[0].LastUpdated)
-	assert.Equal(t, "0.1", versions.Versions[0].UpstreamVersion)
+	require.Len(t, versions.Versions, 3)
+	assert.Equal(t, "0.2", versions.Versions[0].Version)
+	assert.Equal(t, "newest shelf reader", versions.Versions[0].Summary)
+	assert.Equal(t, "2024-04-01T00:00:00Z", versions.Versions[0].LastUpdated)
+	assert.Equal(t, "0.2", versions.Versions[0].UpstreamVersion)
+	assert.Equal(t, []api.ReleaseInfo{
+		{Version: "0.2", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
+		{Version: "0.2", Release: "", CreatedAt: "2024-01-01T12:00:00Z"},
+	}, versions.Versions[0].Builds)
 	assert.Empty(t, versions.Versions[0].Distributions)
-	assert.Equal(t, "0.2", versions.Versions[1].Version)
-	assert.Equal(t, "0.2", versions.Versions[1].UpstreamVersion)
-	assert.Empty(t, versions.Versions[1].Distributions)
+	assert.Equal(t, "0.20", versions.Versions[1].Version)
+	require.Len(t, versions.Versions[1].Builds, 1)
+	assert.Equal(t, "0.20", versions.Versions[1].Builds[0].Version)
+	assert.Equal(t, "0.1", versions.Versions[2].Version)
+	assert.Equal(t, "shelf reader summary", versions.Versions[2].Summary)
+	assert.Equal(t, "0.1", versions.Versions[2].UpstreamVersion)
+	require.Len(t, versions.Versions[2].Builds, 1)
+	assert.Equal(t, "", versions.Versions[2].Builds[0].Release)
+	assert.Empty(t, versions.Versions[2].Distributions)
 }
 
 func (s *PythonPackagesSuite) TestPythonPackageDetailAPI() {

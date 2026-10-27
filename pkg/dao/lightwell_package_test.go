@@ -949,21 +949,28 @@ func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
 		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
 	})
 
-	versions := []struct {
-		version  string
-		upstream string
+	rows := []struct {
+		version     string
+		release     string
+		upstream    string
+		publishedAt string
+		summary     string
+		description string
 	}{
-		{version: "4.2", upstream: ""},
-		{version: "4.25.7+rhlw.3", upstream: "4.25.7"},
+		{version: "4.25.7+rhlw.1", release: "rhlw.1", upstream: "4.25.7", publishedAt: "2024-01-01T00:00:00Z", summary: "older django", description: "older description"},
+		{version: "4.25.7+rhlw.3", release: "rhlw.3", upstream: "4.25.7", publishedAt: "2024-02-01T00:00:00Z", summary: "Django", description: "newest description"},
+		{version: "4.25.70+rhlw.1", release: "rhlw.1", upstream: "4.25.70", publishedAt: "2024-01-15T00:00:00Z", summary: "other"},
+		{version: "4.2+rhlw.1", release: "rhlw.1", upstream: "4.2", publishedAt: "2023-06-01T00:00:00Z", summary: "stale"},
+		{version: "4.2", publishedAt: "2024-01-01T12:00:00Z"},
 	}
-	for _, version := range versions {
+	for _, row := range rows {
 		versionUUID := uuid.NewString()
 		err = db.DB.WithContext(ctx).Exec(`
 			INSERT INTO lightwell_package_versions (
 				uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid,
-				version, release, upstream_version, published_at, purl, summary
-			) VALUES (?, NOW(), NOW(), ?, ?, ?, '', ?, ?, '', ?)`,
-			versionUUID, pkgUUID, repoConfigUUID, version.version, version.upstream, "2024-01-01T12:00:00Z", "summary "+version.version,
+				version, release, upstream_version, published_at, purl, summary, description
+			) VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, '', ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, row.version, row.release, row.upstream, row.publishedAt, row.summary, row.description,
 		).Error
 		s.Require().NoError(err)
 		s.T().Cleanup(func() {
@@ -974,16 +981,29 @@ func (s *LightwellPackageSuite) TestListPythonPackageVersions() {
 	got, err := pkgDao.ListPythonPackageVersions(ctx, repoConfigUUID, "django")
 	s.Require().NoError(err)
 	assert.Equal(s.T(), "django", got.Name)
-	s.Require().Len(got.Versions, 2)
-	assert.Equal(s.T(), "4.2", got.Versions[0].Version)
-	assert.Equal(s.T(), "", got.Versions[0].UpstreamVersion)
-	assert.Equal(s.T(), []api.ReleaseInfo{}, got.Versions[0].Builds)
-	assert.Equal(s.T(), "summary 4.2", got.Versions[0].Summary)
-	assert.Equal(s.T(), "2024-01-01T12:00:00Z", got.Versions[0].LastUpdated)
+	s.Require().Len(got.Versions, 3)
+	assert.Equal(s.T(), "4.25.7", got.Versions[0].Version)
+	assert.Equal(s.T(), "4.25.7", got.Versions[0].UpstreamVersion)
+	assert.Equal(s.T(), "2024-02-01T00:00:00Z", got.Versions[0].LastUpdated)
+	assert.Equal(s.T(), "Django", got.Versions[0].Summary)
+	assert.Equal(s.T(), "newest description", got.Versions[0].Description)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+		{Version: "4.25.7", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
+	}, got.Versions[0].Builds)
 	assert.Empty(s.T(), got.Versions[0].Distributions)
-	assert.Equal(s.T(), "4.25.7+rhlw.3", got.Versions[1].Version)
-	assert.Equal(s.T(), "4.25.7", got.Versions[1].UpstreamVersion)
-	assert.Empty(s.T(), got.Versions[1].Distributions)
+	assert.Equal(s.T(), "4.25.70", got.Versions[1].Version)
+	s.Require().Len(got.Versions[1].Builds, 1)
+	assert.Equal(s.T(), "4.25.70", got.Versions[1].Builds[0].Version)
+	assert.Equal(s.T(), "4.2", got.Versions[2].Version)
+	assert.Equal(s.T(), "", got.Versions[2].UpstreamVersion)
+	assert.Equal(s.T(), "", got.Versions[2].Summary)
+	assert.Equal(s.T(), "2024-01-01T12:00:00Z", got.Versions[2].LastUpdated)
+	assert.Equal(s.T(), []api.ReleaseInfo{
+		{Version: "4.2", Release: "", CreatedAt: "2024-01-01T12:00:00Z"},
+		{Version: "4.2", Release: "rhlw.1", CreatedAt: "2023-06-01T00:00:00Z"},
+	}, got.Versions[2].Builds)
+	assert.Empty(s.T(), got.Versions[2].Distributions)
 
 	_, err = pkgDao.ListPythonPackageVersions(ctx, repoConfigUUID, "missing")
 	var daoErr *ce.DaoError

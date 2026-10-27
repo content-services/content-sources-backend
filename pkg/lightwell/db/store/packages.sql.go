@@ -686,6 +686,7 @@ const listLightwellPythonPackageVersions = `-- name: ListLightwellPythonPackageV
 SELECT
     p.name,
     pv.version,
+    pv.release,
     pv.upstream_version,
     pv.summary,
     pv.description,
@@ -699,7 +700,7 @@ JOIN lightwell_package_versions pv ON pv.lightwell_package_uuid = p.uuid
 WHERE p.repository_configuration_uuid = $1::uuid
     AND p.package_group = ''
     AND p.name = $2
-ORDER BY pv.version
+ORDER BY pv.published_at DESC, pv.version DESC
 `
 
 type ListLightwellPythonPackageVersionsParams struct {
@@ -710,6 +711,7 @@ type ListLightwellPythonPackageVersionsParams struct {
 type ListLightwellPythonPackageVersionsRow struct {
 	Name            string `json:"name"`
 	Version         string `json:"version"`
+	Release         string `json:"release"`
 	UpstreamVersion string `json:"upstream_version"`
 	Summary         string `json:"summary"`
 	Description     string `json:"description"`
@@ -732,6 +734,7 @@ func (q *Queries) ListLightwellPythonPackageVersions(ctx context.Context, arg Li
 		if err := rows.Scan(
 			&i.Name,
 			&i.Version,
+			&i.Release,
 			&i.UpstreamVersion,
 			&i.Summary,
 			&i.Description,

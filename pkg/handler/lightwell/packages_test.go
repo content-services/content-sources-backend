@@ -588,10 +588,14 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageVersionsReadsMirror() {
 			Versions: []api.PythonPackageDetailResponse{
 				{
 					Name:            packageName,
-					Version:         "4.25.7+rhlw.3",
-					LastUpdated:     "2024-01-01T12:00:00Z",
+					Version:         "4.25.7",
+					LastUpdated:     "2024-02-01T00:00:00Z",
 					UpstreamVersion: "4.25.7",
-					Distributions:   []api.PythonDistribution{},
+					Builds: []api.ReleaseInfo{
+						{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-02-01T00:00:00Z"},
+						{Version: "4.25.7", Release: "rhlw.1", CreatedAt: "2024-01-01T00:00:00Z"},
+					},
+					Distributions: []api.PythonDistribution{},
 				},
 			},
 		}, nil)
@@ -608,8 +612,11 @@ func (s *LightwellPackagesSuite) TestGetPythonPackageVersionsReadsMirror() {
 	require.NoError(t, json.Unmarshal(body, &response))
 	assert.Equal(t, packageName, response.Name)
 	require.Len(t, response.Versions, 1)
-	assert.Equal(t, "4.25.7+rhlw.3", response.Versions[0].Version)
+	assert.Equal(t, "4.25.7", response.Versions[0].Version)
 	assert.Equal(t, "4.25.7", response.Versions[0].UpstreamVersion)
+	require.Len(t, response.Versions[0].Builds, 2)
+	assert.Equal(t, "rhlw.3", response.Versions[0].Builds[0].Release)
+	assert.Equal(t, "rhlw.1", response.Versions[0].Builds[1].Release)
 	assert.Empty(t, response.Versions[0].Distributions)
 }
 

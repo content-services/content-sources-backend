@@ -289,7 +289,7 @@ func (ph *PackageHandler) GetJavaPackageDetail(c echo.Context) error {
 // GetPythonPackageVersions godoc
 // @Summary      Get Python Package Versions
 // @ID           getPythonPackageVersions
-// @Description  Get metadata and distributions for all versions of a Python package by name.
+// @Description  List versions for a Python package by name. The version is the upstream version, and builds lists each rebuild.
 // @Tags         packages
 // @Param        uuid path string true "Repository UUID"
 // @Param        name path string true "Python package normalized name"
