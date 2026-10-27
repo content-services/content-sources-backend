@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -63,6 +64,13 @@ func (lri *LightwellRepoImporter) LoadAndSave(ctx context.Context) error {
 
 func (lri *LightwellRepoImporter) importEntries(ctx context.Context, entries []LightwellAllowlistEntry, pulpClient pulp_client.PulpClient, orgID string) error {
 	for _, entry := range entries {
+		// Skip repos named in options.lightwell_ignore_repos before looking up a distribution.
+		// A repo that is not published in this environment must not fail the whole import.
+		if IgnoredLightwellRepo(entry.Name) {
+			log.Info().Str("name", entry.Name).Msg("Skipping ignored lightwell repository")
+			continue
+		}
+
 		securityLevel, err := getSecurityLevel(entry.BasePath)
 		if err != nil {
 			log.Warn().Err(err).Str("name", entry.Name).Msg("Skipping lightwell repository with unparseable base path")
@@ -89,6 +97,12 @@ func (lri *LightwellRepoImporter) importEntries(ctx context.Context, entries []L
 		}
 	}
 	return nil
+}
+
+// IgnoredLightwellRepo reports whether name is listed in options.lightwell_ignore_repos.
+// Matching is exact, the same way the repository list API filters these names.
+func IgnoredLightwellRepo(name string) bool {
+	return slices.Contains(config.Get().Options.LightwellIgnoreRepos, name)
 }
 
 func getSecurityLevel(basePath string) (securityLevel string, err error) {

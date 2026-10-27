@@ -328,7 +328,7 @@ type Options struct {
 	SeedLightwell                 bool     `mapstructure:"seed_lightwell"`
 	SeedLightwellCoverageReports  bool     `mapstructure:"seed_lightwell_coverage_reports"`
 	LightwellPackageImportForceAt string   `mapstructure:"lightwell_package_import_force_at"`
-	LightwellIgnoreRepos          []string `mapstructure:"lightwell_ignore_repos"` // Lightwell repository names (as defined in the seed allowlist) to hide from the lightwell list API.
+	LightwellIgnoreRepos          []string `mapstructure:"lightwell_ignore_repos"` // Lightwell repository names (as defined in the seed allowlist) to hide from the list API and skip during repository import.
 	// LightwellPromoteByJiraState, when true, promotes a validation-stage vulnerability to the
 	// Lightwell Network stage based solely on its Jira state, without the publication package check.
 	// Intended for local development where Pulp is unreachable but Jira is. Do not enable in deployment.
