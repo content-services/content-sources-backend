@@ -207,7 +207,7 @@ make prometheus-ui
 
 **Configuration requirements**
 
-- To use this you need to enable RBAC into `config/configs.yaml` file:
+- To use this you need to enable RBAC in the `configs/config.yaml` file:
 
   ```yaml
   clients:
@@ -218,20 +218,38 @@ make prometheus-ui
     rbac:
       user_read_write: ["jdoe@example.com", "jdoe"]
       user_read: ["tdoe@example.com", "tdoe"]
+      user_no_permissions: ["xdoe@example.com", "xdoe"]
     kessel:
       user_read_write: ["write-user"]
       user_read: ["read-user"]
       user_no_permissions: ["no-perms-user"]
   ```
 
-**Running it**
+**Running with the RBAC mock**
 
-- Run the application by: `make run` or `./release/content-sources api task-worker instrumentation mock_rbac`.
-- Make some request using: `./scripts/header.sh 12345 jdoe@example.com` for admin or `./scripts/header.sh 12345 tdoe@example.com` for viewer.
+The RBAC mock is started by the `mock_rbac` argument. `make run` includes it automatically:
 
-> RBAC mock service is started for `make run`
-> To use it running directly the service: `./release/content-sources api task-worker instrumentation mock_rbac`
-> Add the option `mock_rbac`
+```sh
+make run
+# equivalent to:
+./release/content-sources api task-worker pulp-data-importer instrumentation mock_rbac
+```
+
+If you start the binary yourself with a different set of components, append `mock_rbac` to enable the mock.
+When `features.kessel.enabled` is true, `mock_rbac` also starts the Kessel mock.
+
+Send requests as one of the mock users configured under `mocks.rbac`:
+
+| User | Config key | Access |
+|------|------------|--------|
+| `jdoe@example.com` | `user_read_write` | read/write (admin) |
+| `tdoe@example.com` | `user_read` | read-only (viewer) |
+| `xdoe@example.com` | `user_no_permissions` | none |
+
+```sh
+curl -H "$(./scripts/header.sh 12345 jdoe@example.com)" \
+  http://localhost:8000/api/content-sources/v1.0/repositories/
+```
 
 **Kessel**
 - The kessel permissions will be used if the kessel feature is enabled.
