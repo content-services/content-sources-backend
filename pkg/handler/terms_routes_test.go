@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -54,8 +53,6 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 		{http.MethodGet, "/repositories/repo/packages", nil},
 		{http.MethodGet, "/repositories/repo/java_packages/group/name", nil},
 		{http.MethodGet, "/repositories/repo/java_packages/group/name/version", nil},
-		{http.MethodGet, "/repositories/repo/maven_packages/group/name", nil},
-		{http.MethodGet, "/repositories/repo/maven_packages/group/name/version", nil},
 		{http.MethodGet, "/repositories/repo/python_packages/name", nil},
 		{http.MethodGet, "/repositories/repo/python_packages/name/version", nil},
 		{http.MethodGet, "/repositories/repo/js_packages/scope/name", nil},
@@ -77,14 +74,6 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 			router.ServeHTTP(recorder, httptest.NewRequest(route.method, api.FullRootPath()+route.path, nil))
 			require.Equal(t, http.StatusPreconditionRequired, recorder.Code)
 			assert.Equal(t, "terms guard invoked", recorder.Body.String())
-			if strings.Contains(route.path, "/maven_packages/") {
-				successor := strings.Replace(api.FullRootPath()+route.path, "/maven_packages/", "/java_packages/", 1)
-				assert.Equal(t, "true", recorder.Header().Get("Deprecation"))
-				assert.Equal(t, "<"+successor+">; rel=\"successor-version\"", recorder.Header().Get("Link"))
-			}
-			if strings.Contains(route.path, "/java_packages/") {
-				assert.Empty(t, recorder.Header().Get("Deprecation"))
-			}
 
 			if route.access != nil {
 				route.access.Enabled = false
