@@ -85,6 +85,7 @@ func (s *ClearinghouseSuite) expectCreate() {
 				UUID:               upload.UUID,
 				OrgID:              upload.OrgID,
 				Username:           upload.Username,
+				Name:               upload.Name,
 				Filename:           upload.Filename,
 				VulnerabilityCount: upload.VulnerabilityCount,
 				Status:             upload.Status,
@@ -132,8 +133,8 @@ func (s *ClearinghouseSuite) TestCreateValidation() {
 	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Equal(http.StatusBadRequest, code, string(body))
 
-	// Invalid name (path separator).
-	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a/b.json","vulnerabilities":[{"vulnerability_id":"a"}]}`))
+	// Blank name.
+	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"   ","vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Equal(http.StatusBadRequest, code, string(body))
 }
 func (s *ClearinghouseSuite) TestCreate() {
@@ -146,7 +147,7 @@ func (s *ClearinghouseSuite) TestCreate() {
 		}).Once()
 	s.expectCreate()
 
-	submission := `{"name":"my-intake.json","vulnerabilities":[{"vulnerability_id":"a"},{"vulnerability_id":"b"}]}`
+	submission := `{"name":"My Intake Batch","vulnerabilities":[{"vulnerability_id":"a"},{"vulnerability_id":"b"}]}`
 	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", submission))
 	s.Require().Equal(http.StatusCreated, code, string(body))
 	var created api.ClearinghouseSubmission
@@ -154,11 +155,11 @@ func (s *ClearinghouseSuite) TestCreate() {
 	s.Equal(api.ClearinghouseSubmissionStatusPending, created.Status)
 	s.Equal(test_handler.MockOrgId, created.OrgID)
 	s.Equal("user", created.Username)
-	s.Equal("my-intake.json", created.Filename)
+	s.Equal("My Intake Batch", created.Name)
 	s.Require().NotNil(created.VulnerabilityCount)
 	s.Equal(2, *created.VulnerabilityCount)
 	s.Require().Len(created.Files, 1)
-	s.Equal("my-intake.json", created.Files[0].Filename)
+	s.Equal("submission.json", created.Files[0].Filename)
 	s.Equal("user", created.Files[0].Username)
 	s.False(created.Files[0].CreatedAt.IsZero())
 	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 1)

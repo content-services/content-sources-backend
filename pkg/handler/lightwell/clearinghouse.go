@@ -29,6 +29,9 @@ import (
 const (
 	maxClearinghouseFilesPerRequest = 20
 	maxClearinghouseFileBytes       = 50 * 1024 * 1024
+	// clearinghouseSubmissionFilename is the fixed filename the intake JSON is
+	// stored under in S3. The user-facing name is tracked separately.
+	clearinghouseSubmissionFilename = "submission.json"
 )
 
 type ClearinghouseHandler struct {
@@ -66,7 +69,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 // createSubmission godoc
 // @Summary      Create a clearinghouse submission
 // @ID           createClearinghouseSubmission
-// @Description  Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The JSON is stored under the given name and returned as filename. Requires the Lightwell clearinghouse feature.
+// @Description  Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The name is a user-facing label returned on the submission; the JSON itself is stored as submission.json. Requires the Lightwell clearinghouse feature.
 // @Tags         lightwell
 // @Accept       json
 // @Produce      json
@@ -95,7 +98,8 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 		UUID:               uuid.New(),
 		OrgID:              orgID,
 		Username:           username,
-		Filename:           name,
+		Name:               name,
+		Filename:           clearinghouseSubmissionFilename,
 		VulnerabilityCount: count,
 		Status:             api.ClearinghouseSubmissionStatusPending,
 	}, body)
@@ -124,9 +128,12 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, *int32, error) {
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Invalid JSON submission")
 	}
-	name, err := cleanClearinghouseFilename(parsed.Name)
-	if err != nil {
-		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "A valid name is required")
+	name := strings.TrimSpace(parsed.Name)
+	if name == "" {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "A name is required")
+	}
+	if len(name) > 255 {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Name is too long")
 	}
 	if len(parsed.Vulnerabilities) == 0 {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "At least one vulnerability is required")
@@ -998,7 +1005,7 @@ func clearinghouseSubmissionFromStore(upload dao.ClearinghouseUpload, files []da
 		UUID:               upload.UUID.String(),
 		OrgID:              upload.OrgID,
 		Username:           upload.Username,
-		Filename:           upload.Filename,
+		Name:               upload.Name,
 		CreatedAt:          upload.CreatedAt,
 		SubmittedAt:        upload.SubmittedAt,
 		SubmittedBy:        upload.SubmittedBy,

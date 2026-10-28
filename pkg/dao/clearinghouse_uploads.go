@@ -19,6 +19,7 @@ type ClearinghouseUpload struct {
 	CreatedAt          time.Time
 	OrgID              string
 	Username           string
+	Name               string
 	Filename           string
 	VulnerabilityCount *int32
 	Status             string
@@ -42,6 +43,7 @@ type CreateClearinghouseUploadParams struct {
 	UUID               uuid.UUID
 	OrgID              string
 	Username           string
+	Name               string
 	Filename           string
 	VulnerabilityCount *int32
 	Status             string
@@ -91,6 +93,7 @@ func (d clearinghouseUploadDaoImpl) Create(ctx context.Context, params CreateCle
 		Uuid:     params.UUID,
 		OrgID:    params.OrgID,
 		Username: params.Username,
+		Name:     params.Name,
 		Filename: params.Filename,
 		Status:   params.Status,
 	})
@@ -118,6 +121,7 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 		Uuid:               upload.UUID,
 		OrgID:              upload.OrgID,
 		Username:           upload.Username,
+		Name:               upload.Name,
 		Filename:           upload.Filename,
 		VulnerabilityCount: upload.VulnerabilityCount,
 		Status:             upload.Status,
@@ -421,6 +425,7 @@ func clearinghouseUploadFromStore(row store.ClearinghouseUpload) ClearinghouseUp
 		CreatedAt:          row.CreatedAt,
 		OrgID:              row.OrgID,
 		Username:           row.Username,
+		Name:               row.Name,
 		Filename:           row.Filename,
 		VulnerabilityCount: row.VulnerabilityCount,
 		Status:             row.Status,

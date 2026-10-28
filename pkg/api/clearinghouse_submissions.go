@@ -21,7 +21,7 @@ type ClearinghouseSubmission struct {
 	UUID               string                        `json:"uuid"`
 	OrgID              string                        `json:"org_id"`
 	Username           string                        `json:"username"`
-	Filename           string                        `json:"filename"`
+	Name               string                        `json:"name"`
 	CreatedAt          time.Time                     `json:"created_at"`
 	SubmittedAt        *time.Time                    `json:"submitted_at,omitempty"`
 	SubmittedBy        *string                       `json:"submitted_by,omitempty"`
@@ -52,7 +52,7 @@ type ReportedVulnerability struct {
 
 // IntakeSubmission is a vulnerability intake submission body posted to create a clearinghouse submission.
 type IntakeSubmission struct {
-	// Name the submission is stored under (used as the filename). Required.
+	// Name is a user-facing label for the submission. Required.
 	Name            string                  `json:"name"`
 	Vulnerabilities []ReportedVulnerability `json:"vulnerabilities"`
 }
