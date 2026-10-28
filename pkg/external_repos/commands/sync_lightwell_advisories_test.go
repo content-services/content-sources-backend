@@ -709,7 +709,7 @@ func TestProcessOsvForEntry_ImportsOnlyLegacyDirectory(t *testing.T) {
 			advisories[1].AdvisoryID == "ADV-002" && advisories[1].Checksum == "checksum-bbb"
 	})).Return(nil)
 
-	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), server.Client(), testEntry(), false)
+	err := processOSVForEntry(context.Background(), mockDao.ToDaoRegistry(), mockFSClient(t), server.Client(), testEntry(), false)
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, []string{
 		"/lightwell/osv/java/remediated/PULP_MANIFEST",
