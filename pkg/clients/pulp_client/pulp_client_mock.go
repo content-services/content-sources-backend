@@ -2203,6 +2203,74 @@ func (_c *MockPulpClient_GetMavenRepositoryMetrics_Call) RunAndReturn(run func(c
 	return _c
 }
 
+// GetRpmPublication provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) GetRpmPublication(ctx context.Context, publicationHref string) (*zest.RpmRpmPublicationResponse, error) {
+	ret := _mock.Called(ctx, publicationHref)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRpmPublication")
+	}
+
+	var r0 *zest.RpmRpmPublicationResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*zest.RpmRpmPublicationResponse, error)); ok {
+		return returnFunc(ctx, publicationHref)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *zest.RpmRpmPublicationResponse); ok {
+		r0 = returnFunc(ctx, publicationHref)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.RpmRpmPublicationResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, publicationHref)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_GetRpmPublication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRpmPublication'
+type MockPulpClient_GetRpmPublication_Call struct {
+	*mock.Call
+}
+
+// GetRpmPublication is a helper method to define mock.On call
+//   - ctx context.Context
+//   - publicationHref string
+func (_e *MockPulpClient_Expecter) GetRpmPublication(ctx any, publicationHref any) *MockPulpClient_GetRpmPublication_Call {
+	return &MockPulpClient_GetRpmPublication_Call{Call: _e.mock.On("GetRpmPublication", ctx, publicationHref)}
+}
+
+func (_c *MockPulpClient_GetRpmPublication_Call) Run(run func(ctx context.Context, publicationHref string)) *MockPulpClient_GetRpmPublication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_GetRpmPublication_Call) Return(rpmRpmPublicationResponse *zest.RpmRpmPublicationResponse, err error) *MockPulpClient_GetRpmPublication_Call {
+	_c.Call.Return(rpmRpmPublicationResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_GetRpmPublication_Call) RunAndReturn(run func(ctx context.Context, publicationHref string) (*zest.RpmRpmPublicationResponse, error)) *MockPulpClient_GetRpmPublication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRpmRemoteByName provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) GetRpmRemoteByName(ctx context.Context, name string) (*zest.RpmRpmRemoteResponse, error) {
 	ret := _mock.Called(ctx, name)

@@ -796,3 +796,14 @@ func (sDao *snapshotDaoImpl) UpdateLastPublishTaskUUID(ctx context.Context, snap
 		Where("uuid = ?", snapshotUUID).
 		UpdateColumn("last_publish_task_uuid", taskUUID).Error
 }
+
+func (sDao *snapshotDaoImpl) InternalOnly_UpdateCoprBuildID(ctx context.Context, snapshotUUID string, coprBuildID string) error {
+	err := sDao.db.WithContext(ctx).
+		Model(&models.Snapshot{}).
+		Where("uuid = ?", snapshotUUID).
+		UpdateColumn("copr_build_id", coprBuildID).Error
+	if err != nil {
+		return RepositoryDBErrorToApi(err, &snapshotUUID)
+	}
+	return nil
+}

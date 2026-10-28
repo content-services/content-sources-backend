@@ -121,8 +121,10 @@ type RepositoryConfigDao interface {
 	InternalOnly_FetchRepoConfigForOrg(ctx context.Context, orgID string) ([]api.RepositoryResponse, error)
 	SetPartnerRepo(ctx context.Context, repoConfigUUID string, partner bool) error
 	InternalOnly_FetchRepoConfigByName(ctx context.Context, orgID string, name string) (api.RepositoryResponse, error)
+	InternalOnly_FetchRepoConfigByCoprRepositoryHref(ctx context.Context, orgID string, coprRepoHref string) (api.RepositoryResponse, error)
 	InternalOnly_ListLightwellReposToImport(ctx context.Context, filter LightwellRepoImportFilter) ([]LightwellRepoToImport, error)
 	InternalOnly_UpdateLastImportRepositoryVersion(ctx context.Context, repoConfigUUID string, versionHref string, forceRequest string) error
+	InternalOnly_UpdateCoprMetadata(ctx context.Context, repoConfigUUID string, coprProjectID string, coprRepositoryHref string) error
 }
 
 // LightwellRepoImportFilter selects Lightwell repositories for an import or a force request.
@@ -199,6 +201,7 @@ type SnapshotDao interface {
 	FetchSnapshotsModelByDateAndRepository(ctx context.Context, orgID string, request api.ListSnapshotByDateRequest) ([]models.Snapshot, error)
 	SetDetectedOSVersion(ctx context.Context, uuid string) (string, error)
 	UpdateLastPublishTaskUUID(ctx context.Context, snapshotUUID string, taskUUID string) error
+	InternalOnly_UpdateCoprBuildID(ctx context.Context, snapshotUUID string, coprBuildID string) error
 }
 
 type MetricsDao interface {

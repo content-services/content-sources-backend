@@ -40,6 +40,8 @@ type RepositoryConfiguration struct {
 	ExtendedRelease             string         `json:"extended_release" gorm:"default:null"`
 	ExtendedReleaseVersion      string         `json:"extended_release_version" gorm:"default:null"`
 	Partner                     bool           `json:"partner" gorm:"default:false"`
+	CoprProjectID               string         `json:"copr_project_id" gorm:"default:null"`
+	CoprRepositoryHref          string         `json:"copr_repository_href" gorm:"default:null"`
 }
 
 // When updating a model with gorm, we want to explicitly update any field that is set to

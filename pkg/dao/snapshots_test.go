@@ -1664,3 +1664,30 @@ func (s *SnapshotsSuite) TestUpdateLastPublishTaskUUID() {
 	assert.NoError(t, err)
 	assert.Equal(t, taskUUID.String(), updated.LastPublishTaskUUID)
 }
+
+func (s *SnapshotsSuite) TestInternalOnly_UpdateCoprBuildID() {
+	t := s.T()
+	tx := s.tx
+	ctx := context.Background()
+
+	sDao := GetSnapshotDao(tx)
+	repoConfig := createTestPartnerRepoConfig(t, tx, createTestUploadRepository(t, tx), seeds.RandomOrgId(), "copr build id repo", true)
+	snap := createSnapshot(t, tx, repoConfig)
+
+	// Verify snapshot starts with no Copr build ID
+	var initial models.Snapshot
+	err := tx.Where("uuid = ?", snap.UUID).First(&initial).Error
+	assert.NoError(t, err)
+	assert.Empty(t, initial.CoprBuildID)
+
+	// Update Copr build ID
+	coprBuildID := "test-build-12345"
+	err = sDao.InternalOnly_UpdateCoprBuildID(ctx, snap.UUID, coprBuildID)
+	assert.NoError(t, err)
+
+	// Verify the update
+	var updated models.Snapshot
+	err = tx.Where("uuid = ?", snap.UUID).First(&updated).Error
+	assert.NoError(t, err)
+	assert.Equal(t, coprBuildID, updated.CoprBuildID)
+}

@@ -26,6 +26,22 @@ func (r *pulpDaoImpl) CreateRpmPublication(ctx context.Context, versionHref stri
 	return &taskHref, nil
 }
 
+func (r *pulpDaoImpl) GetRpmPublication(ctx context.Context, publicationHref string) (*zest.RpmRpmPublicationResponse, error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, httpResp, err := client.PublicationsRpmAPI.PublicationsRpmRpmRead(ctx, publicationHref).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return nil, errorWithResponseBody("error reading rpm publication", httpResp, err)
+	}
+
+	return resp, nil
+}
+
 func (r *pulpDaoImpl) FindRpmPublicationByVersion(ctx context.Context, versionHref string) (*zest.RpmRpmPublicationResponse, error) {
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {

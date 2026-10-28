@@ -4720,3 +4720,31 @@ func (suite *RepositoryConfigSuite) TestInternalOnly_ListLightwellReposToImport(
 	assert.Equal(t, "/versions/5/", rc.LastImportRepositoryVersion)
 	assert.Equal(t, "2026-10-09T13:00:00Z", rc.PackageImportForcedAt)
 }
+
+func (suite *RepositoryConfigSuite) TestInternalOnly_UpdateCoprMetadata() {
+	t := suite.T()
+	dao := GetRepositoryConfigDao(suite.tx, suite.mockPulpClient, suite.mockFsClient)
+	ctx := context.Background()
+	orgID := seeds.RandomOrgId()
+
+	// Create a repository configuration
+	repoConfigs, err := seeds.SeedRepositoryConfigurations(suite.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	assert.NoError(t, err)
+	assert.Len(t, repoConfigs, 1)
+
+	repoConfigUUID := repoConfigs[0].UUID
+
+	// Update Copr metadata
+	coprProjectID := "test-project-123"
+	coprRepoHref := "/pulp/api/v3/repositories/rpm/rpm/test-uuid/"
+
+	err = dao.InternalOnly_UpdateCoprMetadata(ctx, repoConfigUUID, coprProjectID, coprRepoHref)
+	assert.NoError(t, err)
+
+	// Verify the update
+	var updated models.RepositoryConfiguration
+	err = suite.tx.Where("uuid = ?", repoConfigUUID).First(&updated).Error
+	assert.NoError(t, err)
+	assert.Equal(t, coprProjectID, updated.CoprProjectID)
+	assert.Equal(t, coprRepoHref, updated.CoprRepositoryHref)
+}
