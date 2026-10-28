@@ -166,7 +166,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/create": {
             "post": {
-                "description": "Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The JSON is stored under the given name and returned as filename. Requires the Lightwell clearinghouse feature.",
+                "description": "Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The name is a user-facing label returned on the submission; the JSON itself is stored as submission.json. Requires the Lightwell clearinghouse feature.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1696,14 +1696,14 @@ const docTemplatelightwell = `{
                 "error_message": {
                     "type": "string"
                 },
-                "filename": {
-                    "type": "string"
-                },
                 "files": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
                     }
+                },
+                "name": {
+                    "type": "string"
                 },
                 "org_id": {
                     "type": "string"
@@ -1772,7 +1772,7 @@ const docTemplatelightwell = `{
             "type": "object",
             "properties": {
                 "name": {
-                    "description": "Name the submission is stored under (used as the filename). Required.",
+                    "description": "Name is a user-facing label for the submission. Required.",
                     "type": "string"
                 },
                 "vulnerabilities": {

@@ -29,6 +29,7 @@ INSERT INTO clearinghouse_uploads (
     uuid,
     org_id,
     username,
+    name,
     filename,
     vulnerability_count,
     status,
@@ -40,15 +41,17 @@ INSERT INTO clearinghouse_uploads (
     $4,
     $5,
     $6,
-    $7
+    $7,
+    $8
 )
-RETURNING uuid, created_at, org_id, username, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 `
 
 type CreateClearinghouseUploadParams struct {
 	Uuid               uuid.UUID `json:"uuid"`
 	OrgID              string    `json:"org_id"`
 	Username           string    `json:"username"`
+	Name               string    `json:"name"`
 	Filename           string    `json:"filename"`
 	VulnerabilityCount *int32    `json:"vulnerability_count"`
 	Status             string    `json:"status"`
@@ -60,6 +63,7 @@ func (q *Queries) CreateClearinghouseUpload(ctx context.Context, arg CreateClear
 		arg.Uuid,
 		arg.OrgID,
 		arg.Username,
+		arg.Name,
 		arg.Filename,
 		arg.VulnerabilityCount,
 		arg.Status,
@@ -71,6 +75,7 @@ func (q *Queries) CreateClearinghouseUpload(ctx context.Context, arg CreateClear
 		&i.CreatedAt,
 		&i.OrgID,
 		&i.Username,
+		&i.Name,
 		&i.Filename,
 		&i.VulnerabilityCount,
 		&i.Status,
@@ -149,7 +154,7 @@ func (q *Queries) DeleteClearinghouseUploadFile(ctx context.Context, argUuid uui
 }
 
 const getClearinghouseUpload = `-- name: GetClearinghouseUpload :one
-SELECT uuid, created_at, org_id, username, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 FROM clearinghouse_uploads
 WHERE uuid = $1
 `
@@ -162,6 +167,7 @@ func (q *Queries) GetClearinghouseUpload(ctx context.Context, argUuid uuid.UUID)
 		&i.CreatedAt,
 		&i.OrgID,
 		&i.Username,
+		&i.Name,
 		&i.Filename,
 		&i.VulnerabilityCount,
 		&i.Status,
@@ -201,7 +207,7 @@ func (q *Queries) GetClearinghouseUploadFileByName(ctx context.Context, arg GetC
 }
 
 const getClearinghouseUploadForUpdate = `-- name: GetClearinghouseUploadForUpdate :one
-SELECT uuid, created_at, org_id, username, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 FROM clearinghouse_uploads
 WHERE uuid = $1
 FOR UPDATE
@@ -215,6 +221,7 @@ func (q *Queries) GetClearinghouseUploadForUpdate(ctx context.Context, argUuid u
 		&i.CreatedAt,
 		&i.OrgID,
 		&i.Username,
+		&i.Name,
 		&i.Filename,
 		&i.VulnerabilityCount,
 		&i.Status,
@@ -296,7 +303,7 @@ func (q *Queries) ListClearinghouseUploadFilesByUploads(ctx context.Context, upl
 }
 
 const listClearinghouseUploads = `-- name: ListClearinghouseUploads :many
-SELECT uuid, created_at, org_id, username, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 FROM clearinghouse_uploads
 WHERE $1::text IS NULL OR org_id = $1::text
 ORDER BY created_at DESC, uuid DESC
@@ -323,6 +330,7 @@ func (q *Queries) ListClearinghouseUploads(ctx context.Context, arg ListClearing
 			&i.CreatedAt,
 			&i.OrgID,
 			&i.Username,
+			&i.Name,
 			&i.Filename,
 			&i.VulnerabilityCount,
 			&i.Status,
@@ -349,7 +357,7 @@ SET status = 'processed',
     processed_by = $1
 WHERE uuid = $2
     AND status = 'submitted'
-RETURNING uuid, created_at, org_id, username, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 `
 
 type ProcessClearinghouseUploadParams struct {
@@ -365,6 +373,7 @@ func (q *Queries) ProcessClearinghouseUpload(ctx context.Context, arg ProcessCle
 		&i.CreatedAt,
 		&i.OrgID,
 		&i.Username,
+		&i.Name,
 		&i.Filename,
 		&i.VulnerabilityCount,
 		&i.Status,
@@ -384,7 +393,7 @@ SET status = 'submitted',
     submitted_by = $1
 WHERE uuid = $2
     AND status = 'pending'
-RETURNING uuid, created_at, org_id, username, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 `
 
 type SubmitClearinghouseUploadParams struct {
@@ -400,6 +409,7 @@ func (q *Queries) SubmitClearinghouseUpload(ctx context.Context, arg SubmitClear
 		&i.CreatedAt,
 		&i.OrgID,
 		&i.Username,
+		&i.Name,
 		&i.Filename,
 		&i.VulnerabilityCount,
 		&i.Status,

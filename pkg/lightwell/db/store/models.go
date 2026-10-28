@@ -16,6 +16,7 @@ type ClearinghouseUpload struct {
 	CreatedAt          time.Time  `json:"created_at"`
 	OrgID              string     `json:"org_id"`
 	Username           string     `json:"username"`
+	Name               string     `json:"name"`
 	Filename           string     `json:"filename"`
 	VulnerabilityCount *int32     `json:"vulnerability_count"`
 	Status             string     `json:"status"`

@@ -495,7 +495,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get metadata and distributions for all versions of a Python package by name.
+     * List versions for a Python package by name. The version is the upstream version, and builds lists each rebuild.
      * Get Python Package Versions
      */
     async getPythonPackageVersionsRaw(requestParameters: GetPythonPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPythonPackageVersionsResponse>> {
@@ -506,7 +506,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get metadata and distributions for all versions of a Python package by name.
+     * List versions for a Python package by name. The version is the upstream version, and builds lists each rebuild.
      * Get Python Package Versions
      */
     async getPythonPackageVersions(requestParameters: GetPythonPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPythonPackageVersionsResponse> {

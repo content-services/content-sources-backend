@@ -30,11 +30,14 @@ func TestClearinghouseUploadDao(t *testing.T) {
 		UUID:     uploadID,
 		OrgID:    orgID,
 		Username: "author",
-		Filename: "vulnerabilities.json",
+		Name:     "My Submission",
+		Filename: "submission.json",
 		Status:   api.ClearinghouseSubmissionStatusPending,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, uploadID, created.UUID)
+	assert.Equal(t, "My Submission", created.Name)
+	assert.Equal(t, "submission.json", created.Filename)
 
 	fileID := uuid.New()
 	extraID := uuid.New()
