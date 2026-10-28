@@ -50,6 +50,12 @@ export interface ApiPackageItem {
      * @type {Array<string>}
      * @memberof ApiPackageItem
      */
+    upstreamVersions?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ApiPackageItem
+     */
     versions?: Array<string>;
 }
 
@@ -73,6 +79,7 @@ export function ApiPackageItemFromJSONTyped(json: any, ignoreDiscriminator: bool
         'group': json['group'] == null ? undefined : json['group'],
         'latestReleases': json['latest_releases'] == null ? undefined : ((json['latest_releases'] as Array<any>).map(ApiReleaseInfoFromJSON)),
         'name': json['name'] == null ? undefined : json['name'],
+        'upstreamVersions': json['upstream_versions'] == null ? undefined : json['upstream_versions'],
         'versions': json['versions'] == null ? undefined : json['versions'],
     };
 }
@@ -91,6 +98,7 @@ export function ApiPackageItemToJSONTyped(value?: ApiPackageItem | null, ignoreD
         'group': value['group'],
         'latest_releases': value['latestReleases'] == null ? undefined : ((value['latestReleases'] as Array<any>).map(ApiReleaseInfoToJSON)),
         'name': value['name'],
+        'upstream_versions': value['upstreamVersions'],
         'versions': value['versions'],
     };
 }

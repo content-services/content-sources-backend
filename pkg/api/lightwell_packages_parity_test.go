@@ -32,6 +32,8 @@ func jsonFieldNames(t reflect.Type) map[string]bool {
 // adds a field to PackageItem without mirroring it here, this test fails.
 func TestLightwellPackageResponseCoversPackageItem(t *testing.T) {
 	legacy := jsonFieldNames(reflect.TypeOf(PackageItem{}))
+	// Repo list only. /lightwell/packages keeps returning the upstream cut in versions.
+	delete(legacy, "upstream_versions")
 	lightwell := jsonFieldNames(reflect.TypeOf(LightwellPackageResponse{}))
 
 	for field := range legacy {

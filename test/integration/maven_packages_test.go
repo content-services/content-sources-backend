@@ -149,6 +149,7 @@ func (s *MavenPackagesSuite) TestMavenPackagesAPI() {
 	firstPackage := packages.Results[0]
 	assert.NotEmpty(t, firstPackage.Group)
 	assert.NotEmpty(t, firstPackage.Name)
+	assert.Equal(t, firstPackage.Versions, firstPackage.UpstreamVersions)
 
 	// Test the package versions endpoint using data from the list.
 	versions := s.listPackageVersions(mavenRepo.repo.UUID, firstPackage.Group, firstPackage.Name)

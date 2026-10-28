@@ -261,10 +261,11 @@ func repositoryPackageItem(name, group string, versions, releases, publishedAts,
 		})
 	}
 	return api.PackageItem{
-		Group:          group,
-		Name:           name,
-		Versions:       itemVersions,
-		LatestReleases: itemReleases,
+		Group:            group,
+		Name:             name,
+		Versions:         itemVersions,
+		UpstreamVersions: itemVersions,
+		LatestReleases:   itemReleases,
 	}
 }
 

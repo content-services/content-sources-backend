@@ -6217,6 +6217,12 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "upstream_versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "versions": {
                     "type": "array",
                     "items": {

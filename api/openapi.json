@@ -991,6 +991,12 @@
                     "name": {
                         "type": "string"
                     },
+                    "upstream_versions": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
                     "versions": {
                         "items": {
                             "type": "string"
