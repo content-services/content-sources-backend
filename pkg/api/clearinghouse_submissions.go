@@ -33,6 +33,30 @@ type ClearinghouseSubmission struct {
 	Files              []ClearinghouseSubmissionFile `json:"files"`
 }
 
+// ReportedVulnerability is a single reported vulnerability within an intake submission.
+type ReportedVulnerability struct {
+	VulnerabilityID    string  `json:"vulnerability_id"`
+	Packageurl         string  `json:"packageurl"`
+	ComponentName      string  `json:"component_name"`
+	ComponentVersion   string  `json:"component_version"`
+	Title              string  `json:"title"`
+	Description        string  `json:"description"`
+	CvssSeverity       string  `json:"cvss_severity"`
+	CvssScore          float64 `json:"cvss_score"`
+	Cwe                *string `json:"cwe,omitempty"`
+	CvssVector         *string `json:"cvss_vector,omitempty"`
+	ExploitTested      *bool   `json:"exploit_tested,omitempty"`
+	ReproducerFilename *string `json:"reproducer_filename,omitempty"`
+	CustomerPriority   *string `json:"customer_priority,omitempty"`
+}
+
+// IntakeSubmission is a vulnerability intake submission body posted to create a clearinghouse submission.
+type IntakeSubmission struct {
+	// Name the submission is stored under (used as the filename). Required.
+	Name            string                  `json:"name"`
+	Vulnerabilities []ReportedVulnerability `json:"vulnerabilities"`
+}
+
 // ClearinghouseSubmissionCollectionResponse is a paginated list of clearinghouse submissions.
 type ClearinghouseSubmissionCollectionResponse struct {
 	Data  []ClearinghouseSubmission `json:"data"`

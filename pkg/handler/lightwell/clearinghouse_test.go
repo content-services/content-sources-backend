@@ -82,12 +82,13 @@ func (s *ClearinghouseSuite) expectCreate() {
 				}
 			}
 			return dao.ClearinghouseUpload{
-				UUID:      upload.UUID,
-				OrgID:     upload.OrgID,
-				Username:  upload.Username,
-				Filename:  upload.Filename,
-				Status:    upload.Status,
-				CreatedAt: time.Now().UTC(),
+				UUID:               upload.UUID,
+				OrgID:              upload.OrgID,
+				Username:           upload.Username,
+				Filename:           upload.Filename,
+				VulnerabilityCount: upload.VulnerabilityCount,
+				Status:             upload.Status,
+				CreatedAt:          time.Now().UTC(),
 			}, rows, nil
 		}).Once()
 }
@@ -109,52 +110,66 @@ func (s *ClearinghouseSuite) expectCreateFiles(check func([]dao.CreateClearingho
 }
 
 func (s *ClearinghouseSuite) TestCreateValidation() {
-	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		"vulnerabilities.json": `{"vulnerabilities":[]}`,
-	}))
+	// Feature not enabled.
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Equal(http.StatusBadRequest, code, string(body))
 
 	s.enableClearinghouse()
-	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		strings.Repeat("a", 300) + ".json": "{}",
-	}))
+
+	// Malformed JSON.
+	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `not json`))
 	s.Equal(http.StatusBadRequest, code, string(body))
 
-	code, body = s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		"one.json": "{}",
-		"two.json": "{}",
-	}))
+	// Missing vulnerabilities array.
+	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a.json"}`))
+	s.Equal(http.StatusBadRequest, code, string(body))
+
+	// Empty vulnerabilities array.
+	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a.json","vulnerabilities":[]}`))
+	s.Equal(http.StatusBadRequest, code, string(body))
+
+	// Missing name.
+	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"vulnerabilities":[{"vulnerability_id":"a"}]}`))
+	s.Equal(http.StatusBadRequest, code, string(body))
+
+	// Invalid name (path separator).
+	code, body = s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a/b.json","vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Equal(http.StatusBadRequest, code, string(body))
 }
 func (s *ClearinghouseSuite) TestCreate() {
 	s.enableClearinghouse()
-	s.allowPut()
+	var stored []byte
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).
+		Return(func(_ context.Context, _ string, body io.Reader, _ int64) error {
+			stored, _ = io.ReadAll(body)
+			return nil
+		}).Once()
 	s.expectCreate()
 
-	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		"vulnerabilities.json": `{"vulnerabilities":[]}`,
-	}))
+	submission := `{"name":"my-intake.json","vulnerabilities":[{"vulnerability_id":"a"},{"vulnerability_id":"b"}]}`
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", submission))
 	s.Require().Equal(http.StatusCreated, code, string(body))
 	var created api.ClearinghouseSubmission
 	s.Require().NoError(json.Unmarshal(body, &created))
 	s.Equal(api.ClearinghouseSubmissionStatusPending, created.Status)
 	s.Equal(test_handler.MockOrgId, created.OrgID)
 	s.Equal("user", created.Username)
-	s.Equal("vulnerabilities.json", created.Filename)
+	s.Equal("my-intake.json", created.Filename)
+	s.Require().NotNil(created.VulnerabilityCount)
+	s.Equal(2, *created.VulnerabilityCount)
 	s.Require().Len(created.Files, 1)
-	s.Equal("vulnerabilities.json", created.Files[0].Filename)
+	s.Equal("my-intake.json", created.Files[0].Filename)
 	s.Equal("user", created.Files[0].Username)
 	s.False(created.Files[0].CreatedAt.IsZero())
 	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 1)
+	s.Equal(submission, string(stored))
 }
 func (s *ClearinghouseSuite) TestCreatePutFailure() {
 	s.enableClearinghouse()
 	s.expectCreate()
 	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).Return(errors.New("put failed")).Once()
 
-	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		"vulnerabilities.json": `{"vulnerabilities":[]}`,
-	}))
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a.json","vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Equal(http.StatusInternalServerError, code, string(body))
 	s.Contains(string(body), "put failed")
 }
@@ -262,9 +277,7 @@ func (s *ClearinghouseSuite) TestAddFilesPutFailure() {
 	}).Once()
 	s.expectCreateFiles(nil)
 
-	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		"vulnerabilities.json": `{"vulnerabilities":[]}`,
-	}))
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a.json","vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Require().Equal(http.StatusCreated, code, string(body))
 	var created api.ClearinghouseSubmission
 	s.Require().NoError(json.Unmarshal(body, &created))
@@ -288,9 +301,7 @@ func (s *ClearinghouseSuite) TestAddFilesCleanupFailure() {
 	}).Once()
 	s.expectCreateFiles(nil)
 
-	code, body := s.serve(clearinghouseUploadRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", "file", map[string]string{
-		"vulnerabilities.json": `{"vulnerabilities":[]}`,
-	}))
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", `{"name":"a.json","vulnerabilities":[{"vulnerability_id":"a"}]}`))
 	s.Require().Equal(http.StatusCreated, code, string(body))
 	var created api.ClearinghouseSubmission
 	s.Require().NoError(json.Unmarshal(body, &created))
@@ -830,6 +841,14 @@ func clearinghouseRequestAs(t *testing.T, method, path string, id identity.XRHID
 	t.Helper()
 	req := clearinghouseRequest(t, method, path)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, id))
+	return req
+}
+
+func clearinghouseJSONRequest(t *testing.T, method, path, body string) *http.Request {
+	t.Helper()
+	req := httptest.NewRequest(method, LightwellAPIPath+path, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 	return req
 }
 
