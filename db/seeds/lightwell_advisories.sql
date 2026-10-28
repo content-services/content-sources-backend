@@ -180,7 +180,7 @@ INSERT INTO lightwell_advisory_releases (
 SELECT
     a.uuid,
     ver,
-    COALESCE((regexp_match(ver, 'rhlw-(\d+)'))[1]::int, 0),
+    COALESCE((regexp_match(ver, 'rhlw[.+-](\d+)'))[1]::int, 0),
     0,
     0
 FROM lightwell_advisories a
