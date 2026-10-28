@@ -166,9 +166,9 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/create": {
             "post": {
-                "description": "Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.",
+                "description": "Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The JSON is stored under the given name and returned as filename. Requires the Lightwell clearinghouse feature.",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/json"
                 ],
                 "produces": [
                     "application/json"
@@ -180,11 +180,13 @@ const docTemplatelightwell = `{
                 "operationId": "createClearinghouseSubmission",
                 "parameters": [
                     {
-                        "type": "file",
-                        "description": "File to store with the submission. Maximum size is 50 MiB.",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
+                        "description": "Intake submission. Must contain a non-empty vulnerabilities array.",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.IntakeSubmission"
+                        }
                     }
                 ],
                 "responses": {
@@ -1766,6 +1768,21 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "api.IntakeSubmission": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Name the submission is stored under (used as the filename). Required.",
+                    "type": "string"
+                },
+                "vulnerabilities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ReportedVulnerability"
+                    }
+                }
+            }
+        },
         "api.LightwellAdvisoryCollectionResponse": {
             "type": "object",
             "properties": {
@@ -2243,6 +2260,50 @@ const docTemplatelightwell = `{
                     "type": "string"
                 },
                 "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ReportedVulnerability": {
+            "type": "object",
+            "properties": {
+                "component_name": {
+                    "type": "string"
+                },
+                "component_version": {
+                    "type": "string"
+                },
+                "customer_priority": {
+                    "type": "string"
+                },
+                "cvss_score": {
+                    "type": "number"
+                },
+                "cvss_severity": {
+                    "type": "string"
+                },
+                "cvss_vector": {
+                    "type": "string"
+                },
+                "cwe": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "exploit_tested": {
+                    "type": "boolean"
+                },
+                "packageurl": {
+                    "type": "string"
+                },
+                "reproducer_filename": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "vulnerability_id": {
                     "type": "string"
                 }
             }

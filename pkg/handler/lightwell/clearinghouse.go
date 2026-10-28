@@ -2,6 +2,8 @@ package lightwell
 
 import (
 	"archive/zip"
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"mime/multipart"
@@ -64,11 +66,11 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 // createSubmission godoc
 // @Summary      Create a clearinghouse submission
 // @ID           createClearinghouseSubmission
-// @Description  Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.
+// @Description  Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The JSON is stored under the given name and returned as filename. Requires the Lightwell clearinghouse feature.
 // @Tags         lightwell
-// @Accept       multipart/form-data
+// @Accept       json
 // @Produce      json
-// @Param        file formData file true "File to store with the submission. Maximum size is 50 MiB."
+// @Param        body body api.IntakeSubmission true "Intake submission. Must contain a non-empty vulnerabilities array."
 // @Success      201 {object} api.ClearinghouseSubmission
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      409 {object} ce.ErrorResponse
@@ -84,26 +86,53 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	header, err := clearinghouseFormFile(c)
-	if err != nil {
-		return err
-	}
-	prepared, err := prepareClearinghouseFiles([]*multipart.FileHeader{header})
+	body, name, count, err := readIntakeSubmission(c)
 	if err != nil {
 		return err
 	}
 
-	upload, files, err := h.storeNewClearinghouseSubmission(c, dao.CreateClearinghouseUploadParams{
-		UUID:     uuid.New(),
-		OrgID:    orgID,
-		Username: username,
-		Filename: prepared[0].name,
-		Status:   api.ClearinghouseSubmissionStatusPending,
-	}, prepared)
+	upload, files, err := h.storeNewClearinghouseJSONSubmission(c, dao.CreateClearinghouseUploadParams{
+		UUID:               uuid.New(),
+		OrgID:              orgID,
+		Username:           username,
+		Filename:           name,
+		VulnerabilityCount: count,
+		Status:             api.ClearinghouseSubmissionStatusPending,
+	}, body)
 	if err != nil {
 		return err
 	}
 	return c.JSON(http.StatusCreated, clearinghouseSubmissionFromStore(upload, files))
+}
+
+// readIntakeSubmission reads and validates the intake submission JSON body. It
+// returns the raw bytes exactly as received (preserving any additional top-level
+// metadata), the submission name to store it under, and the number of
+// vulnerabilities it contains.
+func readIntakeSubmission(c echo.Context) ([]byte, string, *int32, error) {
+	body, err := io.ReadAll(io.LimitReader(c.Request().Body, maxClearinghouseFileBytes+1))
+	if err != nil {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", err.Error())
+	}
+	if int64(len(body)) > maxClearinghouseFileBytes {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error reading submission", "Submission exceeds maximum size")
+	}
+	var parsed struct {
+		Name            string            `json:"name"`
+		Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Invalid JSON submission")
+	}
+	name, err := cleanClearinghouseFilename(parsed.Name)
+	if err != nil {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "A valid name is required")
+	}
+	if len(parsed.Vulnerabilities) == 0 {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "At least one vulnerability is required")
+	}
+	count := int32(len(parsed.Vulnerabilities)) //nolint:gosec // vulnerability count is bounded by the 50 MiB body limit
+	return body, name, &count, nil
 }
 
 // addSubmissionFiles godoc
@@ -675,18 +704,6 @@ type preparedClearinghouseFile struct {
 	header *multipart.FileHeader
 }
 
-func clearinghouseFormFile(c echo.Context) (*multipart.FileHeader, error) {
-	form, err := c.MultipartForm()
-	if err != nil {
-		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "File is required")
-	}
-	files := form.File["file"]
-	if len(files) != 1 {
-		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading upload", "Exactly one file is required")
-	}
-	return files[0], nil
-}
-
 func clearinghouseFormFiles(c echo.Context) ([]*multipart.FileHeader, error) {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -730,16 +747,31 @@ type openedClearinghouseFile struct {
 	size int64
 }
 
-func (h *ClearinghouseHandler) storeNewClearinghouseSubmission(c echo.Context, upload dao.CreateClearinghouseUploadParams, files []preparedClearinghouseFile) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
-	opened, params, closeOpened, err := h.prepareClearinghouseStore(c, upload.UUID, files)
+func (h *ClearinghouseHandler) storeNewClearinghouseJSONSubmission(c echo.Context, upload dao.CreateClearinghouseUploadParams, body []byte) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
+	username, err := clearinghouseUsername(c)
 	if err != nil {
 		return dao.ClearinghouseUpload{}, nil, err
 	}
-	defer closeOpened()
+	if h.S3 == nil {
+		return dao.ClearinghouseUpload{}, nil, ce.NewErrorResponse(http.StatusInternalServerError, "Error uploading clearinghouse submission", "s3 not configured")
+	}
+	params := []dao.CreateClearinghouseUploadFileParams{{
+		UUID:       uuid.New(),
+		UploadUUID: upload.UUID,
+		Filename:   upload.Filename,
+		Filepath:   clearinghouseStorageKey(upload.UUID, upload.Filename),
+		Username:   username,
+	}}
 
 	var uploaded []string
 	storedUpload, storedFiles, err := h.Uploads.CreateWithFiles(c.Request().Context(), upload, params, func(rows []dao.ClearinghouseUploadFile) error {
-		return h.putClearinghouseObjects(c, opened, rows, &uploaded)
+		for i := range rows {
+			if err := h.S3.Put(c.Request().Context(), rows[i].Filepath, bytes.NewReader(body), int64(len(body))); err != nil {
+				return err
+			}
+			uploaded = append(uploaded, rows[i].Filepath)
+		}
+		return nil
 	})
 	if err != nil {
 		return dao.ClearinghouseUpload{}, nil, h.failClearinghouseStore(c, uploaded, err)

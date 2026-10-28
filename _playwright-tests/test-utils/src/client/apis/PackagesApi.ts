@@ -240,7 +240,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get tarball info for a specific JavaScript package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
+     * Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.
      * Get JS Package Detail
      */
     async getJsPackageDetailRaw(requestParameters: GetJsPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageDetailResponse>> {
@@ -251,7 +251,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get tarball info for a specific JavaScript package by scope, name, and version. Use \"-\" as the scope for unscoped packages.
+     * Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.
      * Get JS Package Detail
      */
     async getJsPackageDetail(requestParameters: GetJsPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageDetailResponse> {
@@ -303,7 +303,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get tarball info for all versions of a JavaScript package by scope and name. Use \"-\" as the scope for unscoped packages.
+     * List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.
      * Get JS Package Versions
      */
     async getJsPackageVersionsRaw(requestParameters: GetJsPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiNpmPackageVersionsResponse>> {
@@ -314,7 +314,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get tarball info for all versions of a JavaScript package by scope and name. Use \"-\" as the scope for unscoped packages.
+     * List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.
      * Get JS Package Versions
      */
     async getJsPackageVersions(requestParameters: GetJsPackageVersionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiNpmPackageVersionsResponse> {
@@ -440,7 +440,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get metadata and distributions for a specific Python package by name and version.
+     * Get metadata and builds for a specific Python package by name and version.
      * Get Python Package Detail
      */
     async getPythonPackageDetailRaw(requestParameters: GetPythonPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ApiPythonPackageDetailResponse>> {
@@ -451,7 +451,7 @@ export class PackagesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get metadata and distributions for a specific Python package by name and version.
+     * Get metadata and builds for a specific Python package by name and version.
      * Get Python Package Detail
      */
     async getPythonPackageDetail(requestParameters: GetPythonPackageDetailRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ApiPythonPackageDetailResponse> {

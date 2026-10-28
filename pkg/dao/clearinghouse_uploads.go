@@ -39,11 +39,12 @@ type ClearinghouseUploadFile struct {
 }
 
 type CreateClearinghouseUploadParams struct {
-	UUID     uuid.UUID
-	OrgID    string
-	Username string
-	Filename string
-	Status   string
+	UUID               uuid.UUID
+	OrgID              string
+	Username           string
+	Filename           string
+	VulnerabilityCount *int32
+	Status             string
 }
 
 type CreateClearinghouseUploadFileParams struct {
@@ -114,11 +115,12 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 
 	q := store.New(tx)
 	row, err := q.CreateClearinghouseUpload(ctx, store.CreateClearinghouseUploadParams{
-		Uuid:     upload.UUID,
-		OrgID:    upload.OrgID,
-		Username: upload.Username,
-		Filename: upload.Filename,
-		Status:   upload.Status,
+		Uuid:               upload.UUID,
+		OrgID:              upload.OrgID,
+		Username:           upload.Username,
+		Filename:           upload.Filename,
+		VulnerabilityCount: upload.VulnerabilityCount,
+		Status:             upload.Status,
 	})
 	if err != nil {
 		return ClearinghouseUpload{}, nil, err

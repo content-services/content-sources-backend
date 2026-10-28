@@ -82,6 +82,21 @@
                 },
                 "type": "object"
             },
+            "api.IntakeSubmission": {
+                "properties": {
+                    "name": {
+                        "description": "Name the submission is stored under (used as the filename). Required.",
+                        "type": "string"
+                    },
+                    "vulnerabilities": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ReportedVulnerability"
+                        },
+                        "type": "array"
+                    }
+                },
+                "type": "object"
+            },
             "api.LightwellAdvisoryCollectionResponse": {
                 "properties": {
                     "data": {
@@ -558,6 +573,50 @@
                         "type": "string"
                     },
                     "version": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ReportedVulnerability": {
+                "properties": {
+                    "component_name": {
+                        "type": "string"
+                    },
+                    "component_version": {
+                        "type": "string"
+                    },
+                    "customer_priority": {
+                        "type": "string"
+                    },
+                    "cvss_score": {
+                        "type": "number"
+                    },
+                    "cvss_severity": {
+                        "type": "string"
+                    },
+                    "cvss_vector": {
+                        "type": "string"
+                    },
+                    "cwe": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "exploit_tested": {
+                        "type": "boolean"
+                    },
+                    "packageurl": {
+                        "type": "string"
+                    },
+                    "reproducer_filename": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "vulnerability_id": {
                         "type": "string"
                     }
                 },
@@ -1199,27 +1258,19 @@
         },
         "/clearinghouse/submissions/create": {
             "post": {
-                "description": "Upload one file, up to 50 MiB, as a new clearinghouse submission. The original file name is stored and returned as filename. Requires the Lightwell clearinghouse feature.",
+                "description": "Create a new clearinghouse submission from an intake submission JSON body, up to 50 MiB. The body must contain a name and a non-empty vulnerabilities array. The JSON is stored under the given name and returned as filename. Requires the Lightwell clearinghouse feature.",
                 "operationId": "createClearinghouseSubmission",
                 "requestBody": {
                     "content": {
-                        "multipart/form-data": {
+                        "application/json": {
                             "schema": {
-                                "properties": {
-                                    "file": {
-                                        "description": "File to store with the submission. Maximum size is 50 MiB.",
-                                        "format": "binary",
-                                        "type": "string",
-                                        "x-formData-name": "file"
-                                    }
-                                },
-                                "required": [
-                                    "file"
-                                ],
-                                "type": "object"
+                                "$ref": "#/components/schemas/api.IntakeSubmission"
                             }
                         }
-                    }
+                    },
+                    "description": "Intake submission. Must contain a non-empty vulnerabilities array.",
+                    "required": true,
+                    "x-originalParamName": "body"
                 },
                 "responses": {
                     "201": {
