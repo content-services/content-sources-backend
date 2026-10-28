@@ -10,10 +10,11 @@ type PackageResponse struct {
 
 // PackageItem represents a Maven package grouped by group_id and artifact_id
 type PackageItem struct {
-	Group          string        `json:"group"`
-	Name           string        `json:"name"`
-	Versions       []string      `json:"versions"`
-	LatestReleases []ReleaseInfo `json:"latest_releases"`
+	Group            string        `json:"group"`
+	Name             string        `json:"name"`
+	Versions         []string      `json:"versions"`
+	UpstreamVersions []string      `json:"upstream_versions"`
+	LatestReleases   []ReleaseInfo `json:"latest_releases"`
 }
 
 type ListPackagesRequest struct {

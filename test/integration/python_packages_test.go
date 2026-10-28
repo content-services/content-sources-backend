@@ -154,6 +154,7 @@ func (s *PythonPackagesSuite) TestPythonPackagesAPI() {
 	require.NotNil(t, shelfReader, "expected shelf-reader package in results")
 	assert.Empty(t, shelfReader.Group)
 	assert.Contains(t, shelfReader.Versions, "0.1")
+	assert.Equal(t, shelfReader.Versions, shelfReader.UpstreamVersions)
 	require.NotEmpty(t, shelfReader.LatestReleases)
 
 	foundVersion := false

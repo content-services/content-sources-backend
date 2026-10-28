@@ -41,6 +41,13 @@ import {
     ConfigDistributionArchToJSON,
     ConfigDistributionArchToJSONTyped,
 } from './ConfigDistributionArch';
+import type { ApiFeatureProduct } from './ApiFeatureProduct';
+import {
+    ApiFeatureProductFromJSON,
+    ApiFeatureProductFromJSONTyped,
+    ApiFeatureProductToJSON,
+    ApiFeatureProductToJSONTyped,
+} from './ApiFeatureProduct';
 
 /**
  * 
@@ -72,6 +79,12 @@ export interface ApiRepositoryParameterResponse {
      * @memberof ApiRepositoryParameterResponse
      */
     extendedReleaseStreams?: Array<ApiExtendedReleaseStream>;
+    /**
+     * Features available (Red Hat products)
+     * @type {Array<ApiFeatureProduct>}
+     * @memberof ApiRepositoryParameterResponse
+     */
+    featureProducts?: Array<ApiFeatureProduct>;
 }
 
 /**
@@ -95,6 +108,7 @@ export function ApiRepositoryParameterResponseFromJSONTyped(json: any, ignoreDis
         'distributionMinorVersions': json['distribution_minor_versions'] == null ? undefined : ((json['distribution_minor_versions'] as Array<any>).map(ConfigDistributionMinorVersionFromJSON)),
         'distributionVersions': json['distribution_versions'] == null ? undefined : ((json['distribution_versions'] as Array<any>).map(ConfigDistributionVersionFromJSON)),
         'extendedReleaseStreams': json['extended_release_streams'] == null ? undefined : ((json['extended_release_streams'] as Array<any>).map(ApiExtendedReleaseStreamFromJSON)),
+        'featureProducts': json['feature_products'] == null ? undefined : ((json['feature_products'] as Array<any>).map(ApiFeatureProductFromJSON)),
     };
 }
 
@@ -113,6 +127,7 @@ export function ApiRepositoryParameterResponseToJSONTyped(value?: ApiRepositoryP
         'distribution_minor_versions': value['distributionMinorVersions'] == null ? undefined : ((value['distributionMinorVersions'] as Array<any>).map(ConfigDistributionMinorVersionToJSON)),
         'distribution_versions': value['distributionVersions'] == null ? undefined : ((value['distributionVersions'] as Array<any>).map(ConfigDistributionVersionToJSON)),
         'extended_release_streams': value['extendedReleaseStreams'] == null ? undefined : ((value['extendedReleaseStreams'] as Array<any>).map(ApiExtendedReleaseStreamToJSON)),
+        'feature_products': value['featureProducts'] == null ? undefined : ((value['featureProducts'] as Array<any>).map(ApiFeatureProductToJSON)),
     };
 }
 

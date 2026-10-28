@@ -14,6 +14,7 @@ export * from './ApiEcosystemCoverageSummary';
 export * from './ApiExtendedReleaseArchitecture';
 export * from './ApiExtendedReleaseStream';
 export * from './ApiFeature';
+export * from './ApiFeatureProduct';
 export * from './ApiFetchGPGKeyRequest';
 export * from './ApiFetchGPGKeyResponse';
 export * from './ApiGenericAttributeValidationResponse';

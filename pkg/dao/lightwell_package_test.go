@@ -1342,6 +1342,33 @@ func (s *LightwellPackageSuite) TestGetNpmPackageDetail() {
 	assert.True(s.T(), missing.NotFound)
 }
 
+func TestRepositoryPackageItemUpstreamVersionsMatchVersions(t *testing.T) {
+	item := repositoryPackageItem(
+		"lib-b",
+		"org.example",
+		[]string{"1.0.0.rhlw-00001", "1.0.0.rhlw-00003", "2.0.0"},
+		[]string{"rhlw-00001", "rhlw-00003", ""},
+		[]string{"2024-01-01T00:00:00Z", "2024-03-01T00:00:00Z", "2024-02-01T00:00:00Z"},
+		[]string{"1.0.0", "1.0.0", "2.0.0"},
+	)
+	assert.Equal(t, []string{"1.0.0", "2.0.0"}, item.Versions)
+	assert.Equal(t, item.Versions, item.UpstreamVersions)
+	assert.Equal(t, []api.ReleaseInfo{
+		{Version: "1.0.0", Release: "rhlw-00003", CreatedAt: "2024-03-01T00:00:00Z"},
+		{Version: "2.0.0", Release: "", CreatedAt: "2024-02-01T00:00:00Z"},
+	}, item.LatestReleases)
+
+	empty := repositoryPackageItem("aaa-empty", "aaa", nil, nil, nil, nil)
+	assert.Empty(t, empty.Versions)
+	assert.Empty(t, empty.UpstreamVersions)
+	assert.NotNil(t, empty.UpstreamVersions)
+
+	// Rows imported before the split store the public version and an empty upstream.
+	fallback := repositoryPackageItem("legacy", "", []string{"5.3.18.lw-1"}, []string{""}, []string{"2024-01-01T00:00:00Z"}, []string{""})
+	assert.Equal(t, []string{"5.3.18.lw-1"}, fallback.Versions)
+	assert.Equal(t, fallback.Versions, fallback.UpstreamVersions)
+}
+
 func (s *LightwellPackageSuite) TestListRepositoryPackages() {
 	ctx, pkgDao := s.dao()
 	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
@@ -1423,6 +1450,9 @@ func (s *LightwellPackageSuite) TestListRepositoryPackages() {
 	assert.Equal(s.T(), []string{}, byName["aaa-empty"].Versions)
 	assert.Equal(s.T(), []api.ReleaseInfo{}, byName["aaa-empty"].LatestReleases)
 	assert.Equal(s.T(), []string{"4.25.7"}, byName["django"].Versions)
+	for name, item := range byName {
+		assert.Equal(s.T(), item.Versions, item.UpstreamVersions, name)
+	}
 	assert.Equal(s.T(), []api.ReleaseInfo{
 		{Version: "4.25.7", Release: "rhlw.3", CreatedAt: "2024-04-01T00:00:00Z"},
 	}, byName["django"].LatestReleases)

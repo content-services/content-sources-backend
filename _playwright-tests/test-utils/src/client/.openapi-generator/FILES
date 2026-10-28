@@ -31,6 +31,7 @@ models/ApiEcosystemCoverageSummary.ts
 models/ApiExtendedReleaseArchitecture.ts
 models/ApiExtendedReleaseStream.ts
 models/ApiFeature.ts
+models/ApiFeatureProduct.ts
 models/ApiFetchGPGKeyRequest.ts
 models/ApiFetchGPGKeyResponse.ts
 models/ApiGenericAttributeValidationResponse.ts
