@@ -630,6 +630,12 @@
                         "type": "string"
                     }
                 },
+                "required": [
+                    "description",
+                    "packageurl",
+                    "title",
+                    "vulnerability_id"
+                ],
                 "type": "object"
             },
             "api.RepositoryCollectionResponse": {

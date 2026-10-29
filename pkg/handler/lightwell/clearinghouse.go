@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -122,8 +123,8 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, *int32, error) {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error reading submission", "Submission exceeds maximum size")
 	}
 	var parsed struct {
-		Name            string            `json:"name"`
-		Vulnerabilities []json.RawMessage `json:"vulnerabilities"`
+		Name            string                `json:"name"`
+		Vulnerabilities []intakeVulnerability `json:"vulnerabilities"`
 	}
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Invalid JSON submission")
@@ -138,8 +139,42 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, *int32, error) {
 	if len(parsed.Vulnerabilities) == 0 {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "At least one vulnerability is required")
 	}
+	for i, v := range parsed.Vulnerabilities {
+		if missing := v.missingRequiredField(); missing != "" {
+			return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission",
+				fmt.Sprintf("vulnerabilities[%d] is missing required field %q", i, missing))
+		}
+	}
 	count := int32(len(parsed.Vulnerabilities)) //nolint:gosec // vulnerability count is bounded by the 50 MiB body limit
 	return body, name, &count, nil
+}
+
+// intakeVulnerability mirrors the required fields of a ReportedVulnerability
+// that we verify are present.
+type intakeVulnerability struct {
+	VulnerabilityID string `json:"vulnerability_id"`
+	Packageurl      string `json:"packageurl"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+}
+
+// missingRequiredField returns the JSON name of the first required field that is
+// absent or empty, or "" when all required fields are present.
+func (v intakeVulnerability) missingRequiredField() string {
+	for _, f := range []struct {
+		name  string
+		value string
+	}{
+		{"vulnerability_id", v.VulnerabilityID},
+		{"packageurl", v.Packageurl},
+		{"title", v.Title},
+		{"description", v.Description},
+	} {
+		if strings.TrimSpace(f.value) == "" {
+			return f.name
+		}
+	}
+	return ""
 }
 
 // addSubmissionFiles godoc

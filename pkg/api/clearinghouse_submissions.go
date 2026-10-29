@@ -37,12 +37,12 @@ type ClearinghouseSubmission struct {
 
 // ReportedVulnerability is a single reported vulnerability within an intake submission.
 type ReportedVulnerability struct {
-	VulnerabilityID    string  `json:"vulnerability_id"`
-	Packageurl         string  `json:"packageurl"`
+	VulnerabilityID    string  `json:"vulnerability_id" validate:"required"`
+	Packageurl         string  `json:"packageurl" validate:"required"`
 	ComponentName      string  `json:"component_name"`
 	ComponentVersion   string  `json:"component_version"`
-	Title              string  `json:"title"`
-	Description        string  `json:"description"`
+	Title              string  `json:"title" validate:"required"`
+	Description        string  `json:"description" validate:"required"`
 	CvssSeverity       string  `json:"cvss_severity"`
 	CvssScore          float64 `json:"cvss_score"`
 	Cwe                *string `json:"cwe,omitempty"`

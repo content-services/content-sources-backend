@@ -48,6 +48,7 @@ func TestClearinghouseUploadDao(t *testing.T) {
 			Filename:   "vulnerabilities.json",
 			Filepath:   "uploads/" + uploadID.String() + "/vulnerabilities.json",
 			Username:   "author",
+			Submission: true,
 		},
 		{
 			UUID:       extraID,
@@ -58,6 +59,13 @@ func TestClearinghouseUploadDao(t *testing.T) {
 		},
 	}, nil)
 	require.NoError(t, err)
+
+	submissionFile, err := uploads.GetFileByName(ctx, uploadID, "vulnerabilities.json")
+	require.NoError(t, err)
+	assert.True(t, submissionFile.Submission)
+	reproducerFile, err := uploads.GetFileByName(ctx, uploadID, "reproducer.py")
+	require.NoError(t, err)
+	assert.False(t, reproducerFile.Submission)
 
 	_, err = uploads.CreateFiles(ctx, []CreateClearinghouseUploadFileParams{{
 		UUID:       uuid.New(),
