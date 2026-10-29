@@ -24,6 +24,11 @@ objects:
         - partitions: 3
           replicas: 3
           topicName: platform.notifications.ingress
+        # Lightwell advisory-created bridge feed (OPTIONS_LIGHTWELL_BRIDGE_TOPIC); consumed by
+        # vulnerability-engine to replicate the Lightwell scope. Declared so Clowder provisions/maps it.
+        - partitions: 3
+          replicas: 3
+          topicName: platform.lightwell.advisory-created
       deployments:
         - name: task-worker
           replicas: ${{TASK_WORKER_REPLICAS}}
