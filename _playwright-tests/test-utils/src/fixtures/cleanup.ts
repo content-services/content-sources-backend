@@ -1,5 +1,6 @@
-import { test as oldTest, type TestInfo } from '@playwright/test';
+import { test as oldTest } from '@playwright/test';
 import {
+  authFileFromStorageState,
   ensureValidToken,
   fileNameToEnvVar,
   getFileNameFromAuthPath,
@@ -16,17 +17,8 @@ export interface Cleanup {
   remove: (key: symbol) => void;
 }
 
-function getAuthFileFromContext(testInfo: TestInfo): string | null {
-  const project = testInfo.project as { use?: { storageState?: string } };
-  const storageState = project?.use?.storageState;
-  if (storageState && typeof storageState === 'string') {
-    return storageState;
-  }
-  return null;
-}
-
 export const cleanupTest = oldTest.extend<WithCleanup>({
-  cleanup: async ({ page }, use, testInfo) => {
+  cleanup: async ({ page, storageState }, use) => {
     const cleanupFns: Map<symbol, () => Promise<unknown>> = new Map();
 
     await use({
@@ -48,7 +40,7 @@ export const cleanupTest = oldTest.extend<WithCleanup>({
     });
 
     if (!usesIdentityHeaderAuth()) {
-      const authFile = getAuthFileFromContext(testInfo);
+      const authFile = authFileFromStorageState(storageState);
       const fileName = authFile ? getFileNameFromAuthPath(authFile) : 'ADMIN_TOKEN.json';
       try {
         const refreshedToken = await ensureValidToken(page, fileName, 5);
