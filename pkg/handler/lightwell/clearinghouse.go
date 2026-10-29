@@ -768,6 +768,7 @@ func (h *ClearinghouseHandler) storeNewClearinghouseJSONSubmission(c echo.Contex
 		Filename:   upload.Filename,
 		Filepath:   clearinghouseStorageKey(upload.UUID, upload.Filename),
 		Username:   username,
+		Submission: true,
 	}}
 
 	var uploaded []string
@@ -990,10 +991,11 @@ func clearinghouseSubmissionFromStore(upload dao.ClearinghouseUpload, files []da
 	outFiles := make([]api.ClearinghouseSubmissionFile, 0, len(files))
 	for _, file := range files {
 		outFiles = append(outFiles, api.ClearinghouseSubmissionFile{
-			UUID:      file.UUID.String(),
-			Filename:  file.Filename,
-			Username:  file.Username,
-			CreatedAt: file.CreatedAt,
+			UUID:       file.UUID.String(),
+			Filename:   file.Filename,
+			Username:   file.Username,
+			Submission: file.Submission,
+			CreatedAt:  file.CreatedAt,
 		})
 	}
 	var count *int

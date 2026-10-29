@@ -10,10 +10,12 @@ const (
 
 // ClearinghouseSubmissionFile is a file stored with a clearinghouse submission.
 type ClearinghouseSubmissionFile struct {
-	UUID      string    `json:"uuid"`
-	Filename  string    `json:"filename"`
-	Username  string    `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
+	UUID     string `json:"uuid"`
+	Filename string `json:"filename"`
+	Username string `json:"username"`
+	// Submission is true for the file holding the intake submission JSON itself (not a reproducer or other attachment).
+	Submission bool      `json:"submission"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 // ClearinghouseSubmission is one customer clearinghouse upload and the files stored with it.

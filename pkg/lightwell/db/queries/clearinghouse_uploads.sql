@@ -37,13 +37,15 @@ INSERT INTO clearinghouse_upload_files (
     clearinghouse_upload_uuid,
     filename,
     filepath,
-    username
+    username,
+    submission
 ) VALUES (
     sqlc.arg(uuid),
     sqlc.arg(clearinghouse_upload_uuid),
     sqlc.arg(filename),
     sqlc.arg(filepath),
-    sqlc.arg(username)
+    sqlc.arg(username),
+    sqlc.arg(submission)
 )
 RETURNING *;
 
