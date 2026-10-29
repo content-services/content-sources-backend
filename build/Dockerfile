@@ -15,6 +15,12 @@ RUN make get-deps build
 
 
 FROM registry.redhat.io/ubi10/ubi-minimal:latest as ca-source
+
+# Append our internal IT root CA to the system CA bundle. The final image is
+# ubi-micro and has no shell/tooling, so build the combined bundle here.
+COPY build/2022-IT-Root-CA.pem /tmp/2022-IT-Root-CA.pem
+RUN cat /tmp/2022-IT-Root-CA.pem >> /etc/pki/tls/certs/ca-bundle.crt
+
 FROM registry.redhat.io/ubi10/ubi-micro:latest
 
 WORKDIR /
