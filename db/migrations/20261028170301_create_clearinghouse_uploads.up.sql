@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS clearinghouse_upload_files (
     filename VARCHAR(255) NOT NULL,
     filepath TEXT NOT NULL,
     username TEXT NOT NULL,
+    submission BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 

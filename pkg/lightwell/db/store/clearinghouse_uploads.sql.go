@@ -94,15 +94,17 @@ INSERT INTO clearinghouse_upload_files (
     clearinghouse_upload_uuid,
     filename,
     filepath,
-    username
+    username,
+    submission
 ) VALUES (
     $1,
     $2,
     $3,
     $4,
-    $5
+    $5,
+    $6
 )
-RETURNING uuid, clearinghouse_upload_uuid, filename, filepath, username, created_at
+RETURNING uuid, clearinghouse_upload_uuid, filename, filepath, username, submission, created_at
 `
 
 type CreateClearinghouseUploadFileParams struct {
@@ -111,6 +113,7 @@ type CreateClearinghouseUploadFileParams struct {
 	Filename                string    `json:"filename"`
 	Filepath                string    `json:"filepath"`
 	Username                string    `json:"username"`
+	Submission              bool      `json:"submission"`
 }
 
 func (q *Queries) CreateClearinghouseUploadFile(ctx context.Context, arg CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error) {
@@ -120,6 +123,7 @@ func (q *Queries) CreateClearinghouseUploadFile(ctx context.Context, arg CreateC
 		arg.Filename,
 		arg.Filepath,
 		arg.Username,
+		arg.Submission,
 	)
 	var i ClearinghouseUploadFile
 	err := row.Scan(
@@ -128,6 +132,7 @@ func (q *Queries) CreateClearinghouseUploadFile(ctx context.Context, arg CreateC
 		&i.Filename,
 		&i.Filepath,
 		&i.Username,
+		&i.Submission,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -181,7 +186,7 @@ func (q *Queries) GetClearinghouseUpload(ctx context.Context, argUuid uuid.UUID)
 }
 
 const getClearinghouseUploadFileByName = `-- name: GetClearinghouseUploadFileByName :one
-SELECT uuid, clearinghouse_upload_uuid, filename, filepath, username, created_at
+SELECT uuid, clearinghouse_upload_uuid, filename, filepath, username, submission, created_at
 FROM clearinghouse_upload_files
 WHERE clearinghouse_upload_uuid = $1
     AND filename = $2
@@ -201,6 +206,7 @@ func (q *Queries) GetClearinghouseUploadFileByName(ctx context.Context, arg GetC
 		&i.Filename,
 		&i.Filepath,
 		&i.Username,
+		&i.Submission,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -235,7 +241,7 @@ func (q *Queries) GetClearinghouseUploadForUpdate(ctx context.Context, argUuid u
 }
 
 const listClearinghouseUploadFiles = `-- name: ListClearinghouseUploadFiles :many
-SELECT uuid, clearinghouse_upload_uuid, filename, filepath, username, created_at
+SELECT uuid, clearinghouse_upload_uuid, filename, filepath, username, submission, created_at
 FROM clearinghouse_upload_files
 WHERE clearinghouse_upload_uuid = $1
 ORDER BY filename
@@ -256,6 +262,7 @@ func (q *Queries) ListClearinghouseUploadFiles(ctx context.Context, clearinghous
 			&i.Filename,
 			&i.Filepath,
 			&i.Username,
+			&i.Submission,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -269,7 +276,7 @@ func (q *Queries) ListClearinghouseUploadFiles(ctx context.Context, clearinghous
 }
 
 const listClearinghouseUploadFilesByUploads = `-- name: ListClearinghouseUploadFilesByUploads :many
-SELECT uuid, clearinghouse_upload_uuid, filename, filepath, username, created_at
+SELECT uuid, clearinghouse_upload_uuid, filename, filepath, username, submission, created_at
 FROM clearinghouse_upload_files
 WHERE clearinghouse_upload_uuid = ANY($1::uuid[])
 ORDER BY clearinghouse_upload_uuid, filename
@@ -290,6 +297,7 @@ func (q *Queries) ListClearinghouseUploadFilesByUploads(ctx context.Context, upl
 			&i.Filename,
 			&i.Filepath,
 			&i.Username,
+			&i.Submission,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

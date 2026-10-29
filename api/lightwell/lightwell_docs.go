@@ -1609,6 +1609,10 @@ const docTemplatelightwell = `{
                 "filename": {
                     "type": "string"
                 },
+                "submission": {
+                    "description": "Submission is true for the file holding the intake submission JSON itself (not a reproducer or other attachment).",
+                    "type": "boolean"
+                },
                 "username": {
                     "type": "string"
                 },

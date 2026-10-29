@@ -36,6 +36,7 @@ type ClearinghouseUploadFile struct {
 	Filename   string
 	Filepath   string
 	Username   string
+	Submission bool
 	CreatedAt  time.Time
 }
 
@@ -55,6 +56,7 @@ type CreateClearinghouseUploadFileParams struct {
 	Filename   string
 	Filepath   string
 	Username   string
+	Submission bool
 }
 
 type ListClearinghouseUploadsParams struct {
@@ -137,6 +139,7 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 			Filename:                file.Filename,
 			Filepath:                file.Filepath,
 			Username:                file.Username,
+			Submission:              file.Submission,
 		})
 		if err != nil {
 			return ClearinghouseUpload{}, nil, err
@@ -211,6 +214,7 @@ func (d clearinghouseUploadDaoImpl) CreateFile(ctx context.Context, params Creat
 		Filename:                params.Filename,
 		Filepath:                params.Filepath,
 		Username:                params.Username,
+		Submission:              params.Submission,
 	})
 	if err != nil {
 		return ClearinghouseUploadFile{}, err
@@ -254,6 +258,7 @@ func (d clearinghouseUploadDaoImpl) CreateFiles(ctx context.Context, params []Cr
 			Filename:                file.Filename,
 			Filepath:                file.Filepath,
 			Username:                file.Username,
+			Submission:              file.Submission,
 		})
 		if err != nil {
 			return nil, err
@@ -452,6 +457,7 @@ func clearinghouseUploadFileFromStore(row store.ClearinghouseUploadFile) Clearin
 		Filename:   row.Filename,
 		Filepath:   row.Filepath,
 		Username:   row.Username,
+		Submission: row.Submission,
 		CreatedAt:  row.CreatedAt,
 	}
 }

@@ -33,6 +33,7 @@ type ClearinghouseUploadFile struct {
 	Filename                string    `json:"filename"`
 	Filepath                string    `json:"filepath"`
 	Username                string    `json:"username"`
+	Submission              bool      `json:"submission"`
 	CreatedAt               time.Time `json:"created_at"`
 }
 

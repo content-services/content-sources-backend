@@ -240,6 +240,7 @@ CREATE TABLE clearinghouse_upload_files (
     filename VARCHAR(255) NOT NULL,
     filepath TEXT NOT NULL,
     username TEXT NOT NULL,
+    submission BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
