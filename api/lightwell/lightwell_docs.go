@@ -2125,6 +2125,12 @@ const docTemplatelightwell = `{
         },
         "api.ReportedVulnerability": {
             "type": "object",
+            "required": [
+                "description",
+                "packageurl",
+                "title",
+                "vulnerability_id"
+            ],
             "properties": {
                 "component_name": {
                     "type": "string"
