@@ -131,7 +131,7 @@ func (t *UpdateLatestSnapshot) Run() error {
 			return err
 		}
 
-		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(template)})
+		dao.PublishTemplateEvent(t.ctx, db.DB, template.OrgID, event.TemplateUpdated, template)
 	}
 	return nil
 }

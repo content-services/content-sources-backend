@@ -27,7 +27,7 @@ Loads every non-deleted template and publishes a `com.redhat.console.repositorie
 
 **Patch**
 
-Patch listener consumes `platform.content-sources.template`. For each `template-updated` event it upserts the `template` row, calls `GET /templates/{uuid}/advisories/ids`, and diffs the result into `template_advisory`. See [patchman-engine template flow](https://github.com/RedHatInsights/patchman-engine/blob/master/docs/md/architecture.md).
+Patch listener consumes `platform.content-sources.template`. For each `template-created` or `template-updated` event, the existing template object is unchanged except for an added `advisory_ids` array: a sorted, deduplicated list of errata ids (`rpm_updaterecord.id`, the same strings as `GET /templates/{uuid}/advisories/ids`). No advisories is `"advisory_ids":[]`, never null. If `advisory_ids` is absent, the lookup failed and Patch should keep calling `GET /templates/{uuid}/advisories/ids`. `template-deleted` does not include `advisory_ids`. See [patchman-engine template flow](https://github.com/RedHatInsights/patchman-engine/blob/master/docs/md/architecture.md).
 
 Spot-check Patch DB: a sampled template UUID exists in `template`, and `template_advisory` rows match that template's advisory IDs from Content Sources.
 

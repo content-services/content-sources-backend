@@ -50,7 +50,7 @@ func SendTemplateUpdateEvents(_ []string) {
 			continue
 		}
 
-		event.SendTemplateEvent(template.OrgID, event.TemplateUpdated, []event.TemplateEvent{event.MapTemplateResponse(templateResp)})
+		dao.PublishTemplateEvent(ctx, db.DB, template.OrgID, event.TemplateUpdated, templateResp)
 		eventsSent++
 
 		log.Info().
