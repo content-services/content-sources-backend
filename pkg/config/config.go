@@ -159,6 +159,8 @@ type Lightwell struct {
 	// ClearinghouseMappings is the raw JSON document from the
 	// lightwell-stams mappings secret (app-interface/lightwell-stams/<env>/mappings).
 	ClearinghouseMappings string `mapstructure:"clearinghouse_mappings"`
+	// ClearinghouseMapping is parsed from ClearinghouseMappings during Load.
+	ClearinghouseMapping ClearinghouseMapping `mapstructure:"-"`
 }
 
 type S3 struct {
@@ -772,6 +774,7 @@ func Load() {
 	}
 	LoadedConfig.Certs.CdnCertPairString = certString
 	LoadedConfig.Certs.CdnCertPair = cert
+	LoadedConfig.Clients.Lightwell.ClearinghouseMapping = ParseClearinghouseMappings(LoadedConfig.Clients.Lightwell.ClearinghouseMappings)
 
 	if LoadedConfig.Clients.Redis.Host == "" {
 		log.Warn().Msg("Caching is disabled.")
