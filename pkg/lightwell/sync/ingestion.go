@@ -15,6 +15,10 @@ import (
 // Beacon data. Grep this string to report them.
 const ignoredResolutionLog = "beacon_ignored_resolution"
 
+// ignoredCustomerIDLog is the stable message when an epic Account Number is not a
+// CID-<number> customer id. The value is ignored.
+const ignoredCustomerIDLog = "ignoring customer id without CID- prefix"
+
 // VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
 const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
 
@@ -554,9 +558,17 @@ func (i *Ingestor) supportTicketsByCustomer(ctx context.Context, vulnerability j
 		if len(customers) == 0 {
 			continue
 		}
-		// The epic Account Number carries the customer as "CID-<number>" while
-		// customers are stored as the bare number, so normalize before pairing.
-		customerID := normalizeCustomerID(customers[0])
+		// Only CID-<number> account numbers identify a customer. Anything else is ignored.
+		rawAccount := strings.TrimSpace(customers[0])
+		customerID := normalizeCustomerID(rawAccount)
+		if customerID == "" {
+			log.Warn().
+				Str("issue", vulnerability.Key).
+				Str("epic", epic.Key).
+				Str("account_number", rawAccount).
+				Msg(ignoredCustomerIDLog)
+			continue
+		}
 		if _, exists := ticketByCustomer[customerID]; !exists {
 			ticketByCustomer[customerID] = linkedIssueKey(epic, "is triggered by")
 		}
