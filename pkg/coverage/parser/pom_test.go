@@ -119,7 +119,7 @@ func TestParse_POMOnlyProjectDependencies(t *testing.T) {
 	}, result.Packages)
 }
 
-func TestParse_POMIncludesParentDependencyManagement(t *testing.T) {
+func TestParse_POMUsesParentVersionsWithoutParentPackages(t *testing.T) {
 	parentGAV := gitpom.GAV{GroupID: "com.example", ArtifactID: "parent", Version: "1.0.0"}
 	originalFetcher := pomFetcher
 	pomFetcher = mapPOMFetcher{
@@ -127,8 +127,21 @@ func TestParse_POMIncludesParentDependencyManagement(t *testing.T) {
 			GroupID:    parentGAV.GroupID,
 			ArtifactID: parentGAV.ArtifactID,
 			Version:    parentGAV.Version,
+			Properties: gitpom.Properties{"spring.version": "5.3.20"},
+			Dependencies: []gitpom.Dep{
+				{GroupID: "org.example", ArtifactID: "parent-only", Version: "1.0.0"},
+			},
 			DependencyManagement: gitpom.DepMgmt{Dependencies: []gitpom.Dep{
 				{GroupID: "org.example", ArtifactID: "parent-managed", Version: "2.0.0"},
+				{GroupID: "org.springframework", ArtifactID: "spring-core", Version: "${spring.version}"},
+				{GroupID: "org.example", ArtifactID: "child-managed", Version: "9.9.9"},
+			}},
+			Profiles: []gitpom.Profile{{
+				ID:         "parent-extra",
+				Activation: gitpom.Activation{ActiveByDefault: "true"},
+				Dependencies: []gitpom.Dep{
+					{GroupID: "org.example", ArtifactID: "parent-profile", Version: "8.0.0"},
+				},
 			}},
 		},
 	}
@@ -142,12 +155,53 @@ func TestParse_POMIncludesParentDependencyManagement(t *testing.T) {
     <version>1.0.0</version>
   </parent>
   <artifactId>app</artifactId>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.example</groupId>
+        <artifactId>child-managed</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.12.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+    </dependency>
+  </dependencies>
+  <profiles>
+    <profile>
+      <id>child-extra</id>
+      <activation><activeByDefault>true</activeByDefault></activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.example</groupId>
+          <artifactId>child-profile</artifactId>
+          <version>1.2.3</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>`
 
 	result, err := Parse("pom.xml", strings.NewReader(data))
 	require.NoError(t, err)
 	assert.Equal(t, []Package{
-		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "parent-managed", Version: "2.0.0"},
+		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
+		{Ecosystem: EcosystemJava, Namespace: "junit", Name: "junit", Version: "4.13.2"},
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "child-profile", Version: "1.2.3"},
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "child-managed", Version: "9.9.9"},
+		{Ecosystem: EcosystemJava, Namespace: "org.apache.commons", Name: "commons-lang3", Version: "3.12.0"},
 	}, result.Packages)
 }
 
@@ -299,26 +353,41 @@ func TestSplitPOMsPreservesSinglePOM(t *testing.T) {
 
 func TestPackagesFromEffective(t *testing.T) {
 	parsed := &gitpom.POM{
+		Dependencies: []gitpom.Dep{
+			{GroupID: "org.slf4j", ArtifactID: "slf4j-api", Version: "1.7.36"},
+			{GroupID: "junit", ArtifactID: "junit", Version: "4.13.2"},
+			{GroupID: "org.springframework", ArtifactID: "spring-core", Version: "${spring.version}"},
+			{GroupID: "org.springframework", ArtifactID: "spring-beans"},
+			{GroupID: "org.example", ArtifactID: "version-gap", Version: "${missing.version}"},
+			{GroupID: "", ArtifactID: "no-group", Version: "1.0"},
+			{GroupID: "${project.groupId}", ArtifactID: "lib", Version: "1.0"},
+		},
 		DependencyManagement: gitpom.DepMgmt{Dependencies: []gitpom.Dep{
 			{GroupID: "org.example", ArtifactID: "managed", Version: "${managed.version}"},
 			{GroupID: "org.example", ArtifactID: "unavailable-bom", Version: "2.0.0", Type: "pom", Scope: "import"},
 			{GroupID: "org.example", ArtifactID: "property-bom", Version: "${missing.version}", Type: "pom", Scope: "import"},
 		}},
 	}
+	skipped := new(int)
 	pkgs := packagesFromEffective(parsed, &gitpom.EffectivePOM{
 		Properties: map[string]string{"managed.version": "1.2.3"},
 		Dependencies: []gitpom.ResolvedDep{
 			{GroupID: "org.slf4j", ArtifactID: "slf4j-api", Version: "1.7.36", Resolution: gitpom.Resolved},
 			{GroupID: "junit", ArtifactID: "junit", Version: "4.13.2", Scope: "test", Resolution: gitpom.Resolved},
 			{GroupID: "org.springframework", ArtifactID: "spring-core", Version: "${spring.version}", Resolution: gitpom.UnresolvedProperty, Expression: "${spring.version}"},
+			{GroupID: "org.springframework", ArtifactID: "spring-beans", Version: "5.3.20", Resolution: gitpom.Resolved},
 			{GroupID: "org.springframework.boot", ArtifactID: "spring-boot-dependencies", Scope: "import", Version: "2.7.0", Resolution: gitpom.Resolved},
 			{GroupID: "org.example", ArtifactID: "version-gap", Version: "${missing.version}", Resolution: gitpom.UnresolvedProperty},
+			{GroupID: "org.example", ArtifactID: "parent-only", Version: "1.0.0", Resolution: gitpom.Resolved},
 			{GroupID: "", ArtifactID: "no-group", Version: "1.0", Resolution: gitpom.Resolved},
 			{GroupID: "${project.groupId}", ArtifactID: "lib", Version: "1.0", Resolution: gitpom.UnresolvedProperty, Expression: "${project.groupId}"},
 		},
 		DependencyManagement: map[string]gitpom.Dep{
 			"org.example:managed:jar:": {
 				GroupID: "org.example", ArtifactID: "managed", Version: "1.2.3",
+			},
+			"org.example:parent-managed:jar:": {
+				GroupID: "org.example", ArtifactID: "parent-managed", Version: "2.0.0",
 			},
 			"org.example:multi:jar:": {
 				GroupID: "org.example", ArtifactID: "multi", Version: "1.0.0",
@@ -336,16 +405,15 @@ func TestPackagesFromEffective(t *testing.T) {
 				GroupID: "org.transitive", ArtifactID: "from-bom", Version: "4.5.6",
 			},
 		},
-	}, new(int))
+	}, skipped)
+	assert.Equal(t, 2, *skipped)
 	assert.Equal(t, []Package{
 		{Ecosystem: EcosystemJava, Namespace: "org.slf4j", Name: "slf4j-api", Version: "1.7.36"},
 		{Ecosystem: EcosystemJava, Namespace: "junit", Name: "junit", Version: "4.13.2"},
 		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: ""},
-		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "version-gap", Version: "3.0.0"},
+		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-beans", Version: "5.3.20"},
+		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "version-gap", Version: ""},
 		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "managed", Version: "1.2.3"},
-		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "multi", Version: "1.0.0"},
-		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "multi", Version: "2.0.0"},
-		{Ecosystem: EcosystemJava, Namespace: "org.transitive", Name: "from-bom", Version: "4.5.6"},
 		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "unavailable-bom", Version: "2.0.0"},
 		{Ecosystem: EcosystemJava, Namespace: "org.example", Name: "property-bom", Version: ""},
 	}, pkgs)
