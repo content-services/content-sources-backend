@@ -70,7 +70,11 @@ WHERE clearinghouse_upload_uuid = sqlc.arg(clearinghouse_upload_uuid)
 -- name: ListClearinghouseUploads :many
 SELECT *
 FROM clearinghouse_uploads
-WHERE sqlc.narg(org_id)::text IS NULL OR org_id = sqlc.narg(org_id)::text
+WHERE (sqlc.narg(org_id)::text IS NULL OR org_id = sqlc.narg(org_id)::text)
+  AND (
+    NOT sqlc.arg(restrict_org_ids)::bool
+    OR org_id = ANY(sqlc.arg(org_ids)::text[])
+  )
 ORDER BY created_at DESC, uuid DESC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
@@ -85,7 +89,11 @@ WHERE uuid = sqlc.arg(uuid);
 -- name: CountClearinghouseUploads :one
 SELECT COUNT(*)::bigint
 FROM clearinghouse_uploads
-WHERE sqlc.narg(org_id)::text IS NULL OR org_id = sqlc.narg(org_id)::text;
+WHERE (sqlc.narg(org_id)::text IS NULL OR org_id = sqlc.narg(org_id)::text)
+  AND (
+    NOT sqlc.arg(restrict_org_ids)::bool
+    OR org_id = ANY(sqlc.arg(org_ids)::text[])
+  );
 
 -- name: SubmitClearinghouseUpload :one
 UPDATE clearinghouse_uploads

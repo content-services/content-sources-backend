@@ -14,11 +14,21 @@ import (
 const countClearinghouseUploads = `-- name: CountClearinghouseUploads :one
 SELECT COUNT(*)::bigint
 FROM clearinghouse_uploads
-WHERE $1::text IS NULL OR org_id = $1::text
+WHERE ($1::text IS NULL OR org_id = $1::text)
+  AND (
+    NOT $2::bool
+    OR org_id = ANY($3::text[])
+  )
 `
 
-func (q *Queries) CountClearinghouseUploads(ctx context.Context, orgID *string) (int64, error) {
-	row := q.db.QueryRow(ctx, countClearinghouseUploads, orgID)
+type CountClearinghouseUploadsParams struct {
+	OrgID          *string  `json:"org_id"`
+	RestrictOrgIds bool     `json:"restrict_org_ids"`
+	OrgIds         []string `json:"org_ids"`
+}
+
+func (q *Queries) CountClearinghouseUploads(ctx context.Context, arg CountClearinghouseUploadsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countClearinghouseUploads, arg.OrgID, arg.RestrictOrgIds, arg.OrgIds)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -313,19 +323,31 @@ func (q *Queries) ListClearinghouseUploadFilesByUploads(ctx context.Context, upl
 const listClearinghouseUploads = `-- name: ListClearinghouseUploads :many
 SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
 FROM clearinghouse_uploads
-WHERE $1::text IS NULL OR org_id = $1::text
+WHERE ($1::text IS NULL OR org_id = $1::text)
+  AND (
+    NOT $2::bool
+    OR org_id = ANY($3::text[])
+  )
 ORDER BY created_at DESC, uuid DESC
-LIMIT $3 OFFSET $2
+LIMIT $5 OFFSET $4
 `
 
 type ListClearinghouseUploadsParams struct {
-	OrgID      *string `json:"org_id"`
-	PageOffset int32   `json:"page_offset"`
-	PageLimit  int32   `json:"page_limit"`
+	OrgID          *string  `json:"org_id"`
+	RestrictOrgIds bool     `json:"restrict_org_ids"`
+	OrgIds         []string `json:"org_ids"`
+	PageOffset     int32    `json:"page_offset"`
+	PageLimit      int32    `json:"page_limit"`
 }
 
 func (q *Queries) ListClearinghouseUploads(ctx context.Context, arg ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error) {
-	rows, err := q.db.Query(ctx, listClearinghouseUploads, arg.OrgID, arg.PageOffset, arg.PageLimit)
+	rows, err := q.db.Query(ctx, listClearinghouseUploads,
+		arg.OrgID,
+		arg.RestrictOrgIds,
+		arg.OrgIds,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

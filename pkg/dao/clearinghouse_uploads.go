@@ -60,9 +60,11 @@ type CreateClearinghouseUploadFileParams struct {
 }
 
 type ListClearinghouseUploadsParams struct {
-	OrgID  *string
-	Limit  int32
-	Offset int32
+	OrgID          *string
+	OrgIDs         []string
+	RestrictOrgIDs bool
+	Limit          int32
+	Offset         int32
 }
 
 type clearinghouseTxBeginner interface {
@@ -183,9 +185,11 @@ func (d clearinghouseUploadDaoImpl) List(ctx context.Context, params ListClearin
 		return nil, err
 	}
 	rows, err := d.querier.ListClearinghouseUploads(ctx, store.ListClearinghouseUploadsParams{
-		OrgID:      params.OrgID,
-		PageLimit:  params.Limit,
-		PageOffset: params.Offset,
+		OrgID:          params.OrgID,
+		RestrictOrgIds: params.RestrictOrgIDs,
+		OrgIds:         clearinghouseOrgIDs(params.OrgIDs),
+		PageLimit:      params.Limit,
+		PageOffset:     params.Offset,
 	})
 	if err != nil {
 		return nil, err
@@ -197,11 +201,22 @@ func (d clearinghouseUploadDaoImpl) List(ctx context.Context, params ListClearin
 	return out, nil
 }
 
-func (d clearinghouseUploadDaoImpl) Count(ctx context.Context, orgID *string) (int64, error) {
+func (d clearinghouseUploadDaoImpl) Count(ctx context.Context, params ListClearinghouseUploadsParams) (int64, error) {
 	if err := d.requireQuerier(); err != nil {
 		return 0, err
 	}
-	return d.querier.CountClearinghouseUploads(ctx, orgID)
+	return d.querier.CountClearinghouseUploads(ctx, store.CountClearinghouseUploadsParams{
+		OrgID:          params.OrgID,
+		RestrictOrgIds: params.RestrictOrgIDs,
+		OrgIds:         clearinghouseOrgIDs(params.OrgIDs),
+	})
+}
+
+func clearinghouseOrgIDs(orgIDs []string) []string {
+	if orgIDs == nil {
+		return []string{}
+	}
+	return orgIDs
 }
 
 func (d clearinghouseUploadDaoImpl) CreateFile(ctx context.Context, params CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error) {

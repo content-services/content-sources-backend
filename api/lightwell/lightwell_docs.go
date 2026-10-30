@@ -119,7 +119,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions": {
             "get": {
-                "description": "Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still pending. Callers with Lightwell clearinghouse read see every submission. File contents are not included.",
+                "description": "Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still pending. Callers with Lightwell clearinghouse read see submissions for CIDs that list their username. File contents are not included.",
                 "produces": [
                     "application/json"
                 ],
@@ -225,7 +225,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}": {
             "get": {
-                "description": "Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch any submission. File contents are not included.",
+                "description": "Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch a submission when their username is listed on its CID. File contents are not included.",
                 "produces": [
                     "application/json"
                 ],
@@ -325,7 +325,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/archive": {
             "get": {
-                "description": "Download the submission file and every other file in the submission as a zip archive. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.",
+                "description": "Download the submission file and every other file in the submission as a zip archive. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed and their username is listed on its CID. Customers, including the author, cannot download it.",
                 "produces": [
                     "application/zip"
                 ],
@@ -449,7 +449,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/files/{filename}": {
             "get": {
-                "description": "Download a file stored with a clearinghouse submission. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.",
+                "description": "Download a file stored with a clearinghouse submission. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed and their username is listed on its CID. Customers, including the author, cannot download it.",
                 "produces": [
                     "application/octet-stream"
                 ],
@@ -569,7 +569,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/process": {
             "post": {
-                "description": "Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature.",
+                "description": "Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature, and the caller must be listed on the submission's CID.",
                 "produces": [
                     "application/json"
                 ],
@@ -623,7 +623,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/submission": {
             "get": {
-                "description": "Download the file that was uploaded when the clearinghouse submission was created. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.",
+                "description": "Download the file that was uploaded when the clearinghouse submission was created. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed and their username is listed on its CID. Customers, including the author, cannot download it.",
                 "produces": [
                     "application/octet-stream"
                 ],
