@@ -503,9 +503,9 @@ func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 		}
 	}
 
-	response := api.ClearinghouseSubmissionCollectionResponse{Data: make([]api.ClearinghouseSubmission, 0, len(uploads))}
+	response := api.ClearinghouseSubmissionCollectionResponse{Data: make([]api.ClearinghouseSubmissionWithCID, 0, len(uploads))}
 	for _, upload := range uploads {
-		response.Data = append(response.Data, clearinghouseSubmissionFromStore(upload, filesByUpload[upload.UUID]))
+		response.Data = append(response.Data, clearinghouseSubmissionWithCID(c, upload, filesByUpload[upload.UUID]))
 	}
 	return c.JSON(http.StatusOK, handler.SetCollectionResponseMetadata(&response, c, total))
 }
@@ -517,7 +517,7 @@ func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 // @Tags         lightwell
 // @Produce      json
 // @Param        uuid path string true "Clearinghouse submission UUID"
-// @Success      200 {object} api.ClearinghouseSubmission
+// @Success      200 {object} api.ClearinghouseSubmissionWithCID
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
@@ -531,7 +531,7 @@ func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
 	if err != nil {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
-	return c.JSON(http.StatusOK, clearinghouseSubmissionFromStore(upload, files))
+	return c.JSON(http.StatusOK, clearinghouseSubmissionWithCID(c, upload, files))
 }
 
 // downloadSubmission godoc
@@ -1052,5 +1052,16 @@ func clearinghouseSubmissionFromStore(upload dao.ClearinghouseUpload, files []da
 		Status:             upload.Status,
 		ErrorMessage:       upload.ErrorMessage,
 		Files:              outFiles,
+	}
+}
+
+func clearinghouseSubmissionWithCID(c echo.Context, upload dao.ClearinghouseUpload, files []dao.ClearinghouseUploadFile) api.ClearinghouseSubmissionWithCID {
+	cid := ""
+	if config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellClearinghouseRead) {
+		cid = config.Get().Clients.Lightwell.ClearinghouseMapping.CIDForOrg(upload.OrgID)
+	}
+	return api.ClearinghouseSubmissionWithCID{
+		ClearinghouseSubmission: clearinghouseSubmissionFromStore(upload, files),
+		CID:                     cid,
 	}
 }

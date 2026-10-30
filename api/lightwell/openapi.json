@@ -52,7 +52,7 @@
                 "properties": {
                     "data": {
                         "items": {
-                            "$ref": "#/components/schemas/api.ClearinghouseSubmission"
+                            "$ref": "#/components/schemas/api.ClearinghouseSubmissionWithCID"
                         },
                         "type": "array"
                     },
@@ -82,6 +82,57 @@
                     },
                     "uuid": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.ClearinghouseSubmissionWithCID": {
+                "properties": {
+                    "cid": {
+                        "description": "Customer identifier. Only visible to internal users.",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "error_message": {
+                        "type": "string"
+                    },
+                    "files": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.ClearinghouseSubmissionFile"
+                        },
+                        "type": "array"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "org_id": {
+                        "type": "string"
+                    },
+                    "processed_at": {
+                        "type": "string"
+                    },
+                    "processed_by": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "submitted_at": {
+                        "type": "string"
+                    },
+                    "submitted_by": {
+                        "type": "string"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "vulnerability_count": {
+                        "type": "integer"
                     }
                 },
                 "type": "object"
@@ -1440,7 +1491,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/api.ClearinghouseSubmission"
+                                    "$ref": "#/components/schemas/api.ClearinghouseSubmissionWithCID"
                                 }
                             }
                         },
