@@ -368,13 +368,13 @@ func TestCustomerIDsFromLabels(t *testing.T) {
 		labels string
 		want   []string
 	}{
-		{name: "single", labels: `["CID-12345"]`, want: []string{"12345"}},
-		{name: "case insensitive prefix", labels: `["cid-42"]`, want: []string{"42"}},
-		{name: "multiple distinct", labels: `["CID-1","other","CID-2"]`, want: []string{"1", "2"}},
-		{name: "dedupes", labels: `["CID-7","CID-7"]`, want: []string{"7"}},
+		{name: "single", labels: `["CID-12345"]`, want: []string{"CID-12345"}},
+		{name: "case insensitive prefix", labels: `["cid-42"]`, want: []string{"CID-42"}},
+		{name: "multiple distinct", labels: `["CID-1","other","CID-2"]`, want: []string{"CID-1", "CID-2"}},
+		{name: "dedupes", labels: `["CID-7","cid-7"]`, want: []string{"CID-7"}},
 		{name: "ignores non-digit suffix", labels: `["CID-abc","CID-12x"]`, want: []string{}},
 		{name: "ignores unprefixed and partial", labels: `["12345","severity::low","CID-"]`, want: []string{}},
-		{name: "trims whitespace", labels: `[" CID-9 "]`, want: []string{"9"}},
+		{name: "trims whitespace", labels: `[" CID-9 "]`, want: []string{"CID-9"}},
 		{name: "no labels field", labels: ``, want: nil},
 		{name: "empty list", labels: `[]`, want: []string{}},
 	}

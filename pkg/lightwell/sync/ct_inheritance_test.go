@@ -47,7 +47,7 @@ func TestBuildInheritedCIDsHandlesInwardIncorporatesLink(t *testing.T) {
 	unlabelled := ivtWith("LTWL-2", "Released", `[]`)
 	ct := ctIncorporatingInward("CT-1", "LTWL-1", "LTWL-2")
 	got := buildInheritedCIDs([]jira_client.JiraIssue{labelled, unlabelled}, []jira_client.JiraIssue{ct})
-	assert.Equal(t, []string{"663171"}, got["LTWL-2"])
+	assert.Equal(t, []string{"CID-663171"}, got["LTWL-2"])
 }
 
 func TestCTMemberKeysHandlesBothLinkDirections(t *testing.T) {
@@ -85,8 +85,8 @@ func TestBuildInheritedCIDsUnionsShipReadyMembers(t *testing.T) {
 	unlabelled := ivtWith("LTWL-2", "Released", `[]`)
 	ct := ctIncorporating("CT-1", "LTWL-1", "LTWL-2")
 	got := buildInheritedCIDs([]jira_client.JiraIssue{labelled, unlabelled}, []jira_client.JiraIssue{ct})
-	assert.Equal(t, []string{"663171"}, got["LTWL-1"])
-	assert.Equal(t, []string{"663171"}, got["LTWL-2"])
+	assert.Equal(t, []string{"CID-663171"}, got["LTWL-1"])
+	assert.Equal(t, []string{"CID-663171"}, got["LTWL-2"])
 }
 
 func TestBuildInheritedCIDsIgnoresNonShipReadySource(t *testing.T) {
@@ -105,5 +105,5 @@ func TestBuildInheritedCIDsSkipsUnknownAndMalformed(t *testing.T) {
 	got := buildInheritedCIDs([]jira_client.JiraIssue{labelled},
 		[]jira_client.JiraIssue{ctUnknownMember, ctBadLinks})
 	assert.NotContains(t, got, "LTWL-404")
-	assert.Equal(t, []string{"663171"}, got["LTWL-1"])
+	assert.Equal(t, []string{"CID-663171"}, got["LTWL-1"])
 }
