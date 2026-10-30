@@ -1,5 +1,6 @@
-import { test as base, type TestInfo } from '@playwright/test';
+import { test as base } from '@playwright/test';
 import {
+  authFileFromStorageState,
   ensureValidToken,
   fileNameToEnvVar,
   getFileNameFromAuthPath,
@@ -7,29 +8,22 @@ import {
 } from '../helpers/tokenHelpers';
 
 /**
- * Get the storageState auth file path from test info
- */
-function getAuthFileFromContext(testInfo: TestInfo): string | null {
-  const project = testInfo.project as { use?: { storageState?: string } };
-  const storageState = project?.use?.storageState;
-  if (storageState && typeof storageState === 'string') {
-    return storageState;
-  }
-  return null;
-}
-
-/**
  * Autofixture that automatically refreshes JWT tokens before each test
- * based on the storageState configured for that test.
+ * based on the effective storageState for that test (project + test.use).
+ *
+ * Important: depend on the Playwright `storageState` option fixture — not
+ * `testInfo.project.use.storageState` — so per-test overrides like
+ * `test.use({ storageState: '.auth/NO_SUBS_TOKEN.json' })` are honored.
+ * Otherwise a non-admin page session can be written into ADMIN_TOKEN.json.
  */
 export const tokenRefreshTest = base.extend({
-  page: async ({ page }, use, testInfo) => {
+  page: async ({ page, storageState }, use) => {
     if (usesIdentityHeaderAuth()) {
       await use(page);
       return;
     }
 
-    const authFile = getAuthFileFromContext(testInfo);
+    const authFile = authFileFromStorageState(storageState);
 
     if (authFile) {
       const fileName = getFileNameFromAuthPath(authFile);

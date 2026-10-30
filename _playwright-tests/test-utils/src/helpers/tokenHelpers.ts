@@ -50,7 +50,19 @@ export function fileNameToEnvVar(fileName: string): string {
  * e.g., ".auth/ADMIN_TOKEN.json" → "ADMIN_TOKEN.json"
  */
 export function getFileNameFromAuthPath(authPath: string): string {
-  return authPath.replace('.auth/', '');
+  return path.basename(authPath);
+}
+
+/**
+ * Resolve a Playwright `storageState` option to an auth JSON path/filename.
+ * Prefer this over `testInfo.project.use.storageState`, which ignores `test.use()` overrides
+ * and can cause a non-admin page session to be written into ADMIN_TOKEN.json.
+ */
+export function authFileFromStorageState(storageState: unknown): string | null {
+  if (typeof storageState === 'string' && storageState.length > 0) {
+    return storageState;
+  }
+  return null;
 }
 
 /**
@@ -157,6 +169,21 @@ export function checkTokenExpiry(token: string, bufferMinutes: number = 5): Toke
  * @param fileName - Name of the auth state file (e.g., 'ADMIN_TOKEN.json')
  */
 export async function refreshJWTToken(page: Page, fileName: string): Promise<string> {
+  const targetFileName = path.basename(fileName);
+  const targetPath = path.join(resolveAuthStorageRoot(), targetFileName);
+
+  // Refuse to overwrite an auth file with a different user's browser session.
+  // (e.g. NoSubs page + mistaken ADMIN_TOKEN.json target under parallel workers)
+  const existingFileToken = getTokenFromStorageStateFile(targetPath)?.replace(/^Bearer\s+/i, '');
+  const pageCookiesBefore = await page.context().cookies();
+  const pageJwtBefore = pageCookiesBefore.find((cookie) => cookie.name === 'cs_jwt')?.value;
+  if (existingFileToken && pageJwtBefore && existingFileToken !== pageJwtBefore) {
+    throw new Error(
+      `Refusing to refresh ${targetFileName}: page cs_jwt does not match the auth file ` +
+        `(likely test.use({ storageState }) override was ignored when choosing the file)`,
+    );
+  }
+
   // Avoid sending a pinned Authorization bearer to SSO / third-party origins during re-auth.
   await page.context().setExtraHTTPHeaders({});
   await page.goto('/insights/content/repositories');
@@ -172,11 +199,9 @@ export async function refreshJWTToken(page: Page, fileName: string): Promise<str
   const newToken = `Bearer ${jwtCookie.value}`;
 
   // Save the updated storage state
-  await page.context().storageState({
-    path: path.join(resolveAuthStorageRoot(), fileName),
-  });
+  await page.context().storageState({ path: targetPath });
 
-  const envVarName = fileNameToEnvVar(fileName);
+  const envVarName = fileNameToEnvVar(targetFileName);
   process.env[envVarName] = newToken;
 
   // test.use({ extraHTTPHeaders }) pins Authorization at context creation. Update it so
