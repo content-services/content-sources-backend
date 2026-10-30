@@ -35,6 +35,13 @@ type ClearinghouseSubmission struct {
 	Files              []ClearinghouseSubmissionFile `json:"files"`
 }
 
+// ClearinghouseSubmissionWithCID is a clearinghouse submission returned by list and get.
+type ClearinghouseSubmissionWithCID struct {
+	ClearinghouseSubmission
+	// Customer identifier. Only visible to internal users.
+	CID string `json:"cid"`
+}
+
 // ReportedVulnerability is a single reported vulnerability within an intake submission.
 type ReportedVulnerability struct {
 	VulnerabilityID    string  `json:"vulnerability_id" validate:"required"`
@@ -61,9 +68,9 @@ type IntakeSubmission struct {
 
 // ClearinghouseSubmissionCollectionResponse is a paginated list of clearinghouse submissions.
 type ClearinghouseSubmissionCollectionResponse struct {
-	Data  []ClearinghouseSubmission `json:"data"`
-	Meta  ResponseMetadata          `json:"meta"`
-	Links Links                     `json:"links"`
+	Data  []ClearinghouseSubmissionWithCID `json:"data"`
+	Meta  ResponseMetadata                 `json:"meta"`
+	Links Links                            `json:"links"`
 }
 
 func (r *ClearinghouseSubmissionCollectionResponse) SetMetadata(meta ResponseMetadata, links Links) {

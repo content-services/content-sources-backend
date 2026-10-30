@@ -247,7 +247,7 @@ const docTemplatelightwell = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                            "$ref": "#/definitions/api.ClearinghouseSubmissionWithCID"
                         }
                     },
                     "400": {
@@ -1589,7 +1589,7 @@ const docTemplatelightwell = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionWithCID"
                     }
                 },
                 "links": {
@@ -1618,6 +1618,57 @@ const docTemplatelightwell = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionWithCID": {
+            "type": "object",
+            "properties": {
+                "cid": {
+                    "description": "Customer identifier. Only visible to internal users.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "processed_at": {
+                    "type": "string"
+                },
+                "processed_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitted_by": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "vulnerability_count": {
+                    "type": "integer"
                 }
             }
         },
