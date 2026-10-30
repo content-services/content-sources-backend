@@ -455,9 +455,8 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	}
 	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseOrgParams(test_handler.MockOrgId))).
 		Return([]dao.ClearinghouseUpload{mine}, nil).Once()
-	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(func(orgID *string) bool {
-		return orgID != nil && *orgID == test_handler.MockOrgId
-	})).Return(int64(1), nil).Once()
+	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(clearinghouseOrgParams(test_handler.MockOrgId))).
+		Return(int64(1), nil).Once()
 	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id}).Return(files, nil).Once()
 	s.reg.ClearinghouseUpload.On("Get", mock.Anything, otherID).Return(other, nil)
 	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(mine, nil).Once()
@@ -506,34 +505,30 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.Equal(http.StatusNotFound, code, string(body))
 
 	s.enableRead()
-	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(func(params dao.ListClearinghouseUploadsParams) bool {
-		return params.OrgID == nil && params.Limit == 100 && params.Offset == 0
-	})).Return([]dao.ClearinghouseUpload{mine, other}, nil).Once()
-	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(func(orgID *string) bool {
-		return orgID == nil
-	})).Return(int64(2), nil).Once()
-	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id, otherID}).Return(files, nil).Once()
-	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, otherID).Return([]dao.ClearinghouseUploadFile{}, nil).Once()
+	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseReadParams(test_handler.MockOrgId))).
+		Return([]dao.ClearinghouseUpload{mine}, nil).Once()
+	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(clearinghouseReadParams(test_handler.MockOrgId))).
+		Return(int64(1), nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id}).Return(files, nil).Once()
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions"))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Require().NoError(json.Unmarshal(body, &listed))
-	s.Len(listed.Data, 2)
+	s.Require().Len(listed.Data, 1)
+	s.Equal(id.String(), listed.Data[0].UUID)
 	s.Equal("CID-00000", listed.Data[0].CID)
-	s.Empty(listed.Data[1].CID)
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
+	s.Equal(http.StatusNotFound, code, string(body))
+
+	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseReadParams())).
+		Return([]dao.ClearinghouseUpload{}, nil).Once()
+	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(clearinghouseReadParams())).
+		Return(int64(0), nil).Once()
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions", clearinghouseOtherUser()))
 	s.Require().Equal(http.StatusOK, code, string(body))
-	s.Require().NoError(json.Unmarshal(body, &fetched))
-	s.Equal(otherID.String(), fetched.UUID)
-	s.Empty(fetched.CID)
-	s.Equal("someone", fetched.Username)
-	s.Equal(api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
-	s.False(fetched.CanDelete)
-	s.True(fetched.CanDownload)
-	s.False(fetched.CanAddReproducers)
-	s.False(fetched.CanSubmit)
-	s.True(fetched.CanProcess)
+	s.Require().NoError(json.Unmarshal(body, &listed))
+	s.Empty(listed.Data)
 }
 func (s *ClearinghouseSuite) TestSubmit() {
 	s.enableClearinghouse()
@@ -651,6 +646,7 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+foreignID.String()+"/files/vulnerabilities.json"))
 	s.Equal(http.StatusNotFound, code, string(body))
 
+	s.allowClearinghouseTAM("other")
 	s.enableRead()
 	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
 	s.Equal(http.StatusConflict, code, string(body))
@@ -794,8 +790,8 @@ func (s *ClearinghouseSuite) TestProcessConflicts() {
 		Status:   api.ClearinghouseSubmissionStatusPending,
 	}, nil).Once()
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+stillUploading.String()+"/process"))
-	s.Equal(http.StatusConflict, code, string(body))
-	s.Contains(string(body), "must be submitted")
+	s.Equal(http.StatusNotFound, code, string(body))
+	s.Contains(string(body), "Submission not found")
 
 	current.Status = api.ClearinghouseSubmissionStatusProcessed
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/process"))
@@ -854,9 +850,34 @@ func clearinghouseFile(uploadID uuid.UUID, name, username string, createdAt time
 	}
 }
 
+func (s *ClearinghouseSuite) allowClearinghouseTAM(usernames ...string) {
+	users := `["user"`
+	for _, name := range usernames {
+		users += `,"` + name + `"`
+	}
+	users += `]`
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
+		`{"CidOrgId":{"CID-00000":"` + test_handler.MockOrgId + `"},"CidTam":{"CID-00000":` + users + `}}`,
+	)
+}
+
 func clearinghouseOrgParams(orgID string) func(dao.ListClearinghouseUploadsParams) bool {
 	return func(params dao.ListClearinghouseUploadsParams) bool {
-		return params.Limit == 100 && params.Offset == 0 && params.OrgID != nil && *params.OrgID == orgID
+		return params.Limit == 100 && params.Offset == 0 && !params.RestrictOrgIDs && params.OrgID != nil && *params.OrgID == orgID
+	}
+}
+
+func clearinghouseReadParams(orgIDs ...string) func(dao.ListClearinghouseUploadsParams) bool {
+	return func(params dao.ListClearinghouseUploadsParams) bool {
+		if params.OrgID != nil || !params.RestrictOrgIDs || params.Limit != 100 || params.Offset != 0 || len(params.OrgIDs) != len(orgIDs) {
+			return false
+		}
+		for i := range orgIDs {
+			if params.OrgIDs[i] != orgIDs[i] {
+				return false
+			}
+		}
+		return true
 	}
 }
 

@@ -38,18 +38,49 @@ func newClearinghouseCaller(c echo.Context) clearinghouseCaller {
 	}
 }
 
-// visibilityOrgFilter returns the org that list/get queries must be limited to.
-// nil means the caller can see submissions from every org.
-func (p clearinghouseCaller) visibilityOrgFilter() (*string, error) {
+// listParams limits list queries to the caller's org, or, for a read caller, to
+// the orgs whose CID lists their username.
+func (p clearinghouseCaller) listParams(page clearinghousePageParams) (dao.ListClearinghouseUploadsParams, error) {
 	if p.readErr == nil {
-		return nil, nil
+		if p.usernameErr != nil {
+			return dao.ListClearinghouseUploadsParams{}, p.usernameErr
+		}
+		orgIDs := config.Get().Clients.Lightwell.ClearinghouseMapping.OrgIDsForUser(p.username)
+		if orgIDs == nil {
+			orgIDs = []string{}
+		}
+		return dao.ListClearinghouseUploadsParams{
+			OrgIDs:         orgIDs,
+			RestrictOrgIDs: true,
+			Limit:          page.limit,
+			Offset:         page.offset,
+		}, nil
 	}
 	if p.featureErr != nil {
-		return nil, ce.NewErrorResponse(http.StatusBadRequest, "Cannot access clearinghouse submissions",
+		return dao.ListClearinghouseUploadsParams{}, ce.NewErrorResponse(http.StatusBadRequest, "Cannot access clearinghouse submissions",
 			"Neither the user nor account is allowed.")
 	}
 	orgID := p.orgID
-	return &orgID, nil
+	return dao.ListClearinghouseUploadsParams{
+		OrgID:  &orgID,
+		Limit:  page.limit,
+		Offset: page.offset,
+	}, nil
+}
+
+// allowsOrg reports whether this caller may see a submission in orgID.
+func (p clearinghouseCaller) allowsOrg(orgID string) (bool, error) {
+	if p.readErr == nil {
+		if p.usernameErr != nil {
+			return false, p.usernameErr
+		}
+		return config.Get().Clients.Lightwell.ClearinghouseMapping.Allows(p.username, orgID), nil
+	}
+	if p.featureErr != nil {
+		return false, ce.NewErrorResponse(http.StatusBadRequest, "Cannot access clearinghouse submissions",
+			"Neither the user nor account is allowed.")
+	}
+	return p.orgID == orgID, nil
 }
 
 // checkAddFiles allows any member of the submission's org with the clearinghouse
@@ -97,8 +128,8 @@ func (p clearinghouseCaller) checkSubmit(upload dao.ClearinghouseUpload) error {
 	return nil
 }
 
-// checkProcess allows callers with the clearinghouse read feature to process a
-// submitted submission from any org.
+// checkProcess allows a read caller to process a submitted submission when their
+// username is listed on that submission's CID.
 func (p clearinghouseCaller) checkProcess(upload dao.ClearinghouseUpload) error {
 	if p.readErr != nil {
 		return p.readErr
@@ -106,17 +137,26 @@ func (p clearinghouseCaller) checkProcess(upload dao.ClearinghouseUpload) error 
 	if p.usernameErr != nil {
 		return p.usernameErr
 	}
+	if !config.Get().Clients.Lightwell.ClearinghouseMapping.Allows(p.username, upload.OrgID) {
+		return ce.NewErrorResponse(http.StatusNotFound, "Error processing clearinghouse submission", "Submission not found")
+	}
 	if upload.Status != api.ClearinghouseSubmissionStatusSubmitted {
 		return ce.NewErrorResponse(http.StatusConflict, "Cannot process clearinghouse submission", clearinghouseProcessConflict(upload.Status))
 	}
 	return nil
 }
 
-// checkDownload allows only callers with the clearinghouse read feature to
-// download, once the submission is submitted or processed. Customers, including
-// the author, cannot download files from a submission.
+// checkDownload allows a read caller to download a submitted or processed
+// submission when their username is listed on its CID. Customers, including the
+// author, cannot download files from a submission.
 func (p clearinghouseCaller) checkDownload(upload dao.ClearinghouseUpload) error {
 	if p.readErr == nil {
+		if p.usernameErr != nil {
+			return p.usernameErr
+		}
+		if !config.Get().Clients.Lightwell.ClearinghouseMapping.Allows(p.username, upload.OrgID) {
+			return ce.NewErrorResponse(http.StatusNotFound, "Error fetching clearinghouse submission", "Submission not found")
+		}
 		switch upload.Status {
 		case api.ClearinghouseSubmissionStatusSubmitted, api.ClearinghouseSubmissionStatusProcessed:
 			return nil

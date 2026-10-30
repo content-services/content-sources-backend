@@ -12901,8 +12901,8 @@ func (_m *MockClearinghouseUploadDao) EXPECT() *MockClearinghouseUploadDao_Expec
 }
 
 // Count provides a mock function for the type MockClearinghouseUploadDao
-func (_mock *MockClearinghouseUploadDao) Count(ctx context.Context, orgID *string) (int64, error) {
-	ret := _mock.Called(ctx, orgID)
+func (_mock *MockClearinghouseUploadDao) Count(ctx context.Context, params ListClearinghouseUploadsParams) (int64, error) {
+	ret := _mock.Called(ctx, params)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Count")
@@ -12910,16 +12910,16 @@ func (_mock *MockClearinghouseUploadDao) Count(ctx context.Context, orgID *strin
 
 	var r0 int64
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *string) (int64, error)); ok {
-		return returnFunc(ctx, orgID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListClearinghouseUploadsParams) (int64, error)); ok {
+		return returnFunc(ctx, params)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *string) int64); ok {
-		r0 = returnFunc(ctx, orgID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListClearinghouseUploadsParams) int64); ok {
+		r0 = returnFunc(ctx, params)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *string) error); ok {
-		r1 = returnFunc(ctx, orgID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ListClearinghouseUploadsParams) error); ok {
+		r1 = returnFunc(ctx, params)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -12933,20 +12933,20 @@ type MockClearinghouseUploadDao_Count_Call struct {
 
 // Count is a helper method to define mock.On call
 //   - ctx context.Context
-//   - orgID *string
-func (_e *MockClearinghouseUploadDao_Expecter) Count(ctx any, orgID any) *MockClearinghouseUploadDao_Count_Call {
-	return &MockClearinghouseUploadDao_Count_Call{Call: _e.mock.On("Count", ctx, orgID)}
+//   - params ListClearinghouseUploadsParams
+func (_e *MockClearinghouseUploadDao_Expecter) Count(ctx any, params any) *MockClearinghouseUploadDao_Count_Call {
+	return &MockClearinghouseUploadDao_Count_Call{Call: _e.mock.On("Count", ctx, params)}
 }
 
-func (_c *MockClearinghouseUploadDao_Count_Call) Run(run func(ctx context.Context, orgID *string)) *MockClearinghouseUploadDao_Count_Call {
+func (_c *MockClearinghouseUploadDao_Count_Call) Run(run func(ctx context.Context, params ListClearinghouseUploadsParams)) *MockClearinghouseUploadDao_Count_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *string
+		var arg1 ListClearinghouseUploadsParams
 		if args[1] != nil {
-			arg1 = args[1].(*string)
+			arg1 = args[1].(ListClearinghouseUploadsParams)
 		}
 		run(
 			arg0,
@@ -12961,7 +12961,7 @@ func (_c *MockClearinghouseUploadDao_Count_Call) Return(n int64, err error) *Moc
 	return _c
 }
 
-func (_c *MockClearinghouseUploadDao_Count_Call) RunAndReturn(run func(ctx context.Context, orgID *string) (int64, error)) *MockClearinghouseUploadDao_Count_Call {
+func (_c *MockClearinghouseUploadDao_Count_Call) RunAndReturn(run func(ctx context.Context, params ListClearinghouseUploadsParams) (int64, error)) *MockClearinghouseUploadDao_Count_Call {
 	_c.Call.Return(run)
 	return _c
 }

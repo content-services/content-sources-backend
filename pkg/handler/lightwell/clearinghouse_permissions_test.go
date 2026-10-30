@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,14 @@ type clearinghouseFlags struct {
 }
 
 func TestClearinghouseCallerPermissions(t *testing.T) {
+	saved := config.Get().Clients.Lightwell.ClearinghouseMapping
+	t.Cleanup(func() {
+		config.Get().Clients.Lightwell.ClearinghouseMapping = saved
+	})
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
+		`{"CidOrgId":{"CID-1":"org"},"CidTam":{"CID-1":["reader","author"]}}`,
+	)
+
 	denied := errors.New("denied")
 	author := clearinghouseCaller{orgID: "org", username: "author", readErr: denied}
 	orgMember := clearinghouseCaller{orgID: "org", username: "member", readErr: denied}

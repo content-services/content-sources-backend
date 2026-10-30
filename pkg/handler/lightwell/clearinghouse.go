@@ -389,7 +389,7 @@ func (h *ClearinghouseHandler) submitSubmission(c echo.Context) error {
 // processSubmission godoc
 // @Summary      Process a clearinghouse submission
 // @ID           processClearinghouseSubmission
-// @Description  Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature.
+// @Description  Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature, and the caller must be listed on the submission's CID.
 // @Tags         lightwell
 // @Produce      json
 // @Param        uuid path string true "Clearinghouse submission UUID"
@@ -433,7 +433,7 @@ func (h *ClearinghouseHandler) processSubmission(c echo.Context) error {
 // listSubmissions godoc
 // @Summary      List clearinghouse submissions
 // @ID           listClearinghouseSubmissions
-// @Description  Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still pending. Callers with Lightwell clearinghouse read see every submission. File contents are not included.
+// @Description  Customers with Lightwell clearinghouse see every submission in their org, including submissions that are still pending. Callers with Lightwell clearinghouse read see submissions for CIDs that list their username. File contents are not included.
 // @Tags         lightwell
 // @Produce      json
 // @Param        limit  query int false "Number of items to include in response. Default value: 100."
@@ -444,20 +444,16 @@ func (h *ClearinghouseHandler) processSubmission(c echo.Context) error {
 // @Router       /clearinghouse/submissions [get]
 func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 	caller := newClearinghouseCaller(c)
-	orgFilter, err := caller.visibilityOrgFilter()
+	page := clearinghousePage(c)
+	params, err := caller.listParams(page)
 	if err != nil {
 		return err
 	}
-	page := clearinghousePage(c)
-	uploads, err := h.Uploads.List(c.Request().Context(), dao.ListClearinghouseUploadsParams{
-		OrgID:  orgFilter,
-		Limit:  page.limit,
-		Offset: page.offset,
-	})
+	uploads, err := h.Uploads.List(c.Request().Context(), params)
 	if err != nil {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submissions")
 	}
-	total, err := h.Uploads.Count(c.Request().Context(), orgFilter)
+	total, err := h.Uploads.Count(c.Request().Context(), params)
 	if err != nil {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submissions")
 	}
@@ -487,7 +483,7 @@ func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 // getSubmission godoc
 // @Summary      Get a clearinghouse submission
 // @ID           getClearinghouseSubmission
-// @Description  Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch any submission. File contents are not included.
+// @Description  Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch a submission when their username is listed on its CID. File contents are not included.
 // @Tags         lightwell
 // @Produce      json
 // @Param        uuid path string true "Clearinghouse submission UUID"
@@ -512,7 +508,7 @@ func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
 // downloadSubmission godoc
 // @Summary      Download a clearinghouse submission
 // @ID           downloadClearinghouseSubmission
-// @Description  Download the file that was uploaded when the clearinghouse submission was created. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.
+// @Description  Download the file that was uploaded when the clearinghouse submission was created. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed and their username is listed on its CID. Customers, including the author, cannot download it.
 // @Tags         lightwell
 // @Produce      application/octet-stream
 // @Param        uuid path string true "Clearinghouse submission UUID"
@@ -537,7 +533,7 @@ func (h *ClearinghouseHandler) downloadSubmission(c echo.Context) error {
 // downloadSubmissionArchive godoc
 // @Summary      Download a clearinghouse submission archive
 // @ID           downloadClearinghouseSubmissionArchive
-// @Description  Download the submission file and every other file in the submission as a zip archive. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.
+// @Description  Download the submission file and every other file in the submission as a zip archive. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed and their username is listed on its CID. Customers, including the author, cannot download it.
 // @Tags         lightwell
 // @Produce      application/zip
 // @Param        uuid path string true "Clearinghouse submission UUID"
@@ -625,7 +621,7 @@ func clearinghouseArchiveFiles(files []dao.ClearinghouseUploadFile, submissionFi
 // downloadSubmissionFile godoc
 // @Summary      Download a clearinghouse submission file
 // @ID           downloadClearinghouseSubmissionFile
-// @Description  Download a file stored with a clearinghouse submission. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.
+// @Description  Download a file stored with a clearinghouse submission. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed and their username is listed on its CID. Customers, including the author, cannot download it.
 // @Tags         lightwell
 // @Produce      application/octet-stream
 // @Param        uuid     path string true "Clearinghouse submission UUID"
@@ -865,10 +861,6 @@ func openClearinghouseFile(file preparedClearinghouseFile) (multipart.File, int6
 }
 
 func (h *ClearinghouseHandler) visibleUpload(c echo.Context, caller clearinghouseCaller) (dao.ClearinghouseUpload, error) {
-	orgFilter, err := caller.visibilityOrgFilter()
-	if err != nil {
-		return dao.ClearinghouseUpload{}, err
-	}
 	uploadID, err := parseClearinghouseUUID(c.Param("uuid"))
 	if err != nil {
 		return dao.ClearinghouseUpload{}, err
@@ -877,7 +869,11 @@ func (h *ClearinghouseHandler) visibleUpload(c echo.Context, caller clearinghous
 	if err != nil {
 		return dao.ClearinghouseUpload{}, clearinghouseStoreError(err, "Error fetching clearinghouse submission")
 	}
-	if orgFilter != nil && upload.OrgID != *orgFilter {
+	allowed, err := caller.allowsOrg(upload.OrgID)
+	if err != nil {
+		return dao.ClearinghouseUpload{}, err
+	}
+	if !allowed {
 		return dao.ClearinghouseUpload{}, ce.NewErrorResponse(http.StatusNotFound, "Error fetching clearinghouse submission", "Submission not found")
 	}
 	return upload, nil

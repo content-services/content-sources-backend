@@ -15,7 +15,7 @@ type Querier interface {
 	CountAdvisoriesByRepo(ctx context.Context, repositoryConfigUuid uuid.UUID) (int64, error)
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
-	CountClearinghouseUploads(ctx context.Context, orgID *string) (int64, error)
+	CountClearinghouseUploads(ctx context.Context, arg CountClearinghouseUploadsParams) (int64, error)
 	CountStoredPackageContent(ctx context.Context, repositoryConfigurationUuid uuid.UUID) (CountStoredPackageContentRow, error)
 	CreateClearinghouseUpload(ctx context.Context, arg CreateClearinghouseUploadParams) (ClearinghouseUpload, error)
 	CreateClearinghouseUploadFile(ctx context.Context, arg CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)

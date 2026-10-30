@@ -349,7 +349,7 @@ type ClearinghouseUploadDao interface {
 	Get(ctx context.Context, uploadID uuid.UUID) (ClearinghouseUpload, error)
 	Delete(ctx context.Context, uploadID uuid.UUID) error
 	List(ctx context.Context, params ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error)
-	Count(ctx context.Context, orgID *string) (int64, error)
+	Count(ctx context.Context, params ListClearinghouseUploadsParams) (int64, error)
 	CreateFile(ctx context.Context, params CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)
 	CreateFiles(ctx context.Context, params []CreateClearinghouseUploadFileParams, afterCommit func([]ClearinghouseUploadFile) error) ([]ClearinghouseUploadFile, error)
 	DeleteFile(ctx context.Context, fileID uuid.UUID) error
