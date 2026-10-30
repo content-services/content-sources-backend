@@ -391,6 +391,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -794,6 +800,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -1163,6 +1175,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -1519,6 +1537,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -1880,6 +1904,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -2240,6 +2270,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -2604,6 +2640,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -2965,6 +3007,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -3323,6 +3371,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -3678,6 +3732,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -4037,6 +4097,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -4395,6 +4461,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -4752,6 +4824,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -5134,6 +5212,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -5492,6 +5576,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -5869,6 +5959,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -6223,6 +6319,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -6579,6 +6681,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -6933,6 +7041,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -7289,6 +7403,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -7643,6 +7763,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -7999,6 +8125,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -8354,6 +8486,12 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
+                    optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
               - name: JFROG_BRIDGE_CATALOG_TOKEN
@@ -8708,6 +8846,12 @@ objects:
                   secretKeyRef:
                     name: lightwell-content-sources-password
                     key: password
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+                valueFrom:
+                  secretKeyRef:
+                    name: lightwell-stams-mappings
+                    key: mappings
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}

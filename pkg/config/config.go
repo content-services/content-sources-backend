@@ -156,6 +156,9 @@ type Lightwell struct {
 	Username string
 	Password string
 	S3       S3 `mapstructure:"s3"`
+	// ClearinghouseMappings is the raw JSON document from the
+	// lightwell-stams mappings secret (app-interface/lightwell-stams/<env>/mappings).
+	ClearinghouseMappings string `mapstructure:"clearinghouse_mappings"`
 }
 
 type S3 struct {
@@ -544,6 +547,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.secret_key", "")
 	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.region", "")
 	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.file_prefix", "")
+	v.SetDefault("clients.lightwell.clearinghouse_mappings", "")
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
