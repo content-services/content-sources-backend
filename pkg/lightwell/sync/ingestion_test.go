@@ -111,10 +111,10 @@ func TestIngestorBatchLoadsRelationships(t *testing.T) {
 			"BATCH-1": {Key: "BATCH-1", Fields: map[string]json.RawMessage{"parent": json.RawMessage(`{"key":"EPIC-1"}`)}},
 			"BATCH-2": {Key: "BATCH-2", Fields: map[string]json.RawMessage{"parent": json.RawMessage(`{"key":"EPIC-2"}`)}},
 			"EPIC-1": {Key: "EPIC-1", Fields: map[string]json.RawMessage{
-				"customfield_account": json.RawMessage(`["111"]`),
+				"customfield_account": json.RawMessage(`["CID-111"]`),
 			}},
 			"EPIC-2": {Key: "EPIC-2", Fields: map[string]json.RawMessage{
-				"customfield_account": json.RawMessage(`["222"]`),
+				"customfield_account": json.RawMessage(`["CID-222"]`),
 			}},
 		},
 	}
@@ -132,8 +132,8 @@ func TestIngestorBatchLoadsRelationships(t *testing.T) {
 	}, jira.searchJQLs)
 	assert.Equal(t, 2, summary.Inserted)
 	require.Len(t, store.saved, 2)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "111"}}, store.saved[0].Tickets)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "222"}}, store.saved[1].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "CID-111"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "CID-222"}}, store.saved[1].Tickets)
 }
 
 func TestIngestorChunksRelationshipBatchSearches(t *testing.T) {
@@ -166,7 +166,7 @@ func TestIngestorFallsBackWhenRelationshipBatchSearchFails(t *testing.T) {
 		issues: map[string]jira_client.JiraIssue{
 			"BATCH-1": {Key: "BATCH-1", Fields: map[string]json.RawMessage{"parent": json.RawMessage(`{"key":"EPIC-1"}`)}},
 			"EPIC-1": {Key: "EPIC-1", Fields: map[string]json.RawMessage{
-				"customfield_account": json.RawMessage(`["111"]`),
+				"customfield_account": json.RawMessage(`["CID-111"]`),
 			}},
 		},
 	}
@@ -178,7 +178,7 @@ func TestIngestorFallsBackWhenRelationshipBatchSearchFails(t *testing.T) {
 	assert.Equal(t, 1, summary.Inserted)
 	assert.Equal(t, []string{"BATCH-1", "EPIC-1"}, jira.issueCalls)
 	require.Len(t, store.saved, 1)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "111"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "CID-111"}}, store.saved[0].Tickets)
 }
 
 func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
@@ -193,7 +193,7 @@ func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
 		}]`),
 	}}
 	epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-		"customfield_account": json.RawMessage(`["123",{"value":"456"},"123"]`),
+		"customfield_account": json.RawMessage(`["CID-123",{"value":"456"},"CID-123"]`),
 		"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
 	}}
 
@@ -213,7 +213,7 @@ func TestIngestorSyncPaginatesAndLoadsNewRelationships(t *testing.T) {
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, "LTWL-1", store.saved[0].VulnerabilityKey)
 	assert.Equal(t, "LW-0000-0001", store.saved[0].VulnerabilityID)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "123"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "CID-123"}}, store.saved[0].Tickets)
 	assert.Equal(t, []string{"", "next", "", "", ""}, jira.searchCalls)
 	assert.Empty(t, jira.issueCalls)
 }
@@ -226,7 +226,7 @@ func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
 		"parent": json.RawMessage(`{"key":"EPIC-1"}`),
 	}}
 	epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-		"customfield_account": json.RawMessage(`["123"]`),
+		"customfield_account": json.RawMessage(`["CID-123"]`),
 		"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
 	}}
 	jira := &fakeJira{
@@ -241,7 +241,7 @@ func TestIngestorReloadsRelationshipsForExistingIssue(t *testing.T) {
 	assert.Equal(t, SyncSummary{Unchanged: 1}, summary)
 	assert.Empty(t, jira.issueCalls)
 	require.Len(t, store.saved, 1)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "123"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "CID-123"}}, store.saved[0].Tickets)
 }
 
 func TestIngestorLoadsMultipleBatchRelationships(t *testing.T) {
@@ -258,11 +258,11 @@ func TestIngestorLoadsMultipleBatchRelationships(t *testing.T) {
 		"parent": json.RawMessage(`{"key":"EPIC-2"}`),
 	}}
 	epic1 := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-		"customfield_account": json.RawMessage(`["111"]`),
+		"customfield_account": json.RawMessage(`["CID-111"]`),
 		"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
 	}}
 	epic2 := jira_client.JiraIssue{Key: "EPIC-2", Fields: map[string]json.RawMessage{
-		"customfield_account": json.RawMessage(`["222"]`),
+		"customfield_account": json.RawMessage(`["CID-222"]`),
 		"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-2"}}]`),
 	}}
 	jira := &fakeJira{
@@ -276,8 +276,8 @@ func TestIngestorLoadsMultipleBatchRelationships(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []dao.LightwellVulnerabilityTicket{
-		{TicketID: "TICKET-1", CustomerID: "111"},
-		{TicketID: "TICKET-2", CustomerID: "222"},
+		{TicketID: "TICKET-1", CustomerID: "CID-111"},
+		{TicketID: "TICKET-2", CustomerID: "CID-222"},
 	}, store.saved[0].Tickets)
 }
 
@@ -291,7 +291,7 @@ func TestIngestorStoresEpicFromBatchParent(t *testing.T) {
 		"parent": json.RawMessage(`{"key":"EPIC-1"}`),
 	}}
 	epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-		"customfield_account": json.RawMessage(`["789"]`),
+		"customfield_account": json.RawMessage(`["CID-789"]`),
 		"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
 	}}
 	jira := &fakeJira{
@@ -305,7 +305,7 @@ func TestIngestorStoresEpicFromBatchParent(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []string{"parent", "issuelinks"}, jira.searchFields[1])
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "789"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "CID-789"}}, store.saved[0].Tickets)
 }
 
 func TestIngestorLinksCustomerWithoutSupportTicket(t *testing.T) {
@@ -318,7 +318,7 @@ func TestIngestorLinksCustomerWithoutSupportTicket(t *testing.T) {
 		"parent": json.RawMessage(`{"key":"EPIC-1"}`),
 	}}
 	epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-		"customfield_account": json.RawMessage(`["789"]`),
+		"customfield_account": json.RawMessage(`["CID-789"]`),
 	}}
 	jira := &fakeJira{
 		fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
@@ -330,7 +330,7 @@ func TestIngestorLinksCustomerWithoutSupportTicket(t *testing.T) {
 	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "789"}}, store.saved[0].Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "CID-789"}}, store.saved[0].Tickets)
 }
 
 // TestIngestorUsesCIDLabelsForCustomers covers the new behaviour where the
@@ -349,13 +349,14 @@ func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
 		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
 		require.NoError(t, err)
 		require.Len(t, store.saved, 1)
-		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "555"}}, store.saved[0].Tickets)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "CID-555"}}, store.saved[0].Tickets)
 		assert.Empty(t, jira.issueCalls)
 	})
 
 	t.Run("label without matching epic keeps customer but drops the ticket", func(t *testing.T) {
+		logs := captureLogs(t)
 		vulnerability := validJiraIssue("LTWL-1")
-		// The label CID does not match the epic account number (engineering IVT).
+		// The epic account number has no CID- prefix, so it is ignored.
 		vulnerability.Fields["labels"] = json.RawMessage(`["CID-999"]`)
 		vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
 		batch := jira_client.JiraIssue{Key: "BATCH-1", Fields: map[string]json.RawMessage{
@@ -375,10 +376,15 @@ func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
 		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
 		require.NoError(t, err)
 		require.Len(t, store.saved, 1)
-		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "999"}}, store.saved[0].Tickets)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "CID-999"}}, store.saved[0].Tickets)
+		assert.Contains(t, logs.String(), ignoredCustomerIDLog)
+		assert.Contains(t, logs.String(), `"issue":"LTWL-1"`)
+		assert.Contains(t, logs.String(), `"epic":"EPIC-1"`)
+		assert.Contains(t, logs.String(), `"account_number":"789"`)
 	})
 
 	t.Run("epic account number with CID- prefix pairs the ticket", func(t *testing.T) {
+		logs := captureLogs(t)
 		vulnerability := validJiraIssue("LTWL-1")
 		vulnerability.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
 		vulnerability.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
@@ -400,7 +406,8 @@ func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
 		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
 		require.NoError(t, err)
 		require.Len(t, store.saved, 1)
-		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "663171"}}, store.saved[0].Tickets)
+		assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "TICKET-1", CustomerID: "CID-663171"}}, store.saved[0].Tickets)
+		assert.NotContains(t, logs.String(), ignoredCustomerIDLog)
 	})
 
 	t.Run("multiple labels pair only the matching epic ticket", func(t *testing.T) {
@@ -411,7 +418,7 @@ func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
 			"parent": json.RawMessage(`{"key":"EPIC-1"}`),
 		}}
 		epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-			"customfield_account": json.RawMessage(`["111"]`),
+			"customfield_account": json.RawMessage(`["CID-111"]`),
 			"issuelinks":          json.RawMessage(`[{"type":{"inward":"is triggered by"},"inwardIssue":{"key":"TICKET-1"}}]`),
 		}}
 		jira := &fakeJira{
@@ -425,8 +432,8 @@ func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, store.saved, 1)
 		assert.Equal(t, []dao.LightwellVulnerabilityTicket{
-			{TicketID: "TICKET-1", CustomerID: "111"},
-			{TicketID: "", CustomerID: "999"},
+			{TicketID: "TICKET-1", CustomerID: "CID-111"},
+			{TicketID: "", CustomerID: "CID-999"},
 		}, store.saved[0].Tickets)
 	})
 
@@ -437,7 +444,7 @@ func TestIngestorUsesCIDLabelsForCustomers(t *testing.T) {
 			"parent": json.RawMessage(`{"key":"EPIC-1"}`),
 		}}
 		epic := jira_client.JiraIssue{Key: "EPIC-1", Fields: map[string]json.RawMessage{
-			"customfield_account": json.RawMessage(`["789"]`),
+			"customfield_account": json.RawMessage(`["CID-789"]`),
 		}}
 		jira := &fakeJira{
 			fields: []jira_client.JiraField{{ID: "customfield_account", Name: "Account Number"}},
@@ -1066,7 +1073,7 @@ func TestIngestorInheritsCIDForDoneSibling(t *testing.T) {
 	_, err := NewIngestor(jira, store, nil, nil, WithPromoteByJiraState(true)).Sync(context.Background())
 	require.NoError(t, err)
 	saved2 := savedByKey(store, "LTWL-2")
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "663171"}}, saved2.Tickets)
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{CustomerID: "CID-663171"}}, saved2.Tickets)
 	assert.Contains(t, jira.searchJQLs, ComponentUpgradeJQL)
 }
 
@@ -1105,7 +1112,7 @@ func TestIngestorDedupesOwnAndInheritedCID(t *testing.T) {
 
 	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "663171"}},
+	assert.Equal(t, []dao.LightwellVulnerabilityTicket{{TicketID: "", CustomerID: "CID-663171"}},
 		savedByKey(store, "LTWL-1").Tickets)
 }
 

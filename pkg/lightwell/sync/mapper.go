@@ -286,13 +286,12 @@ func normalizedValues(raw json.RawMessage) []string {
 	return values
 }
 
-// customerLabelPattern matches a customer account label of the form CID-<number>
-// on a vulnerability (IVT) issue. The account number is always digits.
+// customerLabelPattern matches a customer account of the form CID-<number>.
+// The account number is always digits.
 var customerLabelPattern = regexp.MustCompile(`(?i)^CID-(\d+)$`)
 
-// customerIDsFromLabels returns the distinct customer account numbers encoded in
-// the vulnerability's labels as CID-<number>. The stored value is the bare
-// number, matching the Account Number custom field it replaces.
+// customerIDsFromLabels returns the distinct customer ids encoded in the
+// vulnerability's labels as CID-<number>. The stored value keeps the CID- prefix.
 func customerIDsFromLabels(raw json.RawMessage) []string {
 	var labels []string
 	if json.Unmarshal(raw, &labels) != nil {
@@ -305,7 +304,7 @@ func customerIDsFromLabels(raw json.RawMessage) []string {
 		if match == nil {
 			continue
 		}
-		id := match[1]
+		id := "CID-" + match[1]
 		if _, exists := seen[id]; exists {
 			continue
 		}
@@ -315,16 +314,14 @@ func customerIDsFromLabels(raw json.RawMessage) []string {
 	return ids
 }
 
-// normalizeCustomerID strips the "CID-" prefix so a value matches the stored
-// customer id. Both vulnerability labels and epic Account Number fields carry the
-// customer as "CID-<number>", but customers are stored as the bare number, so
-// this lets an epic's account number be paired with a label-derived customer id.
+// normalizeCustomerID returns the stored customer id, CID-<number>. Values that
+// do not start with that prefix are not customer ids and return an empty string.
 func normalizeCustomerID(value string) string {
 	trimmed := strings.TrimSpace(value)
 	if match := customerLabelPattern.FindStringSubmatch(trimmed); match != nil {
-		return match[1]
+		return "CID-" + match[1]
 	}
-	return trimmed
+	return ""
 }
 
 const severityLabelPrefix = "severity::"
