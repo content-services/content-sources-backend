@@ -239,6 +239,17 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysisManifestEmpty() {
 	err := s.newTask(ctx, &payload).Run()
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "no packages found in manifest")
+	assert.Contains(s.T(), err.Error(), "containing a package inventory")
+}
+
+func (s *CoverageAnalysisSuite) TestCoverageAnalysisBuildProvenance() {
+	ctx := context.Background()
+	payload := s.mockFetchManifest(ctx, uuid.NewString(), "sbom.json", []byte(
+		`{"_type":"https://in-toto.io/Statement/v0.1","predicateType":"https://slsa.dev/provenance/v0.2","predicate":{}}`))
+	err := s.newTask(ctx, &payload).Run()
+	require.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "build provenance attestation")
+	assert.Contains(s.T(), err.Error(), "SPDX or CycloneDX SBOM")
 }
 
 func (s *CoverageAnalysisSuite) TestCoverageAnalysisNoPURLs() {

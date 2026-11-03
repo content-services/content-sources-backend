@@ -150,7 +150,7 @@ func (c *CoverageAnalysis) Run() error {
 				parsedPackages.SkippedEntries, parsedPackages.InputFormat,
 			)
 		}
-		return fmt.Errorf("no packages found in manifest")
+		return fmt.Errorf("no packages found in manifest; upload an SPDX or CycloneDX SBOM containing a package inventory, or a supported package manifest")
 	}
 
 	err = c.daoReg.CoverageReport.UpdateCoverageReportStatus(c.ctx, c.payload.CoverageReportUUID, config.TaskStatusRunning, nil)
