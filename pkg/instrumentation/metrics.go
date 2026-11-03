@@ -59,7 +59,8 @@ type Metrics struct {
 	TemplatesAgeAverage                            prometheus.Gauge
 	CertificateExpiryDays                          prometheus.GaugeVec
 	PulpTransformLogsDaysSinceSuccess              prometheus.Gauge
-	reg                                            *prometheus.Registry
+	CoprIngestMetrics
+	reg *prometheus.Registry
 }
 
 // See: https://consoledot.pages.redhat.com/docs/dev/platform-documentation/understanding-slo.html
@@ -175,6 +176,7 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 			Name:      PulpTransformLogsDaysSinceSuccess,
 			Help:      "Number of days since the pulp logs were successful in being parsed",
 		}),
+		CoprIngestMetrics: newCoprIngestMetrics(reg),
 	}
 
 	reg.MustRegister(collectors.NewBuildInfoCollector())
