@@ -44,3 +44,13 @@ Stage and prod can import Maven through Pulp. Python and npm go through Tang, an
 `resolves_cve_id` matches an advisory when `la.package_name = p.name` and `pv.version` is one of `fixed_versions`. Maven advisories store `package_name` as `group:artifact`. The package row stores the artifact in `name` and the group in `package_group`, so that name comparison does not match Maven until the predicate changes. npm advisories store `package_name` as the purl name. The package row stores the scope in `package_group` (`-` when the package is unscoped) and the package name in `name`. Do not store the Maven coordinate or `scope/name` in `name`.
 
 `pv.version` is the full stored string, including a rebuild suffix, so it can match `fixed_versions` that contain `rhlw`. The public list returns `version` as the upstream part and `release` as the suffix.
+
+## Reads that still reach Pulp
+
+Zest is the Pulp HTTP client. Tang reads Pulp's Postgres. These are the Lightwell reads that still go there.
+
+Package catalog import (`import-lightwell-packages`) is the read that fills the mirror, so the mirror cannot replace it. Maven comes from Zest (`ListMavenFlatPackages`). Python and npm come from Tang (`PythonPackageDetailList`, `NpmPackageList`). Zest also resolves the repository and its latest version, so the job can skip a catalog fetch when that version is unchanged.
+
+Repository import (`pkg/external_repos/lightwell_repos_importer.go`) asks Zest for the distribution URL (`FindGenericDistributionByBasePath`). The allowlist already has the name, content type, base path, and feature name. The mirror does not store that URL, and this import creates the repository rows the mirror uses. A missing distribution fails the import, so an unpublished repository is not recorded.
+
+The coverage catalog (`pkg/coverage/catalog/catalog.go`) still loads from Pulp when the catalog source is `pulp`, which is the default. Java comes from Zest (`ListMavenPackages`) and Python from Tang (`PythonPackageList`). No client uses this path. It will be removed later.
