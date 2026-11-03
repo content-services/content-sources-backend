@@ -1680,6 +1680,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.SecurityLevel = repoConfig.Repository.SecurityLevel
 	apiRepo.PublishedDistURL = repoConfig.Repository.PublishedDistURL
 	apiRepo.PublishedDistBasePath = repoConfig.Repository.PublishedDistBasePath
+	apiRepo.LastImportRepositoryVersion = repoConfig.LastImportRepositoryVersion
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {

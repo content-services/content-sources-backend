@@ -335,6 +335,7 @@ type LightwellPackageDao interface {
 	GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error)
 	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
 	InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error)
+	InternalOnlyListStoredPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) ([]string, error)
 }
 
 type ClearinghouseUploadDao interface {

@@ -47,6 +47,7 @@ type Querier interface {
 	ListLightwellPythonPackageVersions(ctx context.Context, arg ListLightwellPythonPackageVersionsParams) ([]ListLightwellPythonPackageVersionsRow, error)
 	ListLightwellRepositoryPackages(ctx context.Context, arg ListLightwellRepositoryPackagesParams) ([]ListLightwellRepositoryPackagesRow, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
+	ListStoredPackageVersions(ctx context.Context, arg ListStoredPackageVersionsParams) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)
 	ProcessClearinghouseUpload(ctx context.Context, arg ProcessClearinghouseUploadParams) (ClearinghouseUpload, error)
 	RecordBeaconSync(ctx context.Context, lastProcessedAt time.Time) error

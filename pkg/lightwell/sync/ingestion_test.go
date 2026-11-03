@@ -12,9 +12,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/tang/pkg/tangy"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -838,24 +836,13 @@ func TestIngestorPublicationFlow(t *testing.T) {
 			PackageName: "org.example:demo", FixedVersions: []string{"1.2.3.rhlw-00001", "1.2.3.rhlw-00002"},
 		}}}
 		repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{
-			{PublishedDistBasePath: "java/remediated", ContentType: "maven"},
-			{PublishedDistBasePath: "python/predisclosure", ContentType: "python"},
+			importedPublicationRepo("java-remediated", "java/remediated", "maven"),
+			importedPublicationRepo("python-predisclosure", "python/predisclosure", "python"),
 		})
-		resolver := pulp_client.NewMockPulpClient(t)
-		expectPublicationRepository(resolver, ctx, "java/remediated")
-		expectPublicationRepository(resolver, ctx, "python/predisclosure")
-		tang := tangy.NewMockTangy(t)
-		tang.On("MavenVersionsList", ctx, "java/remediated-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).Return(tangy.MavenVersionsResponse{
-			Results: []tangy.MavenVersionsItem{{
-				Version: "1.2.3",
-				Builds:  []tangy.MavenBuildInfo{{Version: "1.2.3", Release: "rhlw-00002"}},
-			}},
-			Total: 1,
-		}, nil).Once()
-		tang.On("PythonPackageVersionsGet", ctx, "python/predisclosure-href", "zope-interface").Return([]tangy.PythonPackageDetail{{
-			Version: "6.0-rhlw-00001",
-		}}, nil).Once()
-		verifier := NewPublicationPackageVerifier(repositories, resolver, tang)
+		packages := dao.NewMockLightwellPackageDao(t)
+		expectStoredVersions(packages, ctx, "java-remediated", "org.example", "demo", []string{"1.2.3.rhlw-00002"}, nil)
+		expectStoredVersions(packages, ctx, "python-predisclosure", "", "zope-interface", []string{"6.0-rhlw-00001"}, nil)
+		verifier := NewPublicationPackageVerifier(repositories, packages)
 
 		summary, err := NewIngestor(jira, store, advisories, verifier).Sync(ctx)
 
@@ -880,15 +867,12 @@ func TestIngestorPublicationFlow(t *testing.T) {
 			RepoName: "java/remediated", AdvisoryID: "LW-0000-0001-1.2.3",
 			PackageName: "org.example:demo", FixedVersions: []string{"1.2.3.advisory-00001"},
 		}}}
-		repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{{
-			PublishedDistBasePath: "java/remediated", ContentType: "maven",
-		}})
-		resolver := pulp_client.NewMockPulpClient(t)
-		expectPublicationRepository(resolver, ctx, "java/remediated")
-		tang := tangy.NewMockTangy(t)
-		tang.On("MavenVersionsList", ctx, "java/remediated-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).
-			Return(tangy.MavenVersionsResponse{}, errors.New("Tang unavailable")).Once()
-		verifier := NewPublicationPackageVerifier(repositories, resolver, tang)
+		repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{
+			importedPublicationRepo("java-remediated", "java/remediated", "maven"),
+		})
+		packages := dao.NewMockLightwellPackageDao(t)
+		expectStoredVersions(packages, ctx, "java-remediated", "org.example", "demo", nil, errors.New("mirror unavailable"))
+		verifier := NewPublicationPackageVerifier(repositories, packages)
 
 		summary, err := NewIngestor(jira, store, advisories, verifier).Sync(ctx)
 
@@ -896,7 +880,7 @@ func TestIngestorPublicationFlow(t *testing.T) {
 		assert.Equal(t, 1, summary.Inserted)
 		assert.Zero(t, summary.Failed)
 		require.Len(t, summary.Warnings, 1)
-		assert.Contains(t, summary.Warnings[0], "Tang unavailable")
+		assert.Contains(t, summary.Warnings[0], "mirror unavailable")
 		require.Len(t, store.saved, 1)
 		assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
 		assert.Equal(t, []string{"1.2.3.advisory-00001"}, store.saved[0].PublishedVersions)

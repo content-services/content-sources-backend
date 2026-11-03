@@ -841,3 +841,39 @@ func (q *Queries) ListLightwellRepositoryPackages(ctx context.Context, arg ListL
 	}
 	return items, nil
 }
+
+const listStoredPackageVersions = `-- name: ListStoredPackageVersions :many
+SELECT pv.version
+FROM lightwell_package_versions pv
+JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+WHERE p.repository_configuration_uuid = $1::uuid
+    AND p.package_group = $2
+    AND p.name = $3
+ORDER BY pv.version
+`
+
+type ListStoredPackageVersionsParams struct {
+	RepositoryConfigurationUuid uuid.UUID `json:"repository_configuration_uuid"`
+	PackageGroup                string    `json:"package_group"`
+	Name                        string    `json:"name"`
+}
+
+func (q *Queries) ListStoredPackageVersions(ctx context.Context, arg ListStoredPackageVersionsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listStoredPackageVersions, arg.RepositoryConfigurationUuid, arg.PackageGroup, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			return nil, err
+		}
+		items = append(items, version)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
