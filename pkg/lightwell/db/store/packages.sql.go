@@ -12,6 +12,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countStoredPackageContent = `-- name: CountStoredPackageContent :one
+SELECT
+    (SELECT COUNT(*) FROM lightwell_packages p
+        WHERE p.repository_configuration_uuid = $1::uuid) AS package_count,
+    (SELECT COUNT(DISTINCT (p.package_group, p.name, pv.upstream_version))
+        FROM lightwell_package_versions pv
+        JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+        WHERE p.repository_configuration_uuid = $1::uuid) AS version_count,
+    (SELECT COUNT(*) FROM lightwell_package_versions pv
+        WHERE pv.repository_configuration_uuid = $1::uuid) AS build_count
+`
+
+type CountStoredPackageContentRow struct {
+	PackageCount int64 `json:"package_count"`
+	VersionCount int64 `json:"version_count"`
+	BuildCount   int64 `json:"build_count"`
+}
+
+func (q *Queries) CountStoredPackageContent(ctx context.Context, repositoryConfigurationUuid uuid.UUID) (CountStoredPackageContentRow, error) {
+	row := q.db.QueryRow(ctx, countStoredPackageContent, repositoryConfigurationUuid)
+	var i CountStoredPackageContentRow
+	err := row.Scan(&i.PackageCount, &i.VersionCount, &i.BuildCount)
+	return i, err
+}
+
 const listLensCatalog = `-- name: ListLensCatalog :many
 SELECT
     r.content_type AS ecosystem,

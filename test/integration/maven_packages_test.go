@@ -17,8 +17,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -48,6 +48,8 @@ func (s *MavenPackagesSuite) SetupTest() {
 
 	err := db.Connect()
 	require.NoError(s.T(), err)
+	// Connect replaces the sqlc pool. Refresh the registry so it does not keep the closed one.
+	s.dao = dao.GetDaoRegistry(db.DB)
 
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -487,35 +489,61 @@ func (s *MavenPackagesSuite) TestContentCountsForMavenRepository() {
 
 	t := s.T()
 
-	// Create a Maven repository
 	mavenRepo := s.createMavenRepository(config.LightwellOrg)
 	repo := mavenRepo.repo
+	seedMirrorContentCounts(t, repo.UUID, []mirrorPackage{
+		{group: "org.example", name: "demo", versions: []mirrorVersion{
+			{version: "1.2.3.rhlw-00001", upstream: "1.2.3"},
+			{version: "1.2.3.rhlw-00002", upstream: "1.2.3"},
+		}},
+		{group: "org.example", name: "other", versions: []mirrorVersion{
+			{version: "9.9.9", upstream: "9.9.9"},
+		}},
+	})
 
-	s.seedMavenPackages(mavenRepo)
-
-	// Get domain and pulp client
-	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, config.LightwellOrg)
+	packageCount, buildCount, versionCount, err := s.dao.LightwellPackage.InternalOnlyCountStoredContent(s.ctx, repo.UUID)
 	require.NoError(t, err)
-	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	require.NoError(t, s.dao.Repository.InternalOnly_UpdateCounts(s.ctx, repo.RepositoryUUID, packageCount, buildCount, versionCount))
 
-	// Test GetContentCounts function
-
-	// Test UpdateContentCounts function
-	err = external_repos.UpdateContentCounts(
-		s.ctx,
-		s.dao,
-		pulpClient,
-		*config.Tang,
-		domainName,
-		false,
-	)
-
-	require.NoError(t, err)
-
-	// Verify the repository was updated in the database
 	updatedRepo, err := s.dao.RepositoryConfig.Fetch(s.ctx, repo.OrgID, repo.UUID)
 	require.NoError(t, err)
-	assert.Equal(t, 2, updatedRepo.PackageCount, "Package count should be updated in database")
-	assert.Equal(t, 2, updatedRepo.BuildCount, "Build count should be updated in database")
-	assert.Equal(t, 2, updatedRepo.VersionCount, "Version count should be updated in database")
+	assert.Equal(t, 2, updatedRepo.PackageCount)
+	assert.Equal(t, 3, updatedRepo.BuildCount)
+	assert.Equal(t, 2, updatedRepo.VersionCount)
+}
+
+type mirrorVersion struct {
+	version  string
+	upstream string
+}
+
+type mirrorPackage struct {
+	group    string
+	name     string
+	versions []mirrorVersion
+}
+
+func seedMirrorContentCounts(t *testing.T, repoConfigUUID string, packages []mirrorPackage) {
+	t.Helper()
+	for _, pkg := range packages {
+		row := models.LightwellPackage{
+			RepositoryConfigurationUUID: repoConfigUUID,
+			Name:                        pkg.name,
+			Group:                       pkg.group,
+		}
+		require.NoError(t, db.DB.Create(&row).Error)
+		t.Cleanup(func() {
+			_ = db.DB.Where("lightwell_package_uuid = ?", row.UUID).Delete(&models.LightwellPackageVersion{}).Error
+			_ = db.DB.Where("uuid = ?", row.UUID).Delete(&models.LightwellPackage{}).Error
+		})
+		for _, version := range pkg.versions {
+			require.NoError(t, db.DB.Create(&models.LightwellPackageVersion{
+				LightwellPackageUUID:        row.UUID,
+				RepositoryConfigurationUUID: repoConfigUUID,
+				Version:                     version.version,
+				UpstreamVersion:             version.upstream,
+				PublishedAt:                 "2026-09-25T00:00:00Z",
+			}).Error)
+		}
+	}
 }

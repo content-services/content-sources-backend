@@ -31,7 +31,7 @@ clean: ## Clean binaries and testbin generated
 
 .PHONY: run
 run: $(GO_OUTPUT)/content-sources ## Run the api & task workers locally
-	"$(GO_OUTPUT)/content-sources" api task-worker pulp-data-importer instrumentation mock_rbac
+	"$(GO_OUTPUT)/content-sources" api task-worker instrumentation mock_rbac
 
 .PHONY: process-repos
 process-repos: build

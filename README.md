@@ -232,7 +232,7 @@ The RBAC mock is started by the `mock_rbac` argument. `make run` includes it aut
 ```sh
 make run
 # equivalent to:
-./release/content-sources api task-worker pulp-data-importer instrumentation mock_rbac
+./release/content-sources api task-worker instrumentation mock_rbac
 ```
 
 If you start the binary yourself with a different set of components, append `mock_rbac` to enable the mock.
