@@ -30,8 +30,8 @@ clean: ## Clean binaries and testbin generated
 	@[ ! -e "$(GO_OUTPUT)" ] || for item in cmd/*; do rm -vf "$(GO_OUTPUT)/$${item##cmd/}"; done
 
 .PHONY: run
-run: $(GO_OUTPUT)/content-sources ## Run the api & task workers locally
-	"$(GO_OUTPUT)/content-sources" api task-worker instrumentation mock_rbac
+run: $(GO_OUTPUT)/content-sources ## Run the api, task workers & copr ingest locally
+	"$(GO_OUTPUT)/content-sources" api task-worker instrumentation mock_rbac copr-ingest
 
 .PHONY: process-repos
 process-repos: build
