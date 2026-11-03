@@ -22,6 +22,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// Test-only Copr org and Pulp domain, so the resources these tests leave behind stay apart
+// from the app's local Copr org and domain (clients.pulp.copr_org_id and copr_domain)
+const (
+	coprTestOrgID  = "copr-integration-test"
+	coprTestDomain = "cs-partner-integration-test"
+)
+
 type CreatePartnerSnapshotSuite struct {
 	Suite
 	dao            *dao.DaoRegistry
@@ -41,7 +48,11 @@ func (s *CreatePartnerSnapshotSuite) SetupTest() {
 	config.Get().Clients.Pulp.RepoContentGuards = true
 	config.Get().Clients.Pulp.GuardSubjectDn = "warlin.door"
 
-	// Initialize Copr domain pulp client
+	// Use the test-only Copr org and domain; the domain DAO maps the org to the domain
+	config.Get().Clients.Pulp.CoprOrgID = coprTestOrgID
+	config.Get().Clients.Pulp.CoprDomain = coprTestDomain
+
+	// Initialize the test domain pulp client
 	coprDomain := config.Get().Clients.Pulp.CoprDomain
 	s.coprPulpClient = pulp_client.GetPulpClientWithDomain(coprDomain)
 }
@@ -50,14 +61,14 @@ func TestCreatePartnerSnapshotSuite(t *testing.T) {
 	suite.Run(t, new(CreatePartnerSnapshotSuite))
 }
 
-// createPublicationInCoprDomain creates a repository and publication in the cs-partner domain
+// createPublicationInCoprDomain creates a repository and publication in the test domain
 // This simulates what Copr would have created
-func (s *CreatePartnerSnapshotSuite) createPublicationInCoprDomain() (publicationHref string, versionHref string) {
+func (s *CreatePartnerSnapshotSuite) createPublicationInCoprDomain() (publicationHref string, versionHref string, repoHref string) {
 	// Ensure the domain exists
 	_, err := s.coprPulpClient.LookupOrCreateDomain(s.ctx, config.Get().Clients.Pulp.CoprDomain)
 	require.NoError(s.T(), err)
 
-	// Create a repository in the cs-partner domain
+	// Create a repository in the test domain
 	repoName := "copr-test-repo-" + uuid2.NewString()
 	repoResp, err := s.coprPulpClient.CreateRpmRepository(s.ctx, repoName, nil)
 	require.NoError(s.T(), err)
@@ -78,28 +89,26 @@ func (s *CreatePartnerSnapshotSuite) createPublicationInCoprDomain() (publicatio
 
 	publicationHref = *pubHrefPtr
 	versionHref = *repoResp.LatestVersionHref
+	repoHref = *repoResp.PulpHref
 
-	return publicationHref, versionHref
+	return publicationHref, versionHref, repoHref
 }
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_NewRepository() {
-	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.Get().Clients.Pulp.CoprOrgID
 
-	// Create a publication in the cs-partner domain (simulating what Copr would have created)
-	publicationHref, versionHref := s.createPublicationInCoprDomain()
+	// Create a publication in the test domain (simulating what Copr would have created)
+	publicationHref, versionHref, coprRepoHref := s.createPublicationInCoprDomain()
 
 	// Now test create-partner-snapshot with a new repository name
 	partnerRepoName := "partner-repo-" + uuid2.NewString()
-	coprRepoHref := "/pulp/api/v3/repositories/rpm/rpm/" + uuid2.NewString() + "/"
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    publicationHref,
-		RepositoryName:     partnerRepoName,
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "test-project-123",
-		CoprRepositoryHref: coprRepoHref,
-		CoprBuildID:        "test-build-456",
+		PublicationHref:   publicationHref,
+		RepositoryName:    partnerRepoName,
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "test-project-123",
+		CoprBuildID:       "test-build-456",
 	}
 
 	task := queue.Task{
@@ -142,7 +151,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_NewRepository() {
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "test-build-456", createdSnapModel.CoprBuildID)
 
-	// Verify distribution was created in Pulp (in the cs-partner domain)
+	// Verify distribution was created in Pulp (in the test domain)
 	// Get the snapshot model to access distribution details
 	var partnerSnapModel models.Snapshot
 	err = db.DB.Where("uuid = ?", snaps.Data[0].UUID).First(&partnerSnapModel).Error
@@ -162,7 +171,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_NewRepository() {
 	err = s.getRequest(distPath, identity.Identity{OrgID: orgId, Internal: identity.Internal{OrgID: orgId}}, 200)
 	assert.NoError(s.T(), err)
 
-	// Verify publication exists in Pulp (in cs-partner domain)
+	// Verify publication exists in Pulp (in the test domain)
 	publication, err := s.coprPulpClient.FindRpmPublicationByVersion(s.ctx, versionHref)
 	require.NoError(s.T(), err)
 	assert.NotNil(s.T(), publication)
@@ -170,10 +179,10 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_NewRepository() {
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_ExistingRepository() {
 	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.Get().Clients.Pulp.CoprOrgID
 
-	// Create a publication in the cs-partner domain (simulating what Copr would have created)
-	publicationHref, _ := s.createPublicationInCoprDomain()
+	// Create a publication in the test domain (simulating what Copr would have created)
+	publicationHref, _, coprRepoHref := s.createPublicationInCoprDomain()
 
 	// Create a repository configuration first
 	partnerRepoName := "existing-partner-repo-" + uuid2.NewString()
@@ -189,19 +198,17 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_ExistingRepositor
 	require.NoError(s.T(), err)
 
 	// Set up Copr metadata on the existing repo
-	coprRepoHref := "/pulp/api/v3/repositories/rpm/rpm/" + uuid2.NewString() + "/"
 	err = s.dao.RepositoryConfig.InternalOnly_UpdateCoprMetadata(s.ctx, existingRepo.UUID, "existing-project-789", coprRepoHref)
 	require.NoError(s.T(), err)
 
-	// Now run create-partner-snapshot with the Copr repository href
+	// Now run create-partner-snapshot, the task resolves the Copr repository href from the publication
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    publicationHref,
-		RepositoryName:     partnerRepoName,
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "existing-project-789",
-		CoprRepositoryHref: coprRepoHref,
-		CoprBuildID:        "existing-build-999",
+		PublicationHref:   publicationHref,
+		RepositoryName:    partnerRepoName,
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "existing-project-789",
+		CoprBuildID:       "existing-build-999",
 	}
 
 	task := queue.Task{
@@ -227,7 +234,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_ExistingRepositor
 	require.NotEmpty(s.T(), snaps.Data)
 	assert.Equal(s.T(), publicationHref, snaps.Data[0].PublicationHref)
 
-	// Verify distribution exists in Pulp (in the cs-partner domain)
+	// Verify distribution exists in Pulp (in the test domain)
 	var existingSnapModel models.Snapshot
 	err = db.DB.Where("uuid = ?", snaps.Data[0].UUID).First(&existingSnapModel).Error
 	require.NoError(s.T(), err)
@@ -242,23 +249,20 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_ExistingRepositor
 }
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotency() {
-	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.Get().Clients.Pulp.CoprOrgID
 
-	// Create a publication in the cs-partner domain (simulating what Copr would have created)
-	publicationHref, _ := s.createPublicationInCoprDomain()
+	// Create a publication in the test domain (simulating what Copr would have created)
+	publicationHref, _, coprRepoHref := s.createPublicationInCoprDomain()
 
 	// First run - create the snapshot
 	partnerRepoName := "idempotent-partner-repo-" + uuid2.NewString()
-	coprRepoHref := "/pulp/api/v3/repositories/rpm/rpm/" + uuid2.NewString() + "/"
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    publicationHref,
-		RepositoryName:     partnerRepoName,
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "idempotent-project-111",
-		CoprRepositoryHref: coprRepoHref,
-		CoprBuildID:        "idempotent-build-222",
+		PublicationHref:   publicationHref,
+		RepositoryName:    partnerRepoName,
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "idempotent-project-111",
+		CoprBuildID:       "idempotent-build-222",
 	}
 
 	task := queue.Task{
@@ -294,7 +298,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotency() {
 	require.Equal(s.T(), 1, len(snaps2.Data), "Should still have only 1 snapshot (idempotent)")
 	assert.Equal(s.T(), firstSnapshotUUID, snaps2.Data[0].UUID, "Should be the same snapshot UUID")
 
-	// Verify distribution still exists and wasn't duplicated (in cs-partner domain)
+	// Verify distribution still exists and wasn't duplicated (in the test domain)
 	var idempotentSnapModel models.Snapshot
 	err = db.DB.Where("uuid = ?", firstSnapshotUUID).First(&idempotentSnapModel).Error
 	require.NoError(s.T(), err)
@@ -305,18 +309,16 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotency() {
 }
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_PublicationNotFound() {
-	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.Get().Clients.Pulp.CoprOrgID
 
 	// Try with a non-existent publication href
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    "/pulp/api/v3/publications/rpm/rpm/nonexistent-uuid/",
-		RepositoryName:     "partner-repo-" + uuid2.NewString(),
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "error-project",
-		CoprRepositoryHref: "/pulp/api/v3/repositories/rpm/rpm/error/",
-		CoprBuildID:        "error-build",
+		PublicationHref:   "/pulp/api/v3/publications/rpm/rpm/nonexistent-uuid/",
+		RepositoryName:    "partner-repo-" + uuid2.NewString(),
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "error-project",
+		CoprBuildID:       "error-build",
 	}
 
 	task := queue.Task{
