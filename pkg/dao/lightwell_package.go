@@ -390,6 +390,28 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 	})
 }
 
+// InternalOnlyListStoredPackageVersions returns the version strings stored for one package.
+// The match is exact on package group and name. Python callers pass a normalized name and an empty group.
+func (d lightwellPackageDaoImpl) InternalOnlyListStoredPackageVersions(ctx context.Context, repoConfigUUID, group, name string) ([]string, error) {
+	if d.querier == nil {
+		return nil, fmt.Errorf("lightwell querier is not initialized")
+	}
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return nil, fmt.Errorf("repository configuration uuid is required")
+	}
+
+	versions, err := d.querier.ListStoredPackageVersions(ctx, store.ListStoredPackageVersionsParams{
+		RepositoryConfigurationUuid: repoUUID,
+		PackageGroup:                group,
+		Name:                        name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list stored package versions: %w", err)
+	}
+	return versions, nil
+}
+
 func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) (api.MavenPackageVersionsResponse, error) {
 	resp := api.MavenPackageVersionsResponse{Group: group, Name: name, Versions: []api.MavenPackageDetailResponse{}}
 	if d.querier == nil {

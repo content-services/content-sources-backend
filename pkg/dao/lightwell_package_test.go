@@ -184,6 +184,49 @@ func ptr(s string) *string {
 	return &s
 }
 
+func (s *LightwellPackageSuite) TestInternalOnlyListStoredPackageVersions() {
+	ctx, packageDao := s.dao()
+	suffix := time.Now().UnixNano()
+
+	javaUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("stored-java-%d", suffix),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+	otherUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("stored-other-%d", suffix),
+		"lightwell-maven",
+		"predisclosure",
+		config.ContentTypeMaven,
+	)
+
+	s.createPackageWithVersions(
+		ctx, javaUUID, "demo", "org.example",
+		[]string{"1.2.3.rhlw-00002", "1.2.3.rhlw-00001"},
+		[]string{"rhlw-00002", "rhlw-00001"},
+		[]string{"pkg:maven/org.example/demo@1.2.3.rhlw-00002", "pkg:maven/org.example/demo@1.2.3.rhlw-00001"},
+	)
+	s.createPackageWithVersions(
+		ctx, javaUUID, "other", "org.example",
+		[]string{"9.9.9"}, []string{""}, []string{"pkg:maven/org.example/other@9.9.9"},
+	)
+	s.createPackageWithVersions(
+		ctx, otherUUID, "demo", "org.example",
+		[]string{"5.0.0"}, []string{""}, []string{"pkg:maven/org.example/demo@5.0.0"},
+	)
+
+	got, err := packageDao.InternalOnlyListStoredPackageVersions(ctx, javaUUID, "org.example", "demo")
+	s.Require().NoError(err)
+	s.Equal([]string{"1.2.3.rhlw-00001", "1.2.3.rhlw-00002"}, got)
+
+	missing, err := packageDao.InternalOnlyListStoredPackageVersions(ctx, javaUUID, "org.example", "absent")
+	s.Require().NoError(err)
+	s.Empty(missing)
+}
+
 func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
 	ctx, dao := s.dao()
 	suffix := time.Now().UnixNano()

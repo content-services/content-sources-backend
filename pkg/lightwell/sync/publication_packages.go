@@ -10,11 +10,9 @@ import (
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/utils"
-	"github.com/content-services/tang/pkg/tangy"
 )
 
 const (
@@ -143,24 +141,22 @@ func confirmedVersionsByIssue(
 
 type publicationPackageVerifier struct {
 	repositories dao.RepositoryConfigDao
-	pulp         pulp_client.PulpClient
-	tang         tangy.Tangy
+	packages     dao.LightwellPackageDao
 }
 
-// NewPublicationPackageVerifier builds a verifier backed by Lightwell's Pulp
-// repositories and Tang package queries.
+// NewPublicationPackageVerifier builds a verifier that reads the local package mirror.
 func NewPublicationPackageVerifier(
 	repositories dao.RepositoryConfigDao,
-	pulp pulp_client.PulpClient,
-	tang tangy.Tangy,
+	packages dao.LightwellPackageDao,
 ) PublicationPackageVerifier {
-	return &publicationPackageVerifier{repositories: repositories, pulp: pulp, tang: tang}
+	return &publicationPackageVerifier{repositories: repositories, packages: packages}
 }
 
 type publicationRepository struct {
+	uuid        string
 	basePath    string
 	contentType string
-	href        string
+	imported    bool
 }
 
 func (v *publicationPackageVerifier) VerifyPublished(
@@ -189,7 +185,10 @@ func (v *publicationPackageVerifier) VerifyPublished(
 				continue
 			}
 			matched = true
-			available, err := v.packageVersions(ctx, repo.href, pkg)
+			if !repo.imported {
+				continue
+			}
+			available, err := v.packageVersions(ctx, repo.uuid, pkg)
 			if err != nil {
 				warnings = append(warnings, fmt.Sprintf(
 					"cannot verify publication package %s in repository %s: %v",
@@ -230,17 +229,12 @@ func (v *publicationPackageVerifier) publicationRepositories(ctx context.Context
 		if !strings.HasSuffix(basePath, "/remediated") && !strings.HasSuffix(basePath, "/predisclosure") {
 			continue
 		}
-		href, err := v.pulp.ResolveRepositoryFromBasePath(ctx, basePath)
-		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("cannot resolve Lightwell publication repository %s: %v", basePath, err))
-			continue
-		}
-		if href == nil || *href == "" {
-			warnings = append(warnings, fmt.Sprintf("cannot resolve Lightwell publication repository %s: repository not found", basePath))
-			continue
+		imported := strings.TrimSpace(repo.LastImportRepositoryVersion) != ""
+		if !imported {
+			warnings = append(warnings, fmt.Sprintf("cannot verify publication packages in repository %s: package mirror has not been imported", basePath))
 		}
 		repositories = append(repositories, publicationRepository{
-			basePath: basePath, contentType: repo.ContentType, href: *href,
+			uuid: repo.UUID, basePath: basePath, contentType: repo.ContentType, imported: imported,
 		})
 	}
 	return repositories, warnings
@@ -248,65 +242,29 @@ func (v *publicationPackageVerifier) publicationRepositories(ctx context.Context
 
 func (v *publicationPackageVerifier) packageVersions(
 	ctx context.Context,
-	repositoryHref string,
+	repoConfigUUID string,
 	pkg PublicationPackage,
 ) (map[string]bool, error) {
-	available := make(map[string]bool)
+	group, name := pkg.Namespace, pkg.Name
 	switch pkg.Ecosystem {
 	case purlTypeMaven:
-		return v.mavenPackageVersions(ctx, repositoryHref, pkg)
+		if group == "" {
+			return nil, errors.New("maven package has no group")
+		}
 	case purlTypePyPI:
-		versions, err := v.tang.PythonPackageVersionsGet(ctx, repositoryHref, normalizePythonPackageName(pkg.Name))
-		if errors.Is(err, tangy.ErrPythonPackageNotFound) {
-			return available, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		for _, version := range versions {
-			available[version.Version] = true
-		}
+		group = ""
+		name = normalizePythonPackageName(name)
+	}
+
+	stored, err := v.packages.InternalOnlyListStoredPackageVersions(ctx, repoConfigUUID, group, name)
+	if err != nil {
+		return nil, err
+	}
+	available := make(map[string]bool, len(stored))
+	for _, version := range stored {
+		available[version] = true
 	}
 	return available, nil
-}
-
-func (v *publicationPackageVerifier) mavenPackageVersions(
-	ctx context.Context,
-	repositoryHref string,
-	pkg PublicationPackage,
-) (map[string]bool, error) {
-	if pkg.Namespace == "" {
-		return nil, errors.New("maven package has no group")
-	}
-
-	available := make(map[string]bool)
-	offset := 0
-	for {
-		response, err := v.tang.MavenVersionsList(
-			ctx, repositoryHref, pkg.Namespace, pkg.Name, "", tangy.PageOptions{Offset: offset, Limit: 1000},
-		)
-		if err != nil {
-			return nil, err
-		}
-		for _, item := range response.Results {
-			addMavenItemVersions(available, item)
-		}
-		offset += len(response.Results)
-		if len(response.Results) == 0 || offset >= response.Total {
-			return available, nil
-		}
-	}
-}
-
-func addMavenItemVersions(available map[string]bool, item tangy.MavenVersionsItem) {
-	available[item.Version] = true
-	for _, build := range item.Builds {
-		available[build.Version] = true
-		if build.Release != "" {
-			available[build.Version+"."+build.Release] = true
-			available[item.Version+"."+build.Release] = true
-		}
-	}
 }
 
 func publicationContentType(ecosystem string) string {
