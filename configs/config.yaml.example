@@ -132,6 +132,7 @@ clients:
     proxy:
     # Pulp domain used for Copr-initiated partner repository snapshots
     copr_domain: cs-partner
+    copr_org_id: "-5"
     database:
       host: localhost
       port: 5432
@@ -265,6 +266,11 @@ jfrog_bridge:
   consumer_group_id: "content-sources-jfrog-bridge"
   max_retries: 3
   request_timeout: 60
+
+copr_ingest:
+  enabled: false
+  topic: "copr.build.events"
+  consumer_group_id: "content-sources-copr"
 
 features:
   # Internal Lens and coverage-upload access. Values must also be in options.feature_filter.

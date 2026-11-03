@@ -8,10 +8,9 @@ type CreatePartnerSnapshotPayload struct {
 	RepositoryVersion string // OS version like "9"
 	RepositoryArch    string // e.g., "x86_64", "aarch64"
 
-	// Copr metadata for repository identification
-	CoprProjectID      string
-	CoprRepositoryHref string
-	CoprBuildID        string
+	// Copr metadata, the Copr repository href is read from the publication
+	CoprProjectID string
+	CoprBuildID   string
 
 	// Resumability fields (for distribution creation)
 	SnapshotIdent        *string
