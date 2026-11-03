@@ -1,10 +1,11 @@
 package kafka
 
-// The kafka configuration that is used for produce and
-// consume messages
-// Related with configuration that is used by the librdkafka
-// library.
-// See: https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+import "strings"
+
+// KafkaConfig holds the options for our Sarama-based Kafka clients.
+// Key names come from librdkafka (https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md),
+// but Sarama doesn't read them: a field only works if our code passes it to Sarama
+// (e.g., NewSaramaConsumerConfig). Unused fields, like Retry.Backoff.Ms, do nothing.
 type KafkaConfig struct {
 	Timeout int
 	Group   struct {
@@ -51,4 +52,22 @@ type KafkaConfig struct {
 			Ms int
 		}
 	}
+	Consumer struct {
+		Retry struct {
+			Backoff struct {
+				Ms int
+			}
+		}
+	}
+}
+
+// Brokers returns the configured bootstrap servers, ignoring empty entries
+func (c KafkaConfig) Brokers() []string {
+	var brokers []string
+	for broker := range strings.SplitSeq(c.Bootstrap.Servers, ",") {
+		if broker = strings.TrimSpace(broker); broker != "" {
+			brokers = append(brokers, broker)
+		}
+	}
+	return brokers
 }
