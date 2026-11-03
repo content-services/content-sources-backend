@@ -288,6 +288,9 @@ func TestImportRepo(t *testing.T) {
 		currentVersion     *string
 		expectSyncCalled   bool
 		expectUpdateCalled bool
+		expectCount        bool
+		storedCounts       [3]int
+		countErr           error
 		syncErr            bool
 		expectErr          bool
 		forceRequest       string
@@ -320,6 +323,29 @@ func TestImportRepo(t *testing.T) {
 			repoHref:           strPtr("/repo/href/"),
 			currentVersion:     strPtr("/versions/5/"), // same as last
 			expectSyncCalled:   false,
+			expectCount:        true,
+			expectUpdateCalled: false,
+			expectErr:          false,
+		},
+		{
+			name: "no-change - recounts the mirror when stored counts differ",
+			repo: dao.LightwellRepoToImport{
+				RepoConfigUUID:              "uuid-recount",
+				RepositoryUUID:              "repo-recount",
+				OrgID:                       "org1",
+				Name:                        "test-repo",
+				ContentType:                 config.ContentTypeMaven,
+				BasePath:                    "test/path",
+				LastImportRepositoryVersion: "/versions/5/",
+				PackageCount:                1,
+				BuildCount:                  1,
+				VersionCount:                1,
+			},
+			repoHref:           strPtr("/repo/href/"),
+			currentVersion:     strPtr("/versions/5/"),
+			expectSyncCalled:   false,
+			expectCount:        true,
+			storedCounts:       [3]int{2, 3, 2},
 			expectUpdateCalled: false,
 			expectErr:          false,
 		},
@@ -327,6 +353,7 @@ func TestImportRepo(t *testing.T) {
 			name: "change - current version different from stored",
 			repo: dao.LightwellRepoToImport{
 				RepoConfigUUID:              "uuid-3",
+				RepositoryUUID:              "repo-3",
 				OrgID:                       "org1",
 				Name:                        "test-repo",
 				ContentType:                 config.ContentTypeMaven,
@@ -336,6 +363,8 @@ func TestImportRepo(t *testing.T) {
 			repoHref:           strPtr("/repo/href/"),
 			currentVersion:     strPtr("/versions/6/"), // different from last
 			expectSyncCalled:   true,
+			expectCount:        true,
+			storedCounts:       [3]int{1, 1, 1},
 			expectUpdateCalled: true,
 			expectErr:          false,
 		},
@@ -343,6 +372,7 @@ func TestImportRepo(t *testing.T) {
 			name: "force flag imports unchanged version",
 			repo: dao.LightwellRepoToImport{
 				RepoConfigUUID:              "uuid-4",
+				RepositoryUUID:              "repo-4",
 				OrgID:                       "org1",
 				Name:                        "test-repo",
 				ContentType:                 config.ContentTypeMaven,
@@ -353,6 +383,8 @@ func TestImportRepo(t *testing.T) {
 			repoHref:           strPtr("/repo/href/"),
 			currentVersion:     strPtr("/versions/5/"),
 			expectSyncCalled:   true,
+			expectCount:        true,
+			storedCounts:       [3]int{1, 1, 1},
 			expectUpdateCalled: true,
 			expectErr:          false,
 		},
@@ -378,6 +410,7 @@ func TestImportRepo(t *testing.T) {
 			name: "new force request imports unchanged version",
 			repo: dao.LightwellRepoToImport{
 				RepoConfigUUID:              "uuid-6",
+				RepositoryUUID:              "repo-6",
 				OrgID:                       "org1",
 				Name:                        "test-repo",
 				ContentType:                 config.ContentTypeMaven,
@@ -388,8 +421,29 @@ func TestImportRepo(t *testing.T) {
 			repoHref:           strPtr("/repo/href/"),
 			currentVersion:     strPtr("/versions/5/"),
 			expectSyncCalled:   true,
+			expectCount:        true,
+			storedCounts:       [3]int{1, 1, 1},
 			expectUpdateCalled: true,
 			forceRequest:       "2026-10-09T13:00:00Z",
+		},
+		{
+			name: "count failure does not record the imported version",
+			repo: dao.LightwellRepoToImport{
+				RepoConfigUUID:              "uuid-count-fail",
+				RepositoryUUID:              "repo-count-fail",
+				OrgID:                       "org1",
+				Name:                        "test-repo",
+				ContentType:                 config.ContentTypeMaven,
+				BasePath:                    "test/path",
+				LastImportRepositoryVersion: "/versions/5/",
+			},
+			repoHref:           strPtr("/repo/href/"),
+			currentVersion:     strPtr("/versions/6/"),
+			expectSyncCalled:   true,
+			expectCount:        true,
+			countErr:           fmt.Errorf("count failed"),
+			expectUpdateCalled: false,
+			expectErr:          true,
 		},
 		{
 			name: "completed force request does not import again",
@@ -405,6 +459,7 @@ func TestImportRepo(t *testing.T) {
 			repoHref:           strPtr("/repo/href/"),
 			currentVersion:     strPtr("/versions/5/"),
 			expectSyncCalled:   false,
+			expectCount:        true,
 			expectUpdateCalled: false,
 			forceRequest:       "2026-10-09T13:00:00Z",
 		},
@@ -420,13 +475,16 @@ func TestImportRepo(t *testing.T) {
 
 			mockPulpClient := pulp_client.NewMockPulpClient(t)
 			mockRepoConfigDao := dao.NewMockRepositoryConfigDao(t)
+			mockRepositoryDao := dao.NewMockRepositoryDao(t)
 			mockLightwellPkgDao := dao.NewMockLightwellPackageDao(t)
 			mockMavenPackages := dao.NewMockMavenPackagesDao(t)
 			daoReg := &dao.DaoRegistry{
 				RepositoryConfig: mockRepoConfigDao,
+				Repository:       mockRepositoryDao,
 				LightwellPackage: mockLightwellPkgDao,
 				MavenPackages:    mockMavenPackages,
 			}
+			var callOrder []string
 
 			// Mock ResolveRepositoryFromBasePath
 			mockPulpClient.On("ResolveRepositoryFromBasePath", mock.Anything, tt.repo.BasePath).Return(tt.repoHref, nil)
@@ -452,10 +510,25 @@ func TestImportRepo(t *testing.T) {
 					if tt.syncErr {
 						syncErr = fmt.Errorf("sync failed")
 					}
-					mockLightwellPkgDao.On("SyncPackagesForRepository", mock.Anything, tt.repo.RepoConfigUUID, mock.Anything).Return(syncErr)
+					mockLightwellPkgDao.On("SyncPackagesForRepository", mock.Anything, tt.repo.RepoConfigUUID, mock.Anything).
+						Run(func(mock.Arguments) { callOrder = append(callOrder, "sync") }).
+						Return(syncErr)
 
 					if tt.expectUpdateCalled {
-						mockRepoConfigDao.On("InternalOnly_UpdateLastImportRepositoryVersion", mock.Anything, tt.repo.RepoConfigUUID, *tt.currentVersion, tt.forceRequest).Return(nil)
+						mockRepoConfigDao.On("InternalOnly_UpdateLastImportRepositoryVersion", mock.Anything, tt.repo.RepoConfigUUID, *tt.currentVersion, tt.forceRequest).
+							Run(func(mock.Arguments) { callOrder = append(callOrder, "version") }).
+							Return(nil)
+					}
+				}
+				if tt.expectCount {
+					mockLightwellPkgDao.On("InternalOnlyCountStoredContent", mock.Anything, tt.repo.RepoConfigUUID).
+						Run(func(mock.Arguments) { callOrder = append(callOrder, "count") }).
+						Return(tt.storedCounts[0], tt.storedCounts[1], tt.storedCounts[2], tt.countErr)
+					countsDiffer := tt.storedCounts[0] != tt.repo.PackageCount || tt.storedCounts[1] != tt.repo.BuildCount || tt.storedCounts[2] != tt.repo.VersionCount
+					if tt.countErr == nil && countsDiffer {
+						mockRepositoryDao.On("InternalOnly_UpdateCounts", mock.Anything, tt.repo.RepositoryUUID, tt.storedCounts[0], tt.storedCounts[1], tt.storedCounts[2]).
+							Run(func(mock.Arguments) { callOrder = append(callOrder, "counts") }).
+							Return(nil)
 					}
 				}
 			}
@@ -469,9 +542,13 @@ func TestImportRepo(t *testing.T) {
 			}
 
 			mockPulpClient.AssertExpectations(t)
-			if tt.expectSyncCalled {
+			if tt.expectSyncCalled || tt.expectCount {
 				mockLightwellPkgDao.AssertExpectations(t)
 				mockRepoConfigDao.AssertExpectations(t)
+				mockRepositoryDao.AssertExpectations(t)
+			}
+			if tt.name == "change - current version different from stored" {
+				assert.Equal(t, []string{"sync", "count", "counts", "version"}, callOrder)
 			}
 		})
 	}

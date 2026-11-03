@@ -184,7 +184,6 @@ clients:
       rbac: 1m
       subscription_check: 1h
       roadmap: 24h
-      content_counts: 10m
       # Fixed lifetime of confirmed terms allowances; <= 0 disables only terms caching.
       terms: 24h
   feature_service:

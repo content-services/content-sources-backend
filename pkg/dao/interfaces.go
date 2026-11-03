@@ -144,6 +144,10 @@ type LightwellRepoToImport struct {
 	BasePath                    string `gorm:"column:base_path"`
 	LastImportRepositoryVersion string `gorm:"column:last_import_repository_version"`
 	PackageImportForcedAt       string `gorm:"column:package_import_forced_at"`
+	RepositoryUUID              string `gorm:"column:repository_uuid"`
+	PackageCount                int    `gorm:"column:package_count"`
+	BuildCount                  int    `gorm:"column:build_count"`
+	VersionCount                int    `gorm:"column:version_count"`
 }
 
 type ModuleStreamDao interface {
@@ -336,6 +340,7 @@ type LightwellPackageDao interface {
 	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
 	InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error)
 	InternalOnlyListStoredPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) ([]string, error)
+	InternalOnlyCountStoredContent(ctx context.Context, repoConfigUUID string) (packageCount int, buildCount int, versionCount int, err error)
 }
 
 type ClearinghouseUploadDao interface {

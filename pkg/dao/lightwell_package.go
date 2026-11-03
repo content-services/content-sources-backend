@@ -412,6 +412,25 @@ func (d lightwellPackageDaoImpl) InternalOnlyListStoredPackageVersions(ctx conte
 	return versions, nil
 }
 
+// InternalOnlyCountStoredContent counts the mirror rows for one repository configuration.
+// Package count is the number of packages. Version count is the number of distinct
+// group, name, and upstream version combinations. Build count is the number of version rows.
+func (d lightwellPackageDaoImpl) InternalOnlyCountStoredContent(ctx context.Context, repoConfigUUID string) (int, int, int, error) {
+	if d.querier == nil {
+		return 0, 0, 0, fmt.Errorf("lightwell querier is not initialized")
+	}
+	repoUUID, err := uuid.Parse(repoConfigUUID)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("repository configuration uuid is required")
+	}
+
+	counts, err := d.querier.CountStoredPackageContent(ctx, repoUUID)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("failed to count stored package content: %w", err)
+	}
+	return int(counts.PackageCount), int(counts.BuildCount), int(counts.VersionCount), nil
+}
+
 func (d lightwellPackageDaoImpl) ListMavenPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) (api.MavenPackageVersionsResponse, error) {
 	resp := api.MavenPackageVersionsResponse{Group: group, Name: name, Versions: []api.MavenPackageDetailResponse{}}
 	if d.querier == nil {

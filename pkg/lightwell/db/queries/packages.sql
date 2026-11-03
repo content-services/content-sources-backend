@@ -137,6 +137,17 @@ WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid):
     AND p.name = sqlc.arg(name)
 ORDER BY pv.version;
 
+-- name: CountStoredPackageContent :one
+SELECT
+    (SELECT COUNT(*) FROM lightwell_packages p
+        WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid) AS package_count,
+    (SELECT COUNT(DISTINCT (p.package_group, p.name, pv.upstream_version))
+        FROM lightwell_package_versions pv
+        JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+        WHERE p.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid) AS version_count,
+    (SELECT COUNT(*) FROM lightwell_package_versions pv
+        WHERE pv.repository_configuration_uuid = sqlc.arg(repository_configuration_uuid)::uuid) AS build_count;
+
 -- name: ListLightwellPythonPackageDetail :many
 SELECT
     p.name,
