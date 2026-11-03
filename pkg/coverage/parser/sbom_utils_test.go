@@ -109,6 +109,35 @@ func TestSniffFormat_DoesNotConsumeInput(t *testing.T) {
 	assert.Equal(t, data, string(remaining))
 }
 
+func TestParseBuildProvenance(t *testing.T) {
+	for _, statement := range []string{"https://in-toto.io/Statement/v0.1", "https://in-toto.io/Statement/v1"} {
+		for _, predicate := range []string{"https://slsa.dev/provenance/v0.2", "https://slsa.dev/provenance/v1"} {
+			t.Run(statement+"/"+predicate, func(t *testing.T) {
+				// Put the identifiers after a large predicate to exercise streaming detection.
+				data := `{"predicate":{"buildConfig":"` + strings.Repeat("x", 10000) +
+					`"},"predicateType":"` + predicate + `","_type":"` + statement + `"}`
+				_, err := Parse("sbom.json", strings.NewReader(data))
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "build provenance attestation")
+				assert.Contains(t, err.Error(), "SPDX or CycloneDX SBOM")
+			})
+		}
+	}
+}
+
+func TestParseUnknownJSON(t *testing.T) {
+	for _, data := range []string{
+		`{"components":[]}`,
+		`{"_type":"https://in-toto.io/Statement/v1","predicateType":"https://example.com/other"}`,
+		`{"predicateType":"https://slsa.dev/provenance/v1"}`,
+		`{"_type":"https://in-toto.io/Statement/v1","predicateType":"https://slsa.dev/provenance/v1",`,
+	} {
+		_, err := Parse("sbom.json", strings.NewReader(data))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported manifest format")
+	}
+}
+
 func TestPeekSBOMStart(t *testing.T) {
 	start, err := peekSBOMStart(bufio.NewReader(strings.NewReader("  \n{")))
 	require.NoError(t, err)

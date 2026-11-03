@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path"
@@ -101,7 +102,27 @@ func detectFormat(filename string, r *bufio.Reader) (string, error) {
 		return sniffed, nil
 	}
 
+	// Detection has failed, so consuming the stream here cannot affect a supported parser.
+	if isBuildProvenance(r) {
+		return "", fmt.Errorf("this file contains a build provenance attestation; Lens requires a package inventory. Upload the build's SPDX or CycloneDX SBOM")
+	}
+
 	return "", fmt.Errorf("unsupported manifest format for file %q", filename)
+}
+
+// isBuildProvenance reads only the statement identifiers, skipping the potentially large predicate.
+func isBuildProvenance(r io.Reader) bool {
+	var statementType, predicateType string
+	dec := json.NewDecoder(r)
+	err := readJSONObject(dec, map[string]jsonFieldHandler{
+		"_type":         func(d *json.Decoder) error { return decodeJSONString(d, &statementType) },
+		"predicateType": func(d *json.Decoder) error { return decodeJSONString(d, &predicateType) },
+	})
+	if err != nil {
+		return false
+	}
+	return (statementType == "https://in-toto.io/Statement/v0.1" || statementType == "https://in-toto.io/Statement/v1") &&
+		(predicateType == "https://slsa.dev/provenance/v0.2" || predicateType == "https://slsa.dev/provenance/v1")
 }
 
 // deduplicate keeps the first occurrence of each ecosystem/namespace/name/version tuple.
