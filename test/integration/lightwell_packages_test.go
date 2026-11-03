@@ -132,7 +132,7 @@ func (s *LightwellPackagesSuite) TestMavenImportAndList() {
 		},
 	}, nil).Once()
 
-	repo := s.repoToImport(s.mavenConfigUUID, s.mavenName, config.ContentTypeMaven, basePath)
+	repo := s.repoToImport(s.mavenRepoUUID, s.mavenConfigUUID, s.mavenName, config.ContentTypeMaven, basePath)
 	s.Require().NoError(commands.ImportLightwellRepo(context.Background(), db.DB, pulp, repo, false))
 	// A later run loads the stored href. When it still matches Pulp, the catalog is not read again.
 	repo.LastImportRepositoryVersion = versionHref
@@ -244,7 +244,7 @@ func (s *LightwellPackagesSuite) TestPythonImportAndList() {
 	pulp.On("ResolveRepositoryFromBasePath", mock.Anything, basePath).Return(&repoHref, nil)
 	pulp.On("GetLatestVersionHref", mock.Anything, repoHref).Return(&versionHref, nil)
 
-	repo := s.repoToImport(s.pythonConfigUUID, s.pythonName, config.ContentTypePython, basePath)
+	repo := s.repoToImport(s.pythonRepoUUID, s.pythonConfigUUID, s.pythonName, config.ContentTypePython, basePath)
 	s.Require().NoError(commands.ImportLightwellRepo(context.Background(), db.DB, pulp, repo, false))
 
 	var versions []models.LightwellPackageVersion
@@ -316,8 +316,9 @@ func (s *LightwellPackagesSuite) createLightwellRepo(name, contentType, feature,
 	return repo.UUID, repoConfig.UUID
 }
 
-func (s *LightwellPackagesSuite) repoToImport(configUUID, name, contentType, basePath string) dao.LightwellRepoToImport {
+func (s *LightwellPackagesSuite) repoToImport(repoUUID, configUUID, name, contentType, basePath string) dao.LightwellRepoToImport {
 	return dao.LightwellRepoToImport{
+		RepositoryUUID: repoUUID,
 		RepoConfigUUID: configUUID,
 		OrgID:          config.LightwellOrg,
 		Name:           name,
