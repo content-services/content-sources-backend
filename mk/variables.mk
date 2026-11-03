@@ -97,7 +97,7 @@ KAFKA_CONFIG_DIR ?= $(PROJECT_DIR)/compose_files/kafka/config
 export KAFKA_CONFIG_DIR
 # The topics used by the repository
 # Updated to follow the pattern used at playbook-dispatcher
-KAFKA_TOPICS ?= platform.content-sources.introspect
+KAFKA_TOPICS ?= platform.content-sources.introspect copr.build.events
 export KAFKA_TOPICS
 # The group id for the consumers; every consumer subscribed to
 # a topic with different group-id will receive a copy of the
