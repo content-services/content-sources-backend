@@ -262,6 +262,11 @@ jfrog_bridge:
   max_retries: 3
   request_timeout: 60
 
+copr_ingest:
+  enabled: false
+  topic: "copr.build.events"
+  consumer_group_id: "content-sources-copr"
+
 features:
   # Internal Lens and coverage-upload access. Values must also be in options.feature_filter.
   lightwell_lens_internal_entitled_features: #["lightwellFeature"]

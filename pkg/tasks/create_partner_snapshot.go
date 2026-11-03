@@ -27,7 +27,11 @@ func CreatePartnerSnapshotHandler(ctx context.Context, task *models.TaskInfo, qu
 
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName := config.Get().Clients.Pulp.CoprDomain
+	// Resolve through the DAO so the org's domain mapping is persisted and matches what other tasks use
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(ctx, task.OrgId)
+	if err != nil {
+		return fmt.Errorf("failed to fetch or create domain: %w", err)
+	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	cps := CreatePartnerSnapshot{

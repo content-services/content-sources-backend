@@ -83,8 +83,7 @@ func (s *CreatePartnerSnapshotSuite) createPublicationInCoprDomain() (publicatio
 }
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_NewRepository() {
-	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.CoprOrg
 
 	// Create a publication in the cs-partner domain (simulating what Copr would have created)
 	publicationHref, versionHref := s.createPublicationInCoprDomain()
@@ -170,7 +169,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_NewRepository() {
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_ExistingRepository() {
 	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.CoprOrg
 
 	// Create a publication in the cs-partner domain (simulating what Copr would have created)
 	publicationHref, _ := s.createPublicationInCoprDomain()
@@ -242,8 +241,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_ExistingRepositor
 }
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotency() {
-	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.CoprOrg
 
 	// Create a publication in the cs-partner domain (simulating what Copr would have created)
 	publicationHref, _ := s.createPublicationInCoprDomain()
@@ -305,8 +303,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotency() {
 }
 
 func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_PublicationNotFound() {
-	accountId := uuid2.NewString()
-	orgId := accountId
+	orgId := config.CoprOrg
 
 	// Try with a non-existent publication href
 	payload := payloads.CreatePartnerSnapshotPayload{
