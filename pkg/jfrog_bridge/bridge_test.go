@@ -44,8 +44,7 @@ func TestLoadConfig(t *testing.T) {
 		CatalogToken:    "test-token",
 		RegistryURL:     "https://test.registry/java",
 		RegistryOSVURL:  "https://test.registry/osv",
-		SigningKeyPEM:   "",
-		SigningKeyAlias: "test-alias",
+		RegistryVEXURL:  "https://test.registry/vex",
 		ConsumerGroupID: "test-group",
 		MaxRetries:      5,
 		RequestTimeout:  30,
@@ -63,7 +62,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "test-repo", cfg.CatalogRepo)
 	assert.Equal(t, "test-token", cfg.CatalogToken)
 	assert.Equal(t, "https://test.registry/java", cfg.RegistryURL)
-	assert.Equal(t, "test-alias", cfg.SigningKeyAlias)
+	assert.Equal(t, "https://test.registry/osv", cfg.RegistryOSVURL)
+	assert.Equal(t, "https://test.registry/vex", cfg.RegistryVEXURL)
 	assert.Equal(t, "test-group", cfg.ConsumerGroupID)
 	assert.Equal(t, 5, cfg.MaxRetries)
 	assert.Equal(t, 30, cfg.RequestTimeout)

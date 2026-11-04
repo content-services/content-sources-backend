@@ -5,11 +5,6 @@
 package jfrog_bridge
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,75 +42,26 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 
 	jarData := pomData
 
-	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".jar") {
-			_, _ = w.Write(jarData)
-		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			_, _ = w.Write(pomData)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
+	registryServer := httptest.NewServer(pipelineRegistryHandler(jarData, pomData, testSBOMBody, testASCBody))
 	defer registryServer.Close()
 
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
+	osvServer := httptest.NewServer(pipelineOSVHandler())
 	defer osvServer.Close()
-
-	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
 			w.WriteHeader(http.StatusCreated)
-		case http.MethodPost:
-			if strings.Contains(r.URL.Path, "prepare") {
-				resp := prepareResponse{
-					DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
-					PAE:         "test-pae",
-					PostURL:     "/evidence/api/v1/evidence/deploy",
-				}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			} else {
-				resp := struct {
-					Verified bool   `json:"verified"`
-					ID       string `json:"id"`
-				}{Verified: true, ID: "evd-123"}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			}
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(http.StatusOK)
 		}
 	}))
 	defer jfrogServer.Close()
 
-	registry := &httpRegistryClient{
-		httpClient:  registryServer.Client(),
-		registryURL: registryServer.URL,
-		osvURL:      osvServer.URL,
-		maxRetries:  0,
-	}
-	jfrog := &httpJFrogClient{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		maxRetries:  0,
-	}
-	evidence := &evidenceCreator{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		privateKey:  testKey,
-		keyAlias:    "redhat-partner-lightwell",
-		maxRetries:  0,
-	}
-
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	bh := NewBridgeHandler(registry, jfrog, evidence, metrics)
+	bh := newPipelineHandler(registryServer, osvServer, jfrogServer)
 	h := &adminHandler{bridgeHandler: bh}
 
 	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.springframework:spring-core","releases":[{"release_names":[{"name":"5.3.18.rhlw-00003"}],"related_cve":[{"cve":"CVE-2025-41249","severity":"important"}]}]}}]}`
@@ -134,7 +80,7 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 
 func TestSimulateHandler_EmbargoRejection(t *testing.T) {
 	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	bh := NewBridgeHandler(nil, nil, nil, metrics)
+	bh := NewBridgeHandler(nil, nil, metrics)
 	h := &adminHandler{bridgeHandler: bh}
 
 	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"LTWL-0001","severity":"important"}]}]}}]}`

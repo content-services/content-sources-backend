@@ -1,10 +1,7 @@
 package jfrog_bridge
 
 import (
-	"os"
-
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/rs/zerolog/log"
 )
 
 type bridgeConfig struct {
@@ -14,8 +11,7 @@ type bridgeConfig struct {
 	CatalogToken    string
 	RegistryURL     string
 	RegistryOSVURL  string
-	SigningKeyPEM   string
-	SigningKeyAlias string
+	RegistryVEXURL  string
 	ConsumerGroupID string
 	MaxRetries      int
 	RequestTimeout  int
@@ -27,17 +23,6 @@ type bridgeConfig struct {
 func loadConfig() bridgeConfig {
 	cfg := config.Get()
 
-	signingKey := cfg.JFrogBridge.SigningKeyPEM
-	if signingKey == "" && cfg.JFrogBridge.SigningKeyPath != "" {
-		data, err := os.ReadFile(cfg.JFrogBridge.SigningKeyPath)
-		if err != nil {
-			log.Error().Err(err).Str("path", cfg.JFrogBridge.SigningKeyPath).
-				Msg("failed to read signing key file")
-		} else {
-			signingKey = string(data)
-		}
-	}
-
 	return bridgeConfig{
 		Enabled:          cfg.JFrogBridge.Enabled,
 		CatalogURL:       cfg.JFrogBridge.CatalogURL,
@@ -45,8 +30,7 @@ func loadConfig() bridgeConfig {
 		CatalogToken:     cfg.JFrogBridge.CatalogToken,
 		RegistryURL:      cfg.JFrogBridge.RegistryURL,
 		RegistryOSVURL:   cfg.JFrogBridge.RegistryOSVURL,
-		SigningKeyPEM:    signingKey,
-		SigningKeyAlias:  cfg.JFrogBridge.SigningKeyAlias,
+		RegistryVEXURL:   cfg.JFrogBridge.RegistryVEXURL,
 		ConsumerGroupID:  cfg.JFrogBridge.ConsumerGroupID,
 		MaxRetries:       cfg.JFrogBridge.MaxRetries,
 		RequestTimeout:   cfg.JFrogBridge.RequestTimeout,

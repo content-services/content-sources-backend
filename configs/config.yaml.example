@@ -257,11 +257,7 @@ jfrog_bridge:
   catalog_token:
   registry_url: "https://packages.redhat.com/lightwell/java/remediated"
   registry_osv_url: "https://packages.redhat.com/lightwell/osv/java/remediated"
-  # signing_key_pem: set via JFROG_BRIDGE_SIGNING_KEY_PEM env var (or use signing_key_path)
-  signing_key_pem:
-  # signing_key_path: path to ECDSA P-256 private key PEM file
-  signing_key_path:
-  signing_key_alias: "redhat-partner-lightwell"
+  registry_vex_url: "https://packages.redhat.com/lightwell/vex/java/remediated"
   consumer_group_id: "content-sources-jfrog-bridge"
   max_retries: 3
   request_timeout: 60

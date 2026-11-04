@@ -411,12 +411,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -825,12 +819,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -1206,12 +1194,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -1574,12 +1556,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -1947,12 +1923,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -2319,12 +2289,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -2695,12 +2659,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -3068,12 +3026,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -3438,12 +3390,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -3805,12 +3751,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -4176,12 +4116,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -4546,12 +4480,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -4915,12 +4843,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -5309,12 +5231,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -5679,12 +5595,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -6068,12 +5978,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -6434,12 +6338,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -6802,12 +6700,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -7168,12 +7060,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -7536,12 +7422,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -7902,12 +7782,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
@@ -8270,12 +8144,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -8637,12 +8505,6 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
-                    optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -9003,12 +8865,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}

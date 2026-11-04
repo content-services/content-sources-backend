@@ -53,9 +53,7 @@ type JFrogBridge struct {
 	CatalogToken    string `mapstructure:"catalog_token"`
 	RegistryURL     string `mapstructure:"registry_url"`
 	RegistryOSVURL  string `mapstructure:"registry_osv_url"`
-	SigningKeyPEM   string `mapstructure:"signing_key_pem"`
-	SigningKeyPath  string `mapstructure:"signing_key_path"`
-	SigningKeyAlias string `mapstructure:"signing_key_alias"`
+	RegistryVEXURL  string `mapstructure:"registry_vex_url"`
 	ConsumerGroupID string `mapstructure:"consumer_group_id"`
 	MaxRetries      int    `mapstructure:"max_retries"`
 	RequestTimeout  int    `mapstructure:"request_timeout"`
@@ -624,9 +622,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("jfrog_bridge.catalog_token", "")
 	v.SetDefault("jfrog_bridge.registry_url", "https://packages.redhat.com/lightwell/java/remediated")
 	v.SetDefault("jfrog_bridge.registry_osv_url", "https://packages.redhat.com/lightwell/osv/java/remediated")
-	v.SetDefault("jfrog_bridge.signing_key_pem", "")
-	v.SetDefault("jfrog_bridge.signing_key_path", "")
-	v.SetDefault("jfrog_bridge.signing_key_alias", "redhat-partner-lightwell")
+	v.SetDefault("jfrog_bridge.registry_vex_url", "https://packages.redhat.com/lightwell/vex/java/remediated")
 	v.SetDefault("jfrog_bridge.consumer_group_id", "content-sources-jfrog-bridge")
 	v.SetDefault("jfrog_bridge.max_retries", 3)
 	v.SetDefault("jfrog_bridge.request_timeout", 60)
