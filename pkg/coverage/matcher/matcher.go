@@ -3,6 +3,8 @@ package matcher
 import (
 	"strings"
 	"time"
+
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 )
 
 const (
@@ -115,11 +117,14 @@ func MatchCatalog(catalog, parsedPackages []Package, snapshotAt time.Time) ([]Ma
 	return results, summary
 }
 
+// matchPackage classifies one manifest package. The catalog stores upstream versions only,
+// so a Lightwell rebuild version (for example "3.0.1+rhlw.1") is compared by its upstream part.
 func matchPackage(pkg Package, catalogedNames, catalogedNameVersions map[string]struct{}) string {
 	nameKey := NormalizeKey(pkg)
 
 	if pkg.Version != "" {
-		versionKey := nameKey + ":" + pkg.Version
+		upstreamVersion, _ := rhlw.SplitVersion(pkg.Version)
+		versionKey := nameKey + ":" + upstreamVersion
 		if _, found := catalogedNameVersions[versionKey]; found {
 			return MatchStatusExact
 		}
