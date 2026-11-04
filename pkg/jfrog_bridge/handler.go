@@ -25,18 +25,16 @@ const maxProcessedGAVs = 10000
 type BridgeHandler struct {
 	registry    RegistryClient
 	jfrog       JFrogClient
-	evidence    EvidenceCreator
 	metrics     *bridgeMetrics
 	registryURL string
 	processed   *boundedSet
 }
 
 // NewBridgeHandler creates a BridgeHandler with the given clients.
-func NewBridgeHandler(registry RegistryClient, jfrog JFrogClient, evidence EvidenceCreator, metrics *bridgeMetrics) *BridgeHandler {
+func NewBridgeHandler(registry RegistryClient, jfrog JFrogClient, metrics *bridgeMetrics) *BridgeHandler {
 	return &BridgeHandler{
 		registry:  registry,
 		jfrog:     jfrog,
-		evidence:  evidence,
 		metrics:   metrics,
 		processed: newBoundedSet(maxProcessedGAVs),
 	}
@@ -169,16 +167,16 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("content embargo check: %w", err)
 	}
 
-	// 3. Generate CycloneDX VEX
-	cdxData, err := GenerateCycloneDXVEX(rem.GroupID, rem.ArtifactID, rem.Version, rem.BaseVersion, osvRecords)
+	// 3. Fetch the enriched SBOM and its RADAS signature from Pulp Maven.
+	sbomData, sbomASC, err := h.registry.FetchSBOM(ctx, rem.GroupID, rem.ArtifactID, rem.Version)
 	if err != nil {
-		return fmt.Errorf("generate CycloneDX VEX: %w", err)
+		return fmt.Errorf("fetch SBOM: %w", err)
 	}
 
-	// 4. Generate OpenVEX predicate (for Evidence, not uploaded as file)
-	openVEXData, err := GenerateOpenVEXPredicate(rem.GroupID, rem.ArtifactID, rem.Version, osvRecords)
+	// 4. Fetch the multi-CVE VEX from the VEX file distribution.
+	vexData, err := h.registry.FetchVEX(ctx, rem.CVEsFixed)
 	if err != nil {
-		return fmt.Errorf("generate OpenVEX predicate: %w", err)
+		return fmt.Errorf("fetch VEX: %w", err)
 	}
 
 	// 5. Upload bundle to JFrog
@@ -195,9 +193,17 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("upload POM: %w", err)
 	}
 
-	cdxPath := fmt.Sprintf("%s/%s-%s.cdx.vex.json", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.jfrog.UploadFile(ctx, cdxPath, cdxData, "application/json"); err != nil {
-		return fmt.Errorf("upload CycloneDX VEX: %w", err)
+	sbomPath := fmt.Sprintf("%s/sbom/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
+	if err := h.jfrog.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
+		return fmt.Errorf("upload SBOM: %w", err)
+	}
+	if err := h.jfrog.UploadFile(ctx, sbomPath+".asc", sbomASC, "application/pgp-signature"); err != nil {
+		return fmt.Errorf("upload SBOM signature: %w", err)
+	}
+
+	vexPath := fmt.Sprintf("%s/vex/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
+	if err := h.jfrog.UploadFile(ctx, vexPath, vexData, "application/json"); err != nil {
+		return fmt.Errorf("upload VEX: %w", err)
 	}
 
 	// 6. Upload maven-metadata.xml
@@ -223,12 +229,7 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("set properties: %w", err)
 	}
 
-	// 8. Sign and deploy Evidence
-	if err := h.evidence.CreateAndDeploy(ctx, openVEXData, jarPath, jarSHA256); err != nil {
-		return fmt.Errorf("evidence: %w", err)
-	}
-
-	// 9. Verify
+	// 8. Verify
 	if err := h.jfrog.VerifyDelivery(ctx, jarPath); err != nil {
 		return fmt.Errorf("verify delivery: %w", err)
 	}

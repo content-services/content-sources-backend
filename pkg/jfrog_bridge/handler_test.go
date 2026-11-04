@@ -5,18 +5,15 @@
 package jfrog_bridge
 
 import (
+	"bytes"
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"encoding/base64"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -26,6 +23,71 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const testVEXTimestamp = "2026-07-15T14:02:27+00:00"
+
+var (
+	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7"}`)
+	testASCBody  = []byte("-----BEGIN PGP SIGNATURE-----\ntest\n")
+	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[]}`)
+)
+
+func testVEXObjectName() string {
+	return testVEXTimestamp + ".bom.json"
+}
+
+func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, ".bom.json.asc"):
+			if asc == nil {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = w.Write(asc)
+		case strings.HasSuffix(r.URL.Path, ".bom.json"):
+			if sbom == nil {
+				http.NotFound(w, r)
+				return
+			}
+			_, _ = w.Write(sbom)
+		case strings.HasSuffix(r.URL.Path, ".jar"):
+			_, _ = w.Write(jar)
+		case strings.HasSuffix(r.URL.Path, ".pom"):
+			_, _ = w.Write(pom)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// pipelineOSVHandler serves the fixture OSV directory and adds the per-CVE
+// and multi-CVE VEX names the bridge derives from PULP_MANIFEST.
+func pipelineOSVHandler() http.Handler {
+	dir := testdataPath("osv", "java", "remediated")
+	files := http.FileServer(http.Dir(dir))
+	perCVE := "CVE-2025-41249-" + testVEXTimestamp + ".bom.json"
+	multi := testVEXObjectName()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
+			base, err := os.ReadFile(filepath.Join(dir, "PULP_MANIFEST"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if len(base) > 0 && base[len(base)-1] != '\n' {
+				base = append(base, '\n')
+			}
+			_, _ = w.Write(append(base, []byte(perCVE+",abc,10\n"+multi+",def,10\n")...))
+			return
+		}
+		if strings.Contains(r.URL.Path, testVEXTimestamp) && !strings.Contains(r.URL.Path, "CVE-") {
+			_, _ = w.Write(testVEXBody)
+			return
+		}
+		files.ServeHTTP(w, r)
+	})
+}
 
 // mockConsumerGroupSession is a minimal test double for sarama.ConsumerGroupSession.
 type mockConsumerGroupSession struct {
@@ -109,30 +171,16 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 		jarData, _ = os.ReadFile(jarPath)
 	}
 
-	// Registry server: serves JAR, POM from testdata
-	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".jar") {
-			_, _ = w.Write(jarData)
-		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			_, _ = w.Write(pomData)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
+	registryServer := httptest.NewServer(pipelineRegistryHandler(jarData, pomData, testSBOMBody, testASCBody))
 	defer registryServer.Close()
 
-	// OSV server: serves from testdata/osv/
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
+	osvServer := httptest.NewServer(pipelineOSVHandler())
 	defer osvServer.Close()
 
-	// JFrog server: records all requests
 	var mu sync.Mutex
 	jfrogPuts := make(map[string]int)
-	var jfrogPosts []string
+	capturedBodies := make(map[string][]byte)
 	var capturedProperties string
-	var capturedCDXBody []byte
-
-	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -142,48 +190,28 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 		case http.MethodPut:
 			if strings.Contains(r.URL.RawQuery, "properties=") {
 				capturedProperties = r.URL.RawQuery
-			}
-			if strings.HasSuffix(r.URL.Path, ".cdx.vex.json") {
+			} else {
 				body, _ := io.ReadAll(r.Body)
-				capturedCDXBody = body
+				capturedBodies[r.URL.Path] = body
 			}
 			jfrogPuts[r.URL.Path]++
 			w.WriteHeader(http.StatusCreated)
-
-		case http.MethodPost:
-			jfrogPosts = append(jfrogPosts, r.URL.Path)
-			if strings.Contains(r.URL.Path, "prepare") {
-				resp := prepareResponse{
-					DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
-					PAE:         "test-pae",
-					PostURL:     "/evidence/api/v1/evidence/deploy",
-				}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			} else {
-				resp := struct {
-					Verified bool   `json:"verified"`
-					ID       string `json:"id"`
-				}{Verified: true, ID: "evd-123"}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			}
-
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(http.StatusOK)
 		}
 	}))
 	defer jfrogServer.Close()
 
-	// Build clients
 	registry := &httpRegistryClient{
 		httpClient:  registryServer.Client(),
 		registryURL: registryServer.URL,
 		osvURL:      osvServer.URL,
+		vexURL:      osvServer.URL,
 		maxRetries:  0,
 	}
-
 	jfrog := &httpJFrogClient{
 		httpClient:  jfrogServer.Client(),
 		catalogURL:  jfrogServer.URL,
@@ -192,18 +220,8 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 		maxRetries:  0,
 	}
 
-	evidence := &evidenceCreator{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		privateKey:  testKey,
-		keyAlias:    "redhat-partner-lightwell",
-		maxRetries:  0,
-	}
-
 	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
+	handler := NewBridgeHandler(registry, jfrog, metrics)
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
@@ -227,37 +245,27 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	pomKey := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.pom"
 	assert.Equal(t, 1, jfrogPuts[pomKey], "POM should be uploaded")
 
-	// Assert: CycloneDX VEX uploaded
-	cdxKey := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.cdx.vex.json"
-	assert.Equal(t, 1, jfrogPuts[cdxKey], "CycloneDX VEX should be uploaded")
+	base := "/artifactory/test-repo/org/springframework/spring-core/5.3.18.rhlw-00003"
+	sbomKey := base + "/sbom/spring-core-5.3.18.rhlw-00003.bom.json"
+	assert.Equal(t, 1, jfrogPuts[sbomKey], "SBOM should be uploaded")
+	assert.Equal(t, 1, jfrogPuts[sbomKey+".asc"], "SBOM signature should be uploaded")
+	vexKey := base + "/vex/spring-core-5.3.18.rhlw-00003.bom.json"
+	assert.Equal(t, 1, jfrogPuts[vexKey], "VEX should be uploaded")
+	require.True(t, bytes.Equal(testVEXBody, capturedBodies[vexKey]), "VEX uploaded to JFrog must be byte-identical to what the registry served")
+	require.True(t, bytes.Equal(testSBOMBody, capturedBodies[sbomKey]), "SBOM uploaded to JFrog must be byte-identical to what the registry served")
+	require.True(t, bytes.Equal(testASCBody, capturedBodies[sbomKey+".asc"]), "SBOM signature uploaded to JFrog must be byte-identical to what the registry served")
 
-	// Assert: maven-metadata.xml uploaded
 	metaKey := "/artifactory/test-repo/org/springframework/spring-core/maven-metadata.xml"
 	assert.Equal(t, 1, jfrogPuts[metaKey], "maven-metadata.xml should be uploaded")
 
-	// Assert: Properties set (values are URL-encoded)
 	assert.Contains(t, capturedProperties, "catalog.name=org.springframework%3Aspring-core")
 	assert.Contains(t, capturedProperties, "catalog.compatible_with=5.3.18")
-
-	// Assert: Evidence prepared and deployed
-	assert.Contains(t, jfrogPosts, "/evidence/api/v1/evidence/prepare")
-	assert.Contains(t, jfrogPosts, "/evidence/api/v1/evidence/deploy")
-
-	// Assert: CycloneDX body contains pedigree
-	require.NotEmpty(t, capturedCDXBody, "CycloneDX VEX body must be captured")
-	var cdxDoc cdxBOM
-	require.NoError(t, json.Unmarshal(capturedCDXBody, &cdxDoc))
-	require.Len(t, cdxDoc.Components, 1, "components array must have one entry")
-	require.NotNil(t, cdxDoc.Components[0].Pedigree, "pedigree must be present")
-	require.Len(t, cdxDoc.Components[0].Pedigree.Ancestors, 1)
-	assert.Equal(t, "5.3.18", cdxDoc.Components[0].Pedigree.Ancestors[0].Version)
-	assert.Contains(t, cdxDoc.Components[0].Pedigree.Ancestors[0].PackageURL, "?type=jar")
 }
 
 func TestGAVDedup(t *testing.T) {
 	reg := prometheus.NewRegistry()
 	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(nil, nil, nil, metrics)
+	handler := NewBridgeHandler(nil, nil, metrics)
 
 	rem := Remediation{
 		GroupID:    "org.test",
@@ -279,7 +287,7 @@ func TestFilterAndParse_CloudEventEventTypeAccepted(t *testing.T) {
 	// CloudEvents "eventtype" extension. java-remediated must be accepted.
 	reg := prometheus.NewRegistry()
 	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(nil, nil, nil, metrics)
+	handler := NewBridgeHandler(nil, nil, metrics)
 
 	payload := []byte(`{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
 
@@ -299,7 +307,7 @@ func TestFilterAndParse_CloudEventEventTypeRejected(t *testing.T) {
 	// (and committed so the consumer moves on).
 	reg := prometheus.NewRegistry()
 	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(nil, nil, nil, metrics)
+	handler := NewBridgeHandler(nil, nil, metrics)
 
 	payload := []byte(`{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-predisclosure","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"CVE-2024-00001"}]}]}}]}`)
 
@@ -309,216 +317,149 @@ func TestFilterAndParse_CloudEventEventTypeRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "java-remediated")
 }
 
-func TestProcessRemediation_EvidenceFailure(t *testing.T) {
-	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
-	pomPath := testdataPath("registry", "org", "springframework",
-		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
-	pomData, err := os.ReadFile(pomPath)
-	require.NoError(t, err)
-
-	jarData := pomData
-
-	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".jar") {
-			_, _ = w.Write(jarData)
-		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			_, _ = w.Write(pomData)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	defer registryServer.Close()
-
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
-	defer osvServer.Close()
-
-	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-
-	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPut:
-			w.WriteHeader(http.StatusCreated)
-		case http.MethodPost:
-			if strings.Contains(r.URL.Path, "prepare") {
-				resp := prepareResponse{
-					DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
-					PAE:         "test-pae",
-					PostURL:     "/evidence/api/v1/evidence/deploy",
-				}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			} else {
-				resp := struct {
-					Verified bool   `json:"verified"`
-					ID       string `json:"id"`
-				}{Verified: false, ID: "evd-fail"}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			}
-		case http.MethodGet:
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{}`))
-		}
-	}))
-	defer jfrogServer.Close()
-
-	registry := &httpRegistryClient{
-		httpClient:  registryServer.Client(),
-		registryURL: registryServer.URL,
-		osvURL:      osvServer.URL,
-		maxRetries:  0,
-	}
-	jfrog := &httpJFrogClient{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		maxRetries:  0,
-	}
-	evidence := &evidenceCreator{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		privateKey:  testKey,
-		keyAlias:    "redhat-partner-lightwell",
-		maxRetries:  0,
-	}
-
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
-
-	rem := Remediation{
-		GroupID:     "org.springframework",
-		ArtifactID:  "spring-core",
-		Version:     "5.3.18.rhlw-00003",
-		BaseVersion: "5.3.18",
-		CVEsFixed:   []string{"CVE-2025-41249"},
-	}
-
-	err = handler.processRemediation(context.Background(), rem)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "evidence")
-}
-
 func TestProcessRemediation_UploadFailure(t *testing.T) {
 	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
-	pomPath := testdataPath("registry", "org", "springframework",
-		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
-	pomData, err := os.ReadFile(pomPath)
-	require.NoError(t, err)
+	pomData := readSpringPOM(t)
 
-	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write(pomData)
-	}))
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, testSBOMBody, testASCBody))
 	defer registryServer.Close()
-
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
+	osvServer := httptest.NewServer(pipelineOSVHandler())
 	defer osvServer.Close()
-
 	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer jfrogServer.Close()
 
-	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-
-	registry := &httpRegistryClient{
-		httpClient:  registryServer.Client(),
-		registryURL: registryServer.URL,
-		osvURL:      osvServer.URL,
-		maxRetries:  0,
-	}
-	jfrog := &httpJFrogClient{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		maxRetries:  0,
-	}
-	evidence := &evidenceCreator{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		privateKey:  testKey,
-		keyAlias:    "redhat-partner-lightwell",
-		maxRetries:  0,
-	}
-
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
-
-	rem := Remediation{
-		GroupID:     "org.springframework",
-		ArtifactID:  "spring-core",
-		Version:     "5.3.18.rhlw-00003",
-		BaseVersion: "5.3.18",
-		CVEsFixed:   []string{"CVE-2025-41249"},
-	}
-
-	err = handler.processRemediation(context.Background(), rem)
+	handler := newPipelineHandler(registryServer, osvServer, jfrogServer)
+	err := handler.processRemediation(context.Background(), springRemediation())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "upload")
 }
 
 func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
-	pomPath := testdataPath("registry", "org", "springframework",
-		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom")
-	pomData, err := os.ReadFile(pomPath)
-	require.NoError(t, err)
+	pomData := readSpringPOM(t)
 
-	jarData := pomData
-
-	registryServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".jar") {
-			_, _ = w.Write(jarData)
-		} else if strings.HasSuffix(r.URL.Path, ".pom") {
-			_, _ = w.Write(pomData)
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, testSBOMBody, testASCBody))
 	defer registryServer.Close()
-
-	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
+	osvServer := httptest.NewServer(pipelineOSVHandler())
 	defer osvServer.Close()
-
-	testKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-
 	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
 			w.WriteHeader(http.StatusCreated)
-		case http.MethodPost:
-			if strings.Contains(r.URL.Path, "prepare") {
-				resp := prepareResponse{
-					DSSEPayload: base64.StdEncoding.EncodeToString([]byte("test-payload")),
-					PAE:         "test-pae",
-					PostURL:     "/evidence/api/v1/evidence/deploy",
-				}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			} else {
-				resp := struct {
-					Verified bool   `json:"verified"`
-					ID       string `json:"id"`
-				}{Verified: true, ID: "evd-123"}
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
-			}
 		case http.MethodGet:
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{}`))
+		default:
+			w.WriteHeader(http.StatusOK)
 		}
 	}))
 	defer jfrogServer.Close()
 
+	handler := newPipelineHandler(registryServer, osvServer, jfrogServer)
+	rem := springRemediation()
+	require.NoError(t, handler.processRemediation(context.Background(), rem))
+
+	gav := gavKey(rem)
+	handler.processed.Add(gav)
+	assert.True(t, handler.processed.Contains(gav), "GAV should be in processed set after successful pipeline")
+}
+
+func TestProcessRemediation_SBOMFetchFailure(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
+	pomData := readSpringPOM(t)
+
+	var puts int
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, nil, testASCBody))
+	defer registryServer.Close()
+	osvServer := httptest.NewServer(pipelineOSVHandler())
+	defer osvServer.Close()
+	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut {
+			puts++
+		}
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer jfrogServer.Close()
+
+	handler := newPipelineHandler(registryServer, osvServer, jfrogServer)
+	err := handler.processRemediation(context.Background(), springRemediation())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "fetch SBOM")
+	assert.Zero(t, puts)
+}
+
+func TestProcessRemediation_SBOMSignatureFailure(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
+	pomData := readSpringPOM(t)
+
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, testSBOMBody, nil))
+	defer registryServer.Close()
+	osvServer := httptest.NewServer(pipelineOSVHandler())
+	defer osvServer.Close()
+	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer jfrogServer.Close()
+
+	handler := newPipelineHandler(registryServer, osvServer, jfrogServer)
+	err := handler.processRemediation(context.Background(), springRemediation())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "signature")
+}
+
+func TestProcessRemediation_VEXFetchFailure(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
+	pomData := readSpringPOM(t)
+
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, testSBOMBody, testASCBody))
+	defer registryServer.Close()
+	osvServer := httptest.NewServer(http.FileServer(http.Dir(testdataPath("osv", "java", "remediated"))))
+	defer osvServer.Close()
+	vexServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	defer vexServer.Close()
+	jfrogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer jfrogServer.Close()
+
+	handler := newPipelineHandlerVEX(registryServer, osvServer, vexServer, jfrogServer)
+	err := handler.processRemediation(context.Background(), springRemediation())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "fetch VEX")
+}
+
+func readSpringPOM(t *testing.T) []byte {
+	t.Helper()
+	pomData, err := os.ReadFile(testdataPath("registry", "org", "springframework",
+		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom"))
+	require.NoError(t, err)
+	return pomData
+}
+
+func springRemediation() Remediation {
+	return Remediation{
+		GroupID:     "org.springframework",
+		ArtifactID:  "spring-core",
+		Version:     "5.3.18.rhlw-00003",
+		BaseVersion: "5.3.18",
+		CVEsFixed:   []string{"CVE-2025-41249"},
+	}
+}
+
+func newPipelineHandler(registryServer, osvServer, jfrogServer *httptest.Server) *BridgeHandler {
+	return newPipelineHandlerVEX(registryServer, osvServer, osvServer, jfrogServer)
+}
+
+func newPipelineHandlerVEX(registryServer, osvServer, vexServer, jfrogServer *httptest.Server) *BridgeHandler {
 	registry := &httpRegistryClient{
 		httpClient:  registryServer.Client(),
 		registryURL: registryServer.URL,
 		osvURL:      osvServer.URL,
+		vexURL:      vexServer.URL,
 		maxRetries:  0,
 	}
 	jfrog := &httpJFrogClient{
@@ -528,34 +469,7 @@ func TestGAVDedup_ProcessRemediationSkips(t *testing.T) {
 		token:       "test-token",
 		maxRetries:  0,
 	}
-	evidence := &evidenceCreator{
-		httpClient:  jfrogServer.Client(),
-		catalogURL:  jfrogServer.URL,
-		catalogRepo: "test-repo",
-		token:       "test-token",
-		privateKey:  testKey,
-		keyAlias:    "redhat-partner-lightwell",
-		maxRetries:  0,
-	}
-
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
-
-	rem := Remediation{
-		GroupID:     "org.springframework",
-		ArtifactID:  "spring-core",
-		Version:     "5.3.18.rhlw-00003",
-		BaseVersion: "5.3.18",
-		CVEsFixed:   []string{"CVE-2025-41249"},
-	}
-
-	err = handler.processRemediation(context.Background(), rem)
-	require.NoError(t, err)
-
-	gav := gavKey(rem)
-	handler.processed.Add(gav)
-
-	assert.True(t, handler.processed.Contains(gav), "GAV should be in processed set after successful pipeline")
+	return NewBridgeHandler(registry, jfrog, newBridgeMetrics(prometheus.NewRegistry()))
 }
 
 func TestConsumeClaim_ChecksumMismatchCommitsOffset(t *testing.T) {
@@ -589,7 +503,7 @@ func TestConsumeClaim_ChecksumMismatchCommitsOffset(t *testing.T) {
 
 	reg := prometheus.NewRegistry()
 	metrics := newBridgeMetrics(reg)
-	handler := NewBridgeHandler(registry, nil, nil, metrics)
+	handler := NewBridgeHandler(registry, nil, metrics)
 
 	// Build a CloudEvents message with a wrong checksum.
 	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.springframework:spring-core","releases":[{"release_names":[{"name":"5.3.18.rhlw-00003"}],"related_cve":[{"cve":"CVE-2025-41249","severity":"important"}],"artifact_checksums":{"spring-core-5.3.18.rhlw-00003.jar":"0000000000000000000000000000000000000000000000000000000000000000"}}]}}]}`

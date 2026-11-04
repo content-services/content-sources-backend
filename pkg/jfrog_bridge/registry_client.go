@@ -1,12 +1,13 @@
 package jfrog_bridge
 
 // TODO: This file mixes four concerns that should be split into distinct files:
-//   1. HTTP transport + retry  (httpRegistryClient, getWithRetry, doGet, FetchJAR, FetchPOM, FetchOSVRecords)
-//   2. OSV parsing + CVE extraction  (osvFile, parseOSVFile, OSVRecord)
-//   3. CVSS 3.1 scoring  (computeCVSS31BaseScore, parseCVSSVector, cvssMetricValue, cvssScoreToSeverity)
-//   4. Maven path utility  (groupPath)
-// Concerns 2-3 are pure functions with no HTTP dependency and could move to
-// dedicated files (osv_parser.go, cvss.go) or into the shared vulnerability_parser package.
+//  1. HTTP transport + retry (httpRegistryClient, getWithRetry, doGet, and the Fetch methods)
+//  2. OSV parsing + CVE extraction (osvFile, parseOSVFile, OSVRecord)
+//  3. CVSS 3.1 scoring (computeCVSS31BaseScore, parseCVSSVector, cvssMetricValue, cvssScoreToSeverity)
+//  4. Maven path utility (groupPath)
+//
+// Concerns 2 and 3 are pure functions with no HTTP dependency and could move to
+// a dedicated file or into the shared vulnerability_parser package.
 
 import (
 	"context"
@@ -16,6 +17,9 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,11 +30,10 @@ import (
 const (
 	maxRegistryResponseBytes = 200 << 20 // 200 MB
 	maxJFrogPingBytes        = 1 << 10   // 1 KB
-	maxEvidenceResponseBytes = 1 << 20   // 1 MB
 )
 
 // OSVRecord holds the bridge-internal representation of a single CVE
-// extracted from an OSV JSON file.
+// extracted from an OSV JSON file. Embargo validation reads CVEID.
 type OSVRecord struct {
 	CVEID       string
 	Aliases     []string
@@ -41,11 +44,13 @@ type OSVRecord struct {
 }
 
 // RegistryClient abstracts HTTP calls to the Lightwell registry on
-// packages.redhat.com to fetch JARs, POMs, and OSV advisory records.
+// packages.redhat.com to fetch JARs, POMs, SBOMs, VEX documents, and OSV records.
 type RegistryClient interface {
 	FetchJAR(ctx context.Context, groupID, artifactID, version string) (body []byte, sha256hex string, err error)
 	FetchPOM(ctx context.Context, groupID, artifactID, version string) ([]byte, error)
+	FetchSBOM(ctx context.Context, groupID, artifactID, version string) (bom, asc []byte, err error)
 	FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error)
+	FetchVEX(ctx context.Context, cveIDs []string) ([]byte, error)
 	Ping(ctx context.Context) error
 }
 
@@ -53,6 +58,7 @@ type httpRegistryClient struct {
 	httpClient  *http.Client
 	registryURL string
 	osvURL      string
+	vexURL      string
 	username    string
 	password    string
 	maxRetries  int
@@ -65,6 +71,7 @@ func newRegistryClient(cfg bridgeConfig) RegistryClient {
 		},
 		registryURL: strings.TrimSuffix(cfg.RegistryURL, "/"),
 		osvURL:      strings.TrimSuffix(cfg.RegistryOSVURL, "/"),
+		vexURL:      strings.TrimSuffix(cfg.RegistryVEXURL, "/"),
 		username:    cfg.RegistryUsername,
 		password:    cfg.RegistryPassword,
 		maxRetries:  cfg.MaxRetries,
@@ -90,6 +97,20 @@ func (c *httpRegistryClient) FetchPOM(ctx context.Context, groupID, artifactID, 
 		return nil, fmt.Errorf("fetch POM: %w", err)
 	}
 	return data, nil
+}
+
+func (c *httpRegistryClient) FetchSBOM(ctx context.Context, groupID, artifactID, version string) ([]byte, []byte, error) {
+	bomURL := fmt.Sprintf("%s/%s/%s/%s/%s-%s.bom.json",
+		c.registryURL, groupPath(groupID), artifactID, version, artifactID, version)
+	bom, err := c.getWithRetry(ctx, bomURL)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch SBOM: %w", err)
+	}
+	asc, err := c.getWithRetry(ctx, bomURL+".asc")
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch SBOM signature: %w", err)
+	}
+	return bom, asc, nil
 }
 
 func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error) {
@@ -136,6 +157,32 @@ func isRootRHLWFilename(filename string) bool {
 	return !strings.Contains(name, "/") && strings.HasPrefix(name, "RHLW-") && strings.HasSuffix(name, ".json")
 }
 
+func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string) ([]byte, error) {
+	if len(cveIDs) == 0 {
+		return nil, fmt.Errorf("fetch VEX: no CVE IDs")
+	}
+	manifestData, err := c.getWithRetry(ctx, c.vexURL+"/PULP_MANIFEST")
+	if err != nil {
+		return nil, fmt.Errorf("fetch VEX: %w", err)
+	}
+	filename, err := multiCVEVEXFilename(vulnerability_parser.ParseManifest(manifestData), cveIDs)
+	if err != nil {
+		return nil, fmt.Errorf("fetch VEX: %w", err)
+	}
+	// PathEscape leaves '+' alone. Encode it so the request target cannot
+	// be read as a space by a query-style decoder.
+	segment := strings.ReplaceAll(url.PathEscape(filename), "+", "%2B")
+	vexURL, err := url.JoinPath(c.vexURL, segment)
+	if err != nil {
+		return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+	}
+	data, err := c.getWithRetry(ctx, vexURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+	}
+	return data, nil
+}
+
 func (c *httpRegistryClient) Ping(ctx context.Context) error {
 	url := c.osvURL + "/PULP_MANIFEST"
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
@@ -156,18 +203,18 @@ func (c *httpRegistryClient) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (c *httpRegistryClient) getWithRetry(ctx context.Context, url string) ([]byte, error) {
+func (c *httpRegistryClient) getWithRetry(ctx context.Context, rawURL string) ([]byte, error) {
 	var data []byte
 	err := retryWithBackoff(ctx, c.maxRetries, func() error {
 		var fetchErr error
-		data, fetchErr = c.doGet(ctx, url)
+		data, fetchErr = c.doGet(ctx, rawURL)
 		return fetchErr
 	})
 	return data, err
 }
 
-func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func (c *httpRegistryClient) doGet(ctx context.Context, rawURL string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -182,7 +229,7 @@ func (c *httpRegistryClient) doGet(ctx context.Context, url string) ([]byte, err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, maxRegistryResponseBytes))
 }
@@ -384,6 +431,58 @@ func cvssScoreToSeverity(score float64) string {
 	default:
 		return "unknown"
 	}
+}
+
+// multiCVEVEXFilename chooses the multi-CVE VEX object for cveIDs.
+// Per-CVE manifest names are "{cveID}-{rawCreated}.bom.json". The raw
+// build-index created string is not the OSV "published" value.
+// Timestamps present for every CVE are intersected. When more than one
+// remains, the lexicographically greatest is used.
+func multiCVEVEXFilename(entries []vulnerability_parser.ManifestEntry, cveIDs []string) (string, error) {
+	if len(cveIDs) == 0 {
+		return "", fmt.Errorf("no CVE IDs")
+	}
+
+	var intersection map[string]struct{}
+	for _, cveID := range cveIDs {
+		re := regexp.MustCompile("^" + regexp.QuoteMeta(cveID) + `-(.+)\.bom\.json$`)
+		found := make(map[string]struct{})
+		for _, entry := range entries {
+			match := re.FindStringSubmatch(entry.Filename)
+			if match == nil {
+				continue
+			}
+			found[match[1]] = struct{}{}
+		}
+		if intersection == nil {
+			intersection = found
+			continue
+		}
+		next := make(map[string]struct{})
+		for ts := range found {
+			if _, ok := intersection[ts]; ok {
+				next[ts] = struct{}{}
+			}
+		}
+		intersection = next
+	}
+	if len(intersection) == 0 {
+		return "", fmt.Errorf("no shared VEX timestamp for %s", strings.Join(cveIDs, ", "))
+	}
+
+	timestamps := make([]string, 0, len(intersection))
+	for ts := range intersection {
+		timestamps = append(timestamps, ts)
+	}
+	sort.Strings(timestamps)
+	chosen := timestamps[len(timestamps)-1]
+	if len(timestamps) > 1 {
+		log.Info().
+			Strs("candidates", timestamps).
+			Str("chosen", chosen).
+			Msg("multiple VEX timestamps; using lexicographically greatest")
+	}
+	return chosen + ".bom.json", nil
 }
 
 func groupPath(groupID string) string {

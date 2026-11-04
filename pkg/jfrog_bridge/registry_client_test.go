@@ -11,8 +11,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -254,4 +256,159 @@ func TestFetchOSVRecords_AllFilesFail(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch")
 	assert.Contains(t, err.Error(), "5.3.18")
+}
+
+func TestFetchSBOM_Success(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		switch {
+		case strings.HasSuffix(r.URL.Path, ".bom.json.asc"):
+			_, _ = w.Write([]byte("sig"))
+		case strings.HasSuffix(r.URL.Path, ".bom.json"):
+			_, _ = w.Write([]byte("bom"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	bom, asc, err := client.FetchSBOM(context.Background(), "org.example", "lib", "1.0.rhlw-00001")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("bom"), bom)
+	assert.Equal(t, []byte("sig"), asc)
+	require.Len(t, paths, 2)
+	assert.Equal(t, "/org/example/lib/1.0.rhlw-00001/lib-1.0.rhlw-00001.bom.json", paths[0])
+	assert.Equal(t, "/org/example/lib/1.0.rhlw-00001/lib-1.0.rhlw-00001.bom.json.asc", paths[1])
+}
+
+func TestFetchSBOM_NotFound(t *testing.T) {
+	var hits int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	_, _, err := client.FetchSBOM(context.Background(), "org.example", "lib", "1.0.rhlw-00001")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "fetch SBOM")
+	assert.Equal(t, 1, hits)
+}
+
+func TestFetchSBOM_SignatureNotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, ".bom.json") && !strings.HasSuffix(r.URL.Path, ".asc") {
+			_, _ = w.Write([]byte("bom"))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	_, _, err := client.FetchSBOM(context.Background(), "org.example", "lib", "1.0.rhlw-00001")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "signature")
+}
+
+func TestMultiCVEVEXFilename(t *testing.T) {
+	entries := []vulnerability_parser.ManifestEntry{
+		{Filename: "CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json"},
+		{Filename: "CVE-2023-20860-2026-06-01T00:00:00+00:00.bom.json"},
+		{Filename: "CVE-2023-20860-2026-07-15T14:02:27+00:00.bom.json"},
+		{Filename: "2026-07-15T14:02:27+00:00.bom.json"},
+		{Filename: "x_RHLW-CVE-2025-41249-5.3.18.json"},
+		{Filename: "CVE-2025-1-2026-07-15T14:02:27+00:00.bom.json"},
+		{Filename: "CVE-2025-12-2026-01-01T00:00:00+00:00.bom.json"},
+	}
+
+	name, err := multiCVEVEXFilename(entries, []string{"CVE-2025-41249", "CVE-2023-20860"})
+	require.NoError(t, err)
+	assert.Equal(t, "2026-07-15T14:02:27+00:00.bom.json", name)
+
+	short, err := multiCVEVEXFilename(entries, []string{"CVE-2025-1"})
+	require.NoError(t, err)
+	assert.Equal(t, "2026-07-15T14:02:27+00:00.bom.json", short)
+
+	_, err = multiCVEVEXFilename(entries, nil)
+	require.Error(t, err)
+
+	_, err = multiCVEVEXFilename(entries, []string{"CVE-2025-41249", "CVE-2099-0001"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "CVE-2025-41249")
+	assert.Contains(t, err.Error(), "CVE-2099-0001")
+
+	multi := []vulnerability_parser.ManifestEntry{
+		{Filename: "CVE-2024-1-2026-01-01T00:00:00+00:00.bom.json"},
+		{Filename: "CVE-2024-1-2026-02-01T00:00:00+00:00.bom.json"},
+	}
+	chosen, err := multiCVEVEXFilename(multi, []string{"CVE-2024-1"})
+	require.NoError(t, err)
+	assert.Equal(t, "2026-02-01T00:00:00+00:00.bom.json", chosen)
+}
+
+func TestFetchVEX_Success(t *testing.T) {
+	const (
+		ts   = "2026-07-15T14:02:27+00:00"
+		body = `{"bomFormat":"CycloneDX"}`
+	)
+	var requestURIs []string
+	vexServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestURIs = append(requestURIs, r.RequestURI)
+		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
+			_, _ = w.Write([]byte("CVE-2025-41249-" + ts + ".bom.json,abc,10\n"))
+			return
+		}
+		_, _ = w.Write([]byte(body))
+	}))
+	defer vexServer.Close()
+
+	osvServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("OSV server must not be contacted, got %s", r.URL.Path)
+	}))
+	defer osvServer.Close()
+
+	client := &httpRegistryClient{
+		httpClient: vexServer.Client(),
+		vexURL:     vexServer.URL,
+		osvURL:     osvServer.URL,
+		maxRetries: 0,
+	}
+	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249"})
+	require.NoError(t, err)
+	assert.Equal(t, []byte(body), got)
+	require.Len(t, requestURIs, 2)
+	assert.Contains(t, requestURIs[0], "PULP_MANIFEST")
+	assert.Contains(t, requestURIs[1], "2026-07-15T14:02:27%2B00:00.bom.json")
+}
+
+func TestFetchVEX_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
+			_, _ = w.Write([]byte("CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json,abc,10\n"))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
+	_, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "2026-07-15T14:02:27+00:00.bom.json")
+}
+
+func TestFetchVEX_NoIntersection(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("CVE-2025-1-2026-01-01T00:00:00+00:00.bom.json,abc,10\nCVE-2025-2-2026-02-01T00:00:00+00:00.bom.json,def,10\n"))
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
+	_, err := client.FetchVEX(context.Background(), []string{"CVE-2025-1", "CVE-2025-2"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no shared VEX timestamp")
 }

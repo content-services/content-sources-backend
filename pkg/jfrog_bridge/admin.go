@@ -7,7 +7,6 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 )
 
 type adminHandler struct {
@@ -57,13 +56,8 @@ func RegisterJFrogBridgeRoutes(engine *echo.Group) {
 
 	registry := newRegistryClient(cfg)
 	jfrog := newJFrogClient(cfg)
-	evidence, err := newEvidenceCreator(cfg)
-	if err != nil {
-		log.Error().Err(err).Msg("admin: failed to create evidence creator")
-		return
-	}
 
-	bh := NewBridgeHandler(registry, jfrog, evidence, metrics)
+	bh := NewBridgeHandler(registry, jfrog, metrics)
 	bh.registryURL = cfg.RegistryURL
 	h := &adminHandler{bridgeHandler: bh, registry: registry, jfrog: jfrog}
 

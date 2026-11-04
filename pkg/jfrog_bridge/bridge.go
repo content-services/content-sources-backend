@@ -23,13 +23,8 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 
 	registry := newRegistryClient(cfg)
 	jfrog := newJFrogClient(cfg)
-	evidence, err := newEvidenceCreator(cfg)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to create evidence creator")
-		return
-	}
 
-	handler := NewBridgeHandler(registry, jfrog, evidence, metrics)
+	handler := NewBridgeHandler(registry, jfrog, metrics)
 	handler.registryURL = cfg.RegistryURL
 
 	topic := config.Get().Options.LightwellBridgeTopic

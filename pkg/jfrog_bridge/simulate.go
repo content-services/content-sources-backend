@@ -87,6 +87,7 @@ func (h *adminHandler) status(c echo.Context) error {
 		"catalog_repo":     cfg.CatalogRepo,
 		"registry_url":     cfg.RegistryURL,
 		"registry_osv_url": cfg.RegistryOSVURL,
+		"registry_vex_url": cfg.RegistryVEXURL,
 	}
 	return c.JSON(http.StatusOK, status)
 }
