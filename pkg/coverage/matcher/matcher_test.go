@@ -76,9 +76,9 @@ func TestMatchCatalog_Status(t *testing.T) {
 		{"java exact", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"}, MatchStatusExact},
 		{"java version not in catalog", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.0"}, MatchStatusPartial},
 		{"java unknown name", Package{Ecosystem: EcosystemJava, Namespace: "com.internal", Name: "internal-lib", Version: "1.0.0"}, MatchStatusNone},
-		// characterization: rebuilds of a cataloged upstream version are partial today (LWLP-4448).
-		{"python rebuild of cataloged version", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3+rhlw.1"}, MatchStatusPartial},
-		{"java rebuild of cataloged version", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0.rhlw.00003"}, MatchStatusPartial},
+		// A Lightwell rebuild of a cataloged upstream version is an exact match (LWLP-4448).
+		{"python rebuild of cataloged version", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3+rhlw.1"}, MatchStatusExact},
+		{"java rebuild of cataloged version", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0.rhlw.00003"}, MatchStatusExact},
 		{"python rebuild of uncataloged version", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "2.0.0+rhlw.1"}, MatchStatusPartial},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
