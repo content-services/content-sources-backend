@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var snapshotAt = time.Date(2026, 8, 20, 12, 0, 0, 0, time.UTC)
@@ -59,65 +60,35 @@ func TestMatchCatalog_EcosystemSummary(t *testing.T) {
 	assert.True(t, java.Supported)
 }
 
-func TestMatchCatalog_ExactMatch(t *testing.T) {
-	manifest := []Package{
-		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
+// TestMatchCatalog_Status checks the per-package status for each way a manifest entry can relate to the catalog.
+func TestMatchCatalog_Status(t *testing.T) {
+	catalog := append(append([]Package{}, pythonCatalog...), javaCatalog...)
+
+	for _, tc := range []struct {
+		name string
+		pkg  Package
+		want string
+	}{
+		{"python exact", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"}, MatchStatusExact},
+		{"python version not in catalog", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "2.0.0"}, MatchStatusPartial},
+		{"python without version", Package{Ecosystem: EcosystemPython, Name: "flask"}, MatchStatusPartial},
+		{"python unknown name", Package{Ecosystem: EcosystemPython, Name: "custom-lib", Version: "0.1.0"}, MatchStatusNone},
+		{"java exact", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"}, MatchStatusExact},
+		{"java version not in catalog", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.0"}, MatchStatusPartial},
+		{"java unknown name", Package{Ecosystem: EcosystemJava, Namespace: "com.internal", Name: "internal-lib", Version: "1.0.0"}, MatchStatusNone},
+		// characterization: rebuilds of a cataloged upstream version are partial today (LWLP-4448).
+		{"python rebuild of cataloged version", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3+rhlw.1"}, MatchStatusPartial},
+		{"java rebuild of cataloged version", Package{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0.rhlw.00003"}, MatchStatusPartial},
+		{"python rebuild of uncataloged version", Package{Ecosystem: EcosystemPython, Name: "flask", Version: "2.0.0+rhlw.1"}, MatchStatusPartial},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			results, _ := MatchCatalog(catalog, []Package{tc.pkg}, snapshotAt)
+
+			require.Len(t, results, 1)
+			assert.Equal(t, tc.want, results[0].MatchStatus)
+			assert.Equal(t, tc.pkg, results[0].Package, "the manifest package must be reported unchanged")
+		})
 	}
-
-	results, summary := MatchCatalog(pythonCatalog, manifest, snapshotAt)
-
-	assert.Len(t, results, 1)
-	assert.Equal(t, MatchStatusExact, results[0].MatchStatus)
-	assert.Equal(t, "flask", results[0].Name)
-	assert.Equal(t, "3.0.3", results[0].Version)
-	assert.Equal(t, 1, summary.ExactMatches)
-	assert.Equal(t, 0, summary.PartialMatches)
-	assert.Equal(t, 0, summary.Unmatched)
-	assert.Equal(t, 1, summary.Total)
-}
-
-func TestMatchCatalog_PartialMatch_VersionNotFound(t *testing.T) {
-	manifest := []Package{
-		{Ecosystem: EcosystemPython, Name: "flask", Version: "2.0.0"},
-	}
-
-	results, summary := MatchCatalog(pythonCatalog, manifest, snapshotAt)
-
-	assert.Len(t, results, 1)
-	assert.Equal(t, MatchStatusPartial, results[0].MatchStatus)
-	assert.Equal(t, "flask", results[0].Name)
-	assert.Equal(t, 1, summary.PartialMatches)
-}
-
-func TestMatchCatalog_PartialMatch_NoVersion(t *testing.T) {
-	manifest := []Package{
-		{Ecosystem: EcosystemPython, Name: "flask", Version: ""},
-	}
-
-	results, summary := MatchCatalog(pythonCatalog, manifest, snapshotAt)
-
-	assert.Len(t, results, 1)
-	assert.Equal(t, MatchStatusPartial, results[0].MatchStatus)
-	assert.Equal(t, "flask", results[0].Name)
-	assert.Empty(t, results[0].Version)
-	assert.Equal(t, 1, summary.PartialMatches)
-}
-
-func TestMatchCatalog_JavaMatch(t *testing.T) {
-	manifest := []Package{
-		{Ecosystem: EcosystemJava, Name: "spring-core", Version: "6.1.0", Namespace: "org.springframework"},
-		{Ecosystem: EcosystemJava, Name: "spring-core", Version: "5.3.0", Namespace: "org.springframework"},
-		{Ecosystem: EcosystemJava, Name: "internal-lib", Version: "1.0.0", Namespace: "com.internal"},
-	}
-
-	results, _ := MatchCatalog(javaCatalog, manifest, snapshotAt)
-
-	assert.Equal(t, MatchStatusExact, results[0].MatchStatus)
-	assert.Equal(t, "spring-core", results[0].Name)
-	assert.Equal(t, "6.1.0", results[0].Version)
-	assert.Equal(t, MatchStatusPartial, results[1].MatchStatus)
-	assert.Equal(t, "spring-core", results[1].Name)
-	assert.Equal(t, MatchStatusNone, results[2].MatchStatus)
 }
 
 func TestMatchCatalog_IncludesAllEcosystems(t *testing.T) {

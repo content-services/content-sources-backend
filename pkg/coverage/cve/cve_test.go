@@ -2,6 +2,7 @@ package cve
 
 import (
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	"github.com/stretchr/testify/assert"
@@ -260,4 +261,26 @@ func TestExactMatchKeysOmitsUnsupportedEcosystems(t *testing.T) {
 	keys := ExactMatchKeys(results)
 
 	assert.Empty(t, keys, "ecosystems the catalog cannot match should be omitted")
+}
+
+// TestEnrichAfterMatchingRebuiltVersionHasNoUpstreamCVEs runs the matcher and the enricher together.
+// Advisories are keyed to the upstream version, so they must not be applied to a manifest entry
+// that uses a Lightwell rebuild of that version.
+func TestEnrichAfterMatchingRebuiltVersionHasNoUpstreamCVEs(t *testing.T) {
+	catalog := []matcher.Package{{Ecosystem: matcher.EcosystemPython, Name: "pypdf2", Version: "3.0.1"}}
+	manifest := []matcher.Package{
+		{Ecosystem: matcher.EcosystemPython, Name: "PyPDF2", Version: "3.0.1"},
+		{Ecosystem: matcher.EcosystemPython, Name: "PyPDF2", Version: "3.0.1+rhlw.1"},
+	}
+	advisories := []Advisory{
+		{Ecosystem: matcher.EcosystemPython, PackageName: "pypdf2", AdvisoryID: "CVE-1", SeverityScore: 7.5, PackageVersion: "3.0.1"},
+	}
+
+	results, _ := matcher.MatchCatalog(catalog, manifest, time.Time{})
+	perPackage, summary := Enrich(results, advisories)
+
+	require.Len(t, perPackage, 2)
+	assert.Equal(t, Count{Important: 1}, perPackage[0].Count, "the upstream version is affected")
+	assert.Equal(t, Count{}, perPackage[1].Count, "upstream-version advisories do not apply to the rebuilt version")
+	assert.Equal(t, Count{Important: 1}, summary)
 }
