@@ -325,7 +325,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/archive": {
             "get": {
-                "description": "Download the submission file and every other file in the submission as a zip archive. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "description": "Download the submission file and every other file in the submission as a zip archive. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.",
                 "produces": [
                     "application/zip"
                 ],
@@ -449,7 +449,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/files/{filename}": {
             "get": {
-                "description": "Download a file stored with a clearinghouse submission. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "description": "Download a file stored with a clearinghouse submission. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.",
                 "produces": [
                     "application/octet-stream"
                 ],
@@ -623,7 +623,7 @@ const docTemplatelightwell = `{
         },
         "/clearinghouse/submissions/{uuid}/submission": {
             "get": {
-                "description": "Download the file that was uploaded when the clearinghouse submission was created. The author can download it while it is pending or submitted. Callers with the Lightwell clearinghouse read feature can download it once it is submitted.",
+                "description": "Download the file that was uploaded when the clearinghouse submission was created. Only callers with the Lightwell clearinghouse read feature can download it, once the submission is submitted or processed. Customers, including the author, cannot download it.",
                 "produces": [
                     "application/octet-stream"
                 ],
@@ -1539,6 +1539,26 @@ const docTemplatelightwell = `{
         "api.ClearinghouseSubmission": {
             "type": "object",
             "properties": {
+                "can_add_reproducers": {
+                    "description": "CanAddReproducers is true when the caller can add files to the submission.",
+                    "type": "boolean"
+                },
+                "can_delete": {
+                    "description": "CanDelete is true when the caller can delete the submission.",
+                    "type": "boolean"
+                },
+                "can_download": {
+                    "description": "CanDownload is true when the caller can download the submission and its files.",
+                    "type": "boolean"
+                },
+                "can_process": {
+                    "description": "CanProcess is true when the caller can mark the submission as processed.",
+                    "type": "boolean"
+                },
+                "can_submit": {
+                    "description": "CanSubmit is true when the caller can submit the submission.",
+                    "type": "boolean"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1603,6 +1623,14 @@ const docTemplatelightwell = `{
         "api.ClearinghouseSubmissionFile": {
             "type": "object",
             "properties": {
+                "can_delete": {
+                    "description": "CanDelete is true when the caller can delete this file.",
+                    "type": "boolean"
+                },
+                "can_download": {
+                    "description": "CanDownload is true when the caller can download this file.",
+                    "type": "boolean"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1624,6 +1652,26 @@ const docTemplatelightwell = `{
         "api.ClearinghouseSubmissionWithCID": {
             "type": "object",
             "properties": {
+                "can_add_reproducers": {
+                    "description": "CanAddReproducers is true when the caller can add files to the submission.",
+                    "type": "boolean"
+                },
+                "can_delete": {
+                    "description": "CanDelete is true when the caller can delete the submission.",
+                    "type": "boolean"
+                },
+                "can_download": {
+                    "description": "CanDownload is true when the caller can download the submission and its files.",
+                    "type": "boolean"
+                },
+                "can_process": {
+                    "description": "CanProcess is true when the caller can mark the submission as processed.",
+                    "type": "boolean"
+                },
+                "can_submit": {
+                    "description": "CanSubmit is true when the caller can submit the submission.",
+                    "type": "boolean"
+                },
                 "cid": {
                     "description": "Customer identifier. Only visible to internal users.",
                     "type": "string"

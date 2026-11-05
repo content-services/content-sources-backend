@@ -478,7 +478,16 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	for _, submissionFile := range listed.Data[0].Files {
 		s.Equal("user", submissionFile.Username)
 		s.False(submissionFile.CreatedAt.IsZero())
+		s.True(submissionFile.CanDelete)
+		s.False(submissionFile.CanDownload)
 	}
+	s.True(listed.Data[0].CanDelete)
+	s.False(listed.Data[0].CanDownload)
+	s.True(listed.Data[0].CanAddReproducers)
+	s.True(listed.Data[0].CanSubmit)
+	s.False(listed.Data[0].CanProcess)
+	s.Contains(string(body), `"can_add_reproducers":true`)
+	s.Contains(string(body), `"can_process":false`)
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
 	s.Require().Equal(http.StatusOK, code, string(body))
@@ -489,6 +498,9 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.Equal(api.ClearinghouseSubmissionStatusPending, fetched.Status)
 	s.False(fetched.CreatedAt.IsZero())
 	s.Require().Len(fetched.Files, 3)
+	s.True(fetched.CanDelete)
+	s.True(fetched.CanSubmit)
+	s.True(fetched.Files[0].CanDelete)
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
 	s.Equal(http.StatusNotFound, code, string(body))
@@ -517,6 +529,11 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.Empty(fetched.CID)
 	s.Equal("someone", fetched.Username)
 	s.Equal(api.ClearinghouseSubmissionStatusSubmitted, fetched.Status)
+	s.False(fetched.CanDelete)
+	s.True(fetched.CanDownload)
+	s.False(fetched.CanAddReproducers)
+	s.False(fetched.CanSubmit)
+	s.True(fetched.CanProcess)
 }
 func (s *ClearinghouseSuite) TestSubmit() {
 	s.enableClearinghouse()
@@ -554,6 +571,12 @@ func (s *ClearinghouseSuite) TestSubmit() {
 	s.Require().NotNil(fetched.SubmittedAt)
 	s.False(fetched.SubmittedAt.IsZero())
 	s.Len(fetched.Files, 3)
+	s.False(fetched.CanSubmit)
+	s.False(fetched.CanDelete)
+	s.False(fetched.CanAddReproducers)
+	s.False(fetched.CanDownload)
+	s.False(fetched.Files[0].CanDelete)
+	s.False(fetched.Files[0].CanDownload)
 
 	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit", clearinghouseOtherUser()))
 	s.Equal(http.StatusForbidden, code, string(body))
@@ -605,16 +628,17 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 
 	downloadPath := "/clearinghouse/submissions/" + id.String() + "/files/vulnerabilities.json"
 	other := clearinghouseOtherUser()
-	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
-	s.Require().Equal(http.StatusOK, code, string(body))
-	s.Equal("payload", string(body))
-	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/submission"))
-	s.Require().Equal(http.StatusOK, code, string(body))
-	s.Equal("payload", string(body))
+	archivePath := "/clearinghouse/submissions/" + id.String() + "/archive"
+	// The author cannot download anything from their own submission.
+	for _, path := range []string{downloadPath, "/clearinghouse/submissions/" + id.String() + "/submission", archivePath} {
+		code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, path))
+		s.Equal(http.StatusForbidden, code, path+": "+string(body))
+		s.Contains(string(body), "Only clearinghouse read users can download submission files")
+	}
 
-	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
+	code, body := s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
 	s.Equal(http.StatusForbidden, code, string(body))
-	s.Contains(string(body), "Only the user who created the submission can download it")
+	s.Contains(string(body), "Only clearinghouse read users can download submission files")
 
 	foreignID := uuid.New()
 	s.reg.ClearinghouseUpload.On("Get", mock.Anything, foreignID).Return(dao.ClearinghouseUpload{
@@ -637,10 +661,16 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 	s.Require().Equal(http.StatusOK, code, string(body))
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
-	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Equal(http.StatusForbidden, code, string(body))
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, archivePath))
+	s.Equal(http.StatusForbidden, code, string(body))
 
 	s.enableRead()
 	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Equal("payload", string(body))
+	// An author who also has the read feature can download through read access.
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Equal("payload", string(body))
 
@@ -657,7 +687,7 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 
 	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
 	s.Require().Equal(http.StatusOK, code, string(body))
-	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/archive", other))
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, archivePath, other))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	archive, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	s.Require().NoError(err)
@@ -665,13 +695,12 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 
 	s.disableRead()
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, downloadPath))
-	s.Equal(http.StatusConflict, code, string(body))
-	s.Contains(string(body), "cannot be downloaded")
+	s.Equal(http.StatusForbidden, code, string(body))
 }
 func (s *ClearinghouseSuite) TestArchive() {
-	s.enableClearinghouse()
+	s.enableRead()
 	id := uuid.New()
-	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusSubmitted)
 	now := upload.CreatedAt
 	files := []dao.ClearinghouseUploadFile{
 		clearinghouseFile(id, "reproducer.py", "user", now),
@@ -703,9 +732,9 @@ func (s *ClearinghouseSuite) TestArchive() {
 	s.Equal("print('hi')", readZipEntry(s.T(), archive.File[2]))
 }
 func (s *ClearinghouseSuite) TestArchiveSecondFileFailure() {
-	s.enableClearinghouse()
+	s.enableRead()
 	id := uuid.New()
-	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusSubmitted)
 	files := []dao.ClearinghouseUploadFile{
 		clearinghouseFile(id, "vulnerabilities.json", "user", upload.CreatedAt),
 		clearinghouseFile(id, "reproducer.py", "user", upload.CreatedAt),
@@ -722,9 +751,9 @@ func (s *ClearinghouseSuite) TestArchiveSecondFileFailure() {
 	s.Contains(string(body), "missing object")
 }
 func (s *ClearinghouseSuite) TestArchiveReadFailure() {
-	s.enableClearinghouse()
+	s.enableRead()
 	id := uuid.New()
-	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusSubmitted)
 	files := []dao.ClearinghouseUploadFile{
 		clearinghouseFile(id, "vulnerabilities.json", "user", upload.CreatedAt),
 		clearinghouseFile(id, "reproducer.py", "user", upload.CreatedAt),
@@ -748,7 +777,6 @@ func (s *ClearinghouseSuite) TestProcessConflicts() {
 	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(func(context.Context, uuid.UUID) (dao.ClearinghouseUpload, error) {
 		return current, nil
 	})
-	s.reg.ClearinghouseUpload.On("Submit", mock.Anything, id, "user").Return(dao.ClearinghouseUpload{}, pgx.ErrNoRows).Once()
 
 	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/process"))
 	s.Equal(http.StatusBadRequest, code, string(body))
@@ -784,6 +812,7 @@ func (s *ClearinghouseSuite) TestProcessConflicts() {
 	s.Equal(http.StatusConflict, code, string(body))
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/"+id.String()+"/submit"))
 	s.Equal(http.StatusConflict, code, string(body))
+	s.Contains(string(body), "can no longer be changed")
 }
 
 func clearinghouseRows(params []dao.CreateClearinghouseUploadFileParams) []dao.ClearinghouseUploadFile {

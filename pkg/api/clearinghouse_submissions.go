@@ -16,23 +16,37 @@ type ClearinghouseSubmissionFile struct {
 	// Submission is true for the file holding the intake submission JSON itself (not a reproducer or other attachment).
 	Submission bool      `json:"submission"`
 	CreatedAt  time.Time `json:"created_at"`
+	// CanDelete is true when the caller can delete this file.
+	CanDelete bool `json:"can_delete"`
+	// CanDownload is true when the caller can download this file.
+	CanDownload bool `json:"can_download"`
 }
 
 // ClearinghouseSubmission is one customer clearinghouse upload and the files stored with it.
 type ClearinghouseSubmission struct {
-	UUID               string                        `json:"uuid"`
-	OrgID              string                        `json:"org_id"`
-	Username           string                        `json:"username"`
-	Name               string                        `json:"name"`
-	CreatedAt          time.Time                     `json:"created_at"`
-	SubmittedAt        *time.Time                    `json:"submitted_at,omitempty"`
-	SubmittedBy        *string                       `json:"submitted_by,omitempty"`
-	ProcessedAt        *time.Time                    `json:"processed_at,omitempty"`
-	ProcessedBy        *string                       `json:"processed_by,omitempty"`
-	VulnerabilityCount *int                          `json:"vulnerability_count,omitempty"`
-	Status             string                        `json:"status"`
-	ErrorMessage       *string                       `json:"error_message,omitempty"`
-	Files              []ClearinghouseSubmissionFile `json:"files"`
+	UUID               string     `json:"uuid"`
+	OrgID              string     `json:"org_id"`
+	Username           string     `json:"username"`
+	Name               string     `json:"name"`
+	CreatedAt          time.Time  `json:"created_at"`
+	SubmittedAt        *time.Time `json:"submitted_at,omitempty"`
+	SubmittedBy        *string    `json:"submitted_by,omitempty"`
+	ProcessedAt        *time.Time `json:"processed_at,omitempty"`
+	ProcessedBy        *string    `json:"processed_by,omitempty"`
+	VulnerabilityCount *int       `json:"vulnerability_count,omitempty"`
+	Status             string     `json:"status"`
+	ErrorMessage       *string    `json:"error_message,omitempty"`
+	// CanDelete is true when the caller can delete the submission.
+	CanDelete bool `json:"can_delete"`
+	// CanDownload is true when the caller can download the submission and its files.
+	CanDownload bool `json:"can_download"`
+	// CanAddReproducers is true when the caller can add files to the submission.
+	CanAddReproducers bool `json:"can_add_reproducers"`
+	// CanSubmit is true when the caller can submit the submission.
+	CanSubmit bool `json:"can_submit"`
+	// CanProcess is true when the caller can mark the submission as processed.
+	CanProcess bool                          `json:"can_process"`
+	Files      []ClearinghouseSubmissionFile `json:"files"`
 }
 
 // ClearinghouseSubmissionWithCID is a clearinghouse submission returned by list and get.
