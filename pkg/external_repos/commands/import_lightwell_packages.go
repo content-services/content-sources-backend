@@ -149,7 +149,7 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 	// The stored value is that request, so the same value does not force it again.
 	requested := forceRequest != "" && repo.PackageImportForcedAt != forceRequest
 	if !shouldImport(currentVersion, repo.LastImportRepositoryVersion, force || requested) {
-		return nil
+		return saveStoredContentCounts(ctx, daoReg, repo)
 	}
 
 	pkgs, err := fetchRepoPackages(ctx, daoReg.MavenPackages, pulpClient, repo.ContentType, *repoHref)
@@ -159,7 +159,23 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 	if err := daoReg.LightwellPackage.SyncPackagesForRepository(ctx, repo.RepoConfigUUID, pkgs); err != nil {
 		return err
 	}
+	// Counts are saved before the version stamp. A failure here leaves the repository
+	// eligible for the next import instead of skipping it with stale counts.
+	if err := saveStoredContentCounts(ctx, daoReg, repo); err != nil {
+		return err
+	}
 	return daoReg.RepositoryConfig.InternalOnly_UpdateLastImportRepositoryVersion(ctx, repo.RepoConfigUUID, *currentVersion, forceRequest)
+}
+
+func saveStoredContentCounts(ctx context.Context, daoReg *dao.DaoRegistry, repo dao.LightwellRepoToImport) error {
+	packageCount, buildCount, versionCount, err := daoReg.LightwellPackage.InternalOnlyCountStoredContent(ctx, repo.RepoConfigUUID)
+	if err != nil {
+		return err
+	}
+	if packageCount == repo.PackageCount && buildCount == repo.BuildCount && versionCount == repo.VersionCount {
+		return nil
+	}
+	return daoReg.Repository.InternalOnly_UpdateCounts(ctx, repo.RepositoryUUID, packageCount, buildCount, versionCount)
 }
 
 func shouldImport(current *string, last string, force bool) bool {

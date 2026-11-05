@@ -307,7 +307,6 @@ type Expiration struct {
 	Rbac              time.Duration `mapstructure:"rbac"`
 	SubscriptionCheck time.Duration `mapstructure:"subscription_check"`
 	Roadmap           time.Duration `mapstructure:"roadmap"`
-	ContentCounts     time.Duration `mapstructure:"content_counts"`
 	Terms             time.Duration `mapstructure:"terms"` // Values <= 0 disable only terms caching.
 }
 
@@ -497,7 +496,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.redis.db", 0)
 	v.SetDefault("clients.redis.expiration.rbac", 1*time.Minute)
 	v.SetDefault("clients.redis.expiration.subscription_check", 1*time.Hour)
-	v.SetDefault("clients.redis.expiration.content_counts", 5*time.Minute)
 	v.SetDefault("clients.redis.expiration.roadmap", 24*time.Hour)
 	v.SetDefault("clients.redis.expiration.terms", 24*time.Hour)
 

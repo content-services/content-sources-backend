@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -208,5 +209,19 @@ func (p clearinghouseCaller) submission(upload dao.ClearinghouseUpload, files []
 		CanSubmit:          p.checkSubmit(upload) == nil,
 		CanProcess:         p.checkProcess(upload) == nil,
 		Files:              outFiles,
+	}
+}
+
+// submissionWithCID converts a stored upload into the list/get API response.
+// The customer identifier is only included for callers with the Lightwell
+// clearinghouse read feature.
+func (p clearinghouseCaller) submissionWithCID(upload dao.ClearinghouseUpload, files []dao.ClearinghouseUploadFile) api.ClearinghouseSubmissionWithCID {
+	cid := ""
+	if p.readErr == nil {
+		cid = config.Get().Clients.Lightwell.ClearinghouseMapping.CIDForOrg(upload.OrgID)
+	}
+	return api.ClearinghouseSubmissionWithCID{
+		ClearinghouseSubmission: p.submission(upload, files),
+		CID:                     cid,
 	}
 }

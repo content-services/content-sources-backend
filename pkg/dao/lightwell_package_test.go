@@ -184,6 +184,133 @@ func ptr(s string) *string {
 	return &s
 }
 
+func (s *LightwellPackageSuite) TestInternalOnlyListStoredPackageVersions() {
+	ctx, packageDao := s.dao()
+	suffix := time.Now().UnixNano()
+
+	javaUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("stored-java-%d", suffix),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+	otherUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("stored-other-%d", suffix),
+		"lightwell-maven",
+		"predisclosure",
+		config.ContentTypeMaven,
+	)
+
+	s.createPackageWithVersions(
+		ctx, javaUUID, "demo", "org.example",
+		[]string{"1.2.3.rhlw-00002", "1.2.3.rhlw-00001"},
+		[]string{"rhlw-00002", "rhlw-00001"},
+		[]string{"pkg:maven/org.example/demo@1.2.3.rhlw-00002", "pkg:maven/org.example/demo@1.2.3.rhlw-00001"},
+	)
+	s.createPackageWithVersions(
+		ctx, javaUUID, "other", "org.example",
+		[]string{"9.9.9"}, []string{""}, []string{"pkg:maven/org.example/other@9.9.9"},
+	)
+	s.createPackageWithVersions(
+		ctx, otherUUID, "demo", "org.example",
+		[]string{"5.0.0"}, []string{""}, []string{"pkg:maven/org.example/demo@5.0.0"},
+	)
+
+	got, err := packageDao.InternalOnlyListStoredPackageVersions(ctx, javaUUID, "org.example", "demo")
+	s.Require().NoError(err)
+	s.Equal([]string{"1.2.3.rhlw-00001", "1.2.3.rhlw-00002"}, got)
+
+	missing, err := packageDao.InternalOnlyListStoredPackageVersions(ctx, javaUUID, "org.example", "absent")
+	s.Require().NoError(err)
+	s.Empty(missing)
+}
+
+func (s *LightwellPackageSuite) TestInternalOnlyCountStoredContent() {
+	ctx, packageDao := s.dao()
+	suffix := time.Now().UnixNano()
+
+	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("counts-%d", suffix),
+		"lightwell-maven",
+		"remediated",
+		config.ContentTypeMaven,
+	)
+	otherUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("counts-other-%d", suffix),
+		"lightwell-maven",
+		"predisclosure",
+		config.ContentTypeMaven,
+	)
+	emptyUUID, _ := s.createLightwellRepoWithFeature(
+		ctx,
+		fmt.Sprintf("counts-empty-%d", suffix),
+		"lightwell-npm",
+		"remediated",
+		config.ContentTypeNpm,
+	)
+
+	s.createPackageWithUpstream(ctx, repoConfigUUID, "demo", "org.example", []upstreamVersion{
+		{version: "1.2.3.rhlw-00002", upstream: "1.2.3"},
+		{version: "1.2.3.rhlw-00001", upstream: "1.2.3"},
+	})
+	s.createPackageWithUpstream(ctx, repoConfigUUID, "other", "org.example", []upstreamVersion{
+		{version: "9.9.9", upstream: "9.9.9"},
+	})
+	s.createPackageWithUpstream(ctx, repoConfigUUID, "node", "@types", []upstreamVersion{
+		{version: "20.0.0-rhlw-00001", upstream: "20.0.0"},
+	})
+	s.createPackageWithUpstream(ctx, otherUUID, "demo", "org.example", []upstreamVersion{
+		{version: "5.0.0", upstream: "5.0.0"},
+	})
+
+	packageCount, buildCount, versionCount, err := packageDao.InternalOnlyCountStoredContent(ctx, repoConfigUUID)
+	s.Require().NoError(err)
+	s.Equal(3, packageCount)
+	s.Equal(4, buildCount)
+	s.Equal(3, versionCount)
+
+	packageCount, buildCount, versionCount, err = packageDao.InternalOnlyCountStoredContent(ctx, emptyUUID)
+	s.Require().NoError(err)
+	s.Equal(0, packageCount)
+	s.Equal(0, buildCount)
+	s.Equal(0, versionCount)
+}
+
+type upstreamVersion struct {
+	version  string
+	upstream string
+}
+
+func (s *LightwellPackageSuite) createPackageWithUpstream(ctx context.Context, repoConfigUUID, name, group string, versions []upstreamVersion) {
+	pkgUUID := uuid.New().String()
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, name, group,
+	).Error
+	s.Require().NoError(err)
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+
+	for _, version := range versions {
+		versionUUID := uuid.New().String()
+		err = db.DB.WithContext(ctx).Exec(`
+			INSERT INTO lightwell_package_versions (uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid, version, upstream_version, published_at)
+			VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?)`,
+			versionUUID, pkgUUID, repoConfigUUID, version.version, version.upstream, "2026-09-25T00:00:00Z",
+		).Error
+		s.Require().NoError(err)
+		s.T().Cleanup(func() {
+			_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		})
+	}
+}
+
 func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
 	ctx, dao := s.dao()
 	suffix := time.Now().UnixNano()

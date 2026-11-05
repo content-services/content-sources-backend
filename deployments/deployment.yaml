@@ -472,7 +472,6 @@ objects:
               - /content-sources
               - api
               - instrumentation
-              - pulp-data-importer
               - jfrog-bridge
             livenessProbe:
               failureThreshold: 3

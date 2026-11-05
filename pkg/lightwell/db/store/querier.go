@@ -16,6 +16,7 @@ type Querier interface {
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
 	CountClearinghouseUploads(ctx context.Context, orgID *string) (int64, error)
+	CountStoredPackageContent(ctx context.Context, repositoryConfigurationUuid uuid.UUID) (CountStoredPackageContentRow, error)
 	CreateClearinghouseUpload(ctx context.Context, arg CreateClearinghouseUploadParams) (ClearinghouseUpload, error)
 	CreateClearinghouseUploadFile(ctx context.Context, arg CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)
 	DeleteClearinghouseUpload(ctx context.Context, argUuid uuid.UUID) error
@@ -47,6 +48,7 @@ type Querier interface {
 	ListLightwellPythonPackageVersions(ctx context.Context, arg ListLightwellPythonPackageVersionsParams) ([]ListLightwellPythonPackageVersionsRow, error)
 	ListLightwellRepositoryPackages(ctx context.Context, arg ListLightwellRepositoryPackagesParams) ([]ListLightwellRepositoryPackagesRow, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
+	ListStoredPackageVersions(ctx context.Context, arg ListStoredPackageVersionsParams) ([]string, error)
 	ListVulnerabilities(ctx context.Context, arg ListVulnerabilitiesParams) ([]ListVulnerabilitiesRow, error)
 	ProcessClearinghouseUpload(ctx context.Context, arg ProcessClearinghouseUploadParams) (ClearinghouseUpload, error)
 	RecordBeaconSync(ctx context.Context, lastProcessedAt time.Time) error

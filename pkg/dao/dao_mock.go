@@ -11395,6 +11395,159 @@ func (_c *MockLightwellPackageDao_InternalOnlyListLensCatalog_Call) RunAndReturn
 	return _c
 }
 
+// InternalOnlyListStoredPackageVersions provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) InternalOnlyListStoredPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) ([]string, error) {
+	ret := _mock.Called(ctx, repoConfigUUID, group, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnlyListStoredPackageVersions")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) ([]string, error)); ok {
+		return returnFunc(ctx, repoConfigUUID, group, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) []string); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, group, name)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, repoConfigUUID, group, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnlyListStoredPackageVersions'
+type MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call struct {
+	*mock.Call
+}
+
+// InternalOnlyListStoredPackageVersions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - group string
+//   - name string
+func (_e *MockLightwellPackageDao_Expecter) InternalOnlyListStoredPackageVersions(ctx any, repoConfigUUID any, group any, name any) *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call {
+	return &MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call{Call: _e.mock.On("InternalOnlyListStoredPackageVersions", ctx, repoConfigUUID, group, name)}
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call) Run(run func(ctx context.Context, repoConfigUUID string, group string, name string)) *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call) Return(strings []string, err error) *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, group string, name string) ([]string, error)) *MockLightwellPackageDao_InternalOnlyListStoredPackageVersions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InternalOnlyCountStoredContent provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) InternalOnlyCountStoredContent(ctx context.Context, repoConfigUUID string) (int, int, int, error) {
+	ret := _mock.Called(ctx, repoConfigUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InternalOnlyCountStoredContent")
+	}
+
+	var r0 int
+	var r1 int
+	var r2 int
+	var r3 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (int, int, int, error)); ok {
+		return returnFunc(ctx, repoConfigUUID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) int); ok {
+		r0 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) int); ok {
+		r1 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string) int); ok {
+		r2 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r2 = ret.Get(2).(int)
+	}
+	if returnFunc, ok := ret.Get(3).(func(context.Context, string) error); ok {
+		r3 = returnFunc(ctx, repoConfigUUID)
+	} else {
+		r3 = ret.Error(3)
+	}
+	return r0, r1, r2, r3
+}
+
+// MockLightwellPackageDao_InternalOnlyCountStoredContent_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InternalOnlyCountStoredContent'
+type MockLightwellPackageDao_InternalOnlyCountStoredContent_Call struct {
+	*mock.Call
+}
+
+// InternalOnlyCountStoredContent is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+func (_e *MockLightwellPackageDao_Expecter) InternalOnlyCountStoredContent(ctx any, repoConfigUUID any) *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call {
+	return &MockLightwellPackageDao_InternalOnlyCountStoredContent_Call{Call: _e.mock.On("InternalOnlyCountStoredContent", ctx, repoConfigUUID)}
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call) Run(run func(ctx context.Context, repoConfigUUID string)) *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(arg0, arg1)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call) Return(packageCount int, buildCount int, versionCount int, err error) *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call {
+	_c.Call.Return(packageCount, buildCount, versionCount, err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string) (int, int, int, error)) *MockLightwellPackageDao_InternalOnlyCountStoredContent_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListMavenPackageVersions provides a mock function for the type MockLightwellPackageDao
 func (_mock *MockLightwellPackageDao) ListMavenPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) (api.MavenPackageVersionsResponse, error) {
 	ret := _mock.Called(ctx, repoConfigUUID, group, name)

@@ -1680,6 +1680,7 @@ func ModelToApiFields(repoConfig models.RepositoryConfiguration, apiRepo *api.Re
 	apiRepo.SecurityLevel = repoConfig.Repository.SecurityLevel
 	apiRepo.PublishedDistURL = repoConfig.Repository.PublishedDistURL
 	apiRepo.PublishedDistBasePath = repoConfig.Repository.PublishedDistBasePath
+	apiRepo.LastImportRepositoryVersion = repoConfig.LastImportRepositoryVersion
 
 	apiRepo.LastSnapshotUUID = repoConfig.LastSnapshotUUID
 	if repoConfig.LastSnapshot != nil {
@@ -2285,7 +2286,11 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx con
 			r.content_type,
 			COALESCE(r.published_distribution_base_path, ''),
 			COALESCE(rc.last_import_repository_version, ''),
-			COALESCE(rc.package_import_forced_at, '')
+			COALESCE(rc.package_import_forced_at, ''),
+			r.uuid,
+			r.package_count,
+			r.build_count,
+			r.version_count
 		FROM repository_configurations rc
 		JOIN repositories r ON r.uuid = rc.repository_uuid
 		WHERE rc.org_id IN (?, ?)
@@ -2301,7 +2306,8 @@ func (r repositoryConfigDaoImpl) InternalOnly_ListLightwellReposToImport(ctx con
 	for rows.Next() {
 		var item LightwellRepoToImport
 		if err := rows.Scan(&item.RepoConfigUUID, &item.OrgID, &item.Name,
-			&item.ContentType, &item.BasePath, &item.LastImportRepositoryVersion, &item.PackageImportForcedAt); err != nil {
+			&item.ContentType, &item.BasePath, &item.LastImportRepositoryVersion, &item.PackageImportForcedAt,
+			&item.RepositoryUUID, &item.PackageCount, &item.BuildCount, &item.VersionCount); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

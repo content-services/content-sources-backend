@@ -247,7 +247,7 @@ const docTemplatelightwell = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                            "$ref": "#/definitions/api.ClearinghouseSubmissionWithCID"
                         }
                     },
                     "400": {
@@ -1609,7 +1609,7 @@ const docTemplatelightwell = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionWithCID"
                     }
                 },
                 "links": {
@@ -1646,6 +1646,77 @@ const docTemplatelightwell = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionWithCID": {
+            "type": "object",
+            "properties": {
+                "can_add_reproducers": {
+                    "description": "CanAddReproducers is true when the caller can add files to the submission.",
+                    "type": "boolean"
+                },
+                "can_delete": {
+                    "description": "CanDelete is true when the caller can delete the submission.",
+                    "type": "boolean"
+                },
+                "can_download": {
+                    "description": "CanDownload is true when the caller can download the submission and its files.",
+                    "type": "boolean"
+                },
+                "can_process": {
+                    "description": "CanProcess is true when the caller can mark the submission as processed.",
+                    "type": "boolean"
+                },
+                "can_submit": {
+                    "description": "CanSubmit is true when the caller can submit the submission.",
+                    "type": "boolean"
+                },
+                "cid": {
+                    "description": "Customer identifier. Only visible to internal users.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "processed_at": {
+                    "type": "string"
+                },
+                "processed_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitted_by": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "vulnerability_count": {
+                    "type": "integer"
                 }
             }
         },

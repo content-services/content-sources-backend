@@ -15,8 +15,8 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
-	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/handler"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
@@ -51,6 +51,8 @@ func (s *PythonPackagesSuite) SetupTest() {
 
 	err := db.Connect()
 	require.NoError(s.T(), err)
+	// Connect replaces the sqlc pool. Refresh the registry so it does not keep the closed one.
+	s.dao = dao.GetDaoRegistry(db.DB)
 
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -477,30 +479,21 @@ func (s *PythonPackagesSuite) TestContentCountsForPythonRepository() {
 
 	t := s.T()
 
-	// Create a Python repository
 	repo := s.createPythonRepository(config.LightwellOrg)
+	seedMirrorContentCounts(t, repo.UUID, []mirrorPackage{
+		{name: "demo-pkg", versions: []mirrorVersion{
+			{version: "5.0-rhlw-00001", upstream: "5.0"},
+			{version: "5.0-rhlw-00002", upstream: "5.0"},
+		}},
+	})
 
-	// Get domain and pulp client
-	domainName, err := s.dao.Domain.FetchOrCreateDomain(s.ctx, config.LightwellOrg)
+	packageCount, buildCount, versionCount, err := s.dao.LightwellPackage.InternalOnlyCountStoredContent(s.ctx, repo.UUID)
 	require.NoError(t, err)
-	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
+	require.NoError(t, s.dao.Repository.InternalOnly_UpdateCounts(s.ctx, repo.RepositoryUUID, packageCount, buildCount, versionCount))
 
-	// Test UpdateContentCounts function
-	err = external_repos.UpdateContentCounts(
-		s.ctx,
-		s.dao,
-		pulpClient,
-		*config.Tang,
-		domainName,
-		false,
-	)
-
-	require.NoError(t, err)
-
-	// Verify the repository was updated in the database
 	updatedRepo, err := s.dao.RepositoryConfig.Fetch(s.ctx, repo.OrgID, repo.UUID)
 	require.NoError(t, err)
-	assert.Equal(t, 1, updatedRepo.PackageCount, "Package count should be updated in database")
-	assert.Equal(t, 1, updatedRepo.BuildCount, "Build count should be updated in database")
-	assert.Equal(t, 1, updatedRepo.VersionCount, "Version count should be updated in database")
+	assert.Equal(t, 1, updatedRepo.PackageCount)
+	assert.Equal(t, 2, updatedRepo.BuildCount)
+	assert.Equal(t, 1, updatedRepo.VersionCount)
 }

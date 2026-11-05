@@ -477,9 +477,9 @@ func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 		}
 	}
 
-	response := api.ClearinghouseSubmissionCollectionResponse{Data: make([]api.ClearinghouseSubmission, 0, len(uploads))}
+	response := api.ClearinghouseSubmissionCollectionResponse{Data: make([]api.ClearinghouseSubmissionWithCID, 0, len(uploads))}
 	for _, upload := range uploads {
-		response.Data = append(response.Data, caller.submission(upload, filesByUpload[upload.UUID]))
+		response.Data = append(response.Data, caller.submissionWithCID(upload, filesByUpload[upload.UUID]))
 	}
 	return c.JSON(http.StatusOK, handler.SetCollectionResponseMetadata(&response, c, total))
 }
@@ -491,7 +491,7 @@ func (h *ClearinghouseHandler) listSubmissions(c echo.Context) error {
 // @Tags         lightwell
 // @Produce      json
 // @Param        uuid path string true "Clearinghouse submission UUID"
-// @Success      200 {object} api.ClearinghouseSubmission
+// @Success      200 {object} api.ClearinghouseSubmissionWithCID
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
@@ -506,7 +506,7 @@ func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
 	if err != nil {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
-	return c.JSON(http.StatusOK, caller.submission(upload, files))
+	return c.JSON(http.StatusOK, caller.submissionWithCID(upload, files))
 }
 
 // downloadSubmission godoc

@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
-	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
-	"github.com/content-services/tang/pkg/tangy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -123,34 +121,21 @@ func breadcrumbJiraIssue(t *testing.T, key, status, description string) jira_cli
 func TestPublicationPackageVerifierChecksAllSupportedPackageTypes(t *testing.T) {
 	ctx := context.Background()
 	repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{
-		{Name: "ignored", PublishedDistBasePath: "java/validated", ContentType: "maven"},
-		{Name: "java remediated", PublishedDistBasePath: "java/remediated", ContentType: "maven"},
-		{Name: "java predisclosure", PublishedDistBasePath: "java/predisclosure", ContentType: "maven"},
-		{Name: "python remediated", PublishedDistBasePath: "python/remediated", ContentType: "python"},
+		importedPublicationRepo("ignored", "java/validated", "maven"),
+		importedPublicationRepo("java-remediated", "java/remediated", "maven"),
+		importedPublicationRepo("java-predisclosure", "java/predisclosure", "maven"),
+		importedPublicationRepo("python-remediated", "python/remediated", "python"),
 	})
-	resolver := pulp_client.NewMockPulpClient(t)
-	expectPublicationRepository(resolver, ctx, "java/remediated")
-	expectPublicationRepository(resolver, ctx, "java/predisclosure")
-	expectPublicationRepository(resolver, ctx, "python/remediated")
-	tang := tangy.NewMockTangy(t)
-	tang.On("MavenVersionsList", ctx, "java/remediated-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).
-		Return(tangy.MavenVersionsResponse{}, nil).Once()
-	tang.On("MavenVersionsList", ctx, "java/predisclosure-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).Return(tangy.MavenVersionsResponse{
-		Results: []tangy.MavenVersionsItem{{
-			GroupID: "org.example", ArtifactID: "demo", Version: "1.2.3",
-			Builds: []tangy.MavenBuildInfo{{Version: "1.2.3", Release: "rhlw-00002"}},
-		}},
-		Total: 1,
-	}, nil).Once()
-	tang.On("PythonPackageVersionsGet", ctx, "python/remediated-href", "demo-pkg").
-		Return([]tangy.PythonPackageDetail{{Version: "5.0-rhlw-00001"}}, nil).Once()
-	tang.On("PythonPackageVersionsGet", ctx, "python/remediated-href", "plain").
-		Return(nil, fmt.Errorf("%w: plain", tangy.ErrPythonPackageNotFound)).Once()
+	packages := dao.NewMockLightwellPackageDao(t)
+	expectStoredVersions(packages, ctx, "java-remediated", "org.example", "demo", nil, nil)
+	expectStoredVersions(packages, ctx, "java-predisclosure", "org.example", "demo", []string{"1.2.3.rhlw-00002"}, nil)
+	expectStoredVersions(packages, ctx, "python-remediated", "", "demo-pkg", []string{"5.0-rhlw-00001"}, nil)
+	expectStoredVersions(packages, ctx, "python-remediated", "", "plain", nil, nil)
 
 	maven := PublicationPackage{Ecosystem: "maven", Namespace: "org.example", Name: "demo"}
 	python := PublicationPackage{Ecosystem: "pypi", Name: "Demo_Pkg"}
 	missingPython := PublicationPackage{Ecosystem: "pypi", Name: "plain"}
-	verifier := NewPublicationPackageVerifier(repositories, resolver, tang)
+	verifier := NewPublicationPackageVerifier(repositories, packages)
 
 	confirmed, warnings := verifier.VerifyPublished(ctx, map[PublicationPackage][]string{
 		maven:         {"1.2.3.rhlw-00002", "9.9.9"},
@@ -162,55 +147,46 @@ func TestPublicationPackageVerifierChecksAllSupportedPackageTypes(t *testing.T) 
 	assert.Equal(t, []string{"1.2.3.rhlw-00002"}, confirmed[maven])
 	assert.Equal(t, []string{"5.0-rhlw-00001"}, confirmed[python])
 	assert.NotContains(t, confirmed, missingPython)
-	resolver.AssertNotCalled(t, "ResolveRepositoryFromBasePath", ctx, "java/validated")
+	packages.AssertNotCalled(t, "InternalOnlyListStoredPackageVersions", mock.Anything, "ignored", mock.Anything, mock.Anything)
 }
 
 func TestPublicationPackageVerifierKeepsPartialResultsAndWarnings(t *testing.T) {
 	ctx := context.Background()
 	repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{
-		{PublishedDistBasePath: "java/remediated", ContentType: "maven"},
-		{PublishedDistBasePath: "java/predisclosure", ContentType: "maven"},
+		importedPublicationRepo("java-remediated", "java/remediated", "maven"),
+		importedPublicationRepo("java-predisclosure", "java/predisclosure", "maven"),
 	})
-	resolver := pulp_client.NewMockPulpClient(t)
-	expectPublicationRepository(resolver, ctx, "java/remediated")
-	expectPublicationRepository(resolver, ctx, "java/predisclosure")
-	tang := tangy.NewMockTangy(t)
-	tang.On("MavenVersionsList", ctx, "java/remediated-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).
-		Return(tangy.MavenVersionsResponse{}, errors.New("Tang unavailable")).Once()
-	tang.On("MavenVersionsList", ctx, "java/predisclosure-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).Return(tangy.MavenVersionsResponse{
-		Results: []tangy.MavenVersionsItem{{Version: "1.0.0"}}, Total: 1,
-	}, nil).Once()
+	packages := dao.NewMockLightwellPackageDao(t)
+	expectStoredVersions(packages, ctx, "java-remediated", "org.example", "demo", nil, errors.New("mirror unavailable"))
+	expectStoredVersions(packages, ctx, "java-predisclosure", "org.example", "demo", []string{"1.0.0"}, nil)
 	pkg := PublicationPackage{Ecosystem: "maven", Namespace: "org.example", Name: "demo"}
 
-	confirmed, warnings := NewPublicationPackageVerifier(repositories, resolver, tang).
+	confirmed, warnings := NewPublicationPackageVerifier(repositories, packages).
 		VerifyPublished(ctx, map[PublicationPackage][]string{pkg: {"1.0.0"}})
 
 	assert.Equal(t, []string{"1.0.0"}, confirmed[pkg])
 	require.Len(t, warnings, 1)
-	assert.Contains(t, warnings[0], "Tang unavailable")
+	assert.Contains(t, warnings[0], "mirror unavailable")
 }
 
-func TestPublicationPackageVerifierChecksMavenVersionsBeyondFirstPage(t *testing.T) {
+func TestPublicationPackageVerifierSkipsUnimportedRepositories(t *testing.T) {
 	ctx := context.Background()
-	tang := tangy.NewMockTangy(t)
-	firstPage := make([]tangy.MavenVersionsItem, 1000)
-	for i := range firstPage {
-		firstPage[i].Version = fmt.Sprintf("1.0.%d", i)
-	}
-	tang.On("MavenVersionsList", ctx, "java/remediated-href", "org.example", "demo", "", tangy.PageOptions{Limit: 1000}).
-		Return(tangy.MavenVersionsResponse{Results: firstPage, Total: 1001}, nil).Once()
-	tang.On("MavenVersionsList", ctx, "java/remediated-href", "org.example", "demo", "", tangy.PageOptions{Offset: 1000, Limit: 1000}).
-		Return(tangy.MavenVersionsResponse{
-			Results: []tangy.MavenVersionsItem{{Version: "2.0.0"}}, Total: 1001,
-		}, nil).Once()
-
-	verifier := &publicationPackageVerifier{tang: tang}
-	available, err := verifier.packageVersions(ctx, "java/remediated-href", PublicationPackage{
-		Ecosystem: "maven", Namespace: "org.example", Name: "demo",
+	repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{
+		{UUID: "java-remediated", PublishedDistBasePath: "java/remediated", ContentType: "maven"},
+		importedPublicationRepo("java-predisclosure", "java/predisclosure", "maven"),
 	})
+	packages := dao.NewMockLightwellPackageDao(t)
+	expectStoredVersions(packages, ctx, "java-predisclosure", "org.example", "demo", []string{"1.0.0"}, nil)
+	pkg := PublicationPackage{Ecosystem: "maven", Namespace: "org.example", Name: "demo"}
 
-	require.NoError(t, err)
-	assert.True(t, available["2.0.0"])
+	confirmed, warnings := NewPublicationPackageVerifier(repositories, packages).
+		VerifyPublished(ctx, map[PublicationPackage][]string{pkg: {"1.0.0"}})
+
+	assert.Equal(t, []string{"1.0.0"}, confirmed[pkg])
+	require.Len(t, warnings, 1)
+	assert.Contains(t, warnings[0], "java/remediated")
+	assert.Contains(t, warnings[0], "package mirror has not been imported")
+	packages.AssertNotCalled(t, "InternalOnlyListStoredPackageVersions", mock.Anything, "java-remediated", mock.Anything, mock.Anything)
 }
 
 func TestPublicationPackageVerifierReportsRepositoryFailures(t *testing.T) {
@@ -221,26 +197,25 @@ func TestPublicationPackageVerifierReportsRepositoryFailures(t *testing.T) {
 		repositories := dao.NewMockRepositoryConfigDao(t)
 		repositories.On("InternalOnly_FetchRepoConfigForOrg", ctx, config.LightwellOrg).
 			Return(nil, errors.New("database unavailable")).Once()
-		confirmed, warnings := NewPublicationPackageVerifier(repositories, pulp_client.NewMockPulpClient(t), tangy.NewMockTangy(t)).
+		confirmed, warnings := NewPublicationPackageVerifier(repositories, dao.NewMockLightwellPackageDao(t)).
 			VerifyPublished(ctx, map[PublicationPackage][]string{pkg: {"1.0.0"}})
 		assert.Empty(t, confirmed)
 		require.Len(t, warnings, 1)
 		assert.Contains(t, warnings[0], "database unavailable")
 	})
 
-	t.Run("resolve one repository", func(t *testing.T) {
+	t.Run("repository has not been imported", func(t *testing.T) {
 		ctx := context.Background()
 		repositories := mockPublicationRepositories(t, ctx, []api.RepositoryResponse{{
-			PublishedDistBasePath: "python/remediated", ContentType: "python",
+			UUID: "python-remediated", PublishedDistBasePath: "python/remediated", ContentType: "python",
 		}})
-		resolver := pulp_client.NewMockPulpClient(t)
-		resolver.On("ResolveRepositoryFromBasePath", ctx, "python/remediated").
-			Return(nil, errors.New("Pulp unavailable")).Once()
-		confirmed, warnings := NewPublicationPackageVerifier(repositories, resolver, tangy.NewMockTangy(t)).
+		packages := dao.NewMockLightwellPackageDao(t)
+		confirmed, warnings := NewPublicationPackageVerifier(repositories, packages).
 			VerifyPublished(ctx, map[PublicationPackage][]string{pkg: {"1.0.0"}})
 		assert.Empty(t, confirmed)
 		require.Len(t, warnings, 1)
-		assert.Contains(t, warnings[0], "Pulp unavailable")
+		assert.Contains(t, warnings[0], "package mirror has not been imported")
+		packages.AssertNotCalled(t, "InternalOnlyListStoredPackageVersions", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 
@@ -251,7 +226,15 @@ func mockPublicationRepositories(t *testing.T, ctx context.Context, repos []api.
 	return repositories
 }
 
-func expectPublicationRepository(resolver *pulp_client.MockPulpClient, ctx context.Context, basePath string) {
-	href := basePath + "-href"
-	resolver.On("ResolveRepositoryFromBasePath", ctx, basePath).Return(&href, nil).Once()
+func importedPublicationRepo(uuid, basePath, contentType string) api.RepositoryResponse {
+	return api.RepositoryResponse{
+		UUID:                        uuid,
+		PublishedDistBasePath:       basePath,
+		ContentType:                 contentType,
+		LastImportRepositoryVersion: "/versions/1/",
+	}
+}
+
+func expectStoredVersions(packages *dao.MockLightwellPackageDao, ctx context.Context, repoUUID, group, name string, versions []string, err error) {
+	packages.On("InternalOnlyListStoredPackageVersions", ctx, repoUUID, group, name).Return(versions, err).Once()
 }
