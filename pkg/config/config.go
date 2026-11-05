@@ -101,6 +101,7 @@ type MockKessel struct {
 	UserNoPermissions []string `mapstructure:"user_no_permissions"`
 }
 type FeatureSet struct {
+	TangToZestRpmSearch                   Feature   `mapstructure:"tang_to_zest_rpm_search"`
 	LightwellLensInternalEntitledFeatures *[]string `mapstructure:"lightwell_lens_internal_entitled_features"` // Internal Lens entitlements; values must be in options.feature_filter
 	Snapshots                             Feature
 	AdminTasks                            Feature `mapstructure:"admin_tasks"`
@@ -397,6 +398,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("Loaded", true)
 	// In viper you have to set defaults, otherwise loading from ENV doesn't work
 	//   without a config file present
+	v.SetDefault("features.tang_to_zest_rpm_search.enabled", false)
 	v.SetDefault("database.host", "")
 	v.SetDefault("database.port", "")
 	v.SetDefault("database.user", "")

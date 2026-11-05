@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	zest "github.com/content-services/zest/release/v2026"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,14 +39,7 @@ func TestListVersionPackagesWithFilters(t *testing.T) {
 	}))
 	defer server.Close()
 
-	pulpConfig := config.Get().Clients.Pulp
-	config.Get().Clients.Pulp.Server = server.URL
-	config.Get().Clients.Pulp.Username = "test-user"
-	config.Get().Clients.Pulp.Password = "test-password"
-	config.Get().Clients.Pulp.CACert = ""
-	config.Get().Clients.Pulp.CACertPath = ""
-	config.Get().Clients.Pulp.Proxy = ""
-	t.Cleanup(func() { config.Get().Clients.Pulp = pulpConfig })
+	configurePackageTest(t, server.URL)
 
 	packages, total, err := GetPulpClientWithDomain("owner-domain").ListVersionPackagesWithFilters(
 		context.Background(),
@@ -85,14 +80,7 @@ func TestListVersionPackagesWithFiltersWithoutOptionalFilters(t *testing.T) {
 	}))
 	defer server.Close()
 
-	pulpConfig := config.Get().Clients.Pulp
-	config.Get().Clients.Pulp.Server = server.URL
-	config.Get().Clients.Pulp.Username = "test-user"
-	config.Get().Clients.Pulp.Password = "test-password"
-	config.Get().Clients.Pulp.CACert = ""
-	config.Get().Clients.Pulp.CACertPath = ""
-	config.Get().Clients.Pulp.Proxy = ""
-	t.Cleanup(func() { config.Get().Clients.Pulp = pulpConfig })
+	configurePackageTest(t, server.URL)
 
 	packages, total, err := GetPulpClientWithDomain("owner-domain").ListVersionPackagesWithFilters(
 		context.Background(),
@@ -121,14 +109,7 @@ func TestListVersionPackagesWithFiltersReturnsPulpError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	pulpConfig := config.Get().Clients.Pulp
-	config.Get().Clients.Pulp.Server = server.URL
-	config.Get().Clients.Pulp.Username = "test-user"
-	config.Get().Clients.Pulp.Password = "test-password"
-	config.Get().Clients.Pulp.CACert = ""
-	config.Get().Clients.Pulp.CACertPath = ""
-	config.Get().Clients.Pulp.Proxy = ""
-	t.Cleanup(func() { config.Get().Clients.Pulp = pulpConfig })
+	configurePackageTest(t, server.URL)
 
 	_, _, err := GetPulpClientWithDomain("owner-domain").ListVersionPackagesWithFilters(
 		context.Background(), "/pulp/version/1", 0, 100, "", nil,
@@ -136,4 +117,116 @@ func TestListVersionPackagesWithFiltersReturnsPulpError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "pulp failure")
+}
+
+// TODO: Assert the replacement prefix query parameter after upgrading Pulp and Zest.
+func TestSearchVersionPackages(t *testing.T) {
+	versions := []string{
+		"/api/pulp/owner/api/v3/repositories/rpm/rpm/a/versions/1/",
+		"/api/pulp/redhat/api/v3/repositories/rpm/rpm/b/versions/2/",
+	}
+	packages := []zest.ContentViewPackageResponse{
+		{Name: "postgresql", Summary: "PostgreSQL client"},
+		{Name: "postgresql-server", Summary: "PostgreSQL server"},
+	}
+	for _, tc := range []struct {
+		name      string
+		search    string
+		limit     int
+		wantLimit int
+		total     int
+		results   []zest.ContentViewPackageResponse
+		wantError string
+	}{
+		{
+			name:   "forwards the dated search limit in one request",
+			search: "Postgres & friends", limit: 500, wantLimit: 500, total: 501, results: packages,
+		},
+		{
+			name:  "caps an oversized limit without a name filter",
+			limit: 1001, wantLimit: 1000, total: 2, results: packages,
+		},
+		{
+			name:   "no matches",
+			search: "missing", limit: 100, wantLimit: 100, results: []zest.ContentViewPackageResponse{},
+		},
+		{
+			name:  "returns the Pulp error",
+			limit: 100, wantLimit: 100, wantError: "search failed",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				query := r.URL.Query()
+				assert.Equal(t, "/api/pulp/owner/api/v3/rpm/content-search/packages/", r.URL.Path)
+				assert.Equal(t, versions, query["repository_version"])
+				assert.Equal(t, strconv.Itoa(tc.wantLimit), query.Get("limit"))
+				assert.False(t, query.Has("offset"))
+				assert.Equal(t, tc.search, query.Get("name"))
+				assert.Equal(t, tc.search != "", query.Has("name"))
+				if tc.wantError != "" {
+					http.Error(w, tc.wantError, http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				assert.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{
+					"count": tc.total, "results": tc.results,
+				}))
+			}))
+			defer server.Close()
+			configurePackageTest(t, server.URL)
+
+			results, err := GetPulpClientWithDomain("owner").SearchVersionPackages(context.Background(), versions, tc.search, tc.limit)
+
+			assert.Equal(t, 1, calls)
+			if tc.wantError != "" {
+				require.ErrorContains(t, err, tc.wantError)
+				assert.Nil(t, results)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, results, len(tc.results))
+			for i, expected := range tc.results {
+				assert.Equal(t, expected.Name, results[i].Name)
+				assert.Equal(t, expected.Summary, results[i].Summary)
+			}
+		})
+	}
+}
+
+func TestSearchVersionPackagesEmptyInput(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("empty input should not make an HTTP request")
+	}))
+	defer server.Close()
+	configurePackageTest(t, server.URL)
+	client := GetPulpClientWithDomain("owner")
+	for _, tc := range []struct {
+		name     string
+		versions []string
+		limit    int
+	}{
+		{name: "no versions", limit: 100},
+		{name: "zero limit", versions: []string{"/version/1/"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			packages, err := client.SearchVersionPackages(context.Background(), tc.versions, "", tc.limit)
+			require.NoError(t, err)
+			assert.Empty(t, packages)
+		})
+	}
+}
+
+func configurePackageTest(t *testing.T, serverURL string) {
+	t.Helper()
+	original := config.Get().Clients.Pulp
+	t.Cleanup(func() { config.Get().Clients.Pulp = original })
+	config.Get().Clients.Pulp.Server = serverURL
+	config.Get().Clients.Pulp.Username = "test-user"
+	config.Get().Clients.Pulp.Password = "test-password"
+	config.Get().Clients.Pulp.CACert = ""
+	config.Get().Clients.Pulp.CACertPath = ""
+	config.Get().Clients.Pulp.Proxy = ""
 }
