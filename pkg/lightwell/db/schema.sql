@@ -37,6 +37,7 @@ CREATE TABLE lightwell_advisories (
     published TIMESTAMPTZ NULL,
     modified TIMESTAMPTZ NULL,
     aliases TEXT[] NOT NULL DEFAULT '{}',
+    upstream TEXT[] NOT NULL DEFAULT '{}',
     schema_version TEXT NOT NULL DEFAULT '',
     source TEXT NOT NULL DEFAULT '',
     summary TEXT NOT NULL DEFAULT '',

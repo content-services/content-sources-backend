@@ -46,11 +46,12 @@ const securityLevelRemediated = "remediated"
 // PackageVersion is the upstream package version the advisory applies to (the version as
 // found in a customer's manifest), not the Red Hat-specific fixed version.
 type RemediatedAdvisory struct {
-	ContentType    string  `gorm:"column:content_type"`
-	PackageName    string  `gorm:"column:package_name"`
-	AdvisoryID     string  `gorm:"column:advisory_id"`
-	SeverityScore  float32 `gorm:"column:severity_score"`
-	PackageVersion string  `gorm:"column:package_version"`
+	ContentType    string         `gorm:"column:content_type"`
+	PackageName    string         `gorm:"column:package_name"`
+	AdvisoryID     string         `gorm:"column:advisory_id"`
+	SeverityScore  float32        `gorm:"column:severity_score"`
+	PackageVersion string         `gorm:"column:package_version"`
+	Upstream       pq.StringArray `gorm:"column:upstream;type:text[]"`
 }
 
 // RemediatedAdvisoryFilter restricts ListRemediatedAdvisories to advisories whose
@@ -69,6 +70,7 @@ type LightwellNotificationData struct {
 	Severity      string
 	FixedVersions []string
 	ReferenceURLs []string
+	Upstream      []string
 }
 
 type ListLightwellAdvisoriesOptions struct {
@@ -77,6 +79,7 @@ type ListLightwellAdvisoriesOptions struct {
 	PackageVersion   *string
 	SeverityMin      string
 	CveID            *string
+	AdvisoryID       *string
 	Name             *string
 	LatestRelease    bool
 	EntitledFeatures []string
@@ -203,8 +206,8 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 				Published:                   a.Published,
 				Modified:                    a.Modified,
 				Aliases:                     pq.StringArray(emptyStrings(a.Aliases)),
+				Upstream:                    pq.StringArray(emptyStrings(a.Aliases)),
 				SchemaVersion:               a.SchemaVersion,
-				Source:                      a.Source,
 				Summary:                     a.Summary,
 			}
 		}
@@ -218,8 +221,8 @@ func (d lightwellAdvisoryDaoImpl) SyncForRepository(ctx context.Context, repoCon
 			DoUpdates: clause.AssignmentColumns([]string{
 				"repo_name", "severity", "severity_score", "details",
 				"reference_urls", "fixed_versions", "checksum", "updated_at",
-				"published", "modified", "aliases", "schema_version",
-				"source", "summary", "package_version",
+				"published", "modified", "aliases", "upstream", "schema_version",
+				"summary", "package_version",
 			}),
 		}).CreateInBatches(&modelAdvisories, 100)
 		if result.Error != nil {
@@ -302,6 +305,7 @@ func (d lightwellAdvisoryDaoImpl) ListUnnotifiedAdvisories(ctx context.Context, 
 			Severity:      a.Severity,
 			FixedVersions: a.FixedVersions,
 			ReferenceURLs: a.ReferenceURLs,
+			Upstream:      []string(a.Upstream),
 		}
 	}
 	return data, nil
@@ -349,6 +353,7 @@ func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListL
 		PackageVersion: opts.PackageVersion,
 		SeverityMin:    severityMin,
 		CveID:          opts.CveID,
+		AdvisoryID:     opts.AdvisoryID,
 		Name:           opts.Name,
 		PageOffset:     opts.Offset,
 		PageLimit:      opts.Limit,
@@ -372,9 +377,9 @@ func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListL
 
 	data := make([]api.LightwellAdvisoryResponse, 0, len(rows))
 	for _, row := range rows {
+		upstream := emptyStrings(row.Upstream)
 		data = append(data, api.LightwellAdvisoryResponse{
 			AdvisoryID:     row.AdvisoryID,
-			AdvisoryName:   api.LightwellAdvisoryName(row.AdvisoryID),
 			Severity:       row.Severity,
 			SeverityScore:  row.SeverityScore,
 			Summary:        row.Summary,
@@ -386,9 +391,9 @@ func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListL
 			Repository:     row.RepoName,
 			Published:      row.Published,
 			Modified:       row.Modified,
-			Aliases:        emptyStrings(row.Aliases),
+			Aliases:        upstream,
+			Upstream:       upstream,
 			SchemaVersion:  row.SchemaVersion,
-			Source:         row.Source,
 			CreatedAt:      row.CreatedAt,
 			UpdatedAt:      row.UpdatedAt,
 		})
@@ -449,7 +454,7 @@ func (d lightwellAdvisoryDaoImpl) ListRemediatedAdvisories(ctx context.Context, 
 	var advisories []RemediatedAdvisory
 	err := d.db.WithContext(ctx).
 		Table("lightwell_advisories la").
-		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score, la.package_version AS package_version").
+		Select("r.content_type AS content_type, la.package_name AS package_name, la.advisory_id AS advisory_id, la.severity_score AS severity_score, la.package_version AS package_version, la.upstream AS upstream").
 		Joins("JOIN repository_configurations rc ON rc.uuid = la.repository_configuration_uuid").
 		Joins("JOIN repositories r ON r.uuid = rc.repository_uuid").
 		Where("rc.org_id = ?", orgID).

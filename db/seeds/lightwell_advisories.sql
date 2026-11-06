@@ -8,48 +8,7 @@
 -- Java advisories belong to lightwell/java/remediated or lightwell/java/predisclosure,
 -- Python advisories to lightwell/python/remediated or lightwell/python/predisclosure,
 -- and JavaScript advisories to lightwell/npm/remediated.
--- C# stays on lightwell/seed.
 BEGIN;
-
-INSERT INTO repositories (
-    uuid,
-    url,
-    public,
-    origin,
-    content_type,
-    last_introspection_status
-) VALUES (
-    '00000000-0000-4000-8000-0000000000b0',
-    'https://lightwell.example.com/seed',
-    true,
-    'lightwell',
-    'maven',
-    'Valid'
-)
-ON CONFLICT (uuid) DO NOTHING;
-
-INSERT INTO repository_configurations (
-    uuid,
-    created_at,
-    updated_at,
-    name,
-    label,
-    arch,
-    org_id,
-    repository_uuid,
-    feature_name
-) VALUES (
-    '00000000-0000-4000-8000-0000000000c0',
-    TIMESTAMPTZ '2026-08-18 00:00:00+00',
-    TIMESTAMPTZ '2026-08-18 00:00:00+00',
-    'lightwell/seed',
-    'lightwell_seed',
-    'x86_64',
-    '-3',
-    '00000000-0000-4000-8000-0000000000b0',
-    'lightwell-network'
-)
-ON CONFLICT (uuid) DO NOTHING;
 
 DO $$
 BEGIN
@@ -71,10 +30,11 @@ BEGIN
     END IF;
 END $$;
 
--- Drop the standalone seed repos from an earlier version of this script.
--- Advisories and packages on them cascade away and are recreated below.
+-- Drop placeholder seed repositories, including lightwell/seed.
+-- Advisories attached to them cascade away.
 DELETE FROM repository_configurations
 WHERE uuid IN (
+    '00000000-0000-4000-8000-0000000000c0'::uuid,
     '00000000-0000-4000-8000-0000000000c1'::uuid,
     '00000000-0000-4000-8000-0000000000c2'::uuid,
     '00000000-0000-4000-8000-0000000000c3'::uuid,
@@ -82,6 +42,7 @@ WHERE uuid IN (
 );
 DELETE FROM repositories
 WHERE uuid IN (
+    '00000000-0000-4000-8000-0000000000b0'::uuid,
     '00000000-0000-4000-8000-0000000000b1'::uuid,
     '00000000-0000-4000-8000-0000000000b2'::uuid,
     '00000000-0000-4000-8000-0000000000b3'::uuid,
@@ -104,8 +65,8 @@ INSERT INTO lightwell_advisories (
     published,
     modified,
     aliases,
+    upstream,
     schema_version,
-    source,
     summary
 )
 SELECT
@@ -116,8 +77,6 @@ SELECT
         WHEN v.language = 'java' THEN 'lightwell/java/remediated'
         WHEN v.language = 'python' THEN 'lightwell/python/remediated'
         WHEN v.language = 'javascript' THEN 'lightwell/npm/remediated'
-        WHEN v.language = 'csharp' THEN 'lightwell/seed/nuget'
-        ELSE 'lightwell/seed'
     END,
     v.vulnerability_id,
     COALESCE(v.cvss::text, ''),
@@ -128,7 +87,6 @@ SELECT
         WHEN v.purl LIKE 'pkg:maven/%' THEN replace(substring(v.purl from 'pkg:maven/([^@]+)'), '/', ':')
         WHEN v.purl LIKE 'pkg:pypi/%' THEN substring(v.purl from 'pkg:pypi/([^@]+)')
         WHEN v.purl LIKE 'pkg:npm/%' THEN substring(v.purl from 'pkg:npm/([^@]+)')
-        WHEN v.purl LIKE 'pkg:nuget/%' THEN substring(v.purl from 'pkg:nuget/([^@]+)')
         ELSE v.component_name
     END,
     v.component_version,
@@ -154,21 +112,33 @@ SELECT
             SELECT rc.uuid FROM repository_configurations rc
             WHERE rc.org_id = '-3' AND rc.name = 'lightwell/npm/remediated' AND rc.deleted_at IS NULL
         )
-        ELSE '00000000-0000-4000-8000-0000000000c0'::uuid
     END,
     'seed-' || v.vulnerability_id,
     v.last_updated,
     v.last_updated,
-    ARRAY[v.vulnerability_key],
-    '1.6.8',
-    'lightwell-seed',
+    seed_ids.ids,
+    seed_ids.ids,
+    '1.9.0',
     COALESCE(v.title, '')
 FROM lightwell_vulnerabilities v
+CROSS JOIN LATERAL (
+    SELECT ARRAY_REMOVE(ARRAY[
+        CASE
+            WHEN substring(v.vulnerability_id from '^LWL-2026-([0-9]+)$') IS NOT NULL
+            THEN 'CVE-2026-' || substring(v.vulnerability_id from '^LWL-2026-([0-9]+)$')
+        END,
+        v.vulnerability_key
+    ], NULL) AS ids
+) seed_ids
 WHERE v.stage = 'Lightwell Network'
+    AND v.language IN ('java', 'python', 'javascript')
     AND v.uuid::text LIKE '00000000-0000-4000-8000-%'
 ON CONFLICT (uuid) DO UPDATE SET
     repo_name = EXCLUDED.repo_name,
-    repository_configuration_uuid = EXCLUDED.repository_configuration_uuid;
+    repository_configuration_uuid = EXCLUDED.repository_configuration_uuid,
+    aliases = EXCLUDED.aliases,
+    upstream = EXCLUDED.upstream,
+    schema_version = EXCLUDED.schema_version;
 
 INSERT INTO lightwell_advisory_releases (
     advisory_uuid,

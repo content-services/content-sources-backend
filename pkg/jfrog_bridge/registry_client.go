@@ -45,7 +45,7 @@ type OSVRecord struct {
 type RegistryClient interface {
 	FetchJAR(ctx context.Context, groupID, artifactID, version string) (body []byte, sha256hex string, err error)
 	FetchPOM(ctx context.Context, groupID, artifactID, version string) ([]byte, error)
-	FetchOSVRecords(ctx context.Context, baseVersion string) ([]OSVRecord, error)
+	FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error)
 	Ping(ctx context.Context) error
 }
 
@@ -92,7 +92,7 @@ func (c *httpRegistryClient) FetchPOM(ctx context.Context, groupID, artifactID, 
 	return data, nil
 }
 
-func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion string) ([]OSVRecord, error) {
+func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error) {
 	manifestURL := c.osvURL + "/PULP_MANIFEST"
 	manifestData, err := c.getWithRetry(ctx, manifestURL)
 	if err != nil {
@@ -101,29 +101,39 @@ func (c *httpRegistryClient) FetchOSVRecords(ctx context.Context, baseVersion st
 
 	entries := vulnerability_parser.ParseManifest(manifestData)
 	var records []OSVRecord
-	var matched int
+	var selected, failed int
 	for _, entry := range entries {
-		if !strings.Contains(entry.Filename, "-"+baseVersion+".") {
+		if !isRootRHLWFilename(entry.Filename) {
 			continue
 		}
-		matched++
+		selected++
 		fileURL := c.osvURL + "/" + entry.Filename
 		data, err := c.getWithRetry(ctx, fileURL)
 		if err != nil {
+			failed++
 			log.Warn().Err(err).Str("file", entry.Filename).Msg("skipping OSV file")
 			continue
 		}
-		rec, err := parseOSVFile(data)
+		recs, matched, err := parseOSVRecordsForPackage(data, groupID, artifactID, baseVersion)
 		if err != nil {
+			failed++
 			log.Warn().Err(err).Str("file", entry.Filename).Msg("skipping malformed OSV")
 			continue
 		}
-		records = append(records, rec)
+		if !matched {
+			continue
+		}
+		records = append(records, recs...)
 	}
-	if len(records) == 0 && matched > 0 {
-		return nil, fmt.Errorf("all %d matching OSV files failed to fetch for version %s", matched, baseVersion)
+	if len(records) == 0 && selected > 0 && failed == selected {
+		return nil, fmt.Errorf("all %d matching OSV files failed to fetch for version %s", selected, baseVersion)
 	}
 	return records, nil
+}
+
+func isRootRHLWFilename(filename string) bool {
+	name := strings.TrimPrefix(filename, "./")
+	return !strings.Contains(name, "/") && strings.HasPrefix(name, "RHLW-") && strings.HasSuffix(name, ".json")
 }
 
 func (c *httpRegistryClient) Ping(ctx context.Context) error {
@@ -184,55 +194,112 @@ type osvFile struct {
 	Aliases []string `json:"aliases"`
 }
 
-func parseOSVFile(data []byte) (OSVRecord, error) {
+func parseOSVRecordsForPackage(data []byte, groupID, artifactID, baseVersion string) ([]OSVRecord, bool, error) {
 	var adv osvFile
 	if err := json.Unmarshal(data, &adv); err != nil {
-		return OSVRecord{}, err
+		return nil, false, err
 	}
-
-	rec := OSVRecord{
-		Description: adv.Details,
+	if !osvMatchesPackage(adv, groupID, artifactID, baseVersion) {
+		return nil, false, nil
 	}
+	return recordsFromAdvisory(adv), true, nil
+}
 
-	// Extract CVE ID from aliases (first entry starting with "CVE-")
-	var cveID string
+func parseOSVRecords(data []byte) ([]OSVRecord, error) {
+	var adv osvFile
+	if err := json.Unmarshal(data, &adv); err != nil {
+		return nil, err
+	}
+	return recordsFromAdvisory(adv), nil
+}
+
+func osvMatchesPackage(adv osvFile, groupID, artifactID, baseVersion string) bool {
+	backport := ""
+	if adv.DatabaseSpecific != nil && adv.DatabaseSpecific.Lightwell != nil {
+		backport = adv.DatabaseSpecific.Lightwell.BackportBaseVersion
+	}
+	for _, affected := range adv.Affected {
+		if !packageMatches(affected.Package, groupID, artifactID) {
+			continue
+		}
+		version := backport
+		if len(affected.Versions) > 0 && affected.Versions[0] != "" {
+			version = affected.Versions[0]
+		}
+		if version != "" && version == baseVersion {
+			return true
+		}
+	}
+	return false
+}
+
+func packageMatches(pkg vulnerability_parser.OSVPackage, groupID, artifactID string) bool {
+	if pkg.Purl != "" {
+		want := "pkg:maven/" + groupID + "/" + artifactID
+		return pkg.Purl == want || strings.HasPrefix(pkg.Purl, want+"@") || strings.HasPrefix(pkg.Purl, want+"?")
+	}
+	return pkg.Name == artifactID || pkg.Name == groupID+":"+artifactID
+}
+
+func recordsFromAdvisory(adv osvFile) []OSVRecord {
+	ids := adv.Upstream
+	if len(ids) == 0 {
+		ids = adv.Aliases
+	}
+	var cveIDs []string
 	var otherAliases []string
-	for _, alias := range adv.Aliases {
-		if strings.HasPrefix(alias, "CVE-") && cveID == "" {
-			cveID = alias
-		} else {
-			otherAliases = append(otherAliases, alias)
+	for _, id := range ids {
+		if strings.HasPrefix(id, "CVE-") {
+			cveIDs = append(cveIDs, id)
+		} else if id != "" {
+			otherAliases = append(otherAliases, id)
 		}
 	}
-	if cveID == "" {
-		// Fall back: extract CVE from the id field (e.g. "x_RHLW-CVE-2023-20860-5.3.18")
-		if idx := strings.Index(adv.ID, "CVE-"); idx >= 0 {
-			tail := adv.ID[idx:]
-			parts := strings.SplitN(tail, "-", 4)
-			if len(parts) >= 3 {
-				cveID = parts[0] + "-" + parts[1] + "-" + parts[2]
-			}
-		}
-		if cveID == "" {
-			cveID = adv.ID
+	if len(cveIDs) == 0 {
+		if cveID := cveFromAdvisoryID(adv.ID); cveID != "" {
+			cveIDs = []string{cveID}
 		}
 	}
-	rec.CVEID = cveID
-	rec.Aliases = otherAliases
+	if len(cveIDs) == 0 {
+		return nil
+	}
 
+	base := OSVRecord{
+		Description: adv.Details,
+		Aliases:     otherAliases,
+	}
 	for _, sev := range adv.Severity {
 		if sev.Type == "CVSS_V3" {
-			rec.CVSSVector = sev.Score
-			rec.CVSSScore = computeCVSS31BaseScore(sev.Score)
-			rec.Severity = cvssScoreToSeverity(rec.CVSSScore)
+			base.CVSSVector = sev.Score
+			base.CVSSScore = computeCVSS31BaseScore(sev.Score)
+			base.Severity = cvssScoreToSeverity(base.CVSSScore)
 			break
 		}
 	}
-	if rec.Severity == "" {
-		rec.Severity = "unknown"
+	if base.Severity == "" {
+		base.Severity = "unknown"
 	}
 
-	return rec, nil
+	records := make([]OSVRecord, 0, len(cveIDs))
+	for _, cveID := range cveIDs {
+		rec := base
+		rec.CVEID = cveID
+		records = append(records, rec)
+	}
+	return records
+}
+
+func cveFromAdvisoryID(id string) string {
+	idx := strings.Index(id, "CVE-")
+	if idx < 0 {
+		return ""
+	}
+	tail := id[idx:]
+	parts := strings.SplitN(tail, "-", 4)
+	if len(parts) >= 3 {
+		return parts[0] + "-" + parts[1] + "-" + parts[2]
+	}
+	return ""
 }
 
 // computeCVSS31BaseScore calculates the CVSS 3.1 base score from a vector string.

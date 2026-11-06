@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
@@ -210,13 +211,18 @@ func toCVEAdvisories(advisories []dao.RemediatedAdvisory) []cve.Advisory {
 		if ecosystem == "" {
 			continue
 		}
-		out = append(out, cve.Advisory{
-			Ecosystem:      ecosystem,
-			PackageName:    advisory.PackageName,
-			AdvisoryID:     advisory.AdvisoryID,
-			SeverityScore:  advisory.SeverityScore,
-			PackageVersion: advisory.PackageVersion,
-		})
+		for _, id := range advisory.Upstream {
+			if !strings.HasPrefix(id, "CVE-") {
+				continue
+			}
+			out = append(out, cve.Advisory{
+				Ecosystem:      ecosystem,
+				PackageName:    advisory.PackageName,
+				AdvisoryID:     id,
+				SeverityScore:  advisory.SeverityScore,
+				PackageVersion: advisory.PackageVersion,
+			})
+		}
 	}
 	return out
 }

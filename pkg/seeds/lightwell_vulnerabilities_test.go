@@ -12,7 +12,7 @@ import (
 
 const (
 	deleteLightwellDemoSeedMigration = "db/migrations/20261023215619_delete_lightwell_demo_seed.up.sql"
-	lightwellSeedVulnerabilityCount  = 73
+	lightwellSeedVulnerabilityCount  = 63
 )
 
 var lightwellSeedBeaconProcessedAt = time.Date(2026, time.August, 18, 7, 0, 0, 0, time.UTC)
@@ -77,7 +77,7 @@ func (s *SeedSuite) TestSeedLightwellVulnerabilities() {
 	err = s.tx.Raw("SELECT COUNT(*) FROM lightwell_vulnerabilities WHERE uuid::text LIKE '00000000-0000-4000-8000-%'").Scan(&total).Error
 	require.NoError(t, err)
 	assert.Equal(t, int64(lightwellSeedVulnerabilityCount), total)
-	assert.Equal(t, int64(4), s.count(`SELECT COUNT(*) FROM lightwell_vulnerabilities WHERE uuid::text LIKE '00000000-0000-4000-8000-%' AND stage = 'On Hold'`))
+	assert.Equal(t, int64(3), s.count(`SELECT COUNT(*) FROM lightwell_vulnerabilities WHERE uuid::text LIKE '00000000-0000-4000-8000-%' AND stage = 'On Hold'`))
 
 	var reasons []string
 	err = s.tx.Raw(`
@@ -97,10 +97,8 @@ func (s *SeedSuite) TestSeedLightwellVulnerabilities() {
 		"Not a GA Version",
 		"Red Hat Package",
 		"Unsupported Language Ecosystem",
-		"Unsupported Package Format",
 		"Vulnerable code cannot be controlled by adversary",
 		"Vulnerable code not in execute path",
-		"Vulnerable code not present",
 	}, reasons)
 
 	var tickets []string

@@ -81,24 +81,28 @@ func TestBuildLightwellNotificationEventsGroupsByPackage(t *testing.T) {
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0001",
+			Upstream:      []string{"CVE-2026-0001"},
 			Severity:      "9.8",
 			FixedVersions: []string{"1.0.1", "1.0.2"},
 		},
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0002",
+			Upstream:      []string{"CVE-2026-0002"},
 			Severity:      "7.5",
 			FixedVersions: []string{"1.0.1", "1.0.2"},
 		},
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0003",
+			Upstream:      []string{"CVE-2026-0003"},
 			Severity:      "4.0",
 			FixedVersions: []string{"1.0.3"},
 		},
 		{
 			PackageName:   "org.example:lib-b",
 			AdvisoryID:    "CVE-2026-0004",
+			Upstream:      []string{"CVE-2026-0004"},
 			Severity:      "6.5",
 			FixedVersions: []string{"2.0.0"},
 		},
@@ -164,6 +168,7 @@ func TestBuildLightwellNotificationEventsMetadata(t *testing.T) {
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0001",
+			Upstream:      []string{"CVE-2026-0001"},
 			Severity:      "9.8",
 			FixedVersions: []string{"1.0.1"},
 		},
@@ -190,6 +195,7 @@ func TestBuildLightwellNotificationEventsWithChecksums(t *testing.T) {
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0001",
+			Upstream:      []string{"CVE-2026-0001"},
 			Severity:      "9.8",
 			FixedVersions: []string{"1.0.1.rhlw-00001"},
 		},
@@ -218,12 +224,14 @@ func TestBuildLightwellNotificationEventsChecksumsScopedByPackage(t *testing.T) 
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0001",
+			Upstream:      []string{"CVE-2026-0001"},
 			Severity:      "9.8",
 			FixedVersions: []string{"1.0.0"},
 		},
 		{
 			PackageName:   "org.example:lib-b",
 			AdvisoryID:    "CVE-2026-0002",
+			Upstream:      []string{"CVE-2026-0002"},
 			Severity:      "9.8",
 			FixedVersions: []string{"1.0.0"},
 		},
@@ -261,6 +269,7 @@ func TestBuildLightwellNotificationEventsNilOptsOmitsChecksums(t *testing.T) {
 		{
 			PackageName:   "org.example:lib-a",
 			AdvisoryID:    "CVE-2026-0001",
+			Upstream:      []string{"CVE-2026-0001"},
 			Severity:      "9.8",
 			FixedVersions: []string{"1.0.1"},
 		},
@@ -302,4 +311,27 @@ func TestLightwellReleasePayloadArtifactChecksumsOmitEmpty(t *testing.T) {
 	data, err = json.Marshal(payload)
 	require.NoError(t, err)
 	assert.NotContains(t, string(data), "artifact_checksums")
+}
+
+func TestBuildLightwellNotificationEventsExpandsUpstreamCVEs(t *testing.T) {
+	inputs := []LightwellNotificationInput{
+		{
+			PackageName:   "org.example:lib-a",
+			AdvisoryID:    "RHLW-2026-055d7bde52d9946f",
+			Severity:      "7.5",
+			FixedVersions: []string{"1.2.12.rhlw-00005"},
+			Upstream:      []string{"CVE-2023-6378", "GHSA-vmq6-5m68-f53m", "CVE-2024-12801"},
+		},
+	}
+
+	events := BuildLightwellNotificationEvents("lightwell/java/remediated", inputs, nil)
+	require.Len(t, events, 1)
+	payload, ok := events[0].Payload.(LightwellPackagePayload)
+	require.True(t, ok)
+	require.Len(t, payload.Releases, 1)
+	require.Len(t, payload.Releases[0].RelatedCVE, 2)
+	assert.Equal(t, "CVE-2023-6378", payload.Releases[0].RelatedCVE[0].CVE)
+	assert.Equal(t, LightwellCVEURL("CVE-2023-6378"), payload.Releases[0].RelatedCVE[0].URL)
+	assert.Equal(t, "CVE-2024-12801", payload.Releases[0].RelatedCVE[1].CVE)
+	assert.Equal(t, LightwellCVEURL("CVE-2024-12801"), payload.Releases[0].RelatedCVE[1].URL)
 }

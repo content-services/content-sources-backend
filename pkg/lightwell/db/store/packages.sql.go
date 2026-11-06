@@ -398,29 +398,31 @@ WHERE r.origin = 'lightwell'
         )
     )
     AND (
+        -- Match an element of upstream. If this lookup gets slow, add a GIN index on lightwell_advisories.upstream.
         $8::text IS NULL
         OR EXISTS (
             SELECT 1 FROM lightwell_advisories la
             WHERE la.repository_configuration_uuid = rc.uuid
                 AND la.package_name = p.name
-                AND la.advisory_id = $8::text
+                AND $8::text = ANY(la.upstream)
                 AND pv.version = ANY(la.fixed_versions)
         )
     )
     AND (
+        -- Match an element of upstream. If this lookup gets slow, add a GIN index on lightwell_advisories.upstream.
         $9::text IS NULL
         OR (
             EXISTS (
                 SELECT 1 FROM lightwell_advisories la
                 WHERE la.repository_configuration_uuid = rc.uuid
                     AND la.package_name = p.name
-                    AND la.advisory_id = $9::text
+                    AND $9::text = ANY(la.upstream)
             )
             AND NOT EXISTS (
                 SELECT 1 FROM lightwell_advisories la
                 WHERE la.repository_configuration_uuid = rc.uuid
                     AND la.package_name = p.name
-                    AND la.advisory_id = $9::text
+                    AND $9::text = ANY(la.upstream)
                     AND pv.version = ANY(la.fixed_versions)
             )
         )

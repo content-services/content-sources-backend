@@ -97,7 +97,7 @@ func TestRegistryClient_FetchOSVRecords(t *testing.T) {
 		maxRetries: 0,
 	}
 
-	records, err := client.FetchOSVRecords(context.Background(), "5.3.18")
+	records, err := client.FetchOSVRecords(context.Background(), "org.springframework", "spring-core", "5.3.18")
 	require.NoError(t, err)
 	assert.Len(t, records, 6)
 
@@ -114,8 +114,10 @@ func TestParseOSVFile(t *testing.T) {
 	data, err := os.ReadFile(testdataPath("osv", "java", "remediated", "x_RHLW-CVE-2023-20860-5.3.18.json"))
 	require.NoError(t, err)
 
-	rec, err := parseOSVFile(data)
+	recs, err := parseOSVRecords(data)
 	require.NoError(t, err)
+	require.Len(t, recs, 1)
+	rec := recs[0]
 
 	assert.Equal(t, "CVE-2023-20860", rec.CVEID)
 	assert.Contains(t, rec.Description, "mvcRequestMatcher")
@@ -167,17 +169,36 @@ func TestRegistryClient_BasicAuthHeader(t *testing.T) {
 	assert.Equal(t, expected, capturedAuth)
 }
 
-func TestFetchOSVRecords_VersionFilterPrecision(t *testing.T) {
+func TestFetchOSVRecords_MatchesPackageAndBaseVersion(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	manifest := "x_RHLW-CVE-2023-20860-5.3.18.json,abc123,1234\nx_RHLW-CVE-2099-99999-5.3.1.json,def456,1234\n"
+	manifest := "RHLW-2026-0000000000000018.json,abc123,1234\n" +
+		"RHLW-2026-0000000000000001.json,def456,1234\n" +
+		"x_RHLW-CVE-2099-99999-5.3.1.json,ghi789,1234\n" +
+		"legacy/RHLW-2026-0000000000000099.json,jkl012,1234\n"
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "PULP_MANIFEST"), []byte(manifest), 0600))
 
-	osvContent18 := `{"id": "x_RHLW-CVE-2023-20860-5.3.18", "aliases": ["CVE-2023-20860"], "details": "test18", "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]}`
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2023-20860-5.3.18.json"), []byte(osvContent18), 0600))
-
-	osvContent1 := `{"id": "x_RHLW-CVE-2099-99999-5.3.1", "aliases": ["CVE-2099-99999"], "details": "test", "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]}`
-	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "x_RHLW-CVE-2099-99999-5.3.1.json"), []byte(osvContent1), 0600))
+	matching := `{
+		"id": "RHLW-2026-0000000000000001",
+		"details": "test",
+		"upstream": ["CVE-2099-99999", "GHSA-test"],
+		"severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}],
+		"affected": [{
+			"package": {"name": "org.springframework:spring-core", "purl": "pkg:maven/org.springframework/spring-core"},
+			"versions": ["5.3.1"],
+			"ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "5.3.1.rhlw-00001"}]}]
+		}]
+	}`
+	otherVersion := `{
+		"id": "RHLW-2026-0000000000000018",
+		"upstream": ["CVE-2023-20860"],
+		"affected": [{
+			"package": {"name": "org.springframework:spring-core", "purl": "pkg:maven/org.springframework/spring-core"},
+			"versions": ["5.3.18"]
+		}]
+	}`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "RHLW-2026-0000000000000001.json"), []byte(matching), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "RHLW-2026-0000000000000018.json"), []byte(otherVersion), 0600))
 
 	server := httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
 	defer server.Close()
@@ -188,14 +209,31 @@ func TestFetchOSVRecords_VersionFilterPrecision(t *testing.T) {
 		maxRetries: 0,
 	}
 
-	records, err := client.FetchOSVRecords(context.Background(), "5.3.1")
+	records, err := client.FetchOSVRecords(context.Background(), "org.springframework", "spring-core", "5.3.1")
 	require.NoError(t, err)
-	require.Len(t, records, 1, "only exact version 5.3.1 should match, not 5.3.18")
+	require.Len(t, records, 1, "only the root RHLW record for this package and base version should match")
 	assert.Equal(t, "CVE-2099-99999", records[0].CVEID)
+	assert.Contains(t, records[0].Aliases, "GHSA-test")
+}
+
+func TestParseOSVRecords_ExpandsUpstreamCVEs(t *testing.T) {
+	data := []byte(`{
+		"id": "RHLW-2026-055d7bde52d9946f",
+		"details": "two cves",
+		"upstream": ["CVE-2023-6378", "GHSA-vmq6-5m68-f53m", "CVE-2024-12801"],
+		"severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"}]
+	}`)
+	records, err := parseOSVRecords(data)
+	require.NoError(t, err)
+	require.Len(t, records, 2)
+	assert.Equal(t, "CVE-2023-6378", records[0].CVEID)
+	assert.Equal(t, "CVE-2024-12801", records[1].CVEID)
+	assert.Equal(t, []string{"GHSA-vmq6-5m68-f53m"}, records[0].Aliases)
+	assert.Equal(t, []string{"GHSA-vmq6-5m68-f53m"}, records[1].Aliases)
 }
 
 func TestFetchOSVRecords_AllFilesFail(t *testing.T) {
-	manifest := "x_RHLW-CVE-2023-20860-5.3.18.json,abc123,1234\nx_RHLW-CVE-2025-41249-5.3.18.json,def456,1234\n"
+	manifest := "RHLW-2026-0000000000000018.json,abc123,1234\nRHLW-2026-0000000000000049.json,def456,1234\n"
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/PULP_MANIFEST" {
@@ -212,7 +250,7 @@ func TestFetchOSVRecords_AllFilesFail(t *testing.T) {
 		maxRetries: 0,
 	}
 
-	_, err := client.FetchOSVRecords(context.Background(), "5.3.18")
+	_, err := client.FetchOSVRecords(context.Background(), "org.springframework", "spring-core", "5.3.18")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch")
 	assert.Contains(t, err.Error(), "5.3.18")

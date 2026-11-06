@@ -44,6 +44,7 @@ export interface ListLightwellAdvisoriesRequest {
     packageName?: string;
     packageVersion?: string;
     name?: string;
+    advisoryId?: string;
     severityMin?: string;
     cveId?: string;
     latestRelease?: boolean;
@@ -139,6 +140,10 @@ export class LightwellApi extends runtime.BaseAPI {
 
         if (requestParameters['name'] != null) {
             queryParameters['name'] = requestParameters['name'];
+        }
+
+        if (requestParameters['advisoryId'] != null) {
+            queryParameters['advisory_id'] = requestParameters['advisoryId'];
         }
 
         if (requestParameters['severityMin'] != null) {

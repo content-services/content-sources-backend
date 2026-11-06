@@ -66,6 +66,7 @@ type LightwellNotificationInput struct {
 	Severity      string
 	FixedVersions []string
 	ReferenceURLs []string
+	Upstream      []string
 }
 
 type LightwellPackagePayload struct {
@@ -165,14 +166,21 @@ func groupByFixedVersions(inputs []LightwellNotificationInput) map[string][]Ligh
 	return result
 }
 
-// buildCVEPayloads converts advisory inputs into CVE notification payloads.
+// buildCVEPayloads converts each upstream CVE into a notification payload.
+// GHSA ids are skipped. The CVE id is used both as the identifier and in the URL.
 func buildCVEPayloads(inputs []LightwellNotificationInput) []LightwellCVEPayload {
-	cves := make([]LightwellCVEPayload, len(inputs))
-	for i, input := range inputs {
-		cves[i] = LightwellCVEPayload{
-			CVE:      input.AdvisoryID,
-			Severity: CVSSScoreToLabel(input.Severity),
-			URL:      LightwellCVEURL(input.AdvisoryID),
+	cves := make([]LightwellCVEPayload, 0, len(inputs))
+	for _, input := range inputs {
+		label := CVSSScoreToLabel(input.Severity)
+		for _, id := range input.Upstream {
+			if !strings.HasPrefix(id, "CVE-") {
+				continue
+			}
+			cves = append(cves, LightwellCVEPayload{
+				CVE:      id,
+				Severity: label,
+				URL:      LightwellCVEURL(id),
+			})
 		}
 	}
 	return cves
