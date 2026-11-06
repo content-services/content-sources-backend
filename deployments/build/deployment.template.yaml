@@ -469,6 +469,18 @@ objects:
               - send-template-update-events
             env:{{ENV_VARS}}
 
+        - name: update-all-template-content
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - update-all-template-content
+            env:{{ENV_VARS}}
+
       database:
         name: content-sources
         version: 15
