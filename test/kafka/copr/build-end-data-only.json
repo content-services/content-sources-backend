@@ -1,0 +1,9 @@
+{
+  "build": 1005,
+  "owner": "@copr",
+  "copr": "example",
+  "chroot": "rhel-9-x86_64",
+  "status": 1,
+  "repository_href": "/api/pulp/cs-partner/api/v3/repositories/rpm/rpm/0196f0e8-6d7a-7b3c-9a1e-4f2d8c6b5a10/",
+  "publication_href": "/api/pulp/cs-partner/api/v3/publications/rpm/rpm/0196f0e9-1a2b-7c3d-8e4f-5a6b7c8d9e01/"
+}

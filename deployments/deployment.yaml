@@ -28,6 +28,9 @@ objects:
         - partitions: 3
           replicas: 3
           topicName: platform.notifications.ingress
+        - partitions: 3
+          replicas: 3
+          topicName: ${COPR_INGEST_TOPIC}
       deployments:
         - name: task-worker
           replicas: ${{TASK_WORKER_REPLICAS}}
@@ -411,6 +414,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -473,6 +482,7 @@ objects:
               - api
               - instrumentation
               - jfrog-bridge
+              - copr-ingest
             livenessProbe:
               failureThreshold: 3
               httpGet:
@@ -819,6 +829,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -1194,6 +1210,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -1557,6 +1579,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -1923,6 +1951,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -2290,6 +2324,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -2659,6 +2699,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -3026,6 +3072,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -3390,6 +3442,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -3752,6 +3810,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -4116,6 +4180,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -4480,6 +4550,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -4844,6 +4920,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -5231,6 +5313,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -5596,6 +5684,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -5978,6 +6072,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -6339,6 +6439,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -6700,6 +6806,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -7061,6 +7173,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -7422,6 +7540,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -7783,6 +7907,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -8144,6 +8274,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -8505,6 +8641,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -8866,6 +9008,12 @@ objects:
                     name: jfrog-bridge-signing-key
                     key: pem
                     optional: true
+              - name: COPR_INGEST_ENABLED
+                value: ${COPR_INGEST_ENABLED}
+              - name: COPR_INGEST_TOPIC
+                value: ${COPR_INGEST_TOPIC}
+              - name: COPR_INGEST_CONSUMER_GROUP_ID
+                value: ${COPR_INGEST_CONSUMER_GROUP_ID}
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
               - name: CLIENTS_JIRA_USER
@@ -9282,6 +9430,15 @@ parameters:
   - name: JFROG_BRIDGE_ENABLED
     description: Whether the JFrog bridge Kafka consumer should be enabled
     value: 'false'
+  - name: COPR_INGEST_ENABLED
+    description: Whether the Copr build end Kafka consumer should be enabled
+    value: 'false'
+  - name: COPR_INGEST_TOPIC
+    description: Kafka topic with Copr build end events
+    value: copr.build.events
+  - name: COPR_INGEST_CONSUMER_GROUP_ID
+    description: Kafka consumer group ID for the Copr build end consumer
+    value: content-sources-copr
   - name: CLIENTS_JIRA_URL
     description: URL of the Jira instance used for Lightwell vulnerability ingestion
     value: ''

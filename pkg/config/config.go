@@ -44,6 +44,7 @@ type Configuration struct {
 	Tasking                        Tasking            `mapstructure:"tasking"`
 	Features                       FeatureSet         `mapstructure:"features"`
 	JFrogBridge                    JFrogBridge        `mapstructure:"jfrog_bridge"`
+	CoprIngest                     CoprIngest         `mapstructure:"copr_ingest"`
 }
 
 type JFrogBridge struct {
@@ -59,6 +60,12 @@ type JFrogBridge struct {
 	ConsumerGroupID string `mapstructure:"consumer_group_id"`
 	MaxRetries      int    `mapstructure:"max_retries"`
 	RequestTimeout  int    `mapstructure:"request_timeout"`
+}
+
+type CoprIngest struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	Topic           string `mapstructure:"topic"`
+	ConsumerGroupID string `mapstructure:"consumer_group_id"`
 }
 
 type Jira struct {
@@ -624,6 +631,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("jfrog_bridge.consumer_group_id", "content-sources-jfrog-bridge")
 	v.SetDefault("jfrog_bridge.max_retries", 3)
 	v.SetDefault("jfrog_bridge.request_timeout", 60)
+
+	v.SetDefault("copr_ingest.enabled", false)
+	v.SetDefault("copr_ingest.topic", "copr.build.events")
+	v.SetDefault("copr_ingest.consumer_group_id", "content-sources-copr")
 
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)
