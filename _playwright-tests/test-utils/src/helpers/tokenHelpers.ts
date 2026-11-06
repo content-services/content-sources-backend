@@ -1,6 +1,33 @@
-import { type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import path from 'path';
 import { readFileSync, existsSync } from 'fs';
+
+interface JWTPayload {
+  exp: number;
+  iat: number;
+  [key: string]: unknown;
+}
+
+export interface TokenExpiryInfo {
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+  expiresAt: Date;
+  timeRemainingMs: number;
+  timeRemainingMinutes: number;
+}
+
+type TokenRefreshWindow = Window & {
+  insights?: {
+    chrome?: {
+      initialized?: boolean;
+      $internal?: {
+        forceAuthRefresh: () => Promise<{ access_token: string } | null | undefined>;
+      };
+    };
+  };
+};
+
+const BUFFER_MINUTES = 10;
 
 /**
  * Directory for Playwright storageState JSON (<user_token>.json).
@@ -21,20 +48,6 @@ function resolveAuthStorageRoot(): string {
  */
 export function usesIdentityHeaderAuth(): boolean {
   return Boolean(process.env.IDENTITY_HEADER?.trim());
-}
-
-interface JWTPayload {
-  exp: number;
-  iat: number;
-  [key: string]: unknown;
-}
-
-export interface TokenExpiryInfo {
-  isExpired: boolean;
-  isExpiringSoon: boolean;
-  expiresAt: Date;
-  timeRemainingMs: number;
-  timeRemainingMinutes: number;
 }
 
 /**
@@ -164,7 +177,7 @@ export function checkTokenExpiry(token: string, bufferMinutes: number = 5): Toke
 }
 
 /**
- * Refresh the JWT token by navigating to the app and extracting new token from cookies
+ * Refresh the JWT through Console auth and persist the updated credentials
  * @param page - Playwright page object
  * @param fileName - Name of the auth state file (e.g., 'ADMIN_TOKEN.json')
  */
@@ -186,17 +199,42 @@ export async function refreshJWTToken(page: Page, fileName: string): Promise<str
 
   // Avoid sending a pinned Authorization bearer to SSO / third-party origins during re-auth.
   await page.context().setExtraHTTPHeaders({});
-  await page.goto('/insights/content/repositories');
-  await page.waitForLoadState('networkidle', { timeout: 30000 });
-
-  const cookies = await page.context().cookies();
-  const jwtCookie = cookies.find((cookie) => cookie.name === 'cs_jwt');
-
-  if (!jwtCookie?.value) {
-    throw new Error('Failed to refresh JWT token - cs_jwt cookie not found');
+  // Fixtures start on about:blank, where Console auth is not available yet.
+  if (page.url() === 'about:blank') {
+    await page.goto('/insights/content/repositories', { waitUntil: 'domcontentloaded' });
   }
 
-  const newToken = `Bearer ${jwtCookie.value}`;
+  await page.waitForFunction(
+    () => {
+      const chrome = (window as TokenRefreshWindow).insights?.chrome;
+      return chrome?.initialized && typeof chrome.$internal?.forceAuthRefresh === 'function';
+    },
+    undefined,
+    { timeout: 30_000 },
+  );
+
+  const token = await page.evaluate(async () => {
+    const chrome = (window as TokenRefreshWindow).insights?.chrome;
+    const user = await chrome?.$internal?.forceAuthRefresh();
+    return user?.access_token;
+  });
+  if (!token || checkTokenExpiry(token, 0).isExpired) {
+    throw new Error('Silent SSO refresh did not return a valid access token');
+  }
+
+  // Chrome writes API-path-scoped cookies asynchronously after refresh resolves.
+  await expect
+    .poll(
+      async () => {
+        const cookies = await page.context().cookies();
+        const jwtCookies = cookies.filter((cookie) => cookie.name === 'cs_jwt');
+        return jwtCookies.length > 0 && jwtCookies.every((cookie) => cookie.value === token);
+      },
+      { timeout: 30_000, message: 'Chrome did not persist the refreshed cs_jwt cookie' },
+    )
+    .toBe(true);
+
+  const newToken = `Bearer ${token}`;
 
   // Save the updated storage state
   await page.context().storageState({ path: targetPath });
@@ -210,8 +248,6 @@ export async function refreshJWTToken(page: Page, fileName: string): Promise<str
 
   return newToken;
 }
-
-const BUFFER_MINUTES = 10;
 
 /**
  * Validate token (expiry check) and refresh via page if needed.
