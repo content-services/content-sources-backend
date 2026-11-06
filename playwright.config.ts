@@ -3,7 +3,7 @@ import path from 'path';
 
 import { config } from 'dotenv';
 
-config({ path: path.join(__dirname, './.env') });
+config({ path: path.join(__dirname, './.env'), quiet: true });
 
 // test-utils storageState paths; respect PLAYWRIGHT_AUTH_DIR when set (CI or local).
 if (!process.env.PLAYWRIGHT_AUTH_DIR) {
@@ -48,7 +48,7 @@ export default defineConfig({
   projects: [
     { name: 'setup', testMatch: /.*\.setup\.ts/, expect: { timeout: 20000 } },
     {
-      name: 'Google Chrome',
+      name: 'API',
       use: {
         ...devices['Desktop Chrome'],
       },
