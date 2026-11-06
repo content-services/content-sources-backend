@@ -42,9 +42,8 @@ WITH filtered AS (
         la.repository_configuration_uuid,
         la.published,
         la.modified,
-        la.aliases,
+        la.upstream,
         la.schema_version,
-        la.source,
         la.summary,
         la.created_at,
         la.updated_at
@@ -69,24 +68,30 @@ WITH filtered AS (
             OR la.severity_score >= $7::real
         )
         AND (
+            -- cve_id matches one element of upstream. If this lookup gets slow,
+            -- add a GIN index on lightwell_advisories.upstream.
             $8::text IS NULL
-            OR la.advisory_id = $8::text
+            OR $8::text = ANY(la.upstream)
         )
         AND (
             $9::text IS NULL
-            OR la.advisory_id ILIKE '%' || $9::text || '%'
-            OR la.aliases::text ILIKE '%' || $9::text || '%'
+            OR la.advisory_id = $9::text
         )
         AND (
             $10::text IS NULL
-            OR la.package_version = $10::text
+            OR la.advisory_id ILIKE '%' || $10::text || '%'
+            OR la.upstream::text ILIKE '%' || $10::text || '%'
         )
         AND (
-            $11::text[] IS NULL
+            $11::text IS NULL
+            OR la.package_version = $11::text
+        )
+        AND (
+            $12::text[] IS NULL
             OR EXISTS (
                 SELECT 1
                 FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
-                WHERE btrim(t.token) = ANY($11::text[])
+                WHERE btrim(t.token) = ANY($12::text[])
             )
         )
 ),
@@ -111,9 +116,8 @@ SELECT
     repository_configuration_uuid,
     published,
     modified,
-    aliases,
+    upstream,
     schema_version,
-    source,
     summary,
     created_at,
     updated_at,
@@ -143,6 +147,7 @@ type ListAdvisoriesParams struct {
 	PackageName          *string       `json:"package_name"`
 	SeverityMin          pgtype.Float4 `json:"severity_min"`
 	CveID                *string       `json:"cve_id"`
+	AdvisoryID           *string       `json:"advisory_id"`
 	Name                 *string       `json:"name"`
 	PackageVersion       *string       `json:"package_version"`
 	EntitledFeatures     []string      `json:"entitled_features"`
@@ -162,9 +167,8 @@ type ListAdvisoriesRow struct {
 	RepositoryConfigurationUuid uuid.UUID  `json:"repository_configuration_uuid"`
 	Published                   *time.Time `json:"published"`
 	Modified                    *time.Time `json:"modified"`
-	Aliases                     []string   `json:"aliases"`
+	Upstream                    []string   `json:"upstream"`
 	SchemaVersion               string     `json:"schema_version"`
-	Source                      string     `json:"source"`
 	Summary                     string     `json:"summary"`
 	CreatedAt                   time.Time  `json:"created_at"`
 	UpdatedAt                   time.Time  `json:"updated_at"`
@@ -181,6 +185,7 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 		arg.PackageName,
 		arg.SeverityMin,
 		arg.CveID,
+		arg.AdvisoryID,
 		arg.Name,
 		arg.PackageVersion,
 		arg.EntitledFeatures,
@@ -206,9 +211,8 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 			&i.RepositoryConfigurationUuid,
 			&i.Published,
 			&i.Modified,
-			&i.Aliases,
+			&i.Upstream,
 			&i.SchemaVersion,
-			&i.Source,
 			&i.Summary,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -231,7 +235,7 @@ SELECT
     la.repo_name,
     la.severity
 FROM lightwell_advisories la
-WHERE la.advisory_id = $1::text
+WHERE $1::text = ANY(la.upstream)
 `
 
 type ListAdvisoriesByCveIDRow struct {
@@ -241,6 +245,8 @@ type ListAdvisoriesByCveIDRow struct {
 	Severity      string   `json:"severity"`
 }
 
+// cve_id matches one element of upstream. If this lookup gets slow,
+// add a GIN index on lightwell_advisories.upstream.
 func (q *Queries) ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]ListAdvisoriesByCveIDRow, error) {
 	rows, err := q.db.Query(ctx, listAdvisoriesByCveID, cveID)
 	if err != nil {

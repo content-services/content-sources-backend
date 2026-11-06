@@ -41,9 +41,10 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Param        repository       query  string  false  "Filter by repository name"
 // @Param        package_name     query  string  false  "Filter by package name (exact match)"
 // @Param        package_version  query  string  false  "Filter by package version (exact match)"
-// @Param        name             query  string  false  "Filter by advisory id or alias (substring match)"
+// @Param        name             query  string  false  "Deprecated. Substring match on advisory id or upstream ids"  deprecated(true)
+// @Param        advisory_id      query  string  false  "Filter by advisory id (exact match)"
 // @Param        severity_min     query  string  false  "Minimum severity level (low, moderate, important, critical)"
-// @Param        cve_id           query  string  false  "Filter by CVE ID (exact match)"
+// @Param        cve_id           query  string  false  "Filter by an exact CVE id"
 // @Param        latest_release   query  bool    false  "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version."
 // @Param        limit            query  int     false  "Limit of results to return"
 // @Param        offset           query  int     false  "Offset into results"

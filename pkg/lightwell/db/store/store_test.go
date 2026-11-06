@@ -789,13 +789,14 @@ func insertTestAdvisories(t *testing.T, ctx context.Context, tx pgx.Tx) uuid.UUI
 			INSERT INTO lightwell_advisories (
 				uuid, advisory_id, severity, severity_score, details,
 				reference_urls, package_name, fixed_versions,
-				repo_name, repository_configuration_uuid, checksum
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+				repo_name, repository_configuration_uuid, checksum, upstream
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 			uuid.New(), adv.id, adv.severity, adv.severityScore,
 			"test advisory details for "+adv.packageName,
 			[]string{"https://access.redhat.com/security/cve/" + adv.id},
 			adv.packageName, adv.fixedVersions,
 			adv.repoName, repoConfigUUID, fmt.Sprintf("checksum-%s-%s", adv.id, adv.packageName),
+			[]string{adv.id},
 		)
 		require.NoError(t, err)
 	}
@@ -902,7 +903,7 @@ func TestStore_ListAdvisoriesFilterByNameAlias(t *testing.T) {
 
 	_, err := tx.Exec(ctx, `
 		UPDATE lightwell_advisories
-		SET aliases = $1
+		SET upstream = $1
 		WHERE advisory_id = $2 AND package_name = $3`,
 		[]string{"GHSA-48rh-qgjr-xfj6"}, "CVE-2024-1002", "jackson-databind")
 	require.NoError(t, err)
@@ -916,7 +917,7 @@ func TestStore_ListAdvisoriesFilterByNameAlias(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
 	assert.Equal(t, "jackson-databind", rows[0].PackageName)
-	assert.Contains(t, rows[0].Aliases, "GHSA-48rh-qgjr-xfj6")
+	assert.Contains(t, rows[0].Upstream, "GHSA-48rh-qgjr-xfj6")
 }
 
 func TestStore_ListAdvisoriesFilterByNameAdvisoryID(t *testing.T) {
@@ -978,7 +979,7 @@ func TestStore_ListAdvisoriesFilterByNameAndPackageVersion(t *testing.T) {
 
 	_, err := tx.Exec(ctx, `
 		UPDATE lightwell_advisories
-		SET advisory_id = $1, aliases = $2, package_version = $3
+		SET advisory_id = $1, upstream = $2, package_version = $3
 		WHERE advisory_id = $4 AND package_name = $5`,
 		"x_RHLW-CVE-2024-1002", []string{"GHSA-48rh-qgjr-xfj6"}, "2.15.3",
 		"CVE-2024-1002", "jackson-databind")
@@ -1027,11 +1028,29 @@ func TestStore_ListAdvisoriesFilterByCveIDExact(t *testing.T) {
 		PageOffset: 0,
 	})
 	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "requests", rows[0].PackageName)
+
+	substring := "CVE-2024"
+	rows, err = q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		CveID:      &substring,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
 	assert.Empty(t, rows)
 
 	exactID := "x_RHLW-CVE-2024-1003-4.0.0"
 	rows, err = q.ListAdvisories(ctx, store.ListAdvisoriesParams{
 		CveID:      &exactID,
+		PageLimit:  100,
+		PageOffset: 0,
+	})
+	require.NoError(t, err)
+	assert.Empty(t, rows)
+
+	rows, err = q.ListAdvisories(ctx, store.ListAdvisoriesParams{
+		AdvisoryID: &exactID,
 		PageLimit:  100,
 		PageOffset: 0,
 	})

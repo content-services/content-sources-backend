@@ -3,8 +3,9 @@ package jfrog_bridge
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
+
+	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 )
 
 // Remediation is the internal representation of a single package release
@@ -16,12 +17,6 @@ type Remediation struct {
 	BaseVersion string
 	CVEsFixed   []string
 	Checksums   map[string]string // filename → sha256hex (nil if absent)
-}
-
-var rhlwSuffix = regexp.MustCompile(`\.rhlw[-.]\d+$`)
-
-func stripRHLWSuffix(version string) string {
-	return rhlwSuffix.ReplaceAllString(version, "")
 }
 
 // cloudEvent mirrors the CloudEvents v1.0 structure used on the dedicated
@@ -80,7 +75,7 @@ func ParseRemediations(data []byte) ([]Remediation, error) {
 					GroupID:     group,
 					ArtifactID:  artifact,
 					Version:     rn.Name,
-					BaseVersion: stripRHLWSuffix(rn.Name),
+					BaseVersion: baseVersion(rn.Name),
 					CVEsFixed:   cves,
 					Checksums:   rel.ArtifactChecksums,
 				})
@@ -91,6 +86,13 @@ func ParseRemediations(data []byte) ([]Remediation, error) {
 		return nil, fmt.Errorf("no remediations in CloudEvents message")
 	}
 	return result, nil
+}
+
+// baseVersion drops a Lightwell rebuild suffix. SplitVersion accepts the
+// '.', '-', and '+' forms (.rhlw-00001, -rhlw-00001, +rhlw.1).
+func baseVersion(version string) string {
+	upstream, _ := rhlw.SplitVersion(version)
+	return upstream
 }
 
 func splitPackageName(pkgName string) (group, artifact string, err error) {

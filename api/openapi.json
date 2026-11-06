@@ -425,9 +425,6 @@
                     "advisory_id": {
                         "type": "string"
                     },
-                    "advisory_name": {
-                        "type": "string"
-                    },
                     "aliases": {
                         "items": {
                             "type": "string"
@@ -476,14 +473,17 @@
                     "severity_score": {
                         "type": "number"
                     },
-                    "source": {
-                        "type": "string"
-                    },
                     "summary": {
                         "type": "string"
                     },
                     "updated_at": {
                         "type": "string"
+                    },
+                    "upstream": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
                     }
                 },
                 "type": "object"
@@ -3619,9 +3619,17 @@
                         }
                     },
                     {
-                        "description": "Filter by advisory id or alias (substring match)",
+                        "description": "Deprecated. Substring match on advisory id or upstream ids",
                         "in": "query",
                         "name": "name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Filter by advisory id (exact match)",
+                        "in": "query",
+                        "name": "advisory_id",
                         "schema": {
                             "type": "string"
                         }
@@ -3635,7 +3643,7 @@
                         }
                     },
                     {
-                        "description": "Filter by CVE ID (exact match)",
+                        "description": "Filter by an exact CVE id",
                         "in": "query",
                         "name": "cve_id",
                         "schema": {

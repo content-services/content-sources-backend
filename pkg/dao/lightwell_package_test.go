@@ -169,9 +169,9 @@ func (s *LightwellPackageSuite) createAdvisory(ctx context.Context, repoConfigUU
 	advisoryUUID := uuid.New().String()
 
 	err := db.DB.WithContext(ctx).Exec(`
-		INSERT INTO lightwell_advisories (uuid, created_at, updated_at, repository_configuration_uuid, advisory_id, package_name, fixed_versions, repo_name, severity, severity_score, checksum)
-		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)`,
-		advisoryUUID, repoConfigUUID, advisoryID, packageName, pq.Array(fixedVersions), "test-repo", "7.5", 7.5, "test-checksum",
+		INSERT INTO lightwell_advisories (uuid, created_at, updated_at, repository_configuration_uuid, advisory_id, package_name, fixed_versions, repo_name, severity, severity_score, checksum, upstream, aliases)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		advisoryUUID, repoConfigUUID, advisoryID, packageName, pq.Array(fixedVersions), "test-repo", "7.5", 7.5, "test-checksum", pq.Array([]string{advisoryID}), pq.Array([]string{advisoryID}),
 	).Error
 	s.Require().NoError(err)
 

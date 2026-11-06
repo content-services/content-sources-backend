@@ -137,7 +137,7 @@ func (s *LightwellAdvisorySuite) TestSyncUpdatesExisting() {
 	s.Equal("ccc333", result[0].Checksum)
 	s.Equal("1.0.1", result[0].PackageVersion)
 	s.Equal("Updated summary", result[0].Summary)
-	s.Equal("manual", result[0].Source)
+	s.Empty(result[0].Source)
 	s.Equal("1.7.0", result[0].SchemaVersion)
 	s.Equal([]string{"FAKE-001", "CVE-2099-0001"}, []string(result[0].Aliases))
 	s.Require().NotNil(result[0].Published)
@@ -175,7 +175,7 @@ func (s *LightwellAdvisorySuite) TestSyncPersistsOSVMetadata() {
 	s.Require().Len(result, 1)
 	got := result[0]
 	s.Equal("1.7.2", got.PackageVersion)
-	s.Equal("pnc-build", got.Source)
+	s.Empty(got.Source)
 	s.Equal("1.6.8", got.SchemaVersion)
 	s.Equal("Improper Neutralization of Input During Web Page Generation in Jsoup", got.Summary)
 	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"}, []string(got.Aliases))
@@ -515,10 +515,10 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesMapsOSVMetadata() {
 	s.Equal(int64(1), total)
 	s.Require().Len(data, 1)
 	got := data[0]
-	s.Equal("CVE-2015-6748", got.AdvisoryName)
+	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"}, got.Aliases)
+	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"}, got.Upstream)
 	s.Equal(float32(6.1), got.SeverityScore)
 	s.Equal("1.7.2", got.PackageVersion)
-	s.Equal("pnc-build", got.Source)
 	s.Equal("1.6.8", got.SchemaVersion)
 	s.Equal("Improper Neutralization of Input During Web Page Generation in Jsoup", got.Summary)
 	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"}, got.Aliases)
@@ -636,12 +636,27 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesFiltersNamePackageVersionAndC
 		o.CveID = &cveID
 	}))
 	s.Require().NoError(err)
+	s.Equal(int64(1), total)
+	s.Equal("org.jsoup:jsoup", data[0].PackageName)
+
+	substring := "CVE-2015"
+	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
+		o.CveID = &substring
+	}))
+	s.Require().NoError(err)
 	s.Equal(int64(0), total)
 	s.Empty(data)
 
 	exactID := "x_RHLW-CVE-2015-6748-1.7.2"
 	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
 		o.CveID = &exactID
+	}))
+	s.Require().NoError(err)
+	s.Equal(int64(0), total)
+	s.Empty(data)
+
+	data, total, err = daoImpl.ListAdvisories(context.Background(), opts(func(o *ListLightwellAdvisoriesOptions) {
+		o.AdvisoryID = &exactID
 	}))
 	s.Require().NoError(err)
 	s.Equal(int64(1), total)

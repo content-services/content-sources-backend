@@ -14,9 +14,8 @@ WITH filtered AS (
         la.repository_configuration_uuid,
         la.published,
         la.modified,
-        la.aliases,
+        la.upstream,
         la.schema_version,
-        la.source,
         la.summary,
         la.created_at,
         la.updated_at
@@ -41,13 +40,19 @@ WITH filtered AS (
             OR la.severity_score >= sqlc.narg(severity_min)::real
         )
         AND (
+            -- cve_id matches one element of upstream. If this lookup gets slow,
+            -- add a GIN index on lightwell_advisories.upstream.
             sqlc.narg(cve_id)::text IS NULL
-            OR la.advisory_id = sqlc.narg(cve_id)::text
+            OR sqlc.narg(cve_id)::text = ANY(la.upstream)
+        )
+        AND (
+            sqlc.narg(advisory_id)::text IS NULL
+            OR la.advisory_id = sqlc.narg(advisory_id)::text
         )
         AND (
             sqlc.narg(name)::text IS NULL
             OR la.advisory_id ILIKE '%' || sqlc.narg(name)::text || '%'
-            OR la.aliases::text ILIKE '%' || sqlc.narg(name)::text || '%'
+            OR la.upstream::text ILIKE '%' || sqlc.narg(name)::text || '%'
         )
         AND (
             sqlc.narg(package_version)::text IS NULL
@@ -83,9 +88,8 @@ SELECT
     repository_configuration_uuid,
     published,
     modified,
-    aliases,
+    upstream,
     schema_version,
-    source,
     summary,
     created_at,
     updated_at,
@@ -129,4 +133,6 @@ SELECT
     la.repo_name,
     la.severity
 FROM lightwell_advisories la
-WHERE la.advisory_id = sqlc.arg(cve_id)::text;
+-- cve_id matches one element of upstream. If this lookup gets slow,
+-- add a GIN index on lightwell_advisories.upstream.
+WHERE sqlc.arg(cve_id)::text = ANY(la.upstream);

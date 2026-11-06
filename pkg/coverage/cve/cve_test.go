@@ -173,9 +173,9 @@ func TestEnrichCountsCVEOnceInSummary(t *testing.T) {
 		{Package: matcher.Package{Ecosystem: matcher.EcosystemJava, Namespace: "com.example", Name: "other", Version: "1.0.0"}, MatchStatus: matcher.MatchStatusExact},
 	}
 	advisories := []Advisory{
-		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:widget", AdvisoryID: "x_RHLW-CVE-2024-1234-3.24.2", SeverityScore: 9.1, PackageVersion: "3.24.2"},
-		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:widget", AdvisoryID: "x_RHLW-CVE-2024-1234-3.25.0", SeverityScore: 8.2, PackageVersion: "3.25.0"},
-		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:other", AdvisoryID: "x_RHLW-CVE-2024-1234-1.0.0", SeverityScore: 4.0, PackageVersion: "1.0.0"},
+		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:widget", AdvisoryID: "CVE-2024-1234", SeverityScore: 9.1, PackageVersion: "3.24.2"},
+		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:widget", AdvisoryID: "CVE-2024-1234", SeverityScore: 8.2, PackageVersion: "3.25.0"},
+		{Ecosystem: matcher.EcosystemJava, PackageName: "com.example:other", AdvisoryID: "CVE-2024-1234", SeverityScore: 4.0, PackageVersion: "1.0.0"},
 	}
 
 	perPackage, summary := Enrich(results, advisories)

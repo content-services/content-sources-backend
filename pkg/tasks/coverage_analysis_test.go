@@ -21,6 +21,7 @@ import (
 	"github.com/content-services/tang/pkg/tangy"
 	zest "github.com/content-services/zest/release/v2026"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -136,7 +137,7 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 		PythonPackageKeys: []string{"flask"},
 	}
 	s.mockDaoRegistry.LightwellAdvisory.On("ListRemediatedAdvisories", ctx, config.LightwellOrg, expectedFilter).Return([]dao.RemediatedAdvisory{
-		{ContentType: config.ContentTypeMaven, PackageName: "commons-io:commons-io", AdvisoryID: "CVE-1", SeverityScore: 9.8, PackageVersion: "2.11.0"},
+		{ContentType: config.ContentTypeMaven, PackageName: "commons-io:commons-io", AdvisoryID: "RHLW-2026-0001", SeverityScore: 9.8, PackageVersion: "2.11.0", Upstream: pq.StringArray{"CVE-1"}},
 	}, nil).Once()
 
 	var savedParams dao.SaveCoverageAnalysisParams
