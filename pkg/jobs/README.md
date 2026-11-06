@@ -11,6 +11,36 @@ If a job needs to re-run, bump the `metadata.name` date suffix on the `ClowdJobI
 
 `./cmd/jobs/main.go` is utilized to run them.
 
+## update-all-template-content
+
+One-shot job that runs `update-template-content` for every non-deleted template. Command: `/jobs update-all-template-content [batch-size]`.
+
+Used after changing values in `./deployments/deployment.yaml` (or related config) when existing templates need to be reconciled. Loads templates one org at a time, enqueues tasks, and waits for each batch to finish before enqueueing the next (default batch size 100) so the tasking system is not overwhelmed.
+
+**Ordering:**
+1. Merge/deploy the job definition (ClowdApp `update-all-template-content`).
+2. Deploy the config change and wait for pods to roll.
+3. Add a `ClowdJobInvocation` in `deployments/jobs-stage.yaml` (bump the date suffix to re-run):
+
+```yaml
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: update-all-template-content-YYYY-MM-DD
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - update-all-template-content
+```
+
+### Verification after invocation
+
+- Job pod succeeds.
+- Logs show `Found orgs with templates to refresh`, per-org/per-batch enqueue/wait messages, ending with `Finished update-all-template-content`.
+- Spot-check that templates reflect the intended update.
+
 ## send-template-update-events
 
 One-shot backfill. Command: `/jobs send-template-update-events`.
