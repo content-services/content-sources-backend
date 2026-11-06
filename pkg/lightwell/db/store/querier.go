@@ -31,6 +31,8 @@ type Querier interface {
 	GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (LightwellVulnerability, error)
 	InsertVulnerabilityCustomer(ctx context.Context, arg InsertVulnerabilityCustomerParams) error
 	ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) ([]ListAdvisoriesRow, error)
+	// cve_id matches one element of upstream. If this lookup gets slow,
+	// add a GIN index on lightwell_advisories.upstream.
 	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]ListAdvisoriesByCveIDRow, error)
 	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
 	ListClearinghouseUploadFiles(ctx context.Context, clearinghouseUploadUuid uuid.UUID) ([]ClearinghouseUploadFile, error)

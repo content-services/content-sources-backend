@@ -30,12 +30,6 @@ import (
 const maxResponseBytes = 100 * 1024 * 1024 // 100 MB
 const maxConcurrentFetches = 10
 
-// legacyOSVDir is the repository subdirectory that currently holds the OSV
-// files this importer should read. PULP_MANIFEST stays at the repository root
-// and also lists files outside this directory, so those entries are ignored.
-// This filter is temporary.
-const legacyOSVDir = "legacy"
-
 // bridgeNotificationOrgID is a sentinel org_id used to track which advisories
 // have already been published to the org-independent jfrog-bridge topic. It
 // reuses the per-org notification tracking table so each advisory is sent to
@@ -124,7 +118,7 @@ func processOSVForEntry(
 	if err != nil {
 		return fmt.Errorf("error fetching manifest from %s: %w", manifestURL, err)
 	}
-	manifestEntries := selectLegacyOSVEntries(vp.ParseManifest(manifestData))
+	manifestEntries := selectRootRHLWEntries(vp.ParseManifest(manifestData))
 
 	existingAdvisories, err := daoReg.LightwellAdvisory.ListByRepository(ctx, repoConfigUUID)
 	if err != nil {
@@ -184,6 +178,7 @@ func sendAdvisoryNotifications(
 					Severity:      a.Severity,
 					FixedVersions: a.FixedVersions,
 					ReferenceURLs: a.ReferenceURLs,
+					Upstream:      a.Upstream,
 				}
 			}
 			checksumRequests := buildChecksumRequests(bridgeInputs)
@@ -262,6 +257,7 @@ func sendAdvisoryNotifications(
 				Severity:      u.Severity,
 				FixedVersions: u.FixedVersions,
 				ReferenceURLs: u.ReferenceURLs,
+				Upstream:      u.Upstream,
 			}
 		}
 
@@ -345,7 +341,6 @@ func buildAdvisoryInputs(
 					Modified:       info.Modified,
 					Aliases:        info.Aliases,
 					SchemaVersion:  info.SchemaVersion,
-					Source:         info.Source,
 					Summary:        info.Summary,
 				})
 			}
@@ -366,15 +361,14 @@ func buildAdvisoryInputs(
 	return advisories, updated
 }
 
-// selectLegacyOSVEntries keeps manifest paths that live in ./legacy/ and
-// normalizes them so the later fetch uses that relative path. Files at the
-// repository root, and names that merely start with "legacy", are left out.
-func selectLegacyOSVEntries(entries []vp.ManifestEntry) []vp.ManifestEntry {
-	prefix := legacyOSVDir + "/"
+// selectRootRHLWEntries keeps root RHLW-*.json manifest entries. legacy/ files
+// and root x_RHLW-* files are left out. A repository whose manifest has no
+// matching file syncs an empty set, which deletes its current advisories.
+func selectRootRHLWEntries(entries []vp.ManifestEntry) []vp.ManifestEntry {
 	selected := make([]vp.ManifestEntry, 0, len(entries))
 	for _, entry := range entries {
 		name := path.Clean(entry.Filename)
-		if !strings.HasPrefix(name, prefix) {
+		if strings.Contains(name, "/") || !strings.HasPrefix(name, "RHLW-") || !strings.HasSuffix(name, ".json") {
 			continue
 		}
 		entry.Filename = name

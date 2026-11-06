@@ -27,12 +27,6 @@ export interface ApiLightwellAdvisoryResponse {
     advisoryId?: string;
     /**
      * 
-     * @type {string}
-     * @memberof ApiLightwellAdvisoryResponse
-     */
-    advisoryName?: string;
-    /**
-     * 
      * @type {Array<string>}
      * @memberof ApiLightwellAdvisoryResponse
      */
@@ -114,12 +108,6 @@ export interface ApiLightwellAdvisoryResponse {
      * @type {string}
      * @memberof ApiLightwellAdvisoryResponse
      */
-    source?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ApiLightwellAdvisoryResponse
-     */
     summary?: string;
     /**
      * 
@@ -127,6 +115,12 @@ export interface ApiLightwellAdvisoryResponse {
      * @memberof ApiLightwellAdvisoryResponse
      */
     updatedAt?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ApiLightwellAdvisoryResponse
+     */
+    upstream?: Array<string>;
 }
 
 /**
@@ -147,7 +141,6 @@ export function ApiLightwellAdvisoryResponseFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'advisoryId': json['advisory_id'] == null ? undefined : json['advisory_id'],
-        'advisoryName': json['advisory_name'] == null ? undefined : json['advisory_name'],
         'aliases': json['aliases'] == null ? undefined : json['aliases'],
         'createdAt': json['created_at'] == null ? undefined : json['created_at'],
         'details': json['details'] == null ? undefined : json['details'],
@@ -161,9 +154,9 @@ export function ApiLightwellAdvisoryResponseFromJSONTyped(json: any, ignoreDiscr
         'schemaVersion': json['schema_version'] == null ? undefined : json['schema_version'],
         'severity': json['severity'] == null ? undefined : json['severity'],
         'severityScore': json['severity_score'] == null ? undefined : json['severity_score'],
-        'source': json['source'] == null ? undefined : json['source'],
         'summary': json['summary'] == null ? undefined : json['summary'],
         'updatedAt': json['updated_at'] == null ? undefined : json['updated_at'],
+        'upstream': json['upstream'] == null ? undefined : json['upstream'],
     };
 }
 
@@ -179,7 +172,6 @@ export function ApiLightwellAdvisoryResponseToJSONTyped(value?: ApiLightwellAdvi
     return {
         
         'advisory_id': value['advisoryId'],
-        'advisory_name': value['advisoryName'],
         'aliases': value['aliases'],
         'created_at': value['createdAt'],
         'details': value['details'],
@@ -193,9 +185,9 @@ export function ApiLightwellAdvisoryResponseToJSONTyped(value?: ApiLightwellAdvi
         'schema_version': value['schemaVersion'],
         'severity': value['severity'],
         'severity_score': value['severityScore'],
-        'source': value['source'],
         'summary': value['summary'],
         'updated_at': value['updatedAt'],
+        'upstream': value['upstream'],
     };
 }
 

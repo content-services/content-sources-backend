@@ -159,7 +159,7 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	}
 
 	// 2. Fetch OSV records
-	osvRecords, err := h.registry.FetchOSVRecords(ctx, rem.BaseVersion)
+	osvRecords, err := h.registry.FetchOSVRecords(ctx, rem.GroupID, rem.ArtifactID, rem.BaseVersion)
 	if err != nil {
 		return fmt.Errorf("fetch OSV records: %w", err)
 	}

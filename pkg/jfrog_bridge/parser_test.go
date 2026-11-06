@@ -119,22 +119,35 @@ func TestParseRemediations_WithoutChecksums(t *testing.T) {
 	assert.Nil(t, rems[0].Checksums, "Checksums should be nil when absent from JSON")
 }
 
-func TestStripRHLWSuffix(t *testing.T) {
+func TestParseRemediations_BaseVersion(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		version string
+		base    string
 	}{
 		{"5.3.18.rhlw-00003", "5.3.18"},
-		{"5.3.18.rhlw-00004", "5.3.18"},
-		{"2.8.0.rhlw-00001", "2.8.0"},
 		{"4.0.4.rhlw.003", "4.0.4"},
-		{"4.0.4.rhlw.004", "4.0.4"},
+		{"4.1.132.Final-rhlw-00002", "4.1.132.Final"},
+		{"1.2.3+rhlw.1", "1.2.3"},
+		{"1.2.3.rhlw-00001-n0001", "1.2.3"},
 		{"5.3.18", "5.3.18"},
-		{"1.0.0", "1.0.0"},
 	}
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.expected, stripRHLWSuffix(tt.input))
+		t.Run(tt.version, func(t *testing.T) {
+			msg := `{
+				"specversion": "1.0",
+				"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+				"data": [{
+					"payload": {
+						"package_name": "org.example:lib",
+						"releases": [{"release_names": [{"name": "` + tt.version + `"}]}]
+					}
+				}]
+			}`
+			rems, err := ParseRemediations([]byte(msg))
+			require.NoError(t, err)
+			require.Len(t, rems, 1)
+			assert.Equal(t, tt.version, rems[0].Version)
+			assert.Equal(t, tt.base, rems[0].BaseVersion)
 		})
 	}
 }

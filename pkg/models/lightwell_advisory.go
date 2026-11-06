@@ -24,6 +24,7 @@ type LightwellAdvisory struct {
 	Published                   *time.Time     `json:"published"`
 	Modified                    *time.Time     `json:"modified"`
 	Aliases                     pq.StringArray `json:"aliases" gorm:"type:text[]"`
+	Upstream                    pq.StringArray `json:"upstream" gorm:"type:text[]"`
 	SchemaVersion               string         `json:"schema_version"`
 	Source                      string         `json:"source"`
 	Summary                     string         `json:"summary"`

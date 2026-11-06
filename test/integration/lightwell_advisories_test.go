@@ -179,7 +179,6 @@ func (s *LightwellAdvisoriesSuite) TestListAdvisories() {
 	}
 
 	jsoup := byID["x_RHLW-CVE-2015-6748-1.7.2"]
-	s.Equal("CVE-2015-6748", jsoup.AdvisoryName)
 	s.Equal("6.1", jsoup.Severity)
 	s.Equal(float32(6.1), jsoup.SeverityScore)
 	s.Equal("Improper Neutralization of Input During Web Page Generation in Jsoup", jsoup.Summary)
@@ -189,14 +188,15 @@ func (s *LightwellAdvisoriesSuite) TestListAdvisories() {
 	s.Equal([]string{"1.7.2.rhlw-00001"}, jsoup.FixedVersions)
 	s.Equal(s.repoName, jsoup.Repository)
 	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"}, jsoup.Aliases)
+	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748"}, jsoup.Upstream)
 	s.Equal("1.6.8", jsoup.SchemaVersion)
-	s.Equal("pnc-build", jsoup.Source)
 	s.Require().NotNil(jsoup.Published)
 	s.False(jsoup.CreatedAt.IsZero())
 	s.False(jsoup.UpdatedAt.IsZero())
+	s.NotContains(string(body), `"advisory_name"`)
+	s.NotContains(string(body), `"source"`)
 
 	other := byID["x_RHLW-LW-2026-4255-2.11.0"]
-	s.Equal("LW-2026-4255", other.AdvisoryName)
 	s.Equal("com.example:other", other.PackageName)
 }
 
@@ -252,11 +252,23 @@ func (s *LightwellAdvisoriesSuite) TestListAdvisoriesFilters() {
 	q = s.repoQuery()
 	q.Set("cve_id", "CVE-2015-6748")
 	resp = s.list(q)
+	s.Equal(int64(1), resp.Meta.Count)
+	s.Equal("org.jsoup:jsoup", resp.Data[0].PackageName)
+
+	q = s.repoQuery()
+	q.Set("cve_id", "CVE-2015")
+	resp = s.list(q)
 	s.Equal(int64(0), resp.Meta.Count)
 	s.Empty(resp.Data)
 
 	q = s.repoQuery()
 	q.Set("cve_id", "x_RHLW-CVE-2015-6748-1.7.2")
+	resp = s.list(q)
+	s.Equal(int64(0), resp.Meta.Count)
+	s.Empty(resp.Data)
+
+	q = s.repoQuery()
+	q.Set("advisory_id", "x_RHLW-CVE-2015-6748-1.7.2")
 	resp = s.list(q)
 	s.Equal(int64(1), resp.Meta.Count)
 	s.Equal("org.jsoup:jsoup", resp.Data[0].PackageName)
@@ -387,9 +399,9 @@ func (s *LightwellAdvisoriesSuite) TestListAdvisoriesUpdatesAfterResync() {
 	s.Equal(float32(9.8), jsoup.SeverityScore)
 	s.Equal("1.8.3", jsoup.PackageVersion)
 	s.Equal([]string{"1.8.3.rhlw-00002"}, jsoup.FixedVersions)
-	s.Equal("manual", jsoup.Source)
 	s.Equal("1.7.0", jsoup.SchemaVersion)
 	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748", "CVE-EXTRA"}, jsoup.Aliases)
+	s.Equal([]string{"GHSA-48rh-qgjr-xfj6", "CVE-2015-6748", "CVE-EXTRA"}, jsoup.Upstream)
 	s.Require().NotNil(jsoup.Published)
 	s.True(updatedPublished.Equal(*jsoup.Published))
 }

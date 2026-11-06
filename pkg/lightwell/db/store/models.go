@@ -55,6 +55,7 @@ type LightwellAdvisory struct {
 	Published                   *time.Time `json:"published"`
 	Modified                    *time.Time `json:"modified"`
 	Aliases                     []string   `json:"aliases"`
+	Upstream                    []string   `json:"upstream"`
 	SchemaVersion               string     `json:"schema_version"`
 	Source                      string     `json:"source"`
 	Summary                     string     `json:"summary"`

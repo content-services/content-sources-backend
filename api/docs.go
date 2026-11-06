@@ -341,8 +341,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by advisory id or alias (substring match)",
+                        "description": "Deprecated. Substring match on advisory id or upstream ids",
                         "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by advisory id (exact match)",
+                        "name": "advisory_id",
                         "in": "query"
                     },
                     {
@@ -353,7 +359,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by CVE ID (exact match)",
+                        "description": "Filter by an exact CVE id",
                         "name": "cve_id",
                         "in": "query"
                     },
@@ -5651,9 +5657,6 @@ const docTemplate = `{
                 "advisory_id": {
                     "type": "string"
                 },
-                "advisory_name": {
-                    "type": "string"
-                },
                 "aliases": {
                     "type": "array",
                     "items": {
@@ -5702,14 +5705,17 @@ const docTemplate = `{
                 "severity_score": {
                     "type": "number"
                 },
-                "source": {
-                    "type": "string"
-                },
                 "summary": {
                     "type": "string"
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "upstream": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

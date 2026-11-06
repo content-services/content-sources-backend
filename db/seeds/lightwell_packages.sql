@@ -8,7 +8,7 @@
 -- Maven name is the artifact id and package_group is the group id. The
 -- group:artifact coordinate stays on the advisory and is not stored in name.
 -- npm name is the package name and package_group is the scope, or "-" when
--- the package is unscoped. C# advisories stay on lightwell/seed.
+-- the package is unscoped.
 BEGIN;
 
 DELETE FROM lightwell_package_versions
