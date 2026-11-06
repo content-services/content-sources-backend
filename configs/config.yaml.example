@@ -263,6 +263,8 @@ jfrog_bridge:
   request_timeout: 60
 
 features:
+  tang_to_zest_rpm_search:
+    enabled: false # Use Zest for snapshot and dated RPM name search.
   # Internal Lens and coverage-upload access. Values must also be in options.feature_filter.
   lightwell_lens_internal_entitled_features: #["lightwellFeature"]
   snapshots:

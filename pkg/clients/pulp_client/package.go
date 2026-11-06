@@ -7,6 +7,8 @@ import (
 	zest "github.com/content-services/zest/release/v2026"
 )
 
+const packageSearchLimitMaximum = 1000
+
 // specify fields to workaround https://github.com/pulp/pulp_rpm/issues/3694
 var RpmFields = []string{"pulp_href", "name", "version", "release", "arch", "epoch", "sha256", "summary"}
 
@@ -123,4 +125,32 @@ func (r *pulpDaoImpl) ListVersionAllPackages(ctx context.Context, versionHref st
 		pkgs = append(pkgs, pkgList...)
 	}
 	return pkgs, nil
+}
+
+// SearchVersionPackages searches immutable versions across domains, up to an RPM-row budget.
+func (r *pulpDaoImpl) SearchVersionPackages(ctx context.Context, versionHrefs []string, search string, limit int) ([]zest.ContentViewPackageResponse, error) {
+	if len(versionHrefs) == 0 || limit <= 0 {
+		return []zest.ContentViewPackageResponse{}, nil
+	}
+	limit = min(limit, packageSearchLimitMaximum)
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	req := client.RpmPackagesAPI.
+		RpmContentSearchPackagesList(ctx, r.domainName).
+		RepositoryVersion(versionHrefs).
+		Limit(int32(limit))
+	if search != "" {
+		// TODO: Replace Name with the case-insensitive prefix parameter once Pulp and Zest support it.
+		req = req.Name(search)
+	}
+	resp, httpResp, err := req.Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return nil, errorWithResponseBody("error searching packages in versions", httpResp, err)
+	}
+	return resp.Results, nil
 }

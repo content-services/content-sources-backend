@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -1170,114 +1171,203 @@ func mockTangy(t *testing.T) (*tangy.MockTangy, *tangy.Tangy) {
 	return mockTangy, originalTangy
 }
 
-func (s *RpmSuite) TestSearchRpmsForSnapshots() {
-	orgId := seeds.RandomOrgId()
-	mTangy, origTangy := mockTangy(s.T())
-	defer func() { config.Tang = origTangy }()
+func setTangToZestRpmSearchForTest(t *testing.T, enabled bool) {
+	t.Helper()
+	original := config.Get().Features.TangToZestRpmSearch
+	config.Get().Features.TangToZestRpmSearch = config.Feature{Enabled: enabled}
+	t.Cleanup(func() { config.Get().Features.TangToZestRpmSearch = original })
+}
+
+func (s *RpmSuite) TestSearchRpmsForSnapshotsTang() {
 	ctx := context.Background()
-
-	hrefs := []string{"some_pulp_version_href"}
-	expected := []tangy.RpmPackageSearch{{
-		Name:    "Foodidly",
-		Summary: "there was a great foo",
-	}}
-
-	// Create a repo config, and snapshot, update its version_href to expected href
-	repoConfigs, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{
-		OrgID:     orgId,
-		BatchSize: 0,
+	orgID := seeds.RandomOrgId()
+	setTangToZestRpmSearchForTest(s.T(), false)
+	tang, originalTang := mockTangy(s.T())
+	s.T().Cleanup(func() { config.Tang = originalTang })
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(s.T(), err)
+	snaps, err := seeds.SeedSnapshots(s.tx, repos[0].UUID, 1)
+	require.NoError(s.T(), err)
+	tang.On("RpmRepositoryVersionPackageSearch", ctx, []string{snaps[0].VersionHref}, "GIR", 55).
+		Return([]tangy.RpmPackageSearch{{Name: "giraffe", Summary: "a giraffe"}}, nil).Once()
+	// No domain or Pulp mock expectations are needed when the API feature is disabled.
+	dao := &rpmDaoImpl{db: s.tx, pulpClient: pulp_client.NewMockPulpClient(s.T())}
+	response, err := dao.SearchSnapshotRpms(ctx, orgID, api.SnapshotSearchRpmRequest{
+		UUIDs: []string{snaps[0].UUID}, Search: "GIR", Limit: utils.Ptr(55),
 	})
 	require.NoError(s.T(), err)
-	repoConfig := repoConfigs[0]
-
-	snaps, err := seeds.SeedSnapshots(s.tx, repoConfig.UUID, 1)
-	require.NoError(s.T(), err)
-	res := s.tx.Model(&models.Snapshot{}).Where("repository_configuration_uuid = ?", repoConfig.UUID).Update("version_href", hrefs[0])
-	require.NoError(s.T(), res.Error)
-	// Add module with same name as package
-	s.prepModule(repoConfig.UUID, "Foodidly", "2", "1")
-
-	// Add a second module with a higher version in a different repo
-	s.prepModule(repoConfigs[1].UUID, "Foodidly", "2", "2")
-
-	// pulpHrefs, request.Search, *request.Limit)
-	mTangy.On("RpmRepositoryVersionPackageSearch", ctx, hrefs, "Foo", 55).Return(expected, nil)
-
-	dao := GetRpmDao(s.tx, s.mockRoadmapClient)
-	ret, err := dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{
-		UUIDs:  []string{snaps[0].UUID},
-		Search: "Foo",
-		Limit:  utils.Ptr(55),
+	assert.Equal(s.T(), []api.SearchRpmResponse{{PackageName: "giraffe", Summary: "a giraffe"}}, response)
+	s.Run("missing Tang configuration", func() {
+		config.Tang = nil
+		_, err := dao.SearchSnapshotRpms(ctx, orgID, api.SnapshotSearchRpmRequest{UUIDs: []string{snaps[0].UUID}})
+		require.ErrorContains(s.T(), err, "no tang configuration present")
 	})
+}
+
+func (s *RpmSuite) TestSearchSnapshotRpmsDeduplicatesAndEnriches() {
+	setTangToZestRpmSearchForTest(s.T(), true)
+	originalTang := config.Tang
+	config.Tang = nil
+	s.T().Cleanup(func() { config.Tang = originalTang })
+	ctx := context.Background()
+	orgID := seeds.RandomOrgId()
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 2, seeds.SeedOptions{OrgID: orgID})
 	require.NoError(s.T(), err)
+	snaps, err := seeds.SeedSnapshots(s.tx, repos[0].UUID, 1)
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.tx.Create(&models.Domain{OrgId: orgID, DomainName: "caller-domain"}).Error)
 
-	assert.Equal(s.T(), []api.SearchRpmResponse{{
-		PackageName: expected[0].Name,
-		Summary:     expected[0].Summary,
-	}}, ret)
+	// Only the module belonging to the searched snapshot should enrich the result.
+	s.prepModule(repos[0].UUID, "postgresql", "2", "1")
+	s.prepModule(repos[1].UUID, "postgresql", "2", "2")
 
+	originalServer := config.Get().Clients.Roadmap.Server
 	config.Get().Clients.Roadmap.Server = "http://example.com"
-	expectedRoadmap := roadmap_client.AppstreamsResponse{
-		Meta: roadmap_client.Meta{},
-		Data: []roadmap_client.AppstreamEntity{
-			{
-				Name:      "demo-package",
-				Stream:    "0",
-				StartDate: "01-01-01",
-				EndDate:   "02-02-02",
-				Impl:      "dnf_module",
-			},
-			{
-				Name:      "demo-package",
-				Stream:    "1",
-				StartDate: "01-01-01",
-				EndDate:   "02-02-02",
-				Impl:      "dnf_module",
-			},
-			{
-				Name:      "demo-package",
-				StartDate: "01-01-01",
-				EndDate:   "02-02-02",
-				Impl:      "package",
-			},
-		},
-	}
-	s.mockRoadmapClient.On("GetAppstreams", context.Background()).Return(expectedRoadmap, 0, nil)
+	s.T().Cleanup(func() { config.Get().Clients.Roadmap.Server = originalServer })
+	s.mockRoadmapClient.On("GetAppstreams", ctx).Return(roadmap_client.AppstreamsResponse{}, 0, nil)
+	s.mockRoadmapClient.On("GetRhelLifecycleForLatestMajorVersions", ctx).Return(map[int]roadmap_client.LifecycleEntity{}, nil)
 
-	// ensure module info is in response and correct if requested
-	ret, err = dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{
-		UUIDs:                 []string{snaps[0].UUID},
-		Search:                "Foo",
-		Limit:                 utils.Ptr(55),
-		IncludePackageSources: true,
+	pulp := pulp_client.NewMockPulpClient(s.T())
+	pulp.On("LookupOrCreateDomain", ctx, "caller-domain").Return("/domains/caller/", nil).Once()
+	pulp.On("WithDomain", "caller-domain").Return(pulp).Once()
+	pulp.On("SearchVersionPackages", ctx, []string{snaps[0].VersionHref}, "postgres", 55).
+		Return([]zest.ContentViewPackageResponse{
+			{Name: "postgresql", Summary: "first build"},
+			{Name: "postgresql", Summary: "another build with a different summary"},
+			{Name: "postgresql-server", Summary: "another package"},
+		}, nil).Once()
+	dao := &rpmDaoImpl{db: s.tx, roadmapClient: s.mockRoadmapClient, pulpClient: pulp}
+	response, err := dao.SearchSnapshotRpms(ctx, orgID, api.SnapshotSearchRpmRequest{
+		UUIDs: []string{snaps[0].UUID}, Search: "postgres", Limit: utils.Ptr(55), IncludePackageSources: true,
 	})
 	require.NoError(s.T(), err)
-
-	assert.Equal(s.T(), []api.SearchRpmResponse{{
-		PackageName: expected[0].Name,
-		Summary:     expected[0].Summary,
-		PackageSources: []api.PackageSourcesResponse{
-			{
-				Type:        "module",
-				Name:        "Foodidly",
-				Stream:      "2",
-				Context:     "context",
-				Arch:        "x86_64",
-				Version:     "1",
-				Description: "desc",
-			},
+	// Duplicate names retain the first summary, and only the searched repository supplies module sources.
+	assert.Equal(s.T(), []api.SearchRpmResponse{
+		{
+			PackageName: "postgresql", Summary: "first build",
+			PackageSources: []api.PackageSourcesResponse{{
+				Type: "module", Name: "postgresql", Stream: "2", Context: "context",
+				Arch: "x86_64", Version: "1", Description: "desc",
+			}},
 		},
-	}}, ret)
+		{PackageName: "postgresql-server", Summary: "another package"},
+	}, response)
 
-	// ensure error returned for invalid snapshot uuid
-	_, err = dao.SearchSnapshotRpms(ctx, orgId, api.SnapshotSearchRpmRequest{
-		UUIDs: []string{
-			"fake-uuid",
-		},
-		Search: "fake-package",
-		Limit:  utils.Ptr(55),
+	s.Run("invalid snapshot UUID", func() {
+		_, err := dao.SearchSnapshotRpms(ctx, orgID, api.SnapshotSearchRpmRequest{UUIDs: []string{"fake-uuid"}})
+		require.Error(s.T(), err)
 	})
-	assert.Error(s.T(), err)
+}
+
+func (s *RpmSuite) TestSearchSnapshotRpmsVisibility() {
+	setTangToZestRpmSearchForTest(s.T(), true)
+	t := s.T()
+	ctx := context.Background()
+	orgID := seeds.RandomOrgId()
+	otherOrg := seeds.RandomOrgId()
+	pulp := pulp_client.NewMockPulpClient(t)
+	dao := &rpmDaoImpl{db: s.tx, roadmapClient: s.mockRoadmapClient, pulpClient: pulp}
+	require.NoError(t, s.tx.Create(&models.Domain{OrgId: orgID, DomainName: "caller-domain"}).Error)
+
+	var ids, readableHrefs, hiddenIDs []string
+	for _, tc := range []struct {
+		name, orgID                  string
+		partner, published, readable bool
+	}{
+		{name: "own", orgID: orgID, readable: true},
+		{name: "redhat", orgID: config.RedHatOrg, readable: true},
+		{name: "community", orgID: config.CommunityOrg, readable: true},
+		{name: "private", orgID: otherOrg},
+		{name: "published partner", orgID: otherOrg, partner: true, published: true, readable: true},
+		{name: "unpublished partner", orgID: otherOrg, partner: true},
+	} {
+		repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: tc.orgID})
+		require.NoError(t, err)
+		require.NoError(t, s.tx.Model(&repos[0]).Update("partner", tc.partner).Error)
+		snaps, err := seeds.SeedSnapshots(s.tx, repos[0].UUID, 1)
+		require.NoError(t, err)
+		href := "/version/" + strings.ReplaceAll(tc.name, " ", "-") + "/"
+		require.NoError(t, s.tx.Model(&snaps[0]).Updates(map[string]interface{}{"version_href": href, "published": tc.published}).Error)
+		ids = append(ids, snaps[0].UUID)
+		if tc.readable {
+			readableHrefs = append(readableHrefs, href)
+		} else {
+			hiddenIDs = append(hiddenIDs, snaps[0].UUID)
+		}
+	}
+	pulp.On("LookupOrCreateDomain", ctx, "caller-domain").Return("/domains/caller/", nil).Once()
+	pulp.On("WithDomain", "caller-domain").Return(pulp).Once()
+	pulp.On("SearchVersionPackages", ctx, mock.Anything, "", 100).
+		Run(func(args mock.Arguments) {
+			assert.ElementsMatch(t, readableHrefs, args.Get(1))
+		}).Return([]zest.ContentViewPackageResponse{}, nil).Once()
+	results, err := dao.SearchSnapshotRpms(ctx, orgID, api.SnapshotSearchRpmRequest{UUIDs: ids})
+	require.NoError(t, err)
+	assert.Empty(t, results)
+	// Unreadable versions never reach Pulp, including a request containing only hidden snapshots.
+	results, err = dao.SearchSnapshotRpms(ctx, orgID, api.SnapshotSearchRpmRequest{UUIDs: hiddenIDs})
+	require.NoError(t, err)
+	assert.Empty(t, results)
+}
+
+func (s *RpmSuite) TestSearchSharedSnapshotRpmsRetriesDomainCreation() {
+	setTangToZestRpmSearchForTest(s.T(), true)
+	t := s.T()
+	ctx := context.Background()
+	orgID := seeds.RandomOrgId()
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: config.RedHatOrg})
+	require.NoError(t, err)
+	snaps, err := seeds.SeedSnapshots(s.tx, repos[0].UUID, 1)
+	require.NoError(t, err)
+	domains := domainDaoImpl{db: s.tx}
+	domainName, err := domains.Fetch(ctx, orgID)
+	require.NoError(t, err)
+	require.Empty(t, domainName)
+
+	request := api.SnapshotSearchRpmRequest{UUIDs: []string{snaps[0].UUID}, Search: "giraffe"}
+
+	// A failed Pulp creation leaves the local mapping available for retry.
+	failedPulp := pulp_client.NewMockPulpClient(t)
+	failedPulp.On("LookupOrCreateDomain", ctx, mock.Anything).
+		Return("", fmt.Errorf("domain provisioning failed")).Once()
+	dao := &rpmDaoImpl{db: s.tx, pulpClient: failedPulp}
+	results, err := dao.SearchSnapshotRpms(ctx, orgID, request)
+	require.ErrorContains(t, err, "domain provisioning failed")
+	assert.Empty(t, results)
+	domainName, err = domains.Fetch(ctx, orgID)
+	require.NoError(t, err)
+	require.NotEmpty(t, domainName)
+	failedPulp.AssertCalled(t, "LookupOrCreateDomain", ctx, domainName)
+
+	// Retry provisions Pulp using that same mapping and searches the shared version.
+	pulp := pulp_client.NewMockPulpClient(t)
+	pulp.On("LookupOrCreateDomain", ctx, domainName).Return("/domains/caller/", nil).Once()
+	pulp.On("WithDomain", domainName).Return(pulp).Once()
+	pulp.On("SearchVersionPackages", ctx, []string{snaps[0].VersionHref}, "giraffe", 100).
+		Return([]zest.ContentViewPackageResponse{{Name: "giraffe", Summary: "a giraffe"}}, nil).Once()
+	dao.pulpClient = pulp
+	results, err = dao.SearchSnapshotRpms(ctx, orgID, request)
+	require.NoError(t, err)
+	assert.Equal(t, []api.SearchRpmResponse{{PackageName: "giraffe", Summary: "a giraffe"}}, results)
+}
+
+func (s *RpmSuite) TestSearchSnapshotRpmsPulpError() {
+	setTangToZestRpmSearchForTest(s.T(), true)
+	orgID := seeds.RandomOrgId()
+	repos, err := seeds.SeedRepositoryConfigurations(s.tx, 1, seeds.SeedOptions{OrgID: orgID})
+	require.NoError(s.T(), err)
+	snaps, err := seeds.SeedSnapshots(s.tx, repos[0].UUID, 1)
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.tx.Create(&models.Domain{OrgId: orgID, DomainName: "caller-domain"}).Error)
+	pulp := pulp_client.NewMockPulpClient(s.T())
+	pulp.On("LookupOrCreateDomain", context.Background(), "caller-domain").Return("/domains/caller/", nil)
+	pulp.On("WithDomain", "caller-domain").Return(pulp)
+	pulp.On("SearchVersionPackages", context.Background(), []string{snaps[0].VersionHref}, "giraffe", 100).
+		Return(nil, fmt.Errorf("Pulp unavailable"))
+	dao := &rpmDaoImpl{db: s.tx, roadmapClient: s.mockRoadmapClient, pulpClient: pulp}
+	results, err := dao.SearchSnapshotRpms(context.Background(), orgID, api.SnapshotSearchRpmRequest{UUIDs: []string{snaps[0].UUID}, Search: "giraffe"})
+	require.ErrorContains(s.T(), err, "Pulp unavailable")
+	assert.Empty(s.T(), results)
 }
 
 func (s *RpmSuite) TestListRpmsAndErrataForSnapshots() {

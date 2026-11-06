@@ -3794,6 +3794,86 @@ func (_c *MockPulpClient_ResolveRepositoryFromBasePath_Call) RunAndReturn(run fu
 	return _c
 }
 
+// SearchVersionPackages provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) SearchVersionPackages(ctx context.Context, versionHrefs []string, search string, limit int) ([]zest.ContentViewPackageResponse, error) {
+	ret := _mock.Called(ctx, versionHrefs, search, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SearchVersionPackages")
+	}
+
+	var r0 []zest.ContentViewPackageResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, string, int) ([]zest.ContentViewPackageResponse, error)); ok {
+		return returnFunc(ctx, versionHrefs, search, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string, string, int) []zest.ContentViewPackageResponse); ok {
+		r0 = returnFunc(ctx, versionHrefs, search, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]zest.ContentViewPackageResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []string, string, int) error); ok {
+		r1 = returnFunc(ctx, versionHrefs, search, limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_SearchVersionPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SearchVersionPackages'
+type MockPulpClient_SearchVersionPackages_Call struct {
+	*mock.Call
+}
+
+// SearchVersionPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - versionHrefs []string
+//   - search string
+//   - limit int
+func (_e *MockPulpClient_Expecter) SearchVersionPackages(ctx any, versionHrefs any, search any, limit any) *MockPulpClient_SearchVersionPackages_Call {
+	return &MockPulpClient_SearchVersionPackages_Call{Call: _e.mock.On("SearchVersionPackages", ctx, versionHrefs, search, limit)}
+}
+
+func (_c *MockPulpClient_SearchVersionPackages_Call) Run(run func(ctx context.Context, versionHrefs []string, search string, limit int)) *MockPulpClient_SearchVersionPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_SearchVersionPackages_Call) Return(contentViewPackageResponses []zest.ContentViewPackageResponse, err error) *MockPulpClient_SearchVersionPackages_Call {
+	_c.Call.Return(contentViewPackageResponses, err)
+	return _c
+}
+
+func (_c *MockPulpClient_SearchVersionPackages_Call) RunAndReturn(run func(ctx context.Context, versionHrefs []string, search string, limit int) ([]zest.ContentViewPackageResponse, error)) *MockPulpClient_SearchVersionPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SetDomainLabel provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) SetDomainLabel(ctx context.Context, pulpHref string, key string, value string) error {
 	ret := _mock.Called(ctx, pulpHref, key, value)
