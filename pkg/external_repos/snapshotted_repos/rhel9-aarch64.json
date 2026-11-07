@@ -47,5 +47,25 @@
         "selector": "arm",
         "feature_name": "RHEL-OS-aarch64",
         "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9 for ARM 64 - BaseOS (Debug RPMs)",
+        "content_label": "rhel-9-for-aarch64-baseos-debug-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/baseos/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "selector": "debug",
+        "feature_name": "RHEL-OS-aarch64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9 for ARM 64 - AppStream (Debug RPMs)",
+        "content_label": "rhel-9-for-aarch64-appstream-debug-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel9/9/aarch64/appstream/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "selector": "debug",
+        "feature_name": "RHEL-OS-aarch64",
+        "origin": "red_hat"
     }
 ]

@@ -46,5 +46,25 @@
         "selector": "rhel8",
         "feature_name": "RHEL-OS-x86_64",
         "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 8 for x86_64 - BaseOS (Debug RPMs)",
+        "content_label": "rhel-8-for-x86_64-baseos-debug-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/baseos/debug",
+        "distribution_arch": "x86_64",
+        "distribution_version": "8",
+        "selector": "debug",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 8 for x86_64 - AppStream (Debug RPMs)",
+        "content_label": "rhel-8-for-x86_64-appstream-debug-rpms",
+        "url": "https://cdn.redhat.com/content/dist/rhel8/8/x86_64/appstream/debug",
+        "distribution_arch": "x86_64",
+        "distribution_version": "8",
+        "selector": "debug",
+        "feature_name": "RHEL-OS-x86_64",
+        "origin": "red_hat"
     }
 ]
