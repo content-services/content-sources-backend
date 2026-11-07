@@ -422,7 +422,7 @@ func (suite *AdminTasksSuite) TestListContentForFeature() {
 	candlepinProductContentExcluded := caliri.ProductContentDTO{
 		Content: caliri.ContentDTO{
 			Label:      utils.Ptr("content-for-rhel-9.5-test"),
-			Name:       utils.Ptr("Content For RHEL 9.5 test (Debug RPMs)"),
+			Name:       utils.Ptr("Content For RHEL 9.5 test (ISOs)"),
 			ContentUrl: utils.Ptr("/content/dist/rhel/test/9/$releasever/$basearch/os"),
 			ReleaseVer: utils.Ptr("9"),
 			Arches:     utils.Ptr("x86,x86_64"),

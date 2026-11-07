@@ -200,7 +200,6 @@ func ProductToRepoJSON(product *caliri.ProductDTO, featureName string) []api.Fea
 		c := parseProductContent(&pc, featureName)
 
 		if strings.Contains(c.Name, "Source RPMs") ||
-			strings.Contains(c.Name, "Debug RPMs") ||
 			strings.Contains(c.Name, "ISOs") ||
 			strings.Contains(c.Name, "Source ISOs") ||
 			strings.Contains(c.Name, "Files") {
