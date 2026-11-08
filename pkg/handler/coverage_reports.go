@@ -24,6 +24,10 @@ import (
 
 const maxCoverageUploadSizeBytes = 15 * 1024 * 1024 // 15 MiB
 
+// Coverage report packages are narrow rows that the frontend pulls in full for PDF exports, so
+// allow larger pages than MaxLimit to cut the number of round trips for big reports.
+const coverageReportPackagesMaxLimit = 1000
+
 type CoverageReportHandler struct {
 	DaoRegistry          dao.DaoRegistry
 	TaskClient           client.TaskClient
@@ -186,7 +190,7 @@ func (ch *CoverageReportHandler) getCoverageReport(c echo.Context) error {
 // @Param        ecosystem query string false "A comma separated list of ecosystems to filter on"
 // @Param        match_status query string false "A comma separated list of match statuses to filter on (exact, partial, none)"
 // @Param        offset query int false "Starting point for pagination. Default: 0"
-// @Param        limit query int false "Number of items per page. Default: 100"
+// @Param        limit query int false "Number of items per page. Default: 100, maximum: 1000"
 // @Success      200 {object} api.CoverageReportPackageCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      404 {object} ce.ErrorResponse
@@ -201,14 +205,14 @@ func (ch *CoverageReportHandler) listCoverageReportPackages(c echo.Context) erro
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", err.Error())
 	}
 
-	pageData := ParsePagination(c)
+	pageData := ParsePaginationWithMaxLimit(c, coverageReportPackagesMaxLimit)
 
 	response, totalCount, err := ch.DaoRegistry.CoverageReport.ListPackages(c.Request().Context(), orgID, c.Param("uuid"), pageData, req)
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing coverage report packages", err.Error())
 	}
 
-	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&response, c, totalCount))
+	return c.JSON(http.StatusOK, SetCollectionResponseMetadataForPage(&response, c, pageData, totalCount))
 }
 
 func (ch *CoverageReportHandler) enqueueCoverageAnalysisEvent(c echo.Context, report api.CoverageReportResponse, uploadUUID string, filename string, catalogSource string) uuid.UUID {

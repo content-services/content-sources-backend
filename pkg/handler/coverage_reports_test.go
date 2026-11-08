@@ -182,6 +182,43 @@ func (suite *CoverageReportSuite) TestListCoverageReportPackages() {
 	assert.Equal(t, int64(2), response.Meta.Count)
 }
 
+func (suite *CoverageReportSuite) TestListCoverageReportPackagesLimit() {
+	t := suite.T()
+	orgID := test_handler.MockOrgId
+	reportUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+	cases := []struct {
+		name          string
+		query         string
+		expectedLimit int
+	}{
+		{name: "above global max is honored", query: "?limit=1000", expectedLimit: 1000},
+		{name: "above endpoint max is clamped", query: "?limit=5000", expectedLimit: coverageReportPackagesMaxLimit},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			suite.reg.CoverageReport.On("ListPackages", test.MockCtx(), orgID, reportUUID,
+				api.PaginationData{Limit: tc.expectedLimit, Offset: DefaultOffset, SortBy: DefaultSortBy},
+				api.ListCoverageReportPackagesRequest{},
+			).Return(api.CoverageReportPackageCollectionResponse{}, int64(2500), nil).Once()
+
+			path := fmt.Sprintf("%s/coverage_reports/%s/packages%s", api.FullRootPath(), reportUUID, tc.query)
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+			code, body, err := suite.serveCoverageReportRouter(req, true, true)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, code)
+
+			var response api.CoverageReportPackageCollectionResponse
+			assert.NoError(t, json.Unmarshal(body, &response))
+			assert.Equal(t, tc.expectedLimit, response.Meta.Limit)
+			assert.Contains(t, response.Links.Next, fmt.Sprintf("limit=%d&offset=%d", tc.expectedLimit, tc.expectedLimit))
+		})
+	}
+}
+
 func (suite *CoverageReportSuite) TestListCoverageReportPackagesNotFound() {
 	t := suite.T()
 	orgID := test_handler.MockOrgId
