@@ -175,7 +175,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Number of items per page. Default: 100",
+                        "description": "Number of items per page. Default: 100, maximum: 1000",
                         "name": "limit",
                         "in": "query"
                     }

@@ -109,6 +109,17 @@ func TestParsePagination(t *testing.T) {
 	assert.Equal(t, DefaultLimit, pageInfo.Limit)
 }
 
+func TestParsePaginationWithMaxLimit(t *testing.T) {
+	pageInfo := ParsePaginationWithMaxLimit(getTestContext("?limit=1000"), 1000)
+	assert.Equal(t, 1000, pageInfo.Limit)
+
+	pageInfo = ParsePaginationWithMaxLimit(getTestContext("?limit=1001"), 1000)
+	assert.Equal(t, 1000, pageInfo.Limit)
+
+	pageInfo = ParsePagination(getTestContext("?limit=1000"))
+	assert.Equal(t, MaxLimit, pageInfo.Limit)
+}
+
 func TestCollectionResponse(t *testing.T) {
 	coll := api.RepositoryCollectionResponse{}
 
@@ -133,6 +144,6 @@ func TestCollectionResponse(t *testing.T) {
 }
 
 func TestCreateLink(t *testing.T) {
-	link := createLink(getTestContext(""), 99)
+	link := createLink(getTestContext(""), DefaultLimit, 99)
 	assert.Equal(t, "/api/"+config.DefaultAppName+"/v1.0/repositories/?limit=100&offset=99", link)
 }

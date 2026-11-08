@@ -185,13 +185,12 @@ func openapi(c echo.Context) error {
 	return c.JSONBlob(200, foo)
 }
 
-func createLink(c echo.Context, offset int) string {
+func createLink(c echo.Context, limit int, offset int) string {
 	req := c.Request()
 	q := req.URL.Query()
-	page := ParsePagination(c)
 	filters := ParseFilters(c)
 
-	q.Set("limit", strconv.Itoa(page.Limit))
+	q.Set("limit", strconv.Itoa(limit))
 	q.Set("offset", strconv.Itoa(offset))
 
 	if filters.Search != "" {
@@ -218,7 +217,12 @@ func createLink(c echo.Context, offset int) string {
 // SetCollectionResponseMetadata determines metadata of collection response based on context and collection size.
 // Returns collection response with updated metadata.
 func SetCollectionResponseMetadata(collection api.CollectionMetadataSettable, c echo.Context, totalCount int64) api.CollectionMetadataSettable {
-	page := ParsePagination(c)
+	return SetCollectionResponseMetadataForPage(collection, c, ParsePagination(c), totalCount)
+}
+
+// SetCollectionResponseMetadataForPage is SetCollectionResponseMetadata for handlers that parsed
+// pagination with a non-default cap, so the reported limit and page links match the page served.
+func SetCollectionResponseMetadataForPage(collection api.CollectionMetadataSettable, c echo.Context, page api.PaginationData, totalCount int64) api.CollectionMetadataSettable {
 	var lastPage int
 	if int(totalCount) > 0 && (int(totalCount)%page.Limit) == 0 {
 		lastPage = int(totalCount) - page.Limit
@@ -226,16 +230,16 @@ func SetCollectionResponseMetadata(collection api.CollectionMetadataSettable, c 
 		lastPage = int(totalCount) - int(totalCount)%page.Limit
 	}
 	links := api.Links{
-		First: createLink(c, 0),
+		First: createLink(c, page.Limit, 0),
 		// 100/page.Limit - (100%10)
 
-		Last: createLink(c, lastPage),
+		Last: createLink(c, page.Limit, lastPage),
 	}
 	if page.Offset+page.Limit < int(totalCount) {
-		links.Next = createLink(c, page.Offset+page.Limit)
+		links.Next = createLink(c, page.Limit, page.Offset+page.Limit)
 	}
 	if page.Offset-page.Limit >= 0 {
-		links.Prev = createLink(c, page.Offset-page.Limit)
+		links.Prev = createLink(c, page.Limit, page.Offset-page.Limit)
 	}
 
 	collection.SetMetadata(api.ResponseMetadata{
@@ -247,6 +251,12 @@ func SetCollectionResponseMetadata(collection api.CollectionMetadataSettable, c 
 }
 
 func ParsePagination(c echo.Context) api.PaginationData {
+	return ParsePaginationWithMaxLimit(c, MaxLimit)
+}
+
+// ParsePaginationWithMaxLimit is ParsePagination with a caller-chosen cap on limit, for endpoints
+// whose rows are cheap enough to serve in larger pages than MaxLimit allows.
+func ParsePaginationWithMaxLimit(c echo.Context, maxLimit int) api.PaginationData {
 	pageData := api.PaginationData{Limit: DefaultLimit, Offset: DefaultOffset, SortBy: DefaultSortBy}
 	err := echo.QueryParamsBinder(c).
 		Int("limit", &pageData.Limit).
@@ -267,8 +277,8 @@ func ParsePagination(c echo.Context) api.PaginationData {
 		pageData.SortBy = strings.Join(q["sort_by[]"], ",")
 	}
 
-	if pageData.Limit > MaxLimit {
-		pageData.Limit = MaxLimit
+	if pageData.Limit > maxLimit {
+		pageData.Limit = maxLimit
 	}
 	if pageData.Limit == 0 {
 		pageData.Limit = DefaultLimit
