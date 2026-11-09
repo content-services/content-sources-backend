@@ -4,15 +4,29 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 const MockCertData = "./test_files/cert.crt"
+
+func TestImageBuilderUsernameConfig(t *testing.T) {
+	t.Setenv("CLIENTS_PULP_IMAGE_BUILDER_USERNAME", "test-org|test-image-builder")
+	v := viper.New()
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+	setDefaults(v)
+
+	var loaded Configuration
+	assert.NoError(t, v.Unmarshal(&loaded))
+	assert.Equal(t, "test-org|test-image-builder", loaded.Clients.Pulp.ImageBuilderUsername)
+}
 
 func TestConfigureCertificateFile(t *testing.T) {
 	c := Get()

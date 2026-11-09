@@ -120,6 +120,7 @@ clients:
     storage_type: local #object or local
     download_policy: on_demand #on_demand or immediate
     guard_subject_dn: "some_dn"
+    image_builder_username: ""
     custom_repo_content_guards: false
     client_cert:
     client_key:

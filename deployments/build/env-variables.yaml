@@ -19,6 +19,8 @@ env:
     value: ${CLIENTS_PULP_CUSTOM_REPO_CONTENT_GUARDS}
   - name: CLIENTS_PULP_GUARD_SUBJECT_DN
     value: ${{CLIENTS_PULP_GUARD_SUBJECT_DN}}
+  - name: CLIENTS_PULP_IMAGE_BUILDER_USERNAME
+    value: ${{CLIENTS_PULP_IMAGE_BUILDER_USERNAME}}
   - name: CLIENTS_PULP_DOWNLOAD_POLICY
     value: ${{CLIENTS_PULP_DOWNLOAD_POLICY}}
   - name: CLIENTS_PULP_USERNAME
@@ -618,6 +620,9 @@ parameters:
   - name: CLIENTS_PULP_GUARD_SUBJECT_DN
     value: ""
     description: name to allow via turnpike authentication
+  - name: CLIENTS_PULP_IMAGE_BUILDER_USERNAME
+    value: ""
+    description: Image Builder TBR login in orgID|username format; empty omits only the Image Builder child guard, retaining the existing authorization paths
   - name: CLIENTS_PULP_PROXY
     value: ""
     description: HTTP proxy to use for requests to pulp

@@ -137,6 +137,7 @@ type Pulp struct {
 	CustomRepoObjects      *ObjectStore `mapstructure:"custom_repo_objects"`
 	DownloadPolicy         string       `mapstructure:"download_policy"`            // on_demand or immediate
 	GuardSubjectDn         string       `mapstructure:"guard_subject_dn"`           // DN to allow access to via x509 identity subject_dn
+	ImageBuilderUsername   string       `mapstructure:"image_builder_username"`     // TBR login in orgID|username format; empty omits the Image Builder child guard
 	RepoContentGuards      bool         `mapstructure:"custom_repo_content_guards"` // To turn on or off the creation of content guards for repos
 	Database               Database     `mapstructure:"database"`                   // for use with tangy
 	ClientCert             string       `mapstructure:"client_cert"`
@@ -462,6 +463,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.username", "")
 	v.SetDefault("clients.pulp.password", "")
 	v.SetDefault("clients.pulp.guard_subject_dn", "default-content-sources-dn") // Use a default, so we always create one
+	v.SetDefault("clients.pulp.image_builder_username", "")
 	v.SetDefault("clients.pulp.custom_repo_content_guards", false)
 	v.SetDefault("clients.pulp.database.host", "")
 	v.SetDefault("clients.pulp.database.port", 0)
