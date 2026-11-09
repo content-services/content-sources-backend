@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "//": "align this with values in .nvmrc (and build-tools requirements in FE) ",
+  "engines": {
+    "node": ">=24.22.2 <25"
+  },
   "scripts": {
     "lint": "eslint '_playwright-tests/tests/**/*.{js,jsx,ts,tsx}' --no-error-on-unmatched-pattern",
     "lint:fix": "eslint --fix '_playwright-tests/tests/**/*.{js,jsx,ts,tsx}' --no-error-on-unmatched-pattern",

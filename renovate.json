@@ -17,6 +17,12 @@
         "description": "Disable all npm dependency updates",
         "matchManagers": ["npm"],
         "enabled": false
+      },
+      {
+        "description": "Do not major-bump Node (setup-node / .nvmrc)",
+        "matchPackageNames": ["node"],
+        "matchUpdateTypes": ["major"],
+        "enabled": false
       }
     ],
     "lockFileMaintenance": {
