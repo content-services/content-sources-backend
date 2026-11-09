@@ -6,7 +6,9 @@
 #
 # Reads both lightwell_repos.json and lightwell_demo_repos.json, creates
 # the corresponding Pulp remotes, repositories, and distributions under
-# the appropriate domains, then runs the Go importer.
+# the appropriate domains, then runs the Go importer. Entries with an
+# osv_path also get an (initially empty) file repository + distribution at
+# that path to hold OSV advisory files for sync-lightwell-advisories.
 #
 # Idempotent: existing distributions (matched by base_path) are reused.
 # SQL package seed defines which versions to put in Pulp, Pulp is filled from that,
@@ -294,6 +296,68 @@ ensure_pulp_repo() {
   wait_for_task "$task_href"
   echo "    Distribution created successfully."
   REPO_HREF="$repo_href"
+}
+
+# Ensures an empty file repository + distribution exist to hold OSV advisory
+# files for an allowlist entry's osv_path. The osv_path is relative to the
+# content path prefix, so its first segment is the Pulp domain and the rest is
+# the distribution base_path (e.g. lightwell/osv/java/remediated ->
+# domain "lightwell", base_path "osv/java/remediated").
+# The repository autopublishes with a PULP_MANIFEST, and version 0 is published
+# up front so sync-lightwell-advisories can fetch an (empty) manifest right away.
+# Reuses an existing distribution matched by base_path.
+#   ensure_osv_file_repo <OSV_PATH>
+ensure_osv_file_repo() {
+  local osv_path="${1#/}"
+  osv_path="${osv_path%/}"
+  local domain_name="${osv_path%%/*}"
+  local base_path="${osv_path#*/}"
+
+  if [[ -z "$domain_name" || -z "$base_path" || "$base_path" == "$osv_path" ]]; then
+    echo "ERROR: Invalid osv_path '${1}' (expected <domain>/<base_path>)" >&2
+    exit 1
+  fi
+
+  echo "==> Looking up OSV file distribution (domain=${domain_name}, base_path=${base_path})..."
+  find_distribution_by_base_path "$domain_name" "file/file" "$base_path"
+  if [[ -n "$RESULT" ]]; then
+    echo "    Distribution already exists: ${RESULT}"
+    return 0
+  fi
+
+  if [[ "$domain_name" != "$DOMAIN" && "$domain_name" != "$DEMO_DOMAIN" ]]; then
+    ensure_domain "$domain_name"
+  fi
+
+  local name_slug
+  name_slug=$(echo "$base_path" | tr '/' '-')
+
+  echo "==> Creating OSV file repository..."
+  pulp_create "file repository" \
+    "${API_ROOT}/${domain_name}/api/v3/repositories/file/file/" \
+    "{\"name\": \"${name_slug}-repo-${SUFFIX}\", \"autopublish\": true, \"manifest\": \"PULP_MANIFEST\"}" \
+    '.pulp_href'
+  local repo_href="$RESULT"
+  echo "    Repository: ${repo_href}"
+
+  echo "==> Publishing initial (empty) OSV file repository version..."
+  pulp_create "file publication" \
+    "${API_ROOT}/${domain_name}/api/v3/publications/file/file/" \
+    "{\"repository\": \"${repo_href}\", \"manifest\": \"PULP_MANIFEST\"}" \
+    '.task'
+  wait_for_task "$RESULT"
+
+  echo "==> Creating OSV file distribution (base_path=${base_path})..."
+  pulp_create "file distribution" \
+    "${API_ROOT}/${domain_name}/api/v3/distributions/file/file/" \
+    "{
+      \"name\": \"${domain_name}-${name_slug}\",
+      \"base_path\": \"${base_path}\",
+      \"repository\": \"${repo_href}\"
+    }" \
+    '.task'
+  wait_for_task "$RESULT"
+  echo "    OSV distribution created: ${PULP_CONTENT_URL%/}/api/pulp-content/${osv_path}/"
 }
 
 # Uploads a Maven POM and returns the artifact pulp_href in RESULT.
@@ -788,6 +852,12 @@ create_repos_from_json() {
         continue
         ;;
     esac
+
+    local entry_osv_path
+    entry_osv_path=$(jq -r ".[$idx].osv_path // empty" "${json_file}")
+    if [[ -n "$entry_osv_path" ]]; then
+      ensure_osv_file_repo "$entry_osv_path"
+    fi
   done
 }
 
