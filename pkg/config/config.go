@@ -156,10 +156,15 @@ type Lightwell struct {
 	Username string
 	Password string
 	S3       S3 `mapstructure:"s3"`
-	// ClearinghouseMappings is the raw JSON document from the
-	// lightwell-stams mappings secret (app-interface/lightwell-stams/<env>/mappings).
-	ClearinghouseMappings string `mapstructure:"clearinghouse_mappings"`
-	// ClearinghouseMapping is parsed from ClearinghouseMappings during Load.
+	// CIDOrgID is the mapping object from the cid-org-id-mapping secret
+	// (app-interface/lightwell-stams/<env>/cid_org_id, key mapping).
+	// Shape: {"CID-00000": ["20007461", "20012872"]}.
+	CIDOrgID string `mapstructure:"cid_org_id"`
+	// CIDUserMapping is the mapping object from the cid-user-mapping secret
+	// (app-interface/lightwell-stams/<env>/cid-user-mapping, key mapping).
+	// Shape: {"CID-00000": ["content7", "mmarusak-et"]}.
+	CIDUserMapping string `mapstructure:"cid_user_mapping"`
+	// ClearinghouseMapping is parsed from CIDOrgID and CIDUserMapping during Load.
 	ClearinghouseMapping ClearinghouseMapping `mapstructure:"-"`
 }
 
@@ -547,7 +552,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.secret_key", "")
 	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.region", "")
 	v.SetDefault("clients.lightwell.s3.clearinghouse_uploads.file_prefix", "")
-	v.SetDefault("clients.lightwell.clearinghouse_mappings", "")
+	v.SetDefault("clients.lightwell.cid_org_id", "")
+	v.SetDefault("clients.lightwell.cid_user_mapping", "")
 
 	v.SetDefault("tasking.heartbeat", 1*time.Minute)
 	v.SetDefault("tasking.worker_count", 3)
@@ -772,7 +778,10 @@ func Load() {
 	}
 	LoadedConfig.Certs.CdnCertPairString = certString
 	LoadedConfig.Certs.CdnCertPair = cert
-	LoadedConfig.Clients.Lightwell.ClearinghouseMapping = ParseClearinghouseMappings(LoadedConfig.Clients.Lightwell.ClearinghouseMappings)
+	LoadedConfig.Clients.Lightwell.ClearinghouseMapping = ParseClearinghouseMappings(
+		LoadedConfig.Clients.Lightwell.CIDOrgID,
+		LoadedConfig.Clients.Lightwell.CIDUserMapping,
+	)
 
 	if LoadedConfig.Clients.Redis.Host == "" {
 		log.Warn().Msg("Caching is disabled.")

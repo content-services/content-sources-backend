@@ -10,78 +10,47 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// ClearinghouseMapping is the in-memory form of the lightwell-stams mappings
-// document. CID is derived from an org ID when a submission is returned and is
+// ClearinghouseMapping is the in-memory form of the lightwell-stams CID
+// mappings. CID is derived from an org ID when a submission is returned and is
 // not stored.
 type ClearinghouseMapping struct {
-	orgIDByCID map[string]string
-	cidByOrgID map[string]string
-	tamsByCID  map[string][]string
+	orgIDsByCID map[string][]string
+	cidByOrgID  map[string]string
+	usersByCID  map[string][]string
 }
 
-type clearinghouseMappingsDocument struct {
-	CidOrgId json.RawMessage `json:"CidOrgId"`
-	CidTam   json.RawMessage `json:"CidTam"`
-}
-
-// ParseClearinghouseMappings parses the mappings JSON. An empty document
-// returns an empty mapping. Invalid JSON is logged and also returns an empty
-// mapping so the rest of the service can still start. A CID that appears more
-// than once in either section is kept (last value wins) and logged as an error.
-func ParseClearinghouseMappings(raw string) ClearinghouseMapping {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return ClearinghouseMapping{}
-	}
-	var doc clearinghouseMappingsDocument
-	if err := json.Unmarshal([]byte(raw), &doc); err != nil {
-		log.Error().Err(err).Msg("CLEARINGHOUSE MAPPING WARNING: mappings JSON could not be parsed. Clearinghouse CID mapping is empty.")
-		return ClearinghouseMapping{}
-	}
-
-	orgIDByCID, err := parseCIDOrgIDs(doc.CidOrgId)
+// ParseClearinghouseMappings parses the two mapping objects. Each value is the
+// content of the vault key "mapping", for example {"CID-00000": ["20007461"]}.
+// An empty value is an empty side of the mapping. Invalid JSON is logged and
+// that side is left empty so the rest of the service can still start. A CID
+// that appears more than once is kept (last value wins) and logged as an error.
+func ParseClearinghouseMappings(orgIDsRaw, usersRaw string) ClearinghouseMapping {
+	orgIDsByCID, err := parseCIDStringLists("cid_org_id", orgIDsRaw)
 	if err != nil {
-		log.Error().Err(err).Msg("CLEARINGHOUSE MAPPING WARNING: CidOrgId could not be parsed. Clearinghouse CID mapping is empty.")
-		return ClearinghouseMapping{}
+		log.Error().Err(err).Msg("CLEARINGHOUSE MAPPING WARNING: cid_org_id could not be parsed. Org to CID mapping is empty.")
+		orgIDsByCID = nil
 	}
-	tamsByCID, err := parseCIDTAMs(doc.CidTam)
+	usersByCID, err := parseCIDStringLists("cid_user_mapping", usersRaw)
 	if err != nil {
-		log.Error().Err(err).Msg("CLEARINGHOUSE MAPPING WARNING: CidTam could not be parsed. Clearinghouse CID mapping is empty.")
-		return ClearinghouseMapping{}
+		log.Error().Err(err).Msg("CLEARINGHOUSE MAPPING WARNING: cid_user_mapping could not be parsed. CID user mapping is empty.")
+		usersByCID = nil
 	}
 	return ClearinghouseMapping{
-		orgIDByCID: orgIDByCID,
-		cidByOrgID: cidByOrgID(orgIDByCID),
-		tamsByCID:  tamsByCID,
+		orgIDsByCID: orgIDsByCID,
+		cidByOrgID:  cidByOrgID(orgIDsByCID),
+		usersByCID:  usersByCID,
 	}
 }
 
-func parseCIDOrgIDs(raw json.RawMessage) (map[string]string, error) {
-	if len(bytes.TrimSpace(raw)) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		return map[string]string{}, nil
+func parseCIDStringLists(section, raw string) (map[string][]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil, nil
 	}
-	warnRepeatedCIDs("CidOrgId", raw)
-	var parsed map[string]string
-	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return nil, err
-	}
-	if parsed == nil {
-		parsed = map[string]string{}
-	}
-	return parsed, nil
-}
-
-func parseCIDTAMs(raw json.RawMessage) (map[string][]string, error) {
-	if len(bytes.TrimSpace(raw)) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
-		return map[string][]string{}, nil
-	}
-	warnRepeatedCIDs("CidTam", raw)
+	warnRepeatedCIDs(section, json.RawMessage(raw))
 	var parsed map[string][]string
-	if err := json.Unmarshal(raw, &parsed); err != nil {
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
 		return nil, err
-	}
-	if parsed == nil {
-		parsed = map[string][]string{}
 	}
 	return parsed, nil
 }
@@ -101,27 +70,34 @@ func warnRepeatedCIDs(section string, raw json.RawMessage) {
 		Msg("CLEARINGHOUSE MAPPING WARNING: CID is repeated. Each CID must appear only once. The last value for that CID is kept and earlier values are ignored.")
 }
 
-func cidByOrgID(orgIDByCID map[string]string) map[string]string {
-	out := make(map[string]string, len(orgIDByCID))
-	cids := make([]string, 0, len(orgIDByCID))
-	for cid := range orgIDByCID {
+func cidByOrgID(orgIDsByCID map[string][]string) map[string]string {
+	if len(orgIDsByCID) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(orgIDsByCID))
+	cids := make([]string, 0, len(orgIDsByCID))
+	for cid := range orgIDsByCID {
 		cids = append(cids, cid)
 	}
 	slices.Sort(cids)
 	for _, cid := range cids {
-		orgID := orgIDByCID[cid]
-		if orgID == "" || cid == "" {
+		if cid == "" {
 			continue
 		}
-		if existing, ok := out[orgID]; ok && existing != cid {
-			log.Error().
-				Str("org_id", orgID).
-				Str("kept_cid", existing).
-				Str("ignored_cid", cid).
-				Msg("CLEARINGHOUSE MAPPING WARNING: org ID is assigned to more than one CID. The lexicographically first CID is kept.")
-			continue
+		for _, orgID := range orgIDsByCID[cid] {
+			if orgID == "" {
+				continue
+			}
+			if existing, ok := out[orgID]; ok && existing != cid {
+				log.Error().
+					Str("org_id", orgID).
+					Str("kept_cid", existing).
+					Str("ignored_cid", cid).
+					Msg("CLEARINGHOUSE MAPPING WARNING: org ID is assigned to more than one CID. The lexicographically first CID is kept.")
+				continue
+			}
+			out[orgID] = cid
 		}
-		out[orgID] = cid
 	}
 	return out
 }
@@ -141,24 +117,30 @@ func (m ClearinghouseMapping) Allows(username, orgID string) bool {
 	if cid == "" || username == "" {
 		return false
 	}
-	return slices.Contains(m.tamsByCID[cid], username)
+	return slices.Contains(m.usersByCID[cid], username)
 }
 
 // OrgIDsForUser returns the org IDs whose CID lists username, in sorted order.
 func (m ClearinghouseMapping) OrgIDsForUser(username string) []string {
-	if username == "" || len(m.tamsByCID) == 0 {
+	if username == "" || len(m.usersByCID) == 0 {
 		return []string{}
 	}
+	seen := make(map[string]struct{})
 	orgs := make([]string, 0, 1)
-	for cid, tams := range m.tamsByCID {
-		if !slices.Contains(tams, username) {
+	for cid, users := range m.usersByCID {
+		if !slices.Contains(users, username) {
 			continue
 		}
-		orgID := m.orgIDByCID[cid]
-		if orgID == "" || m.CIDForOrg(orgID) != cid {
-			continue
+		for _, orgID := range m.orgIDsByCID[cid] {
+			if orgID == "" || m.CIDForOrg(orgID) != cid {
+				continue
+			}
+			if _, ok := seen[orgID]; ok {
+				continue
+			}
+			seen[orgID] = struct{}{}
+			orgs = append(orgs, orgID)
 		}
-		orgs = append(orgs, orgID)
 	}
 	slices.Sort(orgs)
 	return orgs

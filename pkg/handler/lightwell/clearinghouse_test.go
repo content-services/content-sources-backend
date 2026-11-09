@@ -45,7 +45,8 @@ func (s *ClearinghouseSuite) SetupTest() {
 	config.Get().Features.LightwellClearinghouse = config.Feature{}
 	config.Get().Features.LightwellClearinghouseRead = config.Feature{}
 	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
-		`{"CidOrgId":{"CID-00000":"` + test_handler.MockOrgId + `"},"CidTam":{"CID-00000":["user"]}}`,
+		`{"CID-00000":["`+test_handler.MockOrgId+`"]}`,
+		`{"CID-00000":["user"]}`,
 	)
 }
 
@@ -857,7 +858,8 @@ func (s *ClearinghouseSuite) allowClearinghouseTAM(usernames ...string) {
 	}
 	users += `]`
 	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
-		`{"CidOrgId":{"CID-00000":"` + test_handler.MockOrgId + `"},"CidTam":{"CID-00000":` + users + `}}`,
+		`{"CID-00000":["`+test_handler.MockOrgId+`"]}`,
+		`{"CID-00000":`+users+`}`,
 	)
 }
 
