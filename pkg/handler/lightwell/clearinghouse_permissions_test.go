@@ -21,7 +21,8 @@ func TestClearinghouseCallerPermissions(t *testing.T) {
 		config.Get().Clients.Lightwell.ClearinghouseMapping = saved
 	})
 	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
-		`{"CidOrgId":{"CID-1":"org"},"CidTam":{"CID-1":["reader","author"]}}`,
+		`{"CID-1":["org"]}`,
+		`{"CID-1":["reader","author"]}`,
 	)
 
 	denied := errors.New("denied")

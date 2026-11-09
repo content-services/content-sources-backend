@@ -391,11 +391,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -799,11 +805,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -1174,11 +1186,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -1537,11 +1555,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -1903,11 +1927,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -2270,11 +2300,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -2639,11 +2675,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -3006,11 +3048,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -3370,11 +3418,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -3732,11 +3786,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -4096,11 +4156,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -4460,11 +4526,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -4824,11 +4896,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -5211,11 +5289,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -5576,11 +5660,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -5958,11 +6048,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -6319,11 +6415,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -6680,11 +6782,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -7041,11 +7149,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -7402,11 +7516,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -7763,11 +7883,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -8124,11 +8250,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -8485,11 +8617,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
@@ -8846,11 +8984,17 @@ objects:
                     name: lightwell-content-sources-password
                     key: password
                     optional: true
-              - name: CLIENTS_LIGHTWELL_CLEARINGHOUSE_MAPPINGS
+              - name: CLIENTS_LIGHTWELL_CID_ORG_ID
                 valueFrom:
                   secretKeyRef:
-                    name: lightwell-stams-mappings
-                    key: mappings
+                    name: cid-org-id-mapping
+                    key: mapping
+                    optional: true
+              - name: CLIENTS_LIGHTWELL_CID_USER_MAPPING
+                valueFrom:
+                  secretKeyRef:
+                    name: cid-user-mapping
+                    key: mapping
                     optional: true
               - name: JFROG_BRIDGE_ENABLED
                 value: ${JFROG_BRIDGE_ENABLED}
