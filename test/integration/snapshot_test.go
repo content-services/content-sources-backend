@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 	"testing"
 	"time"
 
@@ -166,6 +167,7 @@ func (s *SnapshotSuite) TestUpdateRemote() {
 }
 
 func (s *SnapshotSuite) TestSnapshot() {
+	s.configureImageBuilderGuard()
 	s.dao = dao.GetDaoRegistry(db.DB)
 
 	// Setup the repository
@@ -200,6 +202,7 @@ func (s *SnapshotSuite) TestSnapshot() {
 
 	// But can't be served without a valid org id or common dn
 	_ = s.getRequest(distPath, identity.Identity{}, 403)
+	s.verifyImageBuilderAccess(distPath)
 
 	// Update the url
 	newUrl := "https://fixtures.pulpproject.org/rpm-with-sha-512/"
@@ -530,6 +533,7 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureShouldProtected() {
 }
 
 func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureAndX509Identity() {
+	s.configureImageBuilderGuard()
 	s.dao = dao.GetDaoRegistry(db.DB)
 
 	url, cancelFunc, err := ServeRandomYumRepo(nil)
@@ -558,4 +562,35 @@ func (s *SnapshotSuite) TestSnapshotRedHatWithFeatureAndX509Identity() {
 	// Should be accessible with x509 identity (turnpike guard)
 	err = s.getRequest(distPath, identity.Identity{X509: &identity.X509{SubjectDN: exampleCertCN}}, 200)
 	assert.NoError(s.T(), err)
+	s.verifyImageBuilderAccess(distPath)
+}
+
+func (s *SnapshotSuite) configureImageBuilderGuard() {
+	previousUsername := config.Get().Clients.Pulp.ImageBuilderUsername
+	s.T().Cleanup(func() {
+		config.Get().Clients.Pulp.ImageBuilderUsername = previousUsername
+	})
+	config.Get().Clients.Pulp.ImageBuilderUsername = "image-builder-worker-org|image-builder-worker"
+}
+
+// These requests test Pulp authorization using forwarded identities, not gateway authentication.
+func (s *SnapshotSuite) verifyImageBuilderAccess(url string) {
+	orgID, username, found := strings.Cut(config.Get().Clients.Pulp.ImageBuilderUsername, "|")
+	require.True(s.T(), found)
+	for _, tc := range []struct {
+		name   string
+		id     identity.Identity
+		status int
+	}{
+		{"matching worker", identity.Identity{OrgID: orgID, User: &identity.User{Username: username}}, 200},
+		{"different org", identity.Identity{OrgID: "other-org", User: &identity.User{Username: username}}, 403},
+		{"different username", identity.Identity{OrgID: orgID, User: &identity.User{Username: "other-user"}}, 403},
+		{"missing username", identity.Identity{OrgID: orgID}, 403},
+		{"missing org", identity.Identity{User: &identity.User{Username: username}}, 403},
+		{"empty identity", identity.Identity{}, 403},
+	} {
+		s.Run(tc.name, func() {
+			require.NoError(s.T(), s.getRequest(url, tc.id, tc.status))
+		})
+	}
 }
