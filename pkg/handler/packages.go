@@ -33,8 +33,8 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", ph.GetJavaPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
-	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
 }
 
 func (ph *PackageHandler) fetchLightwellRepo(c echo.Context, uuid string) (api.RepositoryResponse, error) {
@@ -331,7 +331,7 @@ func ParseNpmPackageName(fullName string) (scope, name string) {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/js_packages/{scope}/{name} [get]
+// @Router       /repositories/{uuid}/javascript_packages/{scope}/{name} [get]
 func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")
@@ -371,7 +371,7 @@ func (ph *PackageHandler) GetNpmPackageVersions(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/js_packages/{scope}/{name}/{version} [get]
+// @Router       /repositories/{uuid}/javascript_packages/{scope}/{name}/{version} [get]
 func (ph *PackageHandler) GetNpmPackageDetail(c echo.Context) error {
 	uuid := c.Param("uuid")
 	scope := c.Param("scope")

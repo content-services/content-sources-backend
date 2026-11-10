@@ -1280,7 +1280,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsSuccess() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", api.FullRootPath(), repoUUID, scope, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s", api.FullRootPath(), repoUUID, scope, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1333,7 +1333,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsUnscopedSuccess() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/-/%s", api.FullRootPath(), repoUUID, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/-/%s", api.FullRootPath(), repoUUID, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1362,7 +1362,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsNonNpmRepo() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1386,7 +1386,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsEmpty() {
 	suite.reg.LightwellPackage.On("ListNpmPackageVersions", test.MockCtx(), repoUUID, "@types", "is-odd").
 		Return(api.NpmPackageVersionsResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1410,7 +1410,7 @@ func (suite *PackagesSuite) TestGetNpmPackageVersionsDaoError() {
 	suite.reg.LightwellPackage.On("ListNpmPackageVersions", test.MockCtx(), repoUUID, "@types", "is-odd").
 		Return(api.NpmPackageVersionsResponse{}, fmt.Errorf("failed to list lightwell npm package versions"))
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1446,7 +1446,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailSuccess() {
 		},
 	}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1481,7 +1481,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailNonNpmRepo() {
 	orgID := test_handler.MockOrgId
 	suite.reg.RepositoryConfig.On("List", test.MockCtx(), orgID, api.PaginationData{Limit: 1}, api.FilterData{UUID: repoUUID}).Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{repo}}, int64(1), nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd/3.0.0", api.FullRootPath(), repoUUID)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1506,7 +1506,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailEmpty() {
 	suite.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, "@types", "is-odd", packageVersion).
 		Return(api.NpmPackageDetailResponse{}, &ce.DaoError{NotFound: true, Message: "Package not found"})
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -1531,7 +1531,7 @@ func (suite *PackagesSuite) TestGetNpmPackageDetailDaoError() {
 	suite.reg.LightwellPackage.On("GetNpmPackageDetail", test.MockCtx(), repoUUID, "@types", "is-odd", packageVersion).
 		Return(api.NpmPackageDetailResponse{}, fmt.Errorf("failed to get lightwell npm package detail"))
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd/%s", api.FullRootPath(), repoUUID, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
