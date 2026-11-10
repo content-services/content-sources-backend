@@ -68,19 +68,22 @@ type Jira struct {
 }
 
 type Clients struct {
-	RbacEnabled    bool           `mapstructure:"rbac_enabled"`
-	RbacBaseUrl    string         `mapstructure:"rbac_base_url"`
-	RbacTimeout    int            `mapstructure:"rbac_timeout"`
-	Kessel         Kessel         `mapstructure:"kessel"`
-	Pulp           Pulp           `mapstructure:"pulp"`
-	Lightwell      Lightwell      `mapstructure:"lightwell"`
-	Redis          Redis          `mapstructure:"redis"`
-	Candlepin      Candlepin      `mapstructure:"candlepin"`
-	FeatureService FeatureService `mapstructure:"feature_service"`
-	TermsService   TermsService   `mapstructure:"terms_service"`
-	PulpLogParser  PulpLogParser  `mapstructure:"pulp_log_parser"`
-	Roadmap        Roadmap        `mapstructure:"roadmap"`
-	Jira           Jira           `mapstructure:"jira"`
+	RbacEnabled bool   `mapstructure:"rbac_enabled"`
+	RbacBaseUrl string `mapstructure:"rbac_base_url"`
+	RbacTimeout int    `mapstructure:"rbac_timeout"`
+	// RbacAuthenticated and RbacCaCertPath come from the Clowder v2 rbac endpoint
+	RbacAuthenticated bool           `mapstructure:"rbac_authenticated"`
+	RbacCaCertPath    string         `mapstructure:"rbac_ca_cert_path"`
+	Kessel            Kessel         `mapstructure:"kessel"`
+	Pulp              Pulp           `mapstructure:"pulp"`
+	Lightwell         Lightwell      `mapstructure:"lightwell"`
+	Redis             Redis          `mapstructure:"redis"`
+	Candlepin         Candlepin      `mapstructure:"candlepin"`
+	FeatureService    FeatureService `mapstructure:"feature_service"`
+	TermsService      TermsService   `mapstructure:"terms_service"`
+	PulpLogParser     PulpLogParser  `mapstructure:"pulp_log_parser"`
+	Roadmap           Roadmap        `mapstructure:"roadmap"`
+	Jira              Jira           `mapstructure:"jira"`
 }
 
 type Mocks struct {
@@ -437,6 +440,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.rbac_enabled", true)
 	v.SetDefault("clients.rbac_base_url", "http://rbac-service:8000/api/rbac/v1")
 	v.SetDefault("clients.rbac_timeout", 30)
+	v.SetDefault("clients.rbac_authenticated", false)
+	v.SetDefault("clients.rbac_ca_cert_path", "")
 	v.SetDefault("clients.kessel.server", "")
 	v.SetDefault("clients.kessel.auth.enabled", false)
 	v.SetDefault("clients.kessel.auth.client_id", "")
@@ -670,6 +675,16 @@ func Load() {
 		v.Set("clients.redis.port", cfg.InMemoryDb.Port)
 		v.Set("clients.redis.username", cfg.InMemoryDb.Username)
 		v.Set("clients.redis.password", cfg.InMemoryDb.Password)
+
+		if v.GetBool("clients.rbac_enabled") {
+			rbacURL, rbacCaPath, rbacAuthenticated, err := ClowderRbacEndpoint()
+			if err != nil {
+				log.Fatal().Err(err).Msg("Cannot resolve rbac endpoint")
+			}
+			v.Set("clients.rbac_base_url", rbacURL)
+			v.Set("clients.rbac_ca_cert_path", rbacCaPath)
+			v.Set("clients.rbac_authenticated", rbacAuthenticated)
+		}
 
 		if clowder.LoadedConfig != nil {
 			v.Set("options.external_url", GetClowderExternalURL(cfg, v.GetString("options.external_url")))
@@ -927,6 +942,18 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	if err != nil {
 		log.Error().Msg(err.Error())
 	}
+}
+
+// ClowderRbacEndpoint resolves the rbac base url, CA path and auth mode from the Clowder v2 dependency endpoint
+func ClowderRbacEndpoint() (baseURL string, caPath string, authenticated bool, err error) {
+	ep, ok := clowder.GetV2DependencyEndpoint("rbac", "service")
+	if !ok || ep.Uri == "" {
+		return "", "", false, fmt.Errorf("clowder v2 dependency endpoint rbac.service not found, is rbac listed in the ClowdApp dependencies?")
+	}
+	if ep.CaCertificate != nil {
+		caPath = *ep.CaCertificate
+	}
+	return strings.TrimRight(ep.Uri, "/") + "/api/rbac/v1", caPath, ep.Authenticated, nil
 }
 
 func GetClowderExternalURL(clowdConfig *clowder.AppConfig, existingUrl string) string {
