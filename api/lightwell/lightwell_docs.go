@@ -1154,7 +1154,7 @@ const docTemplatelightwell = `{
                 }
             }
         },
-        "/repositories/{uuid}/js_packages/{scope}/{name}": {
+        "/repositories/{uuid}/javascript_packages/{scope}/{name}": {
             "get": {
                 "description": "List versions for a JavaScript package by scope and name. The version is the upstream version, and builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [
@@ -1225,7 +1225,7 @@ const docTemplatelightwell = `{
                 }
             }
         },
-        "/repositories/{uuid}/js_packages/{scope}/{name}/{version}": {
+        "/repositories/{uuid}/javascript_packages/{scope}/{name}/{version}": {
             "get": {
                 "description": "Get a JavaScript package version by scope, name, and upstream version. builds lists each rebuild. Use \"-\" as the scope for unscoped packages.",
                 "consumes": [

@@ -45,8 +45,8 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 		"/repositories/repo/java_packages/group/name/version",
 		"/repositories/repo/python_packages/name",
 		"/repositories/repo/python_packages/name/version",
-		"/repositories/repo/js_packages/scope/name",
-		"/repositories/repo/js_packages/scope/name/version",
+		"/repositories/repo/javascript_packages/scope/name",
+		"/repositories/repo/javascript_packages/scope/name/version",
 		"/advisories",
 	} {
 		t.Run(path, func(t *testing.T) {

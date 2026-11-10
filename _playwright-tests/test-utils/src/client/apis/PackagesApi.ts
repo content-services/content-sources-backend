@@ -212,7 +212,7 @@ export class PackagesApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/repositories/{uuid}/js_packages/{scope}/{name}/{version}`;
+        let urlPath = `/repositories/{uuid}/javascript_packages/{scope}/{name}/{version}`;
         urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
         urlPath = urlPath.replace('{scope}', encodeURIComponent(String(requestParameters['scope'])));
         urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
@@ -276,7 +276,7 @@ export class PackagesApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/repositories/{uuid}/js_packages/{scope}/{name}`;
+        let urlPath = `/repositories/{uuid}/javascript_packages/{scope}/{name}`;
         urlPath = urlPath.replace('{uuid}', encodeURIComponent(String(requestParameters['uuid'])));
         urlPath = urlPath.replace('{scope}', encodeURIComponent(String(requestParameters['scope'])));
         urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));

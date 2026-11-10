@@ -117,7 +117,7 @@ func (s *NpmPackagesSuite) TestNpmPackageVersionsAPI() {
 	require.Len(t, unscoped.Versions, 1)
 	assert.Equal(t, "1.0.0", unscoped.Versions[0].Version)
 
-	missingPath := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", api.FullRootPath(), repo.UUID, "@types", "missing")
+	missingPath := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s", api.FullRootPath(), repo.UUID, "@types", "missing")
 	missingReq := httptest.NewRequest(http.MethodGet, missingPath, nil)
 	missingReq.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	missingCode, _, err := s.serveRouter(missingReq)
@@ -156,7 +156,7 @@ func (s *NpmPackagesSuite) TestNpmPackageDetailAPI() {
 	assert.Equal(t, "", stored.UpstreamVersion)
 	assert.Equal(t, "", stored.Builds[0].Release)
 
-	missingPath := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", api.FullRootPath(), repo.UUID, "@types", "is-odd", "9.9.9")
+	missingPath := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s/%s", api.FullRootPath(), repo.UUID, "@types", "is-odd", "9.9.9")
 	missingReq := httptest.NewRequest(http.MethodGet, missingPath, nil)
 	missingReq.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	missingCode, _, err := s.serveRouter(missingReq)
@@ -259,7 +259,7 @@ func (s *NpmPackagesSuite) seedNpmPackageMirror(repoConfigUUID string) {
 func (s *NpmPackagesSuite) getPackageVersions(repoUUID, scope, name string) api.NpmPackageVersionsResponse {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", api.FullRootPath(), repoUUID, scope, name)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s", api.FullRootPath(), repoUUID, scope, name)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")
@@ -277,7 +277,7 @@ func (s *NpmPackagesSuite) getPackageVersions(repoUUID, scope, name string) api.
 func (s *NpmPackagesSuite) getPackageDetail(repoUUID, scope, name, version string) api.NpmPackageDetailResponse {
 	t := s.T()
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, name, version)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s/%s", api.FullRootPath(), repoUUID, scope, name, version)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedCustomIdentity(t, s.identity))
 	req.Header.Set("Content-Type", "application/json")

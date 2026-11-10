@@ -45,8 +45,8 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", h.getJavaPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead, middleware...)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name/:version", h.getJsPackageDetail, rbac.RbacVerbRead, middleware...)
-	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/js_packages/:scope/:name", h.getJsPackageVersions, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name/:version", h.getJsPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name", h.getJsPackageVersions, rbac.RbacVerbRead, middleware...)
 }
 
 // listPackages godoc
@@ -216,7 +216,7 @@ func (h *LightwellPackageHandler) getPythonPackageVersions(c echo.Context) error
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/js_packages/{scope}/{name}/{version} [get]
+// @Router       /repositories/{uuid}/javascript_packages/{scope}/{name}/{version} [get]
 func (h *LightwellPackageHandler) getJsPackageDetail(c echo.Context) error {
 	return h.PackageHandler.GetNpmPackageDetail(c)
 }
@@ -236,7 +236,7 @@ func (h *LightwellPackageHandler) getJsPackageDetail(c echo.Context) error {
 // @Failure      404 {object} ce.ErrorResponse
 // @Failure      428 {object} ce.ErrorResponse
 // @Failure      500 {object} ce.ErrorResponse
-// @Router       /repositories/{uuid}/js_packages/{scope}/{name} [get]
+// @Router       /repositories/{uuid}/javascript_packages/{scope}/{name} [get]
 func (h *LightwellPackageHandler) getJsPackageVersions(c echo.Context) error {
 	return h.PackageHandler.GetNpmPackageVersions(c)
 }

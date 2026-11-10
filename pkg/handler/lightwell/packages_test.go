@@ -56,8 +56,8 @@ func (s *LightwellPackagesSuite) TestJsPackageRouteNotFound() {
 		Return(api.RepositoryCollectionResponse{Data: []api.RepositoryResponse{}}, int64(0), nil)
 
 	for _, path := range []string{
-		fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd", LightwellAPIPath, repoUUID),
-		fmt.Sprintf("%s/repositories/%s/js_packages/@types/is-odd/3.0.0", LightwellAPIPath, repoUUID),
+		fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd", LightwellAPIPath, repoUUID),
+		fmt.Sprintf("%s/repositories/%s/javascript_packages/@types/is-odd/3.0.0", LightwellAPIPath, repoUUID),
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
@@ -681,7 +681,7 @@ func (s *LightwellPackagesSuite) TestGetNpmPackageVersionsReadsMirror() {
 			},
 		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s", LightwellAPIPath, repoUUID, scope, packageName)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s", LightwellAPIPath, repoUUID, scope, packageName)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
@@ -723,7 +723,7 @@ func (s *LightwellPackagesSuite) TestGetNpmPackageDetailReadsMirror() {
 			},
 		}, nil)
 
-	path := fmt.Sprintf("%s/repositories/%s/js_packages/%s/%s/%s", LightwellAPIPath, repoUUID, scope, packageName, packageVersion)
+	path := fmt.Sprintf("%s/repositories/%s/javascript_packages/%s/%s/%s", LightwellAPIPath, repoUUID, scope, packageName, packageVersion)
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
 
