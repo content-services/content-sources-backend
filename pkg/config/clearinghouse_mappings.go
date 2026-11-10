@@ -21,9 +21,11 @@ type ClearinghouseMapping struct {
 
 // ParseClearinghouseMappings parses the two mapping objects. Each value is the
 // content of the vault key "mapping", for example {"CID-00000": ["20007461"]}.
-// An empty value is an empty side of the mapping. Invalid JSON is logged and
-// that side is left empty so the rest of the service can still start. A CID
-// that appears more than once is kept (last value wins) and logged as an error.
+// Vault-secret stringifies a nested object with single quotes, so those are
+// replaced before parsing. An empty value is an empty side of the mapping.
+// Invalid JSON is logged and that side is left empty so the rest of the service
+// can still start. A CID that appears more than once is kept (last value wins)
+// and logged as an error.
 func ParseClearinghouseMappings(orgIDsRaw, usersRaw string) ClearinghouseMapping {
 	orgIDsByCID, err := parseCIDStringLists("cid_org_id", orgIDsRaw)
 	if err != nil {
@@ -43,7 +45,7 @@ func ParseClearinghouseMappings(orgIDsRaw, usersRaw string) ClearinghouseMapping
 }
 
 func parseCIDStringLists(section, raw string) (map[string][]string, error) {
-	raw = strings.TrimSpace(raw)
+	raw = strings.ReplaceAll(strings.TrimSpace(raw), "'", "\"")
 	if raw == "" {
 		return nil, nil
 	}
