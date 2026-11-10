@@ -134,9 +134,11 @@ func TestNewClientWrapperImplAuthenticated(t *testing.T) {
 	c.Clients.Kessel.Auth.ClientSecret = "secret"
 	c.Clients.Kessel.Auth.OIDCIssuer = tokenServer.URL
 
-	wrapper, ok := NewClientWrapperImpl(baseURL, 5*time.Second).(*ClientWrapperImpl)
+	w, err := NewClientWrapperImpl(baseURL, 5*time.Second)
+	require.NoError(t, err)
+	wrapper, ok := w.(*ClientWrapperImpl)
 	require.True(t, ok)
-	_, err := wrapper.client.GetAccess(context.Background(), "identity", "")
+	_, err = wrapper.client.GetAccess(context.Background(), "identity", "")
 	require.NoError(t, err)
 	assert.Equal(t, "Bearer tok", seen.Get("Authorization"))
 	assert.Equal(t, "identity", seen.Get("x-rh-identity"))
@@ -160,9 +162,11 @@ func TestNewClientWrapperImplUnauthenticated(t *testing.T) {
 	c.Clients.RbacCaCertPath = ""
 	c.Clients.Redis.Host = ""
 
-	wrapper, ok := NewClientWrapperImpl(baseURL, 5*time.Second).(*ClientWrapperImpl)
+	w, err := NewClientWrapperImpl(baseURL, 5*time.Second)
+	require.NoError(t, err)
+	wrapper, ok := w.(*ClientWrapperImpl)
 	require.True(t, ok)
-	_, err := wrapper.client.GetAccess(context.Background(), "identity", "")
+	_, err = wrapper.client.GetAccess(context.Background(), "identity", "")
 	require.NoError(t, err)
 	assert.Empty(t, seen.Get("Authorization"))
 	assert.Equal(t, "identity", seen.Get("x-rh-identity"))
@@ -173,5 +177,7 @@ func TestNewClientWrapperImplBadCaCertificate(t *testing.T) {
 	t.Cleanup(func() { config.Get().Clients = orig })
 	config.Get().Clients.RbacCaCertPath = filepath.Join(t.TempDir(), "missing.pem")
 
-	assert.Nil(t, NewClientWrapperImpl("http://rbac:8000/api/rbac/v1", time.Second))
+	w, err := NewClientWrapperImpl("http://rbac:8000/api/rbac/v1", time.Second)
+	assert.Nil(t, w)
+	assert.ErrorContains(t, err, "rbac ca certificate")
 }
