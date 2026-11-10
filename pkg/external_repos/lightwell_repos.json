@@ -40,16 +40,16 @@
     "osv_path": "lightwell/osv/python/predisclosure"
   },
   {
-    "name": "lightwell/npm/validated",
+    "name": "lightwell/javascript/validated",
     "type": "npm",
-    "base_path": "npm/validated",
+    "base_path": "javascript/validated",
     "feature_name": "lightwell-network,lightwell-clearinghouse,lightwell-research-institutions"
   },
   {
-    "name": "lightwell/npm/remediated",
+    "name": "lightwell/javascript/remediated",
     "type": "npm",
-    "base_path": "npm/remediated",
+    "base_path": "javascript/remediated",
     "feature_name": "lightwell-network,lightwell-clearinghouse,lightwell-research-institutions",
-    "osv_path": "lightwell/osv/npm/remediated"
+    "osv_path": "lightwell/osv/javascript/remediated"
   }
 ]

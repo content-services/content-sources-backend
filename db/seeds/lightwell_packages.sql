@@ -23,8 +23,8 @@ WHERE repository_configuration_uuid IN (
             'lightwell/python/validated',
             'lightwell/python/remediated',
             'lightwell/python/predisclosure',
-            'lightwell/npm/validated',
-            'lightwell/npm/remediated'
+            'lightwell/javascript/validated',
+            'lightwell/javascript/remediated'
         )
 );
 
@@ -40,8 +40,8 @@ WHERE repository_configuration_uuid IN (
             'lightwell/python/validated',
             'lightwell/python/remediated',
             'lightwell/python/predisclosure',
-            'lightwell/npm/validated',
-            'lightwell/npm/remediated'
+            'lightwell/javascript/validated',
+            'lightwell/javascript/remediated'
         )
 );
 
@@ -74,7 +74,7 @@ WITH seed_advisories AS (
             'lightwell/python/remediated',
             'lightwell/java/predisclosure',
             'lightwell/python/predisclosure',
-            'lightwell/npm/remediated'
+            'lightwell/javascript/remediated'
         )
 ),
 split_versions AS (
@@ -136,7 +136,7 @@ validated_rows AS (
         AND rc.name = CASE vc.content_type
             WHEN 'maven' THEN 'lightwell/java/validated'
             WHEN 'python' THEN 'lightwell/python/validated'
-            WHEN 'npm' THEN 'lightwell/npm/validated'
+            WHEN 'npm' THEN 'lightwell/javascript/validated'
         END
 )
 SELECT

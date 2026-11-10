@@ -7,7 +7,7 @@
 -- follow published_versions.
 -- Java advisories belong to lightwell/java/remediated or lightwell/java/predisclosure,
 -- Python advisories to lightwell/python/remediated or lightwell/python/predisclosure,
--- and JavaScript advisories to lightwell/npm/remediated.
+-- and JavaScript advisories to lightwell/javascript/remediated.
 BEGIN;
 
 DO $$
@@ -22,9 +22,11 @@ BEGIN
                 'lightwell/java/predisclosure',
                 'lightwell/python/validated',
                 'lightwell/python/remediated',
-                'lightwell/python/predisclosure'
+                'lightwell/python/predisclosure',
+                'lightwell/javascript/validated',
+                'lightwell/javascript/remediated'
             )
-    ) < 6 THEN
+    ) < 8 THEN
         RAISE EXCEPTION
             'Missing Lightwell repositories in org -3. Run scripts/create_lightwell_repo.sh first.';
     END IF;
@@ -76,7 +78,7 @@ SELECT
         WHEN v.vulnerability_id LIKE 'LWL-2026-36%' AND v.language = 'python' THEN 'lightwell/python/predisclosure'
         WHEN v.language = 'java' THEN 'lightwell/java/remediated'
         WHEN v.language = 'python' THEN 'lightwell/python/remediated'
-        WHEN v.language = 'javascript' THEN 'lightwell/npm/remediated'
+        WHEN v.language = 'javascript' THEN 'lightwell/javascript/remediated'
     END,
     v.vulnerability_id,
     COALESCE(v.cvss::text, ''),
@@ -110,7 +112,7 @@ SELECT
         )
         WHEN v.language = 'javascript' THEN (
             SELECT rc.uuid FROM repository_configurations rc
-            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/npm/remediated' AND rc.deleted_at IS NULL
+            WHERE rc.org_id = '-3' AND rc.name = 'lightwell/javascript/remediated' AND rc.deleted_at IS NULL
         )
     END,
     'seed-' || v.vulnerability_id,

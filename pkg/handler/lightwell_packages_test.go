@@ -578,7 +578,7 @@ func (s *LightwellPackagesSuite) TestListPackageVersionsCoordinatesComputed() {
 		},
 		{
 			RepositoryConfigurationUUID: "repo-uuid-3",
-			RepositoryName:              "lightwell/npm/remediated",
+			RepositoryName:              "lightwell/javascript/remediated",
 			Ecosystem:                   config.ContentTypeNpm,
 			Name:                        "lodash",
 			Group:                       "@types",

@@ -665,8 +665,8 @@ seed_pulp_catalog_from_database() {
             WHEN 'lightwell/python/validated' THEN 'python/validated'
             WHEN 'lightwell/python/remediated' THEN 'python/remediated'
             WHEN 'lightwell/python/predisclosure' THEN 'python/predisclosure'
-            WHEN 'lightwell/npm/validated' THEN 'npm/validated'
-            WHEN 'lightwell/npm/remediated' THEN 'npm/remediated'
+            WHEN 'lightwell/javascript/validated' THEN 'javascript/validated'
+            WHEN 'lightwell/javascript/remediated' THEN 'javascript/remediated'
         END AS base_path,
         r.content_type,
         lp.package_group,
@@ -685,14 +685,14 @@ seed_pulp_catalog_from_database() {
             'lightwell/python/validated',
             'lightwell/python/remediated',
             'lightwell/python/predisclosure',
-            'lightwell/npm/validated',
-            'lightwell/npm/remediated'
+            'lightwell/javascript/validated',
+            'lightwell/javascript/remediated'
         )
     ORDER BY base_path, lp.package_group, lp.name, lpv.version;
   " >"$catalog_tsv"
 
   local base_path content_type
-  for base_path in java/validated java/remediated java/predisclosure python/validated python/remediated python/predisclosure npm/validated npm/remediated; do
+  for base_path in java/validated java/remediated java/predisclosure python/validated python/remediated python/predisclosure javascript/validated javascript/remediated; do
     local repo_rows
     repo_rows="$(mktemp)"
     awk -F '\t' -v bp="$base_path" '$1 == bp { print }' "$catalog_tsv" >"$repo_rows"

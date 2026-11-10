@@ -21,7 +21,7 @@ func withLightwellIgnoreRepos(t *testing.T, names []string) {
 }
 
 func TestImportEntriesSkipsIgnoredRepos(t *testing.T) {
-	withLightwellIgnoreRepos(t, []string{"lightwell/npm/validated", "lightwell/npm/remediated"})
+	withLightwellIgnoreRepos(t, []string{"lightwell/javascript/validated", "lightwell/javascript/remediated"})
 
 	daoReg := dao.GetMockDaoRegistry(t)
 	pulp := pulp_client.NewMockPulpClient(t)
@@ -43,18 +43,18 @@ func TestImportEntriesSkipsIgnoredRepos(t *testing.T) {
 
 	importer := NewLightwellRepoImporter(daoReg.ToDaoRegistry(), pulp, nil)
 	err := importer.importEntries(context.Background(), []LightwellAllowlistEntry{
-		{Name: "lightwell/npm/validated", Type: "npm", BasePath: "npm/validated", FeatureName: "lightwell-network"},
+		{Name: "lightwell/javascript/validated", Type: "npm", BasePath: "javascript/validated", FeatureName: "lightwell-network"},
 		{Name: "lightwell/python/validated", Type: "python", BasePath: "python/validated", FeatureName: "lightwell-network"},
-		{Name: "lightwell/npm/remediated", Type: "npm", BasePath: "npm/remediated", FeatureName: "lightwell-network"},
+		{Name: "lightwell/javascript/remediated", Type: "npm", BasePath: "javascript/remediated", FeatureName: "lightwell-network"},
 	}, pulp, config.LightwellOrg)
 	require.NoError(t, err)
 
-	pulp.AssertNotCalled(t, "FindGenericDistributionByBasePath", mock.Anything, "npm/validated")
-	pulp.AssertNotCalled(t, "FindGenericDistributionByBasePath", mock.Anything, "npm/remediated")
+	pulp.AssertNotCalled(t, "FindGenericDistributionByBasePath", mock.Anything, "javascript/validated")
+	pulp.AssertNotCalled(t, "FindGenericDistributionByBasePath", mock.Anything, "javascript/remediated")
 	daoReg.RepositoryConfig.AssertNotCalled(t, "InternalOnly_RefreshLightwellRepo",
-		mock.Anything, mock.Anything, "lightwell/npm/validated", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+		mock.Anything, mock.Anything, "lightwell/javascript/validated", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	daoReg.RepositoryConfig.AssertNotCalled(t, "InternalOnly_RefreshLightwellRepo",
-		mock.Anything, mock.Anything, "lightwell/npm/remediated", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+		mock.Anything, mock.Anything, "lightwell/javascript/remediated", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestImportEntriesMissingDistributionURL(t *testing.T) {
@@ -62,20 +62,20 @@ func TestImportEntriesMissingDistributionURL(t *testing.T) {
 
 	daoReg := dao.GetMockDaoRegistry(t)
 	pulp := pulp_client.NewMockPulpClient(t)
-	pulp.On("FindGenericDistributionByBasePath", mock.Anything, "npm/validated").
+	pulp.On("FindGenericDistributionByBasePath", mock.Anything, "javascript/validated").
 		Return((*zest.DistributionResponse)(nil), nil)
 
 	importer := NewLightwellRepoImporter(daoReg.ToDaoRegistry(), pulp, nil)
 	err := importer.importEntries(context.Background(), []LightwellAllowlistEntry{
-		{Name: "lightwell/npm/validated", Type: "npm", BasePath: "npm/validated", FeatureName: "lightwell-network"},
+		{Name: "lightwell/javascript/validated", Type: "npm", BasePath: "javascript/validated", FeatureName: "lightwell-network"},
 	}, pulp, config.LightwellOrg)
-	require.EqualError(t, err, `lightwell repo "lightwell/npm/validated" has no published distribution URL`)
+	require.EqualError(t, err, `lightwell repo "lightwell/javascript/validated" has no published distribution URL`)
 }
 
 func TestIgnoredLightwellRepoExactName(t *testing.T) {
-	withLightwellIgnoreRepos(t, []string{"lightwell/npm/validated"})
+	withLightwellIgnoreRepos(t, []string{"lightwell/javascript/validated"})
 
-	require.True(t, IgnoredLightwellRepo("lightwell/npm/validated"))
-	require.False(t, IgnoredLightwellRepo("lightwell/npm/validated-demo"))
-	require.False(t, IgnoredLightwellRepo("lightwell/npm/remediated"))
+	require.True(t, IgnoredLightwellRepo("lightwell/javascript/validated"))
+	require.False(t, IgnoredLightwellRepo("lightwell/javascript/validated-demo"))
+	require.False(t, IgnoredLightwellRepo("lightwell/javascript/remediated"))
 }
