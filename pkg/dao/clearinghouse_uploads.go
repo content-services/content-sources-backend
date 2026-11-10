@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var ErrClearinghouseSubmissionClosed = errors.New("clearinghouse submission can no longer be changed")
@@ -28,6 +30,7 @@ type ClearinghouseUpload struct {
 	SubmittedBy        *string
 	ProcessedAt        *time.Time
 	ProcessedBy        *string
+	PackageSummary     *api.ClearinghousePackageSummary
 }
 
 type ClearinghouseUploadFile struct {
@@ -48,6 +51,25 @@ type CreateClearinghouseUploadParams struct {
 	Filename           string
 	VulnerabilityCount *int32
 	Status             string
+	// Packages are stored in order with the upload. PackageSummary is stored on the upload.
+	Packages       []CreateClearinghouseUploadPackageParams
+	PackageSummary *api.ClearinghousePackageSummary
+}
+
+// CreateClearinghouseUploadPackageParams is one unique package parsed from a submission.
+// ValidPurl is false when Packageurl does not parse (Ecosystem is Unknown and
+// Namespace, Name and Version are empty) or has no version.
+type CreateClearinghouseUploadPackageParams struct {
+	Packageurl string
+	Ecosystem  string
+	Namespace  string
+	Name       string
+	Version    string
+	ValidPurl  bool
+	// InvalidReason is an api.ClearinghouseInvalidReason* code and InvalidDetail
+	// explains it. Both are empty when ValidPurl is true.
+	InvalidReason string
+	InvalidDetail string
 }
 
 type CreateClearinghouseUploadFileParams struct {
@@ -57,6 +79,31 @@ type CreateClearinghouseUploadFileParams struct {
 	Filepath   string
 	Username   string
 	Submission bool
+}
+
+// ClearinghouseUploadPackage is one unique package parsed from a submission.
+// ValidPurl is false when Packageurl does not parse (Ecosystem is Unknown and
+// Namespace, Name and Version are empty) or has no version.
+type ClearinghouseUploadPackage struct {
+	Packageurl string
+	Ecosystem  string
+	Namespace  string
+	Name       string
+	Version    string
+	ValidPurl  bool
+	// InvalidReason is an api.ClearinghouseInvalidReason* code and InvalidDetail
+	// explains it. Both are empty when ValidPurl is true.
+	InvalidReason string
+	InvalidDetail string
+}
+
+// ListClearinghouseUploadPackagesParams filters the packages of one upload.
+// Nil or empty filters match every package.
+type ListClearinghouseUploadPackagesParams struct {
+	Ecosystems []string
+	ValidPurl  *bool
+	Limit      int32
+	Offset     int32
 }
 
 type ListClearinghouseUploadsParams struct {
@@ -104,7 +151,7 @@ func (d clearinghouseUploadDaoImpl) Create(ctx context.Context, params CreateCle
 	if err != nil {
 		return ClearinghouseUpload{}, err
 	}
-	return clearinghouseUploadFromStore(row), nil
+	return clearinghouseUploadFromStore(row)
 }
 
 func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload CreateClearinghouseUploadParams, files []CreateClearinghouseUploadFileParams, afterCommit func([]ClearinghouseUploadFile) error) (ClearinghouseUpload, []ClearinghouseUploadFile, error) {
@@ -120,6 +167,12 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	var packageSummary []byte
+	if upload.PackageSummary != nil {
+		if packageSummary, err = json.Marshal(upload.PackageSummary); err != nil {
+			return ClearinghouseUpload{}, nil, err
+		}
+	}
 	q := store.New(tx)
 	row, err := q.CreateClearinghouseUpload(ctx, store.CreateClearinghouseUploadParams{
 		Uuid:               upload.UUID,
@@ -129,9 +182,19 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 		Filename:           upload.Filename,
 		VulnerabilityCount: upload.VulnerabilityCount,
 		Status:             upload.Status,
+		PackageSummary:     packageSummary,
 	})
 	if err != nil {
 		return ClearinghouseUpload{}, nil, err
+	}
+	created, err := clearinghouseUploadFromStore(row)
+	if err != nil {
+		return ClearinghouseUpload{}, nil, err
+	}
+	if len(upload.Packages) > 0 {
+		if _, err := q.CreateClearinghouseUploadPackages(ctx, clearinghouseUploadPackageRows(upload.UUID, upload.Packages)); err != nil {
+			return ClearinghouseUpload{}, nil, err
+		}
 	}
 	out := make([]ClearinghouseUploadFile, 0, len(files))
 	for _, file := range files {
@@ -159,7 +222,7 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 			return ClearinghouseUpload{}, nil, err
 		}
 	}
-	return clearinghouseUploadFromStore(row), out, nil
+	return created, out, nil
 }
 
 func (d clearinghouseUploadDaoImpl) Get(ctx context.Context, uploadID uuid.UUID) (ClearinghouseUpload, error) {
@@ -170,7 +233,7 @@ func (d clearinghouseUploadDaoImpl) Get(ctx context.Context, uploadID uuid.UUID)
 	if err != nil {
 		return ClearinghouseUpload{}, err
 	}
-	return clearinghouseUploadFromStore(row), nil
+	return clearinghouseUploadFromStore(row)
 }
 
 func (d clearinghouseUploadDaoImpl) Delete(ctx context.Context, uploadID uuid.UUID) error {
@@ -196,7 +259,11 @@ func (d clearinghouseUploadDaoImpl) List(ctx context.Context, params ListClearin
 	}
 	out := make([]ClearinghouseUpload, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, clearinghouseUploadFromStore(row))
+		upload, err := clearinghouseUploadFromStore(row)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, upload)
 	}
 	return out, nil
 }
@@ -411,6 +478,79 @@ func (d clearinghouseUploadDaoImpl) GetFileByName(ctx context.Context, uploadID 
 	return clearinghouseUploadFileFromStore(row), nil
 }
 
+func (d clearinghouseUploadDaoImpl) ListPackages(ctx context.Context, uploadID uuid.UUID, params ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, int64, error) {
+	if err := d.requireQuerier(); err != nil {
+		return nil, 0, err
+	}
+	var ecosystems []string
+	if len(params.Ecosystems) > 0 {
+		ecosystems = params.Ecosystems
+	}
+	var validPurl pgtype.Bool
+	if params.ValidPurl != nil {
+		validPurl = pgtype.Bool{Bool: *params.ValidPurl, Valid: true}
+	}
+	rows, err := d.querier.ListClearinghouseUploadPackages(ctx, store.ListClearinghouseUploadPackagesParams{
+		ClearinghouseUploadUuid: uploadID,
+		Ecosystems:              ecosystems,
+		ValidPurl:               validPurl,
+		PageLimit:               params.Limit,
+		PageOffset:              params.Offset,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	total, err := d.querier.CountClearinghouseUploadPackages(ctx, store.CountClearinghouseUploadPackagesParams{
+		ClearinghouseUploadUuid: uploadID,
+		Ecosystems:              ecosystems,
+		ValidPurl:               validPurl,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]ClearinghouseUploadPackage, 0, len(rows))
+	for _, row := range rows {
+		pkg := ClearinghouseUploadPackage{
+			Packageurl: row.Packageurl,
+			Ecosystem:  row.Ecosystem,
+			Name:       row.Name,
+			Version:    row.Version,
+			ValidPurl:  row.ValidPurl,
+		}
+		if row.Namespace != nil {
+			pkg.Namespace = *row.Namespace
+		}
+		if row.InvalidReason != nil {
+			pkg.InvalidReason = *row.InvalidReason
+		}
+		if row.InvalidDetail != nil {
+			pkg.InvalidDetail = *row.InvalidDetail
+		}
+		out = append(out, pkg)
+	}
+	return out, total, nil
+}
+
+func clearinghouseUploadPackageRows(uploadID uuid.UUID, packages []CreateClearinghouseUploadPackageParams) []store.CreateClearinghouseUploadPackagesParams {
+	rows := make([]store.CreateClearinghouseUploadPackagesParams, len(packages))
+	for i, pkg := range packages {
+		rows[i] = store.CreateClearinghouseUploadPackagesParams{
+			Uuid:                    uuid.New(),
+			ClearinghouseUploadUuid: uploadID,
+			Position:                int32(i), //nolint:gosec // package count is bounded by the 50 MiB submission limit
+			Packageurl:              pkg.Packageurl,
+			Ecosystem:               pkg.Ecosystem,
+			Namespace:               optionalString(pkg.Namespace),
+			Name:                    pkg.Name,
+			Version:                 pkg.Version,
+			ValidPurl:               pkg.ValidPurl,
+			InvalidReason:           optionalString(pkg.InvalidReason),
+			InvalidDetail:           optionalString(pkg.InvalidDetail),
+		}
+	}
+	return rows
+}
+
 func (d clearinghouseUploadDaoImpl) Submit(ctx context.Context, uploadID uuid.UUID, username string) (ClearinghouseUpload, error) {
 	if err := d.requireQuerier(); err != nil {
 		return ClearinghouseUpload{}, err
@@ -422,7 +562,7 @@ func (d clearinghouseUploadDaoImpl) Submit(ctx context.Context, uploadID uuid.UU
 	if err != nil {
 		return ClearinghouseUpload{}, err
 	}
-	return clearinghouseUploadFromStore(row), nil
+	return clearinghouseUploadFromStore(row)
 }
 
 func (d clearinghouseUploadDaoImpl) Process(ctx context.Context, uploadID uuid.UUID, username string) (ClearinghouseUpload, error) {
@@ -436,10 +576,17 @@ func (d clearinghouseUploadDaoImpl) Process(ctx context.Context, uploadID uuid.U
 	if err != nil {
 		return ClearinghouseUpload{}, err
 	}
-	return clearinghouseUploadFromStore(row), nil
+	return clearinghouseUploadFromStore(row)
 }
 
-func clearinghouseUploadFromStore(row store.ClearinghouseUpload) ClearinghouseUpload {
+func clearinghouseUploadFromStore(row store.ClearinghouseUpload) (ClearinghouseUpload, error) {
+	var packageSummary *api.ClearinghousePackageSummary
+	if len(row.PackageSummary) > 0 {
+		packageSummary = &api.ClearinghousePackageSummary{}
+		if err := json.Unmarshal(row.PackageSummary, packageSummary); err != nil {
+			return ClearinghouseUpload{}, fmt.Errorf("decoding package summary of clearinghouse upload %s: %w", row.Uuid, err)
+		}
+	}
 	return ClearinghouseUpload{
 		UUID:               row.Uuid,
 		CreatedAt:          row.CreatedAt,
@@ -454,7 +601,8 @@ func clearinghouseUploadFromStore(row store.ClearinghouseUpload) ClearinghouseUp
 		SubmittedBy:        row.SubmittedBy,
 		ProcessedAt:        row.ProcessedAt,
 		ProcessedBy:        row.ProcessedBy,
-	}
+		PackageSummary:     packageSummary,
+	}, nil
 }
 
 func clearinghouseUploadFilesFromStore(rows []store.ClearinghouseUploadFile) []ClearinghouseUploadFile {

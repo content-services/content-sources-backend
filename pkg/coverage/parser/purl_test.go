@@ -47,3 +47,15 @@ func TestParsePURL_Invalid(t *testing.T) {
 	assert.Nil(t, parsePURL("pkg:"))
 	assert.Nil(t, parsePURL("pkg:maven/"))
 }
+
+func TestParsePURLExported(t *testing.T) {
+	pkg, err := ParsePURL("  pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1  ")
+	require.NoError(t, err)
+	assert.Equal(t, Package{Ecosystem: EcosystemJava, Namespace: "org.apache.logging.log4j", Name: "log4j-core", Version: "2.14.1"}, pkg)
+
+	_, err = ParsePURL("log4j-core 2.14.1")
+	assert.EqualError(t, err, `purl scheme is not "pkg": "log4j-core 2.14.1"`)
+
+	_, err = ParsePURL("pkg:swift/Alamofire@5.0")
+	assert.EqualError(t, err, "namespace is required")
+}

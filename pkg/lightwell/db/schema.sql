@@ -230,7 +230,8 @@ CREATE TABLE clearinghouse_uploads (
     submitted_at TIMESTAMPTZ,
     submitted_by TEXT,
     processed_at TIMESTAMPTZ,
-    processed_by TEXT
+    processed_by TEXT,
+    package_summary JSONB
 );
 
 CREATE INDEX idx_clearinghouse_uploads_org_id ON clearinghouse_uploads (org_id);
@@ -247,3 +248,20 @@ CREATE TABLE clearinghouse_upload_files (
 
 CREATE UNIQUE INDEX idx_clearinghouse_upload_files_upload_uuid_filename
     ON clearinghouse_upload_files (clearinghouse_upload_uuid, filename);
+
+CREATE TABLE clearinghouse_upload_packages (
+    uuid UUID UNIQUE NOT NULL PRIMARY KEY,
+    clearinghouse_upload_uuid UUID NOT NULL REFERENCES clearinghouse_uploads(uuid) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    packageurl TEXT NOT NULL,
+    ecosystem VARCHAR(255) NOT NULL,
+    namespace TEXT,
+    name TEXT NOT NULL DEFAULT '',
+    version TEXT NOT NULL DEFAULT '',
+    valid_purl BOOLEAN NOT NULL,
+    invalid_reason TEXT,
+    invalid_detail TEXT
+);
+
+CREATE UNIQUE INDEX idx_clearinghouse_upload_packages_upload_uuid_position
+    ON clearinghouse_upload_packages (clearinghouse_upload_uuid, position);

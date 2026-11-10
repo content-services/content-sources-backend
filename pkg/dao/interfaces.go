@@ -360,6 +360,7 @@ type ClearinghouseUploadDao interface {
 	Process(ctx context.Context, uploadID uuid.UUID, username string) (ClearinghouseUpload, error)
 	DeleteIfUploading(ctx context.Context, uploadID uuid.UUID, afterCommit func([]ClearinghouseUploadFile) error) error
 	DeleteFileIfUploading(ctx context.Context, uploadID uuid.UUID, filename string, afterCommit func(ClearinghouseUploadFile) error) error
+	ListPackages(ctx context.Context, uploadID uuid.UUID, params ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, int64, error)
 }
 
 type UserPreferenceDao interface {

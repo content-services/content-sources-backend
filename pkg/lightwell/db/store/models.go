@@ -25,6 +25,7 @@ type ClearinghouseUpload struct {
 	SubmittedBy        *string    `json:"submitted_by"`
 	ProcessedAt        *time.Time `json:"processed_at"`
 	ProcessedBy        *string    `json:"processed_by"`
+	PackageSummary     []byte     `json:"package_summary"`
 }
 
 type ClearinghouseUploadFile struct {
@@ -35,6 +36,20 @@ type ClearinghouseUploadFile struct {
 	Username                string    `json:"username"`
 	Submission              bool      `json:"submission"`
 	CreatedAt               time.Time `json:"created_at"`
+}
+
+type ClearinghouseUploadPackage struct {
+	Uuid                    uuid.UUID `json:"uuid"`
+	ClearinghouseUploadUuid uuid.UUID `json:"clearinghouse_upload_uuid"`
+	Position                int32     `json:"position"`
+	Packageurl              string    `json:"packageurl"`
+	Ecosystem               string    `json:"ecosystem"`
+	Namespace               *string   `json:"namespace"`
+	Name                    string    `json:"name"`
+	Version                 string    `json:"version"`
+	ValidPurl               bool      `json:"valid_purl"`
+	InvalidReason           *string   `json:"invalid_reason"`
+	InvalidDetail           *string   `json:"invalid_detail"`
 }
 
 type LightwellAdvisory struct {

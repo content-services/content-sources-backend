@@ -7,7 +7,8 @@ INSERT INTO clearinghouse_uploads (
     filename,
     vulnerability_count,
     status,
-    error_message
+    error_message,
+    package_summary
 ) VALUES (
     sqlc.arg(uuid),
     sqlc.arg(org_id),
@@ -16,7 +17,8 @@ INSERT INTO clearinghouse_uploads (
     sqlc.arg(filename),
     sqlc.narg(vulnerability_count),
     sqlc.arg(status),
-    sqlc.narg(error_message)
+    sqlc.narg(error_message),
+    sqlc.narg(package_summary)
 )
 RETURNING *;
 
@@ -112,3 +114,36 @@ SET status = 'processed',
 WHERE uuid = sqlc.arg(uuid)
     AND status = 'submitted'
 RETURNING *;
+
+-- name: CreateClearinghouseUploadPackages :copyfrom
+INSERT INTO clearinghouse_upload_packages (
+    uuid,
+    clearinghouse_upload_uuid,
+    position,
+    packageurl,
+    ecosystem,
+    namespace,
+    name,
+    version,
+    valid_purl,
+    invalid_reason,
+    invalid_detail
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+);
+
+-- name: ListClearinghouseUploadPackages :many
+SELECT *
+FROM clearinghouse_upload_packages
+WHERE clearinghouse_upload_uuid = sqlc.arg(clearinghouse_upload_uuid)
+    AND (sqlc.narg(ecosystems)::text[] IS NULL OR ecosystem = ANY(sqlc.narg(ecosystems)::text[]))
+    AND (sqlc.narg(valid_purl)::boolean IS NULL OR valid_purl = sqlc.narg(valid_purl)::boolean)
+ORDER BY position
+LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: CountClearinghouseUploadPackages :one
+SELECT COUNT(*)::bigint
+FROM clearinghouse_upload_packages
+WHERE clearinghouse_upload_uuid = sqlc.arg(clearinghouse_upload_uuid)
+    AND (sqlc.narg(ecosystems)::text[] IS NULL OR ecosystem = ANY(sqlc.narg(ecosystems)::text[]))
+    AND (sqlc.narg(valid_purl)::boolean IS NULL OR valid_purl = sqlc.narg(valid_purl)::boolean);

@@ -60,6 +60,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/process", h.processSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions", h.listSubmissions, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid", h.getSubmission, rbac.RbacVerbRead)
+	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/packages", h.listSubmissionPackages, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid", h.deleteSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/submission", h.downloadSubmission, rbac.RbacVerbRead)
 	addLightwellRoute(engine, http.MethodGet, "/clearinghouse/submissions/:uuid/archive", h.downloadSubmissionArchive, rbac.RbacVerbRead)
@@ -89,10 +90,12 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	body, name, count, err := readIntakeSubmission(c)
+	body, name, vulns, err := readIntakeSubmission(c)
 	if err != nil {
 		return err
 	}
+	count := int32(len(vulns)) //nolint:gosec // vulnerability count is bounded by the 50 MiB body limit
+	packages, summary := clearinghousePackages(vulns)
 
 	upload, files, err := h.storeNewClearinghouseJSONSubmission(c, dao.CreateClearinghouseUploadParams{
 		UUID:               uuid.New(),
@@ -100,8 +103,10 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 		Username:           username,
 		Name:               name,
 		Filename:           clearinghouseSubmissionFilename,
-		VulnerabilityCount: count,
+		VulnerabilityCount: &count,
 		Status:             api.ClearinghouseSubmissionStatusPending,
+		Packages:           packages,
+		PackageSummary:     &summary,
 	}, body)
 	if err != nil {
 		return err
@@ -111,9 +116,9 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 
 // readIntakeSubmission reads and validates the intake submission JSON body. It
 // returns the raw bytes exactly as received (preserving any additional top-level
-// metadata), the submission name to store it under, and the number of
-// vulnerabilities it contains.
-func readIntakeSubmission(c echo.Context) ([]byte, string, *int32, error) {
+// metadata), the submission name to store it under, and the vulnerabilities it
+// contains.
+func readIntakeSubmission(c echo.Context) ([]byte, string, []intakeVulnerability, error) {
 	body, err := io.ReadAll(io.LimitReader(c.Request().Body, maxClearinghouseFileBytes+1))
 	if err != nil {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", err.Error())
@@ -144,8 +149,7 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, *int32, error) {
 				fmt.Sprintf("vulnerabilities[%d] is missing required field %q", i, missing))
 		}
 	}
-	count := int32(len(parsed.Vulnerabilities)) //nolint:gosec // vulnerability count is bounded by the 50 MiB body limit
-	return body, name, &count, nil
+	return body, name, parsed.Vulnerabilities, nil
 }
 
 // intakeVulnerability mirrors the required fields of a ReportedVulnerability
@@ -503,6 +507,45 @@ func (h *ClearinghouseHandler) getSubmission(c echo.Context) error {
 		return clearinghouseStoreError(err, "Error listing clearinghouse submission files")
 	}
 	return c.JSON(http.StatusOK, caller.submissionWithCID(upload, files))
+}
+
+// listSubmissionPackages godoc
+// @Summary      List the packages in a clearinghouse submission
+// @ID           listClearinghouseSubmissionPackages
+// @Description  List the unique packages referenced by the vulnerabilities in a submission's JSON, in the order they first appear. Packages are unique by ecosystem, namespace, name and version. A packageurl is valid when it parses as a Package URL and includes a version. A packageurl without a version keeps its ecosystem with valid_purl false; one that does not parse is listed under the Unknown ecosystem with valid_purl false. Visible to the same callers as the submission.
+// @Tags         lightwell
+// @Produce      json
+// @Param        uuid       path  string true  "Clearinghouse submission UUID"
+// @Param        ecosystem  query string false "A comma separated list of ecosystems to filter on, for example Java,Unknown"
+// @Param        valid_purl query bool   false "Only list packages whose packageurl is (true) or is not (false) valid. Valid means it parses as a Package URL and includes a version."
+// @Param        limit      query int    false "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: `100`."
+// @Param        offset     query int    false "Starting point for retrieving a subset of results. Default value: 0."
+// @Success      200 {object} api.ClearinghouseSubmissionPackageCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /clearinghouse/submissions/{uuid}/packages [get]
+func (h *ClearinghouseHandler) listSubmissionPackages(c echo.Context) error {
+	upload, err := h.visibleUpload(c, newClearinghouseCaller(c))
+	if err != nil {
+		return err
+	}
+	params, err := clearinghousePackageFilters(c)
+	if err != nil {
+		return err
+	}
+	page := clearinghousePage(c)
+	params.Limit = page.limit
+	params.Offset = page.offset
+	packages, total, err := h.Uploads.ListPackages(c.Request().Context(), upload.UUID, params)
+	if err != nil {
+		return clearinghouseStoreError(err, "Error listing clearinghouse submission packages")
+	}
+	response := api.ClearinghouseSubmissionPackageCollectionResponse{Data: make([]api.ClearinghouseSubmissionPackage, 0, len(packages))}
+	for _, pkg := range packages {
+		response.Data = append(response.Data, clearinghouseSubmissionPackage(pkg))
+	}
+	return c.JSON(http.StatusOK, handler.SetCollectionResponseMetadata(&response, c, total))
 }
 
 // downloadSubmission godoc

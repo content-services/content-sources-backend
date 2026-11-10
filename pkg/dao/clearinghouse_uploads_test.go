@@ -199,3 +199,100 @@ func TestClearinghouseUploadDao(t *testing.T) {
 	_, err = uploads.Get(ctx, keptID)
 	require.NoError(t, err)
 }
+
+func TestClearinghouseUploadDaoPackages(t *testing.T) {
+	ctx := context.Background()
+	uploads := GetDaoRegistry(db.DB).ClearinghouseUpload
+	pool := db.LightwellPool()
+	require.NotNil(t, pool)
+
+	uploadID := uuid.New()
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), "DELETE FROM clearinghouse_uploads WHERE uuid = $1", uploadID)
+	})
+	summary := &api.ClearinghousePackageSummary{
+		Total:        3,
+		InvalidPurls: 1,
+		Ecosystems: []api.ClearinghousePackageEcosystemSummary{
+			{Ecosystem: "Java", Total: 2},
+			{Ecosystem: api.ClearinghouseEcosystemUnknown, Total: 1},
+		},
+	}
+	created, _, err := uploads.CreateWithFiles(ctx, CreateClearinghouseUploadParams{
+		UUID:     uploadID,
+		OrgID:    "clearinghouse-dao-" + uuid.NewString(),
+		Username: "author",
+		Name:     "Packages",
+		Filename: "submission.json",
+		Status:   api.ClearinghouseSubmissionStatusPending,
+		Packages: []CreateClearinghouseUploadPackageParams{
+			{Packageurl: "pkg:maven/org.example/b@2.0", Ecosystem: "Java", Namespace: "org.example", Name: "b", Version: "2.0", ValidPurl: true},
+			{Packageurl: "not a purl", Ecosystem: api.ClearinghouseEcosystemUnknown,
+				InvalidReason: api.ClearinghouseInvalidReasonNotAPurl, InvalidDetail: "purl scheme is not \"pkg\""},
+			{Packageurl: "pkg:maven/org.example/a@1.0", Ecosystem: "Java", Namespace: "org.example", Name: "a", Version: "1.0", ValidPurl: true},
+		},
+		PackageSummary: summary,
+	}, nil, nil)
+	require.NoError(t, err)
+	assert.Equal(t, summary, created.PackageSummary)
+
+	fetched, err := uploads.Get(ctx, uploadID)
+	require.NoError(t, err)
+	assert.Equal(t, summary, fetched.PackageSummary)
+
+	all, total, err := uploads.ListPackages(ctx, uploadID, ListClearinghouseUploadPackagesParams{Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), total)
+	require.Len(t, all, 3)
+	assert.Equal(t, []string{"pkg:maven/org.example/b@2.0", "not a purl", "pkg:maven/org.example/a@1.0"},
+		[]string{all[0].Packageurl, all[1].Packageurl, all[2].Packageurl}, "packages keep submission order")
+	assert.Equal(t, ClearinghouseUploadPackage{Packageurl: "not a purl", Ecosystem: api.ClearinghouseEcosystemUnknown,
+		InvalidReason: api.ClearinghouseInvalidReasonNotAPurl, InvalidDetail: "purl scheme is not \"pkg\""}, all[1])
+	assert.Equal(t, ClearinghouseUploadPackage{Packageurl: "pkg:maven/org.example/b@2.0", Ecosystem: "Java", Namespace: "org.example", Name: "b", Version: "2.0", ValidPurl: true}, all[0])
+
+	page, total, err := uploads.ListPackages(ctx, uploadID, ListClearinghouseUploadPackagesParams{Limit: 1, Offset: 1})
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), total)
+	require.Len(t, page, 1)
+	assert.Equal(t, "not a purl", page[0].Packageurl)
+
+	invalid := false
+	invalidOnly, total, err := uploads.ListPackages(ctx, uploadID, ListClearinghouseUploadPackagesParams{ValidPurl: &invalid, Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, invalidOnly, 1)
+	assert.Equal(t, "not a purl", invalidOnly[0].Packageurl)
+
+	java, total, err := uploads.ListPackages(ctx, uploadID, ListClearinghouseUploadPackagesParams{Ecosystems: []string{"Java", "Python"}, Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), total)
+	assert.Len(t, java, 2)
+
+	_, err = pool.Exec(ctx, "DELETE FROM clearinghouse_uploads WHERE uuid = $1", uploadID)
+	require.NoError(t, err)
+	_, total, err = uploads.ListPackages(ctx, uploadID, ListClearinghouseUploadPackagesParams{Limit: 10})
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), total, "packages are deleted with their upload")
+}
+
+func TestClearinghouseUploadDaoWithoutPackages(t *testing.T) {
+	ctx := context.Background()
+	uploads := GetDaoRegistry(db.DB).ClearinghouseUpload
+	pool := db.LightwellPool()
+	require.NotNil(t, pool)
+
+	uploadID := uuid.New()
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), "DELETE FROM clearinghouse_uploads WHERE uuid = $1", uploadID)
+	})
+	created, _, err := uploads.CreateWithFiles(ctx, CreateClearinghouseUploadParams{
+		UUID:     uploadID,
+		OrgID:    "clearinghouse-dao-" + uuid.NewString(),
+		Username: "author",
+		Name:     "Legacy",
+		Filename: "submission.json",
+		Status:   api.ClearinghouseSubmissionStatusPending,
+	}, nil, nil)
+	require.NoError(t, err)
+	assert.Nil(t, created.PackageSummary)
+}

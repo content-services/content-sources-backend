@@ -13846,6 +13846,86 @@ func (_c *MockClearinghouseUploadDao_ListFilesByUploads_Call) RunAndReturn(run f
 	return _c
 }
 
+// ListPackages provides a mock function for the type MockClearinghouseUploadDao
+func (_mock *MockClearinghouseUploadDao) ListPackages(ctx context.Context, uploadID uuid.UUID, params ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, int64, error) {
+	ret := _mock.Called(ctx, uploadID, params)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPackages")
+	}
+
+	var r0 []ClearinghouseUploadPackage
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, int64, error)); ok {
+		return returnFunc(ctx, uploadID, params)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, ListClearinghouseUploadPackagesParams) []ClearinghouseUploadPackage); ok {
+		r0 = returnFunc(ctx, uploadID, params)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ClearinghouseUploadPackage)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, ListClearinghouseUploadPackagesParams) int64); ok {
+		r1 = returnFunc(ctx, uploadID, params)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, uuid.UUID, ListClearinghouseUploadPackagesParams) error); ok {
+		r2 = returnFunc(ctx, uploadID, params)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockClearinghouseUploadDao_ListPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPackages'
+type MockClearinghouseUploadDao_ListPackages_Call struct {
+	*mock.Call
+}
+
+// ListPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - uploadID uuid.UUID
+//   - params ListClearinghouseUploadPackagesParams
+func (_e *MockClearinghouseUploadDao_Expecter) ListPackages(ctx any, uploadID any, params any) *MockClearinghouseUploadDao_ListPackages_Call {
+	return &MockClearinghouseUploadDao_ListPackages_Call{Call: _e.mock.On("ListPackages", ctx, uploadID, params)}
+}
+
+func (_c *MockClearinghouseUploadDao_ListPackages_Call) Run(run func(ctx context.Context, uploadID uuid.UUID, params ListClearinghouseUploadPackagesParams)) *MockClearinghouseUploadDao_ListPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 ListClearinghouseUploadPackagesParams
+		if args[2] != nil {
+			arg2 = args[2].(ListClearinghouseUploadPackagesParams)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockClearinghouseUploadDao_ListPackages_Call) Return(clearinghouseUploadPackages []ClearinghouseUploadPackage, n int64, err error) *MockClearinghouseUploadDao_ListPackages_Call {
+	_c.Call.Return(clearinghouseUploadPackages, n, err)
+	return _c
+}
+
+func (_c *MockClearinghouseUploadDao_ListPackages_Call) RunAndReturn(run func(ctx context.Context, uploadID uuid.UUID, params ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, int64, error)) *MockClearinghouseUploadDao_ListPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Process provides a mock function for the type MockClearinghouseUploadDao
 func (_mock *MockClearinghouseUploadDao) Process(ctx context.Context, uploadID uuid.UUID, username string) (ClearinghouseUpload, error) {
 	ret := _mock.Called(ctx, uploadID, username)
