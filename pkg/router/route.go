@@ -61,12 +61,14 @@ func ConfigureEchoWithMetrics(ctx context.Context, metrics *instrumentation.Metr
 	if config.Get().Clients.RbacEnabled {
 		rbacBaseUrl := config.Get().Clients.RbacBaseUrl
 		rbacTimeout := time.Duration(int64(config.Get().Clients.RbacTimeout) * int64(time.Second))
-		rbacClient := rbac.NewClientWrapperImpl(rbacBaseUrl, rbacTimeout)
+		rbacClient, err := rbac.NewClientWrapperImpl(rbacBaseUrl, rbacTimeout)
+		if err != nil {
+			log.Fatal().Err(err).Msg("could not create rbac client")
+		}
 		log.Info().Msgf("rbacBaseUrl=%s", rbacBaseUrl)
 		log.Info().Msgf("rbacTimeout=%d secs", rbacTimeout/time.Second)
 
 		var kesselClient rbac.ClientWrapper
-		var err error
 		if config.Get().Features.Kessel.Enabled {
 			kesselClient, err = rbac.NewKesselClientWrapper()
 			if err != nil {
