@@ -38,6 +38,16 @@ func TestParseClearinghouseMappings(t *testing.T) {
 	assert.False(t, mapping.Allows("", "20655920"))
 }
 
+func TestParseClearinghouseMappingsSingleQuotes(t *testing.T) {
+	orgs := "{'CID-00000': ['20007461', '20012872']}"
+	users := "{'CID-00000': ['content7', 'mmarusak-et']}"
+	mapping := ParseClearinghouseMappings(orgs, users)
+	assert.Equal(t, "CID-00000", mapping.CIDForOrg("20007461"))
+	assert.Equal(t, "CID-00000", mapping.CIDForOrg("20012872"))
+	assert.Equal(t, []string{"20007461", "20012872"}, mapping.OrgIDsForUser("content7"))
+	assert.True(t, mapping.Allows("mmarusak-et", "20012872"))
+}
+
 func TestParseClearinghouseMappingsEmpty(t *testing.T) {
 	assert.Equal(t, ClearinghouseMapping{}, ParseClearinghouseMappings("", ""))
 	assert.Equal(t, ClearinghouseMapping{}, ParseClearinghouseMappings("   ", "   "))
