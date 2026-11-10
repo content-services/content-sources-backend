@@ -811,23 +811,21 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 	if res.Error != nil {
 		return response, fmt.Errorf("failed to query the db for snapshots: %w", res.Error)
 	}
-	if config.Tang == nil {
-		return response, fmt.Errorf("no tang configuration present")
-	}
-
 	if len(pulpHrefs) == 0 {
 		return response, nil
 	}
-
-	pkgs, err := (*config.Tang).RpmRepositoryVersionPackageSearch(ctx, pulpHrefs, request.Search, *request.Limit)
-	if err != nil {
-		return response, fmt.Errorf("error querying packages in snapshots: %w", err)
+	limit := api.SearchRpmRequestLimitDefault
+	if request.Limit != nil {
+		limit = *request.Limit
 	}
-	for _, pkg := range pkgs {
-		response = append(response, api.SearchRpmResponse{
-			PackageName: pkg.Name,
-			Summary:     pkg.Summary,
-		})
+	var err error
+	if config.FeatureAccessible(ctx, config.Get().Features.TangToZestRpmSearch) {
+		response, err = r.searchSnapshotRpmsAPI(ctx, orgId, pulpHrefs, request.Search, limit)
+	} else {
+		response, err = searchSnapshotRpmsTang(ctx, pulpHrefs, request.Search, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error querying packages in snapshots: %w", err)
 	}
 
 	// Add package sources to the response if requested
@@ -835,7 +833,7 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 		var repoUUIDs []string
 		err = r.fetchRepoUUIDsForSnapshots(ctx, orgId, request.UUIDs, &repoUUIDs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to query the db for repo uuids from snapshots: %w", res.Error)
+			return nil, fmt.Errorf("failed to query the db for repo uuids from snapshots: %w", err)
 		}
 		err = r.addPackageSources(ctx, response, repoUUIDs)
 		if err != nil {
@@ -843,6 +841,45 @@ func (r *rpmDaoImpl) SearchSnapshotRpms(ctx context.Context, orgId string, reque
 		}
 	}
 
+	return response, nil
+}
+
+func searchSnapshotRpmsTang(ctx context.Context, pulpHrefs []string, search string, limit int) ([]api.SearchRpmResponse, error) {
+	if config.Tang == nil {
+		return nil, fmt.Errorf("no tang configuration present")
+	}
+	pkgs, err := (*config.Tang).RpmRepositoryVersionPackageSearch(ctx, pulpHrefs, search, limit)
+	if err != nil {
+		return nil, err
+	}
+	response := make([]api.SearchRpmResponse, 0, len(pkgs))
+	for _, pkg := range pkgs {
+		response = append(response, api.SearchRpmResponse{PackageName: pkg.Name, Summary: pkg.Summary})
+	}
+	return response, nil
+}
+
+func (r *rpmDaoImpl) searchSnapshotRpmsAPI(ctx context.Context, orgID string, pulpHrefs []string, search string, limit int) ([]api.SearchRpmResponse, error) {
+	// Search through the caller's domain; version hrefs may span other readable domains.
+	domainName, err := (domainDaoImpl{db: r.db}).FetchOrCreateDomain(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := r.pulpClient.LookupOrCreateDomain(ctx, domainName); err != nil {
+		return nil, err
+	}
+	pkgs, err := r.pulpClient.WithDomain(domainName).SearchVersionPackages(ctx, pulpHrefs, search, limit)
+	if err != nil {
+		return nil, err
+	}
+	// Pulp sorts by name, so equal names are adjacent; retain the first summary.
+	pkgs = slices.CompactFunc(pkgs, func(a, b zest.ContentViewPackageResponse) bool {
+		return a.Name == b.Name
+	})
+	response := make([]api.SearchRpmResponse, 0, len(pkgs))
+	for _, pkg := range pkgs {
+		response = append(response, api.SearchRpmResponse{PackageName: pkg.Name, Summary: pkg.Summary})
+	}
 	return response, nil
 }
 

@@ -47,6 +47,7 @@ type PulpClient interface {
 	GetContentPath() (string, error)
 
 	// Package
+	SearchVersionPackages(ctx context.Context, versionHrefs []string, search string, limit int) ([]zest.ContentViewPackageResponse, error)
 	UploadPackage(ctx context.Context, artifactHref *string, uploadHref *string) (*string, error)
 	LookupPackage(ctx context.Context, sha256sum string) (*string, error)
 	ListVersionAllPackages(ctx context.Context, versionHref string) (pkgs []zest.RpmPackageResponse, err error)
