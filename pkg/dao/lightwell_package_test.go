@@ -371,6 +371,17 @@ func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
 	assert.True(s.T(), hasJava)
 	assert.True(s.T(), hasPython)
 	assert.False(s.T(), hasOther)
+	oldIgnored := config.Get().Options.LightwellIgnoreRepos
+	s.T().Cleanup(func() { config.Get().Options.LightwellIgnoreRepos = oldIgnored })
+	config.Get().Options.LightwellIgnoreRepos = []string{fmt.Sprintf("lens-npm-%d", suffix)}
+	rows, err = dao.InternalOnlyListLensCatalog(ctx)
+	s.NoError(err)
+	assert.NotContains(s.T(), rows, found["npm:@angular:core:15.0.0"])
+	assert.NotEmpty(s.T(), rows)
+	config.Get().Options.LightwellIgnoreRepos = nil
+	rows, err = dao.InternalOnlyListLensCatalog(ctx)
+	s.NoError(err)
+	assert.Contains(s.T(), rows, found["npm:@angular:core:15.0.0"])
 }
 
 func (s *LightwellPackageSuite) TestListPackagesAggregatesVersions() {

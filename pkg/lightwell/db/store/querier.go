@@ -39,7 +39,7 @@ type Querier interface {
 	ListClearinghouseUploadFilesByUploads(ctx context.Context, uploadUuids []uuid.UUID) ([]ClearinghouseUploadFile, error)
 	ListClearinghouseUploads(ctx context.Context, arg ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
-	ListLensCatalog(ctx context.Context, orgID string) ([]ListLensCatalogRow, error)
+	ListLensCatalog(ctx context.Context, arg ListLensCatalogParams) ([]ListLensCatalogRow, error)
 	ListLightwellMavenPackageDetail(ctx context.Context, arg ListLightwellMavenPackageDetailParams) ([]ListLightwellMavenPackageDetailRow, error)
 	ListLightwellMavenPackageVersions(ctx context.Context, arg ListLightwellMavenPackageVersionsParams) ([]ListLightwellMavenPackageVersionsRow, error)
 	ListLightwellNpmPackageDetail(ctx context.Context, arg ListLightwellNpmPackageDetailParams) ([]ListLightwellNpmPackageDetailRow, error)

@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -165,6 +166,9 @@ func loadCatalogFromPulp(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp
 
 	catalogRepos := make([]api.RepositoryResponse, 0, 5)
 	for _, repo := range repos {
+		if slices.Contains(config.Get().Options.LightwellIgnoreRepos, repo.Name) {
+			continue
+		}
 		if repo.PublishedDistBasePath == javaValidatedBasePath ||
 			repo.PublishedDistBasePath == javaRemediatedBasePath ||
 			repo.PublishedDistBasePath == pythonValidatedBasePath ||
