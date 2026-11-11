@@ -20,6 +20,7 @@ import (
 	custom_collector "github.com/content-services/content-sources-backend/pkg/instrumentation/custom"
 	"github.com/content-services/content-sources-backend/pkg/jfrog_bridge"
 	"github.com/content-services/content-sources-backend/pkg/router"
+	"github.com/content-services/content-sources-backend/pkg/sonatype_bridge"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
@@ -89,6 +90,9 @@ func main() {
 	config.SetupLightwellAdvisoryCreatedEvent()
 	if argsContain(args, "jfrog-bridge") && config.Get().JFrogBridge.Enabled {
 		jfrog_bridge.Start(ctx, &wg)
+	}
+	if argsContain(args, "sonatype-bridge") && config.Get().SonatypeBridge.Enabled {
+		sonatype_bridge.Start(ctx, &wg)
 	}
 
 	config.SetupNotifications()
