@@ -24,6 +24,7 @@ func (h *myhandler)myMiddleware(c echo.Context) error {
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/RedHatInsights/rbac-client-go"
@@ -31,7 +32,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/kessel_client"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const application = "content-sources"
@@ -46,18 +46,17 @@ type ClientWrapperImpl struct {
 	cache   cache.Cache
 }
 
-func NewClientWrapperImpl(baseUrl string, timeout time.Duration) ClientWrapper {
+func NewClientWrapperImpl(baseUrl string, timeout time.Duration) (ClientWrapper, error) {
 	if baseUrl == "" {
-		return nil
+		return nil, fmt.Errorf("rbac base url is empty")
 	}
 	if timeout < 0 {
-		return nil
+		return nil, fmt.Errorf("rbac timeout is negative")
 	}
 
 	httpClient, err := kessel_client.RbacHTTPClient(timeout)
 	if err != nil {
-		log.Error().Err(err).Msg("could not create rbac http client")
-		return nil
+		return nil, fmt.Errorf("could not create rbac http client: %w", err)
 	}
 	client := rbac.NewClient(baseUrl, application)
 	client.HTTPClient = httpClient
@@ -66,7 +65,7 @@ func NewClientWrapperImpl(baseUrl string, timeout time.Duration) ClientWrapper {
 		client:  client,
 		timeout: timeout,
 		cache:   cache.Initialize(),
-	}
+	}, nil
 }
 
 // Allowed fetches an access list from RBAC based on RBAC_URL and returns if
