@@ -1,0 +1,180 @@
+package sonatype_bridge
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestParseRemediations_MultipleReleases(t *testing.T) {
+	msg := `{
+		"specversion": "1.0",
+		"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+		"data": [{
+			"metadata": {},
+			"payload": {
+				"package_name": "org.springframework:spring-core",
+				"releases": [{
+					"release_names": [{"name": "5.3.18.rhlw-00003"}, {"name": "5.3.18.rhlw-00004"}],
+					"related_cve": [{"cve": "CVE-2025-41249", "severity": "important"}]
+				}]
+			}
+		}]
+	}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 2)
+	assert.Equal(t, "5.3.18.rhlw-00003", rems[0].Version)
+	assert.Equal(t, "5.3.18.rhlw-00004", rems[1].Version)
+}
+
+func TestParseRemediations_InvalidJSON(t *testing.T) {
+	_, err := ParseRemediations([]byte(`{invalid`))
+	assert.Error(t, err)
+}
+
+func TestParseRemediations_NotCloudEvent(t *testing.T) {
+	// A message without a specversion is not a CloudEvents envelope.
+	_, err := ParseRemediations([]byte(`{"package_name": "org.test:test", "releases": [{"name": "1.0"}]}`))
+	assert.Error(t, err)
+}
+
+func TestParseRemediations_MissingPackageName(t *testing.T) {
+	// A CloudEvents payload whose package_name is missing yields no remediations.
+	msg := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","data":[{"metadata":{},"payload":{"releases":[{"release_names":[{"name":"1.0"}]}]}}]}`
+	_, err := ParseRemediations([]byte(msg))
+	assert.Error(t, err)
+}
+
+func TestParseRemediations_CloudEvent(t *testing.T) {
+	msg := `{"specversion":"1.0","id":"82cb1ea3","source":"urn:redhat:source:console:app:lightwell","type":"com.redhat.console.lightwelll.lightwell-advisory-created","datacontenttype":"application/json","time":"2026-08-26T18:47:26Z","data":[{"metadata":{},"payload":{"package_name":"org.glassfish.jaxb:jaxb-core","releases":[{"related_cve":[{"cve":"CVE-2026-1111","severity":"important"},{"cve":"CVE-2026-2222","severity":"important"}],"release_names":[{"name":"4.0.4.rhlw.003"},{"name":"4.0.4.rhlw.004"}]}]}},{"metadata":{},"payload":{"package_name":"org.glassfish.jaxb:jaxb-jxc","releases":[{"related_cve":[{"cve":"CVE-2026-2222","severity":"important"}],"release_names":[{"name":"4.0.4.rhlw.003"}]}]}}]}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 3)
+
+	assert.Equal(t, "org.glassfish.jaxb", rems[0].GroupID)
+	assert.Equal(t, "jaxb-core", rems[0].ArtifactID)
+	assert.Equal(t, "4.0.4.rhlw.003", rems[0].Version)
+	assert.Equal(t, "4.0.4", rems[0].BaseVersion)
+	assert.Equal(t, []string{"CVE-2026-1111", "CVE-2026-2222"}, rems[0].CVEsFixed)
+
+	assert.Equal(t, "4.0.4.rhlw.004", rems[1].Version)
+	assert.Equal(t, "4.0.4", rems[1].BaseVersion)
+
+	assert.Equal(t, "jaxb-jxc", rems[2].ArtifactID)
+	assert.Equal(t, "4.0.4.rhlw.003", rems[2].Version)
+	assert.Equal(t, []string{"CVE-2026-2222"}, rems[2].CVEsFixed)
+}
+
+func TestParseRemediations_WithChecksums(t *testing.T) {
+	msg := `{
+		"specversion": "1.0",
+		"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+		"data": [{
+			"metadata": {},
+			"payload": {
+				"package_name": "org.springframework:spring-core",
+				"releases": [{
+					"release_names": [{"name": "5.3.18.rhlw-00003"}],
+					"related_cve": [{"cve": "CVE-2025-41249", "severity": "important"}],
+					"artifact_checksums": {
+						"spring-core-5.3.18.rhlw-00003.jar": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+					}
+				}]
+			}
+		}]
+	}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 1)
+	require.NotNil(t, rems[0].Checksums)
+	assert.Equal(t,
+		"abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+		rems[0].Checksums["spring-core-5.3.18.rhlw-00003.jar"])
+}
+
+func TestParseRemediations_WithoutChecksums(t *testing.T) {
+	msg := `{
+		"specversion": "1.0",
+		"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+		"data": [{
+			"metadata": {},
+			"payload": {
+				"package_name": "org.springframework:spring-core",
+				"releases": [{
+					"release_names": [{"name": "5.3.18.rhlw-00003"}],
+					"related_cve": [{"cve": "CVE-2025-41249", "severity": "important"}]
+				}]
+			}
+		}]
+	}`
+
+	rems, err := ParseRemediations([]byte(msg))
+	require.NoError(t, err)
+	require.Len(t, rems, 1)
+	assert.Nil(t, rems[0].Checksums, "Checksums should be nil when absent from JSON")
+}
+
+func TestParseRemediations_BaseVersion(t *testing.T) {
+	tests := []struct {
+		version string
+		base    string
+	}{
+		{"5.3.18.rhlw-00003", "5.3.18"},
+		{"4.0.4.rhlw.003", "4.0.4"},
+		{"4.1.132.Final-rhlw-00002", "4.1.132.Final"},
+		{"1.2.3+rhlw.1", "1.2.3"},
+		{"1.2.3.rhlw-00001-n0001", "1.2.3"},
+		{"5.3.18", "5.3.18"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			msg := `{
+				"specversion": "1.0",
+				"type": "com.redhat.console.lightwelll.lightwell-advisory-created",
+				"data": [{
+					"payload": {
+						"package_name": "org.example:lib",
+						"releases": [{"release_names": [{"name": "` + tt.version + `"}]}]
+					}
+				}]
+			}`
+			rems, err := ParseRemediations([]byte(msg))
+			require.NoError(t, err)
+			require.Len(t, rems, 1)
+			assert.Equal(t, tt.version, rems[0].Version)
+			assert.Equal(t, tt.base, rems[0].BaseVersion)
+		})
+	}
+}
+
+func TestSplitPackageName(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		group     string
+		artifact  string
+		expectErr bool
+	}{
+		{"valid", "org.springframework:spring-core", "org.springframework", "spring-core", false},
+		{"no colon", "invalid", "", "", true},
+		{"empty group", ":artifact", "", "", true},
+		{"empty artifact", "group:", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g, a, err := splitPackageName(tt.input)
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.group, g)
+				assert.Equal(t, tt.artifact, a)
+			}
+		})
+	}
+}
