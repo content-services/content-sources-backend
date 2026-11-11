@@ -61,6 +61,7 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 		httpClient:  registryServer.Client(),
 		registryURL: registryServer.URL,
 		osvURL:      osvServer.URL,
+		vexURL:      osvServer.URL,
 		maxRetries:  0,
 	}
 
