@@ -60,7 +60,25 @@ func (fh *FeaturesHandler) listFeatures(c echo.Context) error {
 			Accessible: accessible,
 		}
 	}
+	orgID, username := lightwellCaller(c.Request().Context())
+	mapping := config.Get().Clients.Lightwell.ClearinghouseMapping
+	write := mapping.HasOrg(orgID)
+	read := mapping.HasUser(username)
+	set["lightwellclearinghouse"] = api.Feature{Enabled: write, Accessible: write}
+	set["lightwellclearinghouseread"] = api.Feature{Enabled: read, Accessible: read}
+	set["lightwellbeacon"] = api.Feature{Enabled: read, Accessible: read}
 	return c.JSON(http.StatusOK, set)
+}
+
+func lightwellCaller(ctx context.Context) (orgID, username string) {
+	id := identity.GetIdentity(ctx)
+	orgID = id.Identity.Internal.OrgID
+	if id.Identity.User != nil && id.Identity.User.Username != "" {
+		username = id.Identity.User.Username
+	} else if id.Identity.ServiceAccount != nil {
+		username = id.Identity.ServiceAccount.Username
+	}
+	return orgID, username
 }
 
 func supportsLightwellEntitlements(featureName string) bool {
@@ -155,39 +173,30 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 }
 
 func CheckLightwellClearinghouseAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.LightwellClearinghouse.Enabled {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot upload a clearinghouse submission",
-			"Clearinghouse uploads are disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellClearinghouse) {
+	orgID, _ := lightwellCaller(ctx)
+	if config.Get().Clients.Lightwell.ClearinghouseMapping.HasOrg(orgID) {
 		return nil
-	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot upload a clearinghouse submission",
-			"Neither the user nor account is allowed.")
 	}
+	return ce.NewErrorResponse(http.StatusBadRequest, "Cannot upload a clearinghouse submission",
+		"Neither the user nor account is allowed.")
 }
 
 func CheckLightwellClearinghouseReadAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.LightwellClearinghouseRead.Enabled {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read clearinghouse submissions",
-			"Clearinghouse read is disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellClearinghouseRead) {
+	_, username := lightwellCaller(ctx)
+	if config.Get().Clients.Lightwell.ClearinghouseMapping.HasUser(username) {
 		return nil
-	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read clearinghouse submissions",
-			"Neither the user nor account is allowed.")
 	}
+	return ce.NewErrorResponse(http.StatusBadRequest, "Cannot read clearinghouse submissions",
+		"Neither the user nor account is allowed.")
 }
 
 func CheckLightwellBeaconAccessible(ctx context.Context) (err error) {
-	if !config.Get().Features.LightwellBeacon.Enabled {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Beacon",
-			"Lightwell Beacon is disabled.")
-	} else if config.FeatureAccessible(ctx, config.Get().Features.LightwellBeacon) {
+	_, username := lightwellCaller(ctx)
+	if config.Get().Clients.Lightwell.ClearinghouseMapping.HasUser(username) {
 		return nil
-	} else {
-		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Beacon",
-			"Neither the user nor account is allowed.")
 	}
+	return ce.NewErrorResponse(http.StatusBadRequest, "Cannot access Lightwell Beacon",
+		"Neither the user nor account is allowed.")
 }
 
 func CheckLightwellTermsEnabled(ctx context.Context) (err error) {

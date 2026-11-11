@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/labstack/echo/v4"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -21,8 +22,10 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 	features := config.Get().Features
 	t.Cleanup(func() { config.Get().Features = features })
 	config.Get().Features.LightwellLens = config.Feature{Enabled: true}
-	config.Get().Features.LightwellBeacon = config.Feature{Enabled: true}
 	config.Get().Features.LightwellTerms = config.Feature{}
+	savedMapping := config.Get().Clients.Lightwell.ClearinghouseMapping
+	t.Cleanup(func() { config.Get().Clients.Lightwell.ClearinghouseMapping = savedMapping })
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(`{}`, `{"CID-00000":["user"]}`)
 
 	router := echo.New()
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
@@ -63,15 +66,19 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 		{http.MethodPost, "/coverage_reports/", &config.Get().Features.LightwellLens},
 		{http.MethodGet, "/coverage_reports/report", &config.Get().Features.LightwellLens},
 		{http.MethodGet, "/coverage_reports/report/packages", &config.Get().Features.LightwellLens},
-		{http.MethodGet, "/lightwell/beacon/status/", &config.Get().Features.LightwellBeacon},
-		{http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", &config.Get().Features.LightwellBeacon},
-		{http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", &config.Get().Features.LightwellBeacon},
-		{http.MethodGet, "/lightwell/beacon/vulnerabilities/", &config.Get().Features.LightwellBeacon},
+		{http.MethodGet, "/lightwell/beacon/status/", nil},
+		{http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", nil},
+		{http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", nil},
+		{http.MethodGet, "/lightwell/beacon/vulnerabilities/", nil},
 	}
 	for _, route := range routes {
 		t.Run(route.method+route.path, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			router.ServeHTTP(recorder, httptest.NewRequest(route.method, api.FullRootPath()+route.path, nil))
+			req := httptest.NewRequest(route.method, api.FullRootPath()+route.path, nil)
+			req = req.WithContext(identity.WithIdentity(req.Context(), identity.XRHID{
+				Identity: identity.Identity{User: &identity.User{Username: "user"}},
+			}))
+			router.ServeHTTP(recorder, req)
 			require.Equal(t, http.StatusPreconditionRequired, recorder.Code)
 			assert.Equal(t, "terms guard invoked", recorder.Body.String())
 
@@ -79,7 +86,7 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 				route.access.Enabled = false
 				t.Cleanup(func() { route.access.Enabled = true })
 				recorder = httptest.NewRecorder()
-				router.ServeHTTP(recorder, httptest.NewRequest(route.method, api.FullRootPath()+route.path, nil))
+				router.ServeHTTP(recorder, req)
 				assert.Equal(t, http.StatusBadRequest, recorder.Code)
 				assert.NotContains(t, recorder.Body.String(), "terms guard invoked")
 			}

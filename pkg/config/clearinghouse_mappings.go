@@ -104,6 +104,32 @@ func cidByOrgID(orgIDsByCID map[string][]string) map[string]string {
 	return out
 }
 
+// HasOrg reports whether orgID is mapped to a CID and can create submissions.
+func (m ClearinghouseMapping) HasOrg(orgID string) bool {
+	return m.CIDForOrg(orgID) != ""
+}
+
+// HasUser reports whether username is listed on any CID.
+func (m ClearinghouseMapping) HasUser(username string) bool {
+	return len(m.CIDsForUser(username)) > 0
+}
+
+// CIDsForUser returns the CIDs that list username, in sorted order.
+func (m ClearinghouseMapping) CIDsForUser(username string) []string {
+	if username == "" || len(m.usersByCID) == 0 {
+		return []string{}
+	}
+	cids := make([]string, 0, 1)
+	for cid, users := range m.usersByCID {
+		if cid == "" || !slices.Contains(users, username) {
+			continue
+		}
+		cids = append(cids, cid)
+	}
+	slices.Sort(cids)
+	return cids
+}
+
 // CIDForOrg returns the CID mapped to orgID, or an empty string when the org
 // is not in the mapping.
 func (m ClearinghouseMapping) CIDForOrg(orgID string) string {

@@ -2,10 +2,12 @@ package handler
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
@@ -80,10 +82,7 @@ func (h *LightwellVulnerabilityHandler) listCustomerIds(c echo.Context) error {
 	if err != nil {
 		return ce.NewErrorResponse(ce.HttpCodeForDaoError(err), "Error listing lightwell customer ids", err.Error())
 	}
-	if ids == nil {
-		ids = []string{}
-	}
-	return c.JSON(http.StatusOK, api.LightwellCustomerIdsResponse{Data: ids})
+	return c.JSON(http.StatusOK, api.LightwellCustomerIdsResponse{Data: filterBeaconCustomerIDs(c, ids)})
 }
 
 // ListLightwellLtwlsuptTicketIds godoc
@@ -104,6 +103,9 @@ func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) er
 	customerID := strings.TrimSpace(c.QueryParam("customer_id"))
 	if customerID == "" {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Missing customer_id", "customer_id is required")
+	}
+	if !beaconCustomerAllowed(c, customerID) {
+		return c.JSON(http.StatusOK, api.LightwellLtwlsuptTicketIdsResponse{Data: []string{}})
 	}
 
 	ids, err := h.DaoRegistry.LightwellVulnerability.ListLtwlsuptTicketIds(c.Request().Context(), customerID)
@@ -143,6 +145,13 @@ func (h *LightwellVulnerabilityHandler) listVulnerabilities(c echo.Context) erro
 	if err != nil {
 		return err
 	}
+	if !beaconCustomerAllowed(c, opts.CustomerID) {
+		resp := api.LightwellVulnerabilityCollectionResponse{
+			Data: []api.LightwellVulnerabilityResponse{},
+			Meta: api.LightwellVulnerabilityCollectionMeta{StatusCounts: map[string]int64{}},
+		}
+		return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&resp, c, 0))
+	}
 
 	rows, aggregates, stageCounts, total, err := h.DaoRegistry.LightwellVulnerability.List(c.Request().Context(), opts)
 	if err != nil {
@@ -161,6 +170,23 @@ func (h *LightwellVulnerabilityHandler) listVulnerabilities(c echo.Context) erro
 		},
 	}
 	return c.JSON(http.StatusOK, SetCollectionResponseMetadata(&resp, c, total))
+}
+
+func beaconCustomerAllowed(c echo.Context, customerID string) bool {
+	_, username := lightwellCaller(c.Request().Context())
+	return slices.Contains(config.Get().Clients.Lightwell.ClearinghouseMapping.CIDsForUser(username), customerID)
+}
+
+func filterBeaconCustomerIDs(c echo.Context, ids []string) []string {
+	_, username := lightwellCaller(c.Request().Context())
+	allowed := config.Get().Clients.Lightwell.ClearinghouseMapping.CIDsForUser(username)
+	filtered := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if slices.Contains(allowed, id) {
+			filtered = append(filtered, id)
+		}
+	}
+	return filtered
 }
 
 func parseLightwellVulnerabilityListOptions(c echo.Context) (dao.ListLightwellVulnerabilitiesOptions, error) {

@@ -15,7 +15,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
-	"github.com/content-services/content-sources-backend/pkg/seeds"
 	"github.com/content-services/content-sources-backend/pkg/test"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
 	"github.com/labstack/echo/v4"
@@ -39,26 +38,41 @@ func (suite *LightwellVulnerabilitiesSuite) SetupTest() {
 }
 
 func (suite *LightwellVulnerabilitiesSuite) serveRouter(req *http.Request) (int, []byte, error) {
-	return suite.serveRouterWithAccess(req, true, true)
+	return suite.serveMapped(req, []string{"demo-customer-1", "demo-customer-2"})
 }
 
 func (suite *LightwellVulnerabilitiesSuite) serveRouterWithAccess(req *http.Request, enabled bool, authorized bool) (int, []byte, error) {
+	var cids []string
+	if enabled && authorized {
+		cids = []string{"demo-customer-1", "demo-customer-2"}
+	}
+	return suite.serveMapped(req, cids)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) serveMapped(req *http.Request, cids []string) (int, []byte, error) {
 	router := echo.New()
 	router.Use(middleware.WrapMiddlewareWithSkipper(identity.EnforceIdentity, middleware.SkipMiddleware))
 	router.HTTPErrorHandler = config.CustomHTTPErrorHandler
 	pathPrefix := router.Group(api.FullRootPath())
 
-	if enabled {
-		config.Get().Features.LightwellBeacon.Enabled = true
-	} else {
-		config.Get().Features.LightwellBeacon.Enabled = false
-	}
+	saved := config.Get().Clients.Lightwell.ClearinghouseMapping
+	defer func() {
+		config.Get().Clients.Lightwell.ClearinghouseMapping = saved
+	}()
 
-	if authorized {
-		config.Get().Features.LightwellBeacon.Accounts = &[]string{test_handler.MockAccountNumber}
-	} else {
-		config.Get().Features.LightwellBeacon.Accounts = &[]string{seeds.RandomAccountId()}
+	users := `{}`
+	if len(cids) > 0 {
+		mapping := make(map[string][]string, len(cids))
+		for _, cid := range cids {
+			mapping[cid] = []string{"user"}
+		}
+		encoded, err := json.Marshal(mapping)
+		if err != nil {
+			return 0, nil, err
+		}
+		users = string(encoded)
 	}
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(`{}`, users)
 
 	RegisterLightwellVulnerabilityRoutes(pathPrefix, suite.reg.ToDaoRegistry())
 
@@ -131,6 +145,19 @@ func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIds() {
 	var resp api.LightwellCustomerIdsResponse
 	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
 	assert.Equal(suite.T(), expected, resp.Data)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsScopedToMappedCIDs() {
+	suite.reg.LightwellVulnerability.On("ListCustomerIds", test.MockCtx()).Return([]string{"demo-customer-1", "demo-customer-2"}, nil)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/customers/", api.FullRootPath())
+	code, body, err := suite.serveMapped(suite.newGet(path), []string{"demo-customer-2"})
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellCustomerIdsResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	assert.Equal(suite.T(), []string{"demo-customer-2"}, resp.Data)
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsNotAccessible() {

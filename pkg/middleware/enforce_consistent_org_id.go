@@ -153,10 +153,22 @@ func skipClearinghouseOrgCheck(c echo.Context, path string) bool {
 	case "/clearinghouse/submissions",
 		"/clearinghouse/submissions/:uuid",
 		"/clearinghouse/submissions/:uuid/process":
-		return config.FeatureAccessible(c.Request().Context(), config.Get().Features.LightwellClearinghouseRead)
+		_, username := lightwellCaller(c)
+		return config.Get().Clients.Lightwell.ClearinghouseMapping.HasUser(username)
 	default:
 		return false
 	}
+}
+
+func lightwellCaller(c echo.Context) (string, string) {
+	id := identity.GetIdentity(c.Request().Context())
+	username := ""
+	if id.Identity.User != nil && id.Identity.User.Username != "" {
+		username = id.Identity.User.Username
+	} else if id.Identity.ServiceAccount != nil {
+		username = id.Identity.ServiceAccount.Username
+	}
+	return id.Identity.Internal.OrgID, username
 }
 
 // getAccountIdOrgId extracts account ID and org ID from the request context

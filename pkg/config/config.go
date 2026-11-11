@@ -110,9 +110,6 @@ type FeatureSet struct {
 	LightwellNotifications                Feature `mapstructure:"lightwell_notifications"`
 	AdminPartnerRepositories              Feature `mapstructure:"admin_partner_repositories"`
 	AdminNotifications                    Feature `mapstructure:"admin_notifications"`
-	LightwellBeacon                       Feature `mapstructure:"lightwell_beacon"`
-	LightwellClearinghouse                Feature `mapstructure:"lightwell_clearinghouse"`
-	LightwellClearinghouseRead            Feature `mapstructure:"lightwell_clearinghouse_read"`
 	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
 	LightwellTerms                        Feature `mapstructure:"lightwell_terms"`
@@ -584,18 +581,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
 	v.SetDefault("features.admin_notifications.users", nil)
-	v.SetDefault("features.lightwell_beacon.enabled", false)
-	v.SetDefault("features.lightwell_beacon.accounts", nil)
-	v.SetDefault("features.lightwell_beacon.organizations", nil)
-	v.SetDefault("features.lightwell_beacon.users", nil)
-	v.SetDefault("features.lightwell_clearinghouse.enabled", false)
-	v.SetDefault("features.lightwell_clearinghouse.accounts", nil)
-	v.SetDefault("features.lightwell_clearinghouse.organizations", nil)
-	v.SetDefault("features.lightwell_clearinghouse.users", nil)
-	v.SetDefault("features.lightwell_clearinghouse_read.enabled", false)
-	v.SetDefault("features.lightwell_clearinghouse_read.accounts", nil)
-	v.SetDefault("features.lightwell_clearinghouse_read.organizations", nil)
-	v.SetDefault("features.lightwell_clearinghouse_read.users", nil)
 	v.SetDefault("features.lightwell_lens.enabled", false)
 	v.SetDefault("features.lightwell_lens.accounts", nil)
 	v.SetDefault("features.lightwell_lens.organizations", nil)
