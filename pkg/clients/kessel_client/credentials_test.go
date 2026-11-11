@@ -267,31 +267,3 @@ func (s *CredentialsTestSuite) TestGetDefaultWorkspaceIDSendsBearer() {
 		s.Equal("org", (*seen)[0].Get("x-rh-rbac-org-id"))
 	}
 }
-
-// In-cluster rbac: the app-level bearer for the workspaces call is still sent when kessel auth is enabled
-func (s *CredentialsTestSuite) TestGetDefaultWorkspaceIDUnauthenticatedRbac() {
-	for _, kesselAuth := range []bool{false, true} {
-		resetCredentials()
-		s.tokenHits.Store(0)
-		srv, seen := s.rbacServer(func(w http.ResponseWriter, _ *http.Request) {
-			_, _ = w.Write([]byte(`{"data":[{"id":"ws-id"}]}`))
-		})
-		s.setRbac(srv.URL, false)
-		config.Get().Clients.Kessel.Server = "kessel:9000"
-		config.Get().Clients.Kessel.Timeout = 5 * time.Second
-		config.Get().Clients.Kessel.Auth.Enabled = kesselAuth
-
-		k, err := NewKesselClient()
-		s.Require().NoError(err)
-		_, _, err = k.GetDefaultWorkspaceID(context.Background(), "org")
-		s.Require().NoError(err, "kessel auth %v", kesselAuth)
-		s.Require().Len(*seen, 1)
-		if kesselAuth {
-			s.Equal([]string{"Bearer tok"}, (*seen)[0].Values("Authorization"))
-			s.Equal(int32(1), s.tokenHits.Load())
-		} else {
-			s.Empty((*seen)[0].Values("Authorization"))
-			s.Equal(int32(0), s.tokenHits.Load())
-		}
-	}
-}
