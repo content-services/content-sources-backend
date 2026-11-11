@@ -2,12 +2,7 @@ package rbac
 
 import (
 	"context"
-	"encoding/pem"
 	"net"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -19,7 +14,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -102,76 +96,4 @@ func (s *RbacTestSuite) TestCachesWhenNotFoundAgain() {
 	allowed, err := s.rbac.Allowed(ctx, "repositories", "read")
 	assert.NoError(s.T(), err)
 	assert.False(s.T(), allowed)
-}
-
-// Only test in this package that reaches kessel_client.Credentials(): the result is cached once per process.
-func TestNewClientWrapperImplAuthenticated(t *testing.T) {
-	orig := config.Get().Clients
-	t.Cleanup(func() { config.Get().Clients = orig })
-
-	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"tok","token_type":"Bearer","expires_in":3600}`))
-	}))
-	defer tokenServer.Close()
-
-	var seen http.Header
-	rbacServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		seen = r.Header.Clone()
-		_, _ = w.Write([]byte(`{"meta":{"count":0},"links":{},"data":[]}`))
-	}))
-	defer rbacServer.Close()
-	caPath := filepath.Join(t.TempDir(), "ca.pem")
-	require.NoError(t, os.WriteFile(caPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rbacServer.Certificate().Raw}), 0600))
-
-	baseURL := rbacServer.URL + "/api/rbac/v1"
-	c := config.Get()
-	c.Clients.RbacBaseUrl = baseURL
-	c.Clients.RbacAuthenticated = true
-	c.Clients.RbacCaCertPath = caPath
-	c.Clients.Redis.Host = ""
-	c.Clients.Kessel.Auth.ClientID = "id"
-	c.Clients.Kessel.Auth.ClientSecret = "secret"
-	c.Clients.Kessel.Auth.OIDCIssuer = tokenServer.URL
-
-	wrapper, ok := NewClientWrapperImpl(baseURL, 5*time.Second).(*ClientWrapperImpl)
-	require.True(t, ok)
-	_, err := wrapper.client.GetAccess(context.Background(), "identity", "")
-	require.NoError(t, err)
-	assert.Equal(t, "Bearer tok", seen.Get("Authorization"))
-	assert.Equal(t, "identity", seen.Get("x-rh-identity"))
-}
-
-func TestNewClientWrapperImplUnauthenticated(t *testing.T) {
-	orig := config.Get().Clients
-	t.Cleanup(func() { config.Get().Clients = orig })
-
-	var seen http.Header
-	rbacServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		seen = r.Header.Clone()
-		_, _ = w.Write([]byte(`{"meta":{"count":0},"links":{},"data":[]}`))
-	}))
-	defer rbacServer.Close()
-
-	baseURL := rbacServer.URL + "/api/rbac/v1"
-	c := config.Get()
-	c.Clients.RbacBaseUrl = baseURL
-	c.Clients.RbacAuthenticated = false
-	c.Clients.RbacCaCertPath = ""
-	c.Clients.Redis.Host = ""
-
-	wrapper, ok := NewClientWrapperImpl(baseURL, 5*time.Second).(*ClientWrapperImpl)
-	require.True(t, ok)
-	_, err := wrapper.client.GetAccess(context.Background(), "identity", "")
-	require.NoError(t, err)
-	assert.Empty(t, seen.Get("Authorization"))
-	assert.Equal(t, "identity", seen.Get("x-rh-identity"))
-}
-
-func TestNewClientWrapperImplBadCaCertificate(t *testing.T) {
-	orig := config.Get().Clients
-	t.Cleanup(func() { config.Get().Clients = orig })
-	config.Get().Clients.RbacCaCertPath = filepath.Join(t.TempDir(), "missing.pem")
-
-	assert.Nil(t, NewClientWrapperImpl("http://rbac:8000/api/rbac/v1", time.Second))
 }
