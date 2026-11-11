@@ -134,9 +134,12 @@ func filterParams(customerID string) store.CountAggregatesParams {
 }
 
 func listParams(customerID string) store.ListVulnerabilitiesParams {
+	// The query has no sort defaults (the DAO supplies them), so set them explicitly.
 	return store.ListVulnerabilitiesParams{
-		CustomerID: customerID,
-		PageLimit:  100,
+		CustomerID:    customerID,
+		SortField:     "last_updated",
+		SortDirection: "desc",
+		PageLimit:     100,
 	}
 }
 

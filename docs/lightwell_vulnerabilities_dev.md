@@ -48,7 +48,7 @@ With the API running, authenticated clients can call:
 
 `customer_id` is required on the list and `ltwlsupt-ticket-ids` endpoints. Filters (`severity`, `status`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo` and `duplicate` (OR). `search` requires at least 2 characters when provided.
 
-`sort_by` accepts `last_updated:asc` or `last_updated:desc` (default `last_updated:desc`).
+`sort_by` takes `field:direction`: field is `last_updated`, `submitted_date`, `cvss`, `severity`, `status`, or `vulnerability_id`; direction is `asc` or `desc` (default `last_updated:desc`). `severity` sorts by rank (Critical > Important > Moderate > Low). `status` sorts in pipeline order (Submitted, Classified, Fix in Progress, Validation, Lightwell Network), then On Hold, then Unremediated. Rows without a CVSS score, or with an unknown severity or status, sort last in both directions. `vulnerability_id` compares the prefix (e.g. `CVE-2026`), then the trailing number numerically, so `CVE-2026-9999` comes before `CVE-2026-10000`. Ties are broken by `vulnerability_id` in ascending text order, whatever the direction.
 
 ## Beacon status mapping
 

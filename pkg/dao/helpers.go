@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -27,6 +29,30 @@ func UuidifyStrings(possibleUuids []string) []uuid2.UUID {
 		uuids = append(uuids, UuidifyString(possibleUuid))
 	}
 	return uuids
+}
+
+// ParseSortBy strictly validates a single "field:direction" sort_by against fields and returns its parts.
+// Unlike convertSortByToSQL, any invalid input is an error. An empty sortBy returns empty strings.
+func ParseSortBy(sortBy string, fields []string) (field, direction string, err error) {
+	if sortBy == "" {
+		return "", "", nil
+	}
+	field, direction, _ = strings.Cut(sortBy, ":")
+	if err = validateSort(field, direction, fields); err != nil {
+		return "", "", err
+	}
+	return field, direction, nil
+}
+
+// validateSort returns an error unless field is in fields and direction is asc or desc.
+func validateSort(field, direction string, fields []string) error {
+	if !slices.Contains(fields, field) {
+		return fmt.Errorf("unknown sort field %q; valid sort_by fields are: %s", field, strings.Join(fields, ", "))
+	}
+	if direction != "asc" && direction != "desc" {
+		return fmt.Errorf("unknown sort direction %q; valid directions are: asc, desc", direction)
+	}
+	return nil
 }
 
 func convertSortByToSQL(SortBy string, SortMap map[string]string, defaultSortBy string) string {

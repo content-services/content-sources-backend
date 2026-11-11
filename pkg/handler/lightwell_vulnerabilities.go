@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"unicode/utf8"
@@ -133,7 +132,7 @@ func (h *LightwellVulnerabilityHandler) listLtwlsuptTicketIds(c echo.Context) er
 // @Param        search query string false "Search vulnerability_id, component_name, and title. Minimum 2 characters."
 // @Param        offset query int false "Starting point for retrieving a subset of results. Default value:`0`."
 // @Param        limit query int false "Number of items to include in response. Default value: `100`. Maximum: `200`."
-// @Param        sort_by query string false "Sort the results: `last_updated:asc` or `last_updated:desc`. Default value: `last_updated:desc`."
+// @Param        sort_by query string false "Sort the results as `field:direction`. Fields: `last_updated`, `submitted_date`, `cvss`, `severity`, `status`, `vulnerability_id`. Directions: `asc`, `desc`. Default value: `last_updated:desc`."
 // @Success      200 {object} api.LightwellVulnerabilityCollectionResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -176,7 +175,7 @@ func parseLightwellVulnerabilityListOptions(c echo.Context) (dao.ListLightwellVu
 		return dao.ListLightwellVulnerabilitiesOptions{}, ce.NewErrorResponse(http.StatusBadRequest, "Invalid search", "search must be at least 2 characters")
 	}
 
-	sortDirection, err := parseLightwellVulnerabilitySortBy(c.QueryParam("sort_by"))
+	sortField, sortDirection, err := dao.ParseSortBy(c.QueryParam("sort_by"), dao.LightwellVulnerabilitySortFields)
 	if err != nil {
 		return dao.ListLightwellVulnerabilitiesOptions{}, ce.NewErrorResponse(http.StatusBadRequest, "Invalid sort_by parameter", err.Error())
 	}
@@ -189,6 +188,7 @@ func parseLightwellVulnerabilityListOptions(c echo.Context) (dao.ListLightwellVu
 		Complexities:      splitCSVQueryParam(c, "complexity"),
 		LtwlsuptTicketIDs: splitCSVQueryParam(c, "ltwlsupt_ticket_id"),
 		Flags:             splitCSVQueryParam(c, "flag"),
+		SortField:         sortField,
 		SortDirection:     sortDirection,
 		Limit:             limit,
 		Offset:            offset,
@@ -198,21 +198,6 @@ func parseLightwellVulnerabilityListOptions(c echo.Context) (dao.ListLightwellVu
 		opts.Search = &search
 	}
 	return opts, nil
-}
-
-// parseLightwellVulnerabilitySortBy returns "asc"/"desc", or "" (the query's default, desc) when sort_by is empty.
-func parseLightwellVulnerabilitySortBy(sortBy string) (string, error) {
-	if sortBy == "" {
-		return "", nil
-	}
-	field, direction, _ := strings.Cut(sortBy, ":")
-	if field != "last_updated" {
-		return "", fmt.Errorf("unknown sort field %q; valid sort_by fields are: last_updated", field)
-	}
-	if direction != "asc" && direction != "desc" {
-		return "", fmt.Errorf("unknown sort direction %q; valid directions are: asc, desc", direction)
-	}
-	return direction, nil
 }
 
 func parseLightwellPagination(c echo.Context) (int32, int32) {

@@ -574,15 +574,25 @@ func (suite *LightwellVulnerabilitiesSuite) TestListDaoError() {
 	assert.Equal(suite.T(), http.StatusInternalServerError, code)
 }
 
-func (suite *LightwellVulnerabilitiesSuite) TestListSortBy() {
-	cases := map[string]string{
-		"last_updated:desc": "desc",
-		"last_updated:asc":  "asc",
+func (suite *LightwellVulnerabilitiesSuite) TestListSortByForwarded() {
+	cases := map[string]struct{ field, direction string }{
+		"last_updated:desc":     {"last_updated", "desc"},
+		"last_updated:asc":      {"last_updated", "asc"},
+		"submitted_date:desc":   {"submitted_date", "desc"},
+		"submitted_date:asc":    {"submitted_date", "asc"},
+		"cvss:desc":             {"cvss", "desc"},
+		"cvss:asc":              {"cvss", "asc"},
+		"severity:desc":         {"severity", "desc"},
+		"severity:asc":          {"severity", "asc"},
+		"status:desc":           {"status", "desc"},
+		"status:asc":            {"status", "asc"},
+		"vulnerability_id:desc": {"vulnerability_id", "desc"},
+		"vulnerability_id:asc":  {"vulnerability_id", "asc"},
 	}
-	for sortBy, direction := range cases {
+	for sortBy, want := range cases {
 		suite.Run(sortBy, func() {
 			suite.reg = dao.GetMockDaoRegistry(suite.T())
-			opts := dao.ListLightwellVulnerabilitiesOptions{CustomerID: "demo-customer-1", SortDirection: direction, Limit: 100}
+			opts := dao.ListLightwellVulnerabilitiesOptions{CustomerID: "demo-customer-1", SortField: want.field, SortDirection: want.direction, Limit: 100}
 			suite.reg.LightwellVulnerability.On("List", test.MockCtx(), opts).Return(
 				[]api.LightwellVulnerabilityResponse{}, dao.LightwellVulnerabilityAggregates{}, []dao.LightwellVulnerabilityStageCount{}, int64(0), nil,
 			)
@@ -596,7 +606,7 @@ func (suite *LightwellVulnerabilitiesSuite) TestListSortBy() {
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListInvalidSortBy() {
-	for _, sortBy := range []string{"severity:asc", "last_updated:sideways", "last_updated"} {
+	for _, sortBy := range []string{"title:asc", "severity:high", "stage:asc", "last_updated:sideways", "last_updated", "submitted_date", "cvss:up", "vulnerability:asc"} {
 		suite.Run(sortBy, func() {
 			path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1&sort_by=%s", api.FullRootPath(), sortBy)
 			code, _, err := suite.serveRouter(suite.newGet(path))
