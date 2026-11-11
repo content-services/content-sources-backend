@@ -285,16 +285,6 @@ features:
     enabled: false
   lightwell:
     enabled: false
-  lightwell_clearinghouse:
-    enabled: false
-    accounts: #["lightwellAccount"]
-    users: #["lightwellUser"]
-    organizations: #["lightwellOrg"]
-  lightwell_clearinghouse_read:
-    enabled: false
-    accounts: #["lightwellAccount"]
-    users: #["lightwellUser"]
-    organizations: #["lightwellOrg"]
   lightwell_notifications:
     enabled: false
     accounts: #["lightwellNotifAccount"]
@@ -304,11 +294,6 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
-  lightwell_beacon:
-    enabled: true
-    accounts: #["lightwellAccount"]
-    users: #["lightwellUser"]
-    organizations: #["lightwellOrg"]
   lightwell_lens:
     enabled: true
     accounts: #["lightwellAccount"]

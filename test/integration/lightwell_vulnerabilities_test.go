@@ -32,8 +32,7 @@ type LightwellVulnerabilitiesSuite struct {
 	submittedVulnID string
 	ticketNetwork   string
 	ticketSubmitted string
-	prevEnabled     bool
-	prevAccounts    *[]string
+	prevMapping     config.ClearinghouseMapping
 }
 
 func TestLightwellVulnerabilitiesSuite(t *testing.T) {
@@ -50,15 +49,15 @@ func (s *LightwellVulnerabilitiesSuite) SetupSuite() {
 func (s *LightwellVulnerabilitiesSuite) SetupTest() {
 	s.Require().NotNil(db.LightwellQueries)
 
-	feature := &config.Get().Features.LightwellBeacon
-	s.prevEnabled = feature.Enabled
-	s.prevAccounts = feature.Accounts
-	feature.Enabled = true
-	feature.Accounts = &[]string{test_handler.MockAccountNumber}
+	s.prevMapping = config.Get().Clients.Lightwell.ClearinghouseMapping
 
 	now := time.Now().UTC()
 	suffix := now.UnixNano()
 	s.customerID = fmt.Sprintf("lw-int-cust-%d", suffix)
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
+		`{}`,
+		fmt.Sprintf(`{"%s":["user"]}`, s.customerID),
+	)
 	s.networkVulnID = fmt.Sprintf("LWL-INT-NETWORK-%d", suffix)
 	s.submittedVulnID = fmt.Sprintf("LWL-INT-SUBMITTED-%d", suffix)
 	s.ticketNetwork = fmt.Sprintf("lw-int-ticket-a-%d", suffix)
@@ -97,9 +96,7 @@ func (s *LightwellVulnerabilitiesSuite) TearDownTest() {
 			_, _ = s.dao.LightwellVulnerability.DeleteByKey(ctx, s.submittedVulnID)
 		}
 	}
-	feature := &config.Get().Features.LightwellBeacon
-	feature.Enabled = s.prevEnabled
-	feature.Accounts = s.prevAccounts
+	config.Get().Clients.Lightwell.ClearinghouseMapping = s.prevMapping
 }
 
 func (s *LightwellVulnerabilitiesSuite) saveInput(vulnID string, tickets ...dao.LightwellVulnerabilityTicket) dao.LightwellVulnerabilityInput {

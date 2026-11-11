@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -28,9 +29,9 @@ import (
 
 type ClearinghouseSuite struct {
 	LightwellSuite
-	clearinghouseFeature config.Feature
-	readFeature          config.Feature
-	savedMapping         config.ClearinghouseMapping
+	savedMapping   config.ClearinghouseMapping
+	customerMapped bool
+	readUsers      []string
 }
 
 func TestClearinghouseSuite(t *testing.T) {
@@ -39,34 +40,47 @@ func TestClearinghouseSuite(t *testing.T) {
 
 func (s *ClearinghouseSuite) SetupTest() {
 	s.LightwellSuite.SetupTest()
-	s.clearinghouseFeature = config.Get().Features.LightwellClearinghouse
-	s.readFeature = config.Get().Features.LightwellClearinghouseRead
 	s.savedMapping = config.Get().Clients.Lightwell.ClearinghouseMapping
-	config.Get().Features.LightwellClearinghouse = config.Feature{}
-	config.Get().Features.LightwellClearinghouseRead = config.Feature{}
-	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
-		`{"CID-00000":["`+test_handler.MockOrgId+`"]}`,
-		`{"CID-00000":["user"]}`,
-	)
+	s.customerMapped = false
+	s.readUsers = nil
+	s.applyClearinghouseMapping()
 }
 
 func (s *ClearinghouseSuite) TearDownTest() {
-	config.Get().Features.LightwellClearinghouse = s.clearinghouseFeature
-	config.Get().Features.LightwellClearinghouseRead = s.readFeature
 	config.Get().Clients.Lightwell.ClearinghouseMapping = s.savedMapping
 	s.reg.ClearinghouseUpload.AssertExpectations(s.T())
 }
 
+func (s *ClearinghouseSuite) applyClearinghouseMapping() {
+	orgs := `{}`
+	if s.customerMapped {
+		orgs = `{"CID-00000":["` + test_handler.MockOrgId + `"]}`
+	}
+	users := `{}`
+	if len(s.readUsers) > 0 {
+		encoded, err := json.Marshal(s.readUsers)
+		s.Require().NoError(err)
+		users = `{"CID-00000":` + string(encoded) + `}`
+	}
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(orgs, users)
+}
+
 func (s *ClearinghouseSuite) enableClearinghouse() {
-	config.Get().Features.LightwellClearinghouse = config.Feature{Enabled: true}
+	s.customerMapped = true
+	s.applyClearinghouseMapping()
 }
 
 func (s *ClearinghouseSuite) enableRead() {
-	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: true}
+	if !slices.Contains(s.readUsers, "user") {
+		s.readUsers = append(s.readUsers, "user")
+	}
+	s.customerMapped = true
+	s.applyClearinghouseMapping()
 }
 
 func (s *ClearinghouseSuite) disableRead() {
-	config.Get().Features.LightwellClearinghouseRead = config.Feature{}
+	s.readUsers = nil
+	s.applyClearinghouseMapping()
 }
 
 func (s *ClearinghouseSuite) serve(req *http.Request) (int, []byte) {
@@ -522,6 +536,10 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
 	s.Equal(http.StatusNotFound, code, string(body))
 
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
+		`{"CID-00000":["`+test_handler.MockOrgId+`"]}`,
+		`{"CID-00000":["user"],"CID-00001":["other"]}`,
+	)
 	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseReadParams())).
 		Return([]dao.ClearinghouseUpload{}, nil).Once()
 	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(clearinghouseReadParams())).
@@ -662,7 +680,7 @@ func (s *ClearinghouseSuite) TestDownloadAccess() {
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, archivePath))
 	s.Equal(http.StatusForbidden, code, string(body))
 
-	s.enableRead()
+	s.allowClearinghouseTAM("other")
 	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, downloadPath, other))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Equal("payload", string(body))
@@ -852,15 +870,9 @@ func clearinghouseFile(uploadID uuid.UUID, name, username string, createdAt time
 }
 
 func (s *ClearinghouseSuite) allowClearinghouseTAM(usernames ...string) {
-	users := `["user"`
-	for _, name := range usernames {
-		users += `,"` + name + `"`
-	}
-	users += `]`
-	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
-		`{"CID-00000":["`+test_handler.MockOrgId+`"]}`,
-		`{"CID-00000":`+users+`}`,
-	)
+	s.readUsers = append([]string{"user"}, usernames...)
+	s.customerMapped = true
+	s.applyClearinghouseMapping()
 }
 
 func clearinghouseOrgParams(orgID string) func(dao.ListClearinghouseUploadsParams) bool {

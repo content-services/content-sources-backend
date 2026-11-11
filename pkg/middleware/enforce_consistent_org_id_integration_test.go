@@ -245,9 +245,9 @@ func lightwellTestPrefix() string {
 }
 
 func (suite *EnforceSuite) TestClearinghouseReadAllowsOtherOrg() {
-	old := config.Get().Features.LightwellClearinghouseRead
+	old := config.Get().Clients.Lightwell.ClearinghouseMapping
 	suite.T().Cleanup(func() {
-		config.Get().Features.LightwellClearinghouseRead = old
+		config.Get().Clients.Lightwell.ClearinghouseMapping = old
 	})
 
 	router := echo.New()
@@ -273,7 +273,7 @@ func (suite *EnforceSuite) TestClearinghouseReadAllowsOtherOrg() {
 		return rr.Code
 	}
 
-	config.Get().Features.LightwellClearinghouseRead = config.Feature{}
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ClearinghouseMapping{}
 	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodGet, "/clearinghouse/submissions"))
 	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodGet, "/clearinghouse/submissions/abc"))
 	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodPost, "/clearinghouse/submissions/abc/process"))
@@ -282,7 +282,7 @@ func (suite *EnforceSuite) TestClearinghouseReadAllowsOtherOrg() {
 	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc/files/notes.txt"))
 	assert.Equal(suite.T(), http.StatusInternalServerError, serve(http.MethodPost, "/clearinghouse/submissions/abc/files"))
 
-	config.Get().Features.LightwellClearinghouseRead = config.Feature{Enabled: true}
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(`{}`, `{"CID-00000":["user"]}`)
 	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions"))
 	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodGet, "/clearinghouse/submissions/abc"))
 	assert.Equal(suite.T(), http.StatusOK, serve(http.MethodPost, "/clearinghouse/submissions/abc/process"))
