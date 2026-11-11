@@ -76,8 +76,7 @@ func (k *kesselClientImpl) GetDefaultWorkspaceID(ctx context.Context, orgID stri
 
 	req.Header.Add("x-rh-rbac-org-id", orgID)
 
-	// When rbac is authenticated, the rbac client's transport already adds the bearer
-	if config.Get().Clients.Kessel.Auth.Enabled && !config.Get().Clients.RbacAuthenticated {
+	if config.Get().Clients.Kessel.Auth.Enabled {
 		log.Debug().Msgf("[Kessel] GetDefaultWorkspaceID: orgID %v", orgID)
 		token, err := k.getToken(ctx)
 		if err != nil {
