@@ -53,7 +53,10 @@ FROM lightwell_filtered_vulnerabilities(
     sqlc.narg(flags)::text[],
     sqlc.narg(search)::text
 ) AS v
-ORDER BY v.last_updated DESC, v.vulnerability_id ASC
+ORDER BY
+    CASE WHEN sqlc.arg(sort_direction)::text = 'asc' THEN v.last_updated END ASC,
+    CASE WHEN sqlc.arg(sort_direction)::text <> 'asc' THEN v.last_updated END DESC,
+    v.vulnerability_id ASC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
 -- name: CountAggregates :one

@@ -53,6 +53,7 @@ export interface ListLightwellVulnerabilitiesRequest {
     search?: string;
     offset?: number;
     limit?: number;
+    sortBy?: string;
 }
 
 /**
@@ -235,6 +236,10 @@ export class LightwellVulnerabilitiesApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sortBy'] != null) {
+            queryParameters['sort_by'] = requestParameters['sortBy'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

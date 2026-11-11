@@ -320,8 +320,11 @@ FROM lightwell_filtered_vulnerabilities(
     $6::text[],
     $7::text
 ) AS v
-ORDER BY v.last_updated DESC, v.vulnerability_id ASC
-LIMIT $9 OFFSET $8
+ORDER BY
+    CASE WHEN $8::text = 'asc' THEN v.last_updated END ASC,
+    CASE WHEN $8::text <> 'asc' THEN v.last_updated END DESC,
+    v.vulnerability_id ASC
+LIMIT $10 OFFSET $9
 `
 
 type ListVulnerabilitiesParams struct {
@@ -332,6 +335,7 @@ type ListVulnerabilitiesParams struct {
 	LtwlsuptTicketIds []string `json:"ltwlsupt_ticket_ids"`
 	Flags             []string `json:"flags"`
 	Search            *string  `json:"search"`
+	SortDirection     string   `json:"sort_direction"`
 	PageOffset        int32    `json:"page_offset"`
 	PageLimit         int32    `json:"page_limit"`
 }
@@ -375,6 +379,7 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 		arg.LtwlsuptTicketIds,
 		arg.Flags,
 		arg.Search,
+		arg.SortDirection,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
