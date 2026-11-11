@@ -50,7 +50,8 @@ JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid
 JOIN repositories r ON r.uuid = rc.repository_uuid
 WHERE rc.org_id = $1::text
     AND r.origin = 'lightwell'
-    AND r.content_type IN ('maven', 'python')
+    AND (r.content_type IN ('maven', 'python')
+        OR (r.content_type = 'npm' AND lower(r.security_level) = 'validated'))
     AND lower(r.security_level) IN ('validated', 'remediated')
 ORDER BY r.content_type, p.package_group, p.name, pv.version
 `

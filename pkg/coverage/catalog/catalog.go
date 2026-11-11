@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -16,10 +17,11 @@ import (
 )
 
 const (
-	javaValidatedBasePath    = "java/validated"
-	javaRemediatedBasePath   = "java/remediated"
-	pythonValidatedBasePath  = "python/validated"
-	pythonRemediatedBasePath = "python/remediated"
+	javascriptValidatedBasePath = "javascript/validated"
+	javaValidatedBasePath       = "java/validated"
+	javaRemediatedBasePath      = "java/remediated"
+	pythonValidatedBasePath     = "python/validated"
+	pythonRemediatedBasePath    = "python/remediated"
 )
 
 // LoadCatalog returns packages from the validated and remediated catalog and the time the catalog was fetched
@@ -40,6 +42,8 @@ func listPackages(ctx context.Context, pulp pulp_client.PulpClient, tang tangy.T
 		return listMavenPackages(ctx, pulp, href)
 	case config.ContentTypePython:
 		return listPythonPackages(ctx, tang, href)
+	case config.ContentTypeNpm:
+		return listNpmPackages(ctx, tang, href)
 	default:
 		return nil, fmt.Errorf("unsupported content type %q", contentType)
 	}
@@ -121,6 +125,11 @@ func loadCatalogFromDB(ctx context.Context, daoReg *dao.DaoRegistry, snapshotAt 
 			pkg.Ecosystem = matcher.EcosystemJava
 		case config.ContentTypePython:
 			pkg.Ecosystem = matcher.EcosystemPython
+		case config.ContentTypeNpm:
+			pkg.Ecosystem = matcher.EcosystemJavaScript
+			if pkg.Namespace == "-" {
+				pkg.Namespace = ""
+			}
 		default:
 			continue
 		}
@@ -154,12 +163,13 @@ func loadCatalogFromPulp(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp
 		return nil, time.Time{}, fmt.Errorf("failed to fetch repoConfig: %w", err)
 	}
 
-	catalogRepos := make([]api.RepositoryResponse, 0, 4)
+	catalogRepos := make([]api.RepositoryResponse, 0, 5)
 	for _, repo := range repos {
 		if repo.PublishedDistBasePath == javaValidatedBasePath ||
 			repo.PublishedDistBasePath == javaRemediatedBasePath ||
 			repo.PublishedDistBasePath == pythonValidatedBasePath ||
-			repo.PublishedDistBasePath == pythonRemediatedBasePath {
+			repo.PublishedDistBasePath == pythonRemediatedBasePath ||
+			repo.PublishedDistBasePath == javascriptValidatedBasePath {
 			catalogRepos = append(catalogRepos, repo)
 		}
 	}
@@ -192,4 +202,28 @@ func loadCatalogFromPulp(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp
 	}
 
 	return catalog, snapshotAt, nil
+}
+
+func listNpmPackages(ctx context.Context, tang tangy.Tangy, href string) ([]matcher.Package, error) {
+	var catalog []matcher.Package
+	for offset := 0; ; offset += tangy.DefaultLimit {
+		resp, err := tang.NpmPackageList(ctx, href, tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: offset, Limit: tangy.DefaultLimit})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list npm packages: %w", err)
+		}
+		for _, item := range resp.Results {
+			namespace, name := "", item.Name
+			if strings.HasPrefix(name, "@") {
+				namespace, name, _ = strings.Cut(name, "/")
+			}
+			for _, version := range item.Versions {
+				upstreamVersion, _ := rhlw.SplitVersion(version)
+				catalog = append(catalog, matcher.Package{Ecosystem: matcher.EcosystemJavaScript, Namespace: namespace, Name: name, Version: upstreamVersion})
+			}
+		}
+		if len(resp.Results) == 0 || offset+len(resp.Results) >= resp.Total {
+			break
+		}
+	}
+	return catalog, nil
 }

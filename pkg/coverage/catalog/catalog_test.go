@@ -267,7 +267,9 @@ func (s *CatalogSuite) TestLoadCatalogFromDB() {
 		Return([]dao.LensCatalogPackageRow{
 			{Ecosystem: config.ContentTypeMaven, Group: "org.springframework", Name: "spring-core", Version: "6.1.0"},
 			{Ecosystem: config.ContentTypePython, Group: "", Name: "flask", Version: "3.0.3"},
-			{Ecosystem: "npm", Group: "", Name: "left-pad", Version: "1.0.0"}, // skipped
+			{Ecosystem: config.ContentTypeNpm, Group: "-", Name: "left-pad", Version: "1.0.0"},
+			{Ecosystem: config.ContentTypeNpm, Group: "@angular", Name: "core", Version: "15.0.0+rhlw.1", UpstreamVersion: "15.0.0"},
+			{Ecosystem: "other", Name: "ignored"},
 		}, nil)
 
 	catalog, snapshotAt, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourceDB)
@@ -276,6 +278,8 @@ func (s *CatalogSuite) TestLoadCatalogFromDB() {
 	assert.ElementsMatch(s.T(), []matcher.Package{
 		{Ecosystem: matcher.EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"},
 		{Ecosystem: matcher.EcosystemPython, Name: "flask", Version: "3.0.3"},
+		{Ecosystem: matcher.EcosystemJavaScript, Name: "left-pad", Version: "1.0.0"},
+		{Ecosystem: matcher.EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "15.0.0"},
 	}, catalog)
 }
 
@@ -286,4 +290,33 @@ func (s *CatalogSuite) TestLoadCatalogFromDBEmpty() {
 	_, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourceDB)
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "no validated or remediated catalog packages found")
+}
+
+func (s *CatalogSuite) TestLoadNpmCatalog() {
+	s.mockDao.Domain.On("FetchOrCreateDomain", s.ctx, config.LightwellOrg).Return("domain", nil)
+	s.mockPulp.On("WithDomain", "domain").Return(s.mockPulp)
+	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return([]api.RepositoryResponse{
+		{PublishedDistBasePath: javascriptValidatedBasePath, ContentType: config.ContentTypeNpm},
+		{PublishedDistBasePath: "javascript/remediated", ContentType: config.ContentTypeNpm},
+	}, nil)
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javascriptValidatedBasePath).Return(utils.Ptr("npm-href"), nil)
+	s.mockTang.On("NpmPackageList", s.ctx, "npm-href", tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).Return(tangy.NpmPackageListResponse{
+		Results: []tangy.NpmPackageListItem{{Name: "@angular/core", Versions: []string{"15.0.0+rhlw.1", "14.0.0"}}}, Total: tangy.DefaultLimit + 1,
+	}, nil)
+	s.mockTang.On("NpmPackageList", s.ctx, "npm-href", tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: tangy.DefaultLimit, Limit: tangy.DefaultLimit}).Return(tangy.NpmPackageListResponse{
+		Results: []tangy.NpmPackageListItem{{Name: "express", Versions: []string{"4.18.2"}}}, Total: tangy.DefaultLimit + 1,
+	}, nil)
+	catalog, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
+	require.NoError(s.T(), err)
+	assert.ElementsMatch(s.T(), []matcher.Package{
+		{Ecosystem: matcher.EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "15.0.0"},
+		{Ecosystem: matcher.EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "14.0.0"},
+		{Ecosystem: matcher.EcosystemJavaScript, Name: "express", Version: "4.18.2"},
+	}, catalog)
+}
+
+func (s *CatalogSuite) TestNpmCatalogError() {
+	s.mockTang.On("NpmPackageList", s.ctx, "npm-href", tangy.NpmPackageListFilters{}, tangy.PageOptions{Offset: 0, Limit: tangy.DefaultLimit}).Return(tangy.NpmPackageListResponse{}, errors.New("npm unavailable"))
+	_, err := listPackages(s.ctx, s.mockPulp, s.mockTang, "npm-href", config.ContentTypeNpm)
+	require.ErrorContains(s.T(), err, "failed to list npm packages: npm unavailable")
 }

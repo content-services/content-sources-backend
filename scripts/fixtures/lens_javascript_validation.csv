@@ -1,0 +1,10 @@
+packageurl
+pkg:npm/express@4.18.2
+pkg:npm/lodash@4.17.21
+pkg:npm/%40types/node@20.11.0
+pkg:maven/com.squareup.okhttp3/okhttp@4.12.0
+pkg:maven/org.hibernate/hibernate-core@5.6.15.Final
+pkg:maven/org.apache.shiro/shiro-core@1.11.0
+pkg:pypi/certifi@2023.1.10
+pkg:pypi/setuptools@67.1.0
+pkg:pypi/jinja2@3.1.3
