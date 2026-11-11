@@ -75,6 +75,8 @@ options:
   # Lightwell repository names (as in the seed allowlist, matched exactly) to hide from the list API
   # and skip during repository import. A skipped repo is not saved, so a missing published
   # distribution does not fail the import.
+  # Ignored repos are also excluded from new Lens analyses. An ecosystem is labeled
+  # unsupported when all of its Lens catalog repos are ignored; completed reports are unchanged.
   # To also hide a repo's demo variant, list its "-demo" name explicitly.
   # Example: ["lightwell/java/remediated", "lightwell/java/remediated-demo"]
   lightwell_ignore_repos: []

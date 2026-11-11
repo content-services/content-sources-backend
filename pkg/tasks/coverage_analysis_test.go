@@ -314,3 +314,36 @@ func (s *CoverageAnalysisSuite) TestJavaScriptCoverageAnalysis() {
 	assert.Equal(s.T(), "JavaScript", saved.Summary.EcosystemCoverageSummary[0].Ecosystem)
 	assert.True(s.T(), saved.Summary.EcosystemCoverageSummary[0].Supported)
 }
+
+func (s *CoverageAnalysisSuite) TestIgnoredJavaScriptIsUnsupported() {
+	old := config.Get().Options.LightwellIgnoreRepos
+	s.T().Cleanup(func() { config.Get().Options.LightwellIgnoreRepos = old })
+	config.Get().Options.LightwellIgnoreRepos = []string{
+		"lightwell/python/predisclosure", "lightwell/npm/validated", "lightwell/npm/remediated",
+		"lightwell/javascript/remediated", "lightwell/javascript/validated",
+	}
+	ctx := context.Background()
+	reportUUID := uuid.NewString()
+	manifest := []byte("packageurl\npkg:npm/express@4.18.2\npkg:maven/org.example/example@1.0\n")
+	payload := s.mockFetchManifest(ctx, reportUUID, "manifest.csv", manifest)
+	payload.CatalogSource = config.CatalogSourceDB
+	s.mockDaoRegistry.CoverageReport.On("UpdateCoverageReportStatus", ctx, reportUUID, config.TaskStatusRunning, (*string)(nil)).Return(nil).Once()
+	s.mockDaoRegistry.LightwellPackage.On("InternalOnlyListLensCatalog", ctx).Return([]dao.LensCatalogPackageRow{
+		{Ecosystem: config.ContentTypeMaven, Group: "org.example", Name: "example", Version: "1.0"},
+	}, nil).Once()
+	s.mockDaoRegistry.LightwellAdvisory.On("ListRemediatedAdvisories", ctx, config.LightwellOrg, mock.Anything).Return([]dao.RemediatedAdvisory{}, nil).Once()
+	var saved dao.SaveCoverageAnalysisParams
+	s.mockDaoRegistry.CoverageReport.On("SaveCoverageAnalysis", ctx, reportUUID, mock.Anything).Run(func(args mock.Arguments) {
+		params, ok := args.Get(2).(dao.SaveCoverageAnalysisParams)
+		require.True(s.T(), ok)
+		saved = params
+	}).Return(nil).Once()
+	require.NoError(s.T(), s.newTask(ctx, &payload).Run())
+	require.Len(s.T(), saved.Results, 2)
+	assert.Equal(s.T(), 1, saved.Summary.ExactMatches)
+	assert.Equal(s.T(), 1, saved.Summary.Unmatched)
+	require.Len(s.T(), saved.Summary.EcosystemCoverageSummary, 2)
+	for _, ecosystem := range saved.Summary.EcosystemCoverageSummary {
+		assert.Equal(s.T(), ecosystem.Ecosystem != "JavaScript", ecosystem.Supported)
+	}
+}
