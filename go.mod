@@ -55,7 +55,7 @@ require (
 	github.com/package-url/packageurl-go v0.1.7
 	github.com/pandatix/go-cvss v0.6.4
 	github.com/pkg/errors v0.9.1
-	github.com/project-kessel/kessel-sdk-go v1.13.1
+	github.com/project-kessel/kessel-sdk-go v1.13.2
 	github.com/redhatinsights/platform-go-middlewares/v2 v2.1.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/urfave/cli/v2 v2.27.7
