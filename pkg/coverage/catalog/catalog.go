@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	"github.com/content-services/content-sources-backend/pkg/dao"
+	"github.com/content-services/content-sources-backend/pkg/external_repos"
 	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
 	"github.com/content-services/tang/pkg/tangy"
 	"github.com/rs/zerolog"
@@ -169,11 +170,7 @@ func loadCatalogFromPulp(ctx context.Context, daoReg *dao.DaoRegistry, pulp pulp
 		if slices.Contains(config.Get().Options.LightwellIgnoreRepos, repo.Name) {
 			continue
 		}
-		if repo.PublishedDistBasePath == javaValidatedBasePath ||
-			repo.PublishedDistBasePath == javaRemediatedBasePath ||
-			repo.PublishedDistBasePath == pythonValidatedBasePath ||
-			repo.PublishedDistBasePath == pythonRemediatedBasePath ||
-			repo.PublishedDistBasePath == javascriptValidatedBasePath {
+		if isCatalogBasePath(repo.PublishedDistBasePath) {
 			catalogRepos = append(catalogRepos, repo)
 		}
 	}
@@ -230,4 +227,43 @@ func listNpmPackages(ctx context.Context, tang tangy.Tangy, href string) ([]matc
 		}
 	}
 	return catalog, nil
+}
+
+// EnabledEcosystems returns ecosystems with at least one catalog repository enabled
+// by operator configuration. Package counts do not determine ecosystem support.
+func EnabledEcosystems() ([]string, error) {
+	entries, err := external_repos.LoadLightwellAllowlist()
+	if err != nil {
+		return nil, err
+	}
+	ecosystems := make([]string, 0, 3)
+	for _, entry := range entries {
+		if !isCatalogBasePath(entry.BasePath) || slices.Contains(config.Get().Options.LightwellIgnoreRepos, entry.Name) {
+			continue
+		}
+		var ecosystem string
+		switch entry.Type {
+		case config.ContentTypeMaven:
+			ecosystem = matcher.EcosystemJava
+		case config.ContentTypePython:
+			ecosystem = matcher.EcosystemPython
+		case config.ContentTypeNpm:
+			ecosystem = matcher.EcosystemJavaScript
+		default:
+			continue
+		}
+		if !slices.Contains(ecosystems, ecosystem) {
+			ecosystems = append(ecosystems, ecosystem)
+		}
+	}
+	return ecosystems, nil
+}
+
+func isCatalogBasePath(basePath string) bool {
+	switch basePath {
+	case javaValidatedBasePath, javaRemediatedBasePath, pythonValidatedBasePath, pythonRemediatedBasePath, javascriptValidatedBasePath:
+		return true
+	default:
+		return false
+	}
 }

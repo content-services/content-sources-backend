@@ -345,3 +345,33 @@ func (s *CatalogSuite) TestLoadCatalogIgnoresRepositories() {
 	assert.Equal(s.T(), []matcher.Package{{Ecosystem: matcher.EcosystemJava, Namespace: "org.example", Name: "example", Version: "1.0"}}, packages)
 	s.mockPulp.AssertNotCalled(s.T(), "ResolveRepositoryFromBasePath", s.ctx, javascriptValidatedBasePath)
 }
+
+func TestEnabledEcosystems(t *testing.T) {
+	old := config.Get().Options.LightwellIgnoreRepos
+	t.Cleanup(func() { config.Get().Options.LightwellIgnoreRepos = old })
+	for _, tc := range []struct {
+		name     string
+		ignored  []string
+		expected []string
+	}{
+		{name: "default", expected: []string{matcher.EcosystemJava, matcher.EcosystemPython, matcher.EcosystemJavaScript}},
+		{name: "production", ignored: []string{
+			"lightwell/python/predisclosure", "lightwell/npm/validated", "lightwell/npm/remediated",
+			"lightwell/javascript/remediated", "lightwell/javascript/validated",
+		}, expected: []string{matcher.EcosystemJava, matcher.EcosystemPython}},
+		{name: "one Java repository remains enabled", ignored: []string{"lightwell/java/validated"}, expected: []string{matcher.EcosystemJava, matcher.EcosystemPython, matcher.EcosystemJavaScript}},
+		{name: "JavaScript remediated is not a Lens catalog", ignored: []string{"lightwell/javascript/validated"}, expected: []string{matcher.EcosystemJava, matcher.EcosystemPython}},
+		{name: "all disabled", ignored: []string{
+			"lightwell/java/validated", "lightwell/java/remediated",
+			"lightwell/python/validated", "lightwell/python/remediated",
+			"lightwell/javascript/validated",
+		}, expected: []string{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config.Get().Options.LightwellIgnoreRepos = tc.ignored
+			ecosystems, err := EnabledEcosystems()
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tc.expected, ecosystems)
+		})
+	}
+}

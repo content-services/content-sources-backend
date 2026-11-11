@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
@@ -164,7 +165,15 @@ func (c *CoverageAnalysis) Run() error {
 		return fmt.Errorf("failed to load catalog: %w", err)
 	}
 
+	enabledEcosystems, err := catalog.EnabledEcosystems()
+	if err != nil {
+		return fmt.Errorf("failed to determine enabled catalog ecosystems: %w", err)
+	}
 	results, summary := matcher.MatchCatalog(lightwellCatalog, toMatcherPackages(parsedPackages.Packages), snapshotAt)
+	for i := range summary.EcosystemCoverageSummary {
+		ecosystem := &summary.EcosystemCoverageSummary[i]
+		ecosystem.Supported = slices.Contains(enabledEcosystems, ecosystem.Ecosystem)
+	}
 
 	// CVE enrichment is best-effort: a failure to load advisories should not fail the
 	// whole analysis. On error we persist the coverage results without CVE data, leaving
