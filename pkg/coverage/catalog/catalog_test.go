@@ -320,3 +320,28 @@ func (s *CatalogSuite) TestNpmCatalogError() {
 	_, err := listPackages(s.ctx, s.mockPulp, s.mockTang, "npm-href", config.ContentTypeNpm)
 	require.ErrorContains(s.T(), err, "failed to list npm packages: npm unavailable")
 }
+
+// Existing repository records must not bypass the operator's ignore list.
+func (s *CatalogSuite) TestLoadCatalogIgnoresRepositories() {
+	old := config.Get().Options.LightwellIgnoreRepos
+	s.T().Cleanup(func() { config.Get().Options.LightwellIgnoreRepos = old })
+	config.Get().Options.LightwellIgnoreRepos = []string{
+		"lightwell/python/predisclosure", "lightwell/npm/validated", "lightwell/npm/remediated",
+		"lightwell/javascript/remediated", "lightwell/javascript/validated",
+	}
+	s.mockDao.Domain.On("FetchOrCreateDomain", s.ctx, config.LightwellOrg).Return("domain", nil)
+	s.mockPulp.On("WithDomain", "domain").Return(s.mockPulp)
+	s.mockDao.RepositoryConfig.On("InternalOnly_FetchRepoConfigForOrg", s.ctx, config.LightwellOrg).Return([]api.RepositoryResponse{
+		{Name: "lightwell/javascript/validated", PublishedDistBasePath: javascriptValidatedBasePath, ContentType: config.ContentTypeNpm},
+		{Name: "lightwell/javascript/remediated", PublishedDistBasePath: "javascript/remediated", ContentType: config.ContentTypeNpm},
+		{Name: "lightwell/java/validated", PublishedDistBasePath: javaValidatedBasePath, ContentType: config.ContentTypeMaven},
+	}, nil)
+	s.mockPulp.On("ResolveRepositoryFromBasePath", s.ctx, javaValidatedBasePath).Return(utils.Ptr("java"), nil)
+	s.mockPulp.On("ListMavenPackages", s.ctx, "java", "", mavenCatalogPageSize, 0).Return(zest.PaginatedMavenRepositoryPackageListResponse{
+		Count: 1, Results: []zest.MavenRepositoryPackageResponse{{GroupId: "org.example", ArtifactId: "example", Versions: []string{"1.0"}}},
+	}, nil)
+	packages, _, err := LoadCatalog(s.ctx, s.mockDao.ToDaoRegistry(), s.mockPulp, s.mockTang, config.CatalogSourcePulp)
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), []matcher.Package{{Ecosystem: matcher.EcosystemJava, Namespace: "org.example", Name: "example", Version: "1.0"}}, packages)
+	s.mockPulp.AssertNotCalled(s.T(), "ResolveRepositoryFromBasePath", s.ctx, javascriptValidatedBasePath)
+}

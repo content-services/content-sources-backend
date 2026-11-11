@@ -126,6 +126,7 @@ JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid
 JOIN repositories r ON r.uuid = rc.repository_uuid
 WHERE rc.org_id = sqlc.arg(org_id)::text
     AND r.origin = 'lightwell'
+    AND NOT (rc.name = ANY(sqlc.arg(ignored_names)::text[]))
     AND (r.content_type IN ('maven', 'python')
         OR (r.content_type = 'npm' AND lower(r.security_level) = 'validated'))
     AND lower(r.security_level) IN ('validated', 'remediated')

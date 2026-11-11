@@ -50,11 +50,17 @@ JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid
 JOIN repositories r ON r.uuid = rc.repository_uuid
 WHERE rc.org_id = $1::text
     AND r.origin = 'lightwell'
+    AND NOT (rc.name = ANY($2::text[]))
     AND (r.content_type IN ('maven', 'python')
         OR (r.content_type = 'npm' AND lower(r.security_level) = 'validated'))
     AND lower(r.security_level) IN ('validated', 'remediated')
 ORDER BY r.content_type, p.package_group, p.name, pv.version
 `
+
+type ListLensCatalogParams struct {
+	OrgID        string   `json:"org_id"`
+	IgnoredNames []string `json:"ignored_names"`
+}
 
 type ListLensCatalogRow struct {
 	Ecosystem       string `json:"ecosystem"`
@@ -64,8 +70,8 @@ type ListLensCatalogRow struct {
 	UpstreamVersion string `json:"upstream_version"`
 }
 
-func (q *Queries) ListLensCatalog(ctx context.Context, orgID string) ([]ListLensCatalogRow, error) {
-	rows, err := q.db.Query(ctx, listLensCatalog, orgID)
+func (q *Queries) ListLensCatalog(ctx context.Context, arg ListLensCatalogParams) ([]ListLensCatalogRow, error) {
+	rows, err := q.db.Query(ctx, listLensCatalog, arg.OrgID, arg.IgnoredNames)
 	if err != nil {
 		return nil, err
 	}

@@ -778,7 +778,10 @@ func (d lightwellPackageDaoImpl) InternalOnlyListLensCatalog(ctx context.Context
 		return nil, fmt.Errorf("lightwell querier is not initialized")
 	}
 
-	rows, err := d.querier.ListLensCatalog(ctx, config.LightwellOrg)
+	rows, err := d.querier.ListLensCatalog(ctx, store.ListLensCatalogParams{
+		OrgID:        config.LightwellOrg,
+		IgnoredNames: append([]string{}, config.Get().Options.LightwellIgnoreRepos...),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list lens catalog: %w", err)
 	}
