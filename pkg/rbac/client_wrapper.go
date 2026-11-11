@@ -28,8 +28,10 @@ import (
 
 	"github.com/RedHatInsights/rbac-client-go"
 	"github.com/content-services/content-sources-backend/pkg/cache"
+	"github.com/content-services/content-sources-backend/pkg/clients/kessel_client"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const application = "content-sources"
@@ -52,8 +54,16 @@ func NewClientWrapperImpl(baseUrl string, timeout time.Duration) ClientWrapper {
 		return nil
 	}
 
+	httpClient, err := kessel_client.RbacHTTPClient(timeout)
+	if err != nil {
+		log.Error().Err(err).Msg("could not create rbac http client")
+		return nil
+	}
+	client := rbac.NewClient(baseUrl, application)
+	client.HTTPClient = httpClient
+
 	return &ClientWrapperImpl{
-		client:  rbac.NewClient(baseUrl, application),
+		client:  client,
 		timeout: timeout,
 		cache:   cache.Initialize(),
 	}

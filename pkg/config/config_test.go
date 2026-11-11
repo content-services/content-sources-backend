@@ -182,3 +182,58 @@ func TestCustomHTTPErrorHandler(t *testing.T) {
 		}
 	}
 }
+
+func stubRbacV2Endpoint(t *testing.T, endpoints map[string]map[string]clowder.DependencyEndpointV2) {
+	orig := clowder.DependencyEndpointsV2
+	clowder.DependencyEndpointsV2 = endpoints
+	t.Cleanup(func() { clowder.DependencyEndpointsV2 = orig })
+}
+
+func TestClowderRbacEndpoint(t *testing.T) {
+	caPath := "/cdapp/certs/rbac-ca.pem"
+	tests := []struct {
+		name          string
+		endpoint      clowder.DependencyEndpointV2
+		expectedURL   string
+		expectedCa    string
+		authenticated bool
+	}{
+		{
+			name:        "in-cluster, unauthenticated, no CA",
+			endpoint:    clowder.DependencyEndpointV2{Uri: "http://rbac-service:8000"},
+			expectedURL: "http://rbac-service:8000/api/rbac/v1",
+		},
+		{
+			name:          "gateway, authenticated, CA, trailing slash",
+			endpoint:      clowder.DependencyEndpointV2{Uri: "https://gw.example.com/", Authenticated: true, CaCertificate: &caPath},
+			expectedURL:   "https://gw.example.com/api/rbac/v1",
+			expectedCa:    caPath,
+			authenticated: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stubRbacV2Endpoint(t, map[string]map[string]clowder.DependencyEndpointV2{"rbac": {"service": tt.endpoint}})
+			url, ca, authenticated, err := ClowderRbacEndpoint()
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedURL, url)
+			assert.Equal(t, tt.expectedCa, ca)
+			assert.Equal(t, tt.authenticated, authenticated)
+		})
+	}
+}
+
+func TestClowderRbacEndpointMissing(t *testing.T) {
+	for name, endpoints := range map[string]map[string]map[string]clowder.DependencyEndpointV2{
+		"no v2 endpoints": nil,
+		"no rbac app":     {"other": {"service": {Uri: "http://other:8000"}}},
+		"empty uri":       {"rbac": {"service": {Uri: ""}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stubRbacV2Endpoint(t, endpoints)
+			url, _, _, err := ClowderRbacEndpoint()
+			assert.ErrorContains(t, err, "rbac.service not found")
+			assert.Empty(t, url)
+		})
+	}
+}
