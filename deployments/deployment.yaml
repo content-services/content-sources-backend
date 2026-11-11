@@ -9177,8 +9177,8 @@ parameters:
   - name: LOGGING_LEVEL
     value: debug
   - name: CLIENTS_RBAC_BASE_URL
-    description: Ignored under Clowder, the rbac url comes from the Clowder v2 rbac
-      dependency endpoint
+    value: http://rbac-service:8000/api/rbac/v1
+    required: true
   - name: CLIENTS_RBAC_ENABLED
     value: 'True'
   - name: FLOORIST_LOGLEVEL

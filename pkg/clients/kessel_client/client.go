@@ -25,8 +25,7 @@ type KesselClient interface {
 }
 
 type kesselClientImpl struct {
-	timeout    time.Duration
-	rbacClient *http.Client
+	timeout time.Duration
 }
 
 func NewKesselClient() (KesselClient, error) {
@@ -39,12 +38,7 @@ func NewKesselClient() (KesselClient, error) {
 		return nil, fmt.Errorf("kessel authentication is enabled but not configured")
 	}
 
-	rbacClient, err := RbacHTTPClient(kesselConfig.Timeout)
-	if err != nil {
-		return nil, err
-	}
-
-	return &kesselClientImpl{timeout: kesselConfig.Timeout, rbacClient: rbacClient}, nil
+	return &kesselClientImpl{timeout: kesselConfig.Timeout}, nil
 }
 
 type WorkspaceResponse struct {
@@ -85,8 +79,9 @@ func (k *kesselClientImpl) GetDefaultWorkspaceID(ctx context.Context, orgID stri
 		req.Header.Add("authorization", fmt.Sprintf("Bearer %s", token))
 	}
 
+	client := &http.Client{Timeout: k.timeout}
 	var body []byte
-	resp, err := k.rbacClient.Do(req)
+	resp, err := client.Do(req)
 	if resp != nil {
 		defer resp.Body.Close()
 
@@ -221,11 +216,8 @@ func (k *kesselClientImpl) buildGRPCConnection() (v1beta2.KesselInventoryService
 	if !kesselConfig.Auth.Enabled || kesselConfig.Auth.GrpcInsecure {
 		clientBuilder = clientBuilder.Insecure()
 	} else {
-		oauthCredentials, err := Credentials()
-		if err != nil {
-			return nil, nil, err
-		}
-		clientBuilder = clientBuilder.OAuth2ClientAuthenticated(oauthCredentials, nil)
+		oauthCredentials := auth.NewOAuth2ClientCredentials(kesselConfig.Auth.ClientID, kesselConfig.Auth.ClientSecret, kesselConfig.Auth.OIDCIssuer)
+		clientBuilder = clientBuilder.OAuth2ClientAuthenticated(&oauthCredentials, nil)
 	}
 	return clientBuilder.Build()
 }
@@ -235,11 +227,8 @@ func (k *kesselClientImpl) getToken(ctx context.Context) (string, error) {
 	if !kesselConfig.Auth.Enabled {
 		return "", fmt.Errorf("auth not enabled")
 	}
-	oauthCredentials, err := Credentials()
-	if err != nil {
-		return "", err
-	}
-	resp, err := oauthCredentials.GetToken(ctx, auth.GetTokenOptions{HttpClient: tokenHTTPClient})
+	oauthCredentials := auth.NewOAuth2ClientCredentials(kesselConfig.Auth.ClientID, kesselConfig.Auth.ClientSecret, kesselConfig.Auth.OIDCIssuer)
+	resp, err := oauthCredentials.GetToken(ctx, auth.GetTokenOptions{})
 	if err != nil {
 		return "", fmt.Errorf("error getting token: %w", err)
 	}
