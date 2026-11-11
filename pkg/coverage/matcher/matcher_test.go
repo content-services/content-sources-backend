@@ -128,7 +128,7 @@ func TestMatchCatalog_IncludesAllEcosystems(t *testing.T) {
 	assert.Equal(t, 0, javascript.ExactMatches)
 	assert.Equal(t, 0, javascript.PartialMatches)
 	assert.Equal(t, 1, javascript.Unmatched)
-	assert.False(t, javascript.Supported)
+	assert.True(t, javascript.Supported)
 
 	golang := summaryMap["Go"]
 	assert.Equal(t, 1, golang.Total)
@@ -183,4 +183,28 @@ func TestMatchCatalog_NamespacesRemainDistinct(t *testing.T) {
 			assert.Equal(t, MatchStatusNone, results[1].MatchStatus)
 		})
 	}
+}
+
+func TestMatchCatalog_JavaScript(t *testing.T) {
+	catalog := []Package{
+		{Ecosystem: EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "15.0.0"},
+		{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
+	}
+	manifest := []Package{
+		{Ecosystem: EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "15.0.0+rhlw.1"},
+		{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
+		{Ecosystem: EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "14.0.0"},
+		{Ecosystem: EcosystemJavaScript, Namespace: "@other", Name: "core", Version: "15.0.0"},
+		{Ecosystem: EcosystemJavaScript, Name: "core", Version: "15.0.0"},
+	}
+	results, summary := MatchCatalog(catalog, manifest, snapshotAt)
+	for i, want := range []string{MatchStatusExact, MatchStatusExact, MatchStatusPartial, MatchStatusNone, MatchStatusNone} {
+		assert.Equal(t, want, results[i].MatchStatus)
+	}
+	assert.Equal(t, 5, summary.Total)
+	assert.Equal(t, 2, summary.ExactMatches)
+	assert.Equal(t, 1, summary.PartialMatches)
+	assert.Equal(t, 2, summary.Unmatched)
+	require.Len(t, summary.EcosystemCoverageSummary, 1)
+	assert.True(t, summary.EcosystemCoverageSummary[0].Supported)
 }

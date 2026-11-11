@@ -350,6 +350,10 @@ func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
 		[]string{"1.0.0"}, []string{""}, []string{"pkg:maven/com.example/ignored@1.0.0"},
 	)
 
+	npmUUID, _ := s.createLightwellRepoWithFeature(ctx, fmt.Sprintf("lens-npm-%d", suffix), "lightwell-npm", "validated", config.ContentTypeNpm)
+	npmRemediatedUUID, _ := s.createLightwellRepoWithFeature(ctx, fmt.Sprintf("lens-npm-remediated-%d", suffix), "lightwell-npm", "remediated", config.ContentTypeNpm)
+	s.createPackageWithVersions(ctx, npmUUID, "core", "@angular", []string{"15.0.0"}, []string{""}, []string{"pkg:npm/%40angular/core@15.0.0"})
+	s.createPackageWithVersions(ctx, npmRemediatedUUID, "ignored-npm", "-", []string{"1.0.0"}, []string{""}, []string{"pkg:npm/ignored-npm@1.0.0"})
 	rows, err := dao.InternalOnlyListLensCatalog(ctx)
 	s.NoError(err)
 
@@ -360,6 +364,10 @@ func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
 	_, hasJava := found["maven:org.springframework:spring-core:6.1.0"]
 	_, hasPython := found["python::flask:3.0.3"]
 	_, hasOther := found["maven:com.example:ignored:1.0.0"]
+	_, hasNpm := found["npm:@angular:core:15.0.0"]
+	_, hasRemediatedNpm := found["npm:-:ignored-npm:1.0.0"]
+	assert.True(s.T(), hasNpm)
+	assert.False(s.T(), hasRemediatedNpm)
 	assert.True(s.T(), hasJava)
 	assert.True(s.T(), hasPython)
 	assert.False(s.T(), hasOther)

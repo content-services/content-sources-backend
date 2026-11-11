@@ -280,3 +280,37 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysisCatalogLoadFails() {
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "load catalog")
 }
+
+func (s *CoverageAnalysisSuite) TestJavaScriptCoverageAnalysis() {
+	ctx := context.Background()
+	reportUUID := uuid.NewString()
+	manifest := []byte(`{"bomFormat":"CycloneDX","specVersion":"1.5","components":[
+ {"type":"library","name":"core","purl":"pkg:npm/%40angular/core@15.0.0"},
+ {"type":"library","name":"express","purl":"pkg:npm/express@4.18.2"},
+ {"type":"library","name":"core","purl":"pkg:npm/%40angular/core@14.0.0"},
+ {"type":"library","name":"core","purl":"pkg:npm/%40other/core@15.0.0"}
+ ]}`)
+	payload := s.mockFetchManifest(ctx, reportUUID, "sbom.cdx.json", manifest)
+	payload.CatalogSource = config.CatalogSourceDB
+	s.mockDaoRegistry.CoverageReport.On("UpdateCoverageReportStatus", ctx, reportUUID, config.TaskStatusRunning, (*string)(nil)).Return(nil).Once()
+	s.mockDaoRegistry.LightwellPackage.On("InternalOnlyListLensCatalog", ctx).Return([]dao.LensCatalogPackageRow{
+		{Ecosystem: config.ContentTypeNpm, Group: "@angular", Name: "core", Version: "15.0.0+rhlw.1", UpstreamVersion: "15.0.0"},
+		{Ecosystem: config.ContentTypeNpm, Group: "-", Name: "express", Version: "4.18.2"},
+	}, nil).Once()
+	s.mockDaoRegistry.LightwellAdvisory.On("ListRemediatedAdvisories", ctx, config.LightwellOrg, mock.Anything).Return([]dao.RemediatedAdvisory{}, nil).Once()
+	var saved dao.SaveCoverageAnalysisParams
+	s.mockDaoRegistry.CoverageReport.On("SaveCoverageAnalysis", ctx, reportUUID, mock.Anything).Run(func(args mock.Arguments) {
+		params, ok := args.Get(2).(dao.SaveCoverageAnalysisParams)
+		require.True(s.T(), ok)
+		saved = params
+	}).Return(nil).Once()
+	require.NoError(s.T(), s.newTask(ctx, &payload).Run())
+	assert.Equal(s.T(), "CycloneDX", saved.InputFormat)
+	assert.Equal(s.T(), 4, saved.Summary.Total)
+	assert.Equal(s.T(), 2, saved.Summary.ExactMatches)
+	assert.Equal(s.T(), 1, saved.Summary.PartialMatches)
+	assert.Equal(s.T(), 1, saved.Summary.Unmatched)
+	require.Len(s.T(), saved.Summary.EcosystemCoverageSummary, 1)
+	assert.Equal(s.T(), "JavaScript", saved.Summary.EcosystemCoverageSummary[0].Ecosystem)
+	assert.True(s.T(), saved.Summary.EcosystemCoverageSummary[0].Supported)
+}

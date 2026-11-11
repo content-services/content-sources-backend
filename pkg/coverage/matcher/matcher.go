@@ -14,8 +14,9 @@ const (
 )
 
 const (
-	EcosystemJava   = "Java"
-	EcosystemPython = "Python"
+	EcosystemJavaScript = "JavaScript"
+	EcosystemJava       = "Java"
+	EcosystemPython     = "Python"
 )
 
 type Package struct {
@@ -62,7 +63,7 @@ type EcosystemSummary struct {
 // IsSupportedEcosystem reports whether the Lightwell catalog can match packages for the given ecosystem.
 func IsSupportedEcosystem(ecosystem string) bool {
 	switch ecosystem {
-	case EcosystemJava, EcosystemPython:
+	case EcosystemJava, EcosystemPython, EcosystemJavaScript:
 		return true
 	default:
 		return false
