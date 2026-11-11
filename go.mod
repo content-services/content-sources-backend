@@ -7,7 +7,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.40.0
 	github.com/content-services/lecho/v3 v3.5.2
 	github.com/content-services/tang v0.0.31
-	github.com/content-services/yummy v1.0.20
+	github.com/content-services/yummy v1.0.21
 	github.com/getkin/kin-openapi v0.135.0
 	github.com/go-openapi/spec v0.22.2 // indirect
 	github.com/golang-migrate/migrate/v4 v4.19.1
