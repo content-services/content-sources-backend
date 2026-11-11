@@ -120,6 +120,7 @@ objects:
               - api
               - instrumentation
               - jfrog-bridge
+              - sonatype-bridge
             livenessProbe:
               failureThreshold: 3
               httpGet:

@@ -264,6 +264,33 @@ jfrog_bridge:
   max_retries: 3
   request_timeout: 60
 
+sonatype_bridge:
+  enabled: false
+  registry_url: "https://packages.redhat.com/lightwell/java/remediated"
+  registry_osv_url: "https://packages.redhat.com/lightwell/osv/java/remediated"
+  registry_vex_url: "https://packages.redhat.com/lightwell/vex/java/remediated"
+  # Must differ from jfrog_bridge.consumer_group_id so both bridges receive every message
+  consumer_group_id: "content-sources-sonatype-bridge"
+  max_retries: 3
+  request_timeout: 60
+  # Partner S3 bucket. Unrelated to any other S3/AWS config in this file.
+  # name, region, access_key and secret_key are all required when enabled.
+  s3:
+    # Leave empty for AWS; set for MinIO/local dev (e.g. http://localhost:9002)
+    url:
+    # Bucket name. Env: SONATYPE_BRIDGE_S3_NAME
+    name:
+    # Env: SONATYPE_BRIDGE_S3_REGION (equivalent of AWS_REGION)
+    region:
+    # Env: SONATYPE_BRIDGE_S3_ACCESS_KEY (equivalent of AWS_ACCESS_KEY_ID)
+    access_key:
+    # Env: SONATYPE_BRIDGE_S3_SECRET_KEY (equivalent of AWS_SECRET_ACCESS_KEY)
+    secret_key:
+    # Optional key prefix inside the bucket, e.g. "maven2"
+    file_prefix:
+  # true for MinIO, false for AWS
+  use_path_style: false
+
 features:
   # Internal Lens and coverage-upload access. Values must also be in options.feature_filter.
   lightwell_lens_internal_entitled_features: #["lightwellFeature"]
@@ -308,6 +335,11 @@ features:
     users: #["lightwellUser"]
     organizations: #["lightwellOrg"]
   admin_jfrog_upload:
+    enabled: false
+    accounts: #["lightwellAccount"]
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
+  admin_sonatype_upload:
     enabled: false
     accounts: #["lightwellAccount"]
     users: #["lightwellUser"]
