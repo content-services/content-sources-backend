@@ -574,6 +574,38 @@ func (suite *LightwellVulnerabilitiesSuite) TestListDaoError() {
 	assert.Equal(suite.T(), http.StatusInternalServerError, code)
 }
 
+func (suite *LightwellVulnerabilitiesSuite) TestListSortBy() {
+	cases := map[string]string{
+		"last_updated:desc": "desc",
+		"last_updated:asc":  "asc",
+	}
+	for sortBy, direction := range cases {
+		suite.Run(sortBy, func() {
+			suite.reg = dao.GetMockDaoRegistry(suite.T())
+			opts := dao.ListLightwellVulnerabilitiesOptions{CustomerID: "demo-customer-1", SortDirection: direction, Limit: 100}
+			suite.reg.LightwellVulnerability.On("List", test.MockCtx(), opts).Return(
+				[]api.LightwellVulnerabilityResponse{}, dao.LightwellVulnerabilityAggregates{}, []dao.LightwellVulnerabilityStageCount{}, int64(0), nil,
+			)
+
+			path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1&sort_by=%s", api.FullRootPath(), sortBy)
+			code, _, err := suite.serveRouter(suite.newGet(path))
+			assert.NoError(suite.T(), err)
+			assert.Equal(suite.T(), http.StatusOK, code)
+		})
+	}
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListInvalidSortBy() {
+	for _, sortBy := range []string{"severity:asc", "last_updated:sideways", "last_updated"} {
+		suite.Run(sortBy, func() {
+			path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1&sort_by=%s", api.FullRootPath(), sortBy)
+			code, _, err := suite.serveRouter(suite.newGet(path))
+			assert.NoError(suite.T(), err)
+			assert.Equal(suite.T(), http.StatusBadRequest, code)
+		})
+	}
+}
+
 func (suite *LightwellVulnerabilitiesSuite) TestListCustomerIdsDaoError() {
 	suite.reg.LightwellVulnerability.On("ListCustomerIds", test.MockCtx()).Return(nil, &ce.DaoError{Message: "db down"})
 

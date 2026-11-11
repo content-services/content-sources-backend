@@ -3862,6 +3862,14 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "description": "Sort the results: `last_updated:asc` or `last_updated:desc`. Default value: `last_updated:desc`.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

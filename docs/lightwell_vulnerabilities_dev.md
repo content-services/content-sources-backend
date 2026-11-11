@@ -48,6 +48,8 @@ With the API running, authenticated clients can call:
 
 `customer_id` is required on the list and `ltwlsupt-ticket-ids` endpoints. Filters (`severity`, `status`, `complexity`, `ltwlsupt_ticket_id`, `flag`) accept comma-separated values. `flag` accepts `embargo` and `duplicate` (OR). `search` requires at least 2 characters when provided.
 
+`sort_by` accepts `last_updated:asc` or `last_updated:desc` (default `last_updated:desc`).
+
 ## Beacon status mapping
 
 Jira workflow status is stored as a Beacon status. A published fix promotes **Validation** to **Lightwell Network**. Once stored, Lightwell Network stays Lightwell Network if a later sync would only move it back to Validation.
