@@ -16,6 +16,7 @@ type bridgeMetrics struct {
 	messagesFailed     prometheus.Counter
 	embargoRejections  prometheus.Counter
 	checksumRejections prometheus.Counter
+	conflictRejections prometheus.Counter
 	pipelineDuration   prometheus.Histogram
 }
 
@@ -68,6 +69,12 @@ func newBridgeMetrics(reg prometheus.Registerer) *bridgeMetrics {
 			Subsystem: metricsSubsystem,
 			Name:      "checksum_rejections_total",
 			Help:      "Remediations rejected due to JAR checksum mismatch",
+		}),
+		conflictRejections: factory.NewCounter(prometheus.CounterOpts{
+			Namespace: metricsNamespace,
+			Subsystem: metricsSubsystem,
+			Name:      "conflict_rejections_total",
+			Help:      "Remediations rejected because a partner bucket object exists with different content",
 		}),
 		pipelineDuration: factory.NewHistogram(prometheus.HistogramOpts{
 			Namespace: metricsNamespace,
