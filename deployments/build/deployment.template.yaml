@@ -510,6 +510,18 @@ objects:
               - update-domains
             env:{{ENV_VARS}}
 
+        - name: update-image-builder-guards
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - update-image-builder-guards
+            env:{{ENV_VARS}}
+
       database:
         name: content-sources
         version: 15

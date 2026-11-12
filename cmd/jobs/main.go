@@ -22,6 +22,7 @@ func loadJobs() map[string]jobFunc {
 		"transform-pulp-logs":             jobs.TransformPulpLogs,
 		"cleanup-missing-domains":         jobs.CleanupMissingDomains,
 		"set-domain-label":                jobs.SetDomainLabel,
+		"update-image-builder-guards":     jobs.UpdateImageBuilderGuards,
 		"set-detected-os-versions":        jobs.SetDetectedOSVersions,
 		"disable-snapshot-for-epel-repos": jobs.DisableSnapshotForEpelRepos,
 		"delete-invalid-redhat-repos":     jobs.DeleteInvalidRedHatRepos,

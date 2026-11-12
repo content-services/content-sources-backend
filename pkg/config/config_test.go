@@ -26,6 +26,22 @@ func TestImageBuilderUsernameConfig(t *testing.T) {
 	var loaded Configuration
 	assert.NoError(t, v.Unmarshal(&loaded))
 	assert.Equal(t, "test-org|test-image-builder", loaded.Clients.Pulp.ImageBuilderUsername)
+	orgID, username, err := loaded.Clients.Pulp.ImageBuilderIdentity()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-org", orgID)
+	assert.Equal(t, "test-image-builder", username)
+}
+
+func TestImageBuilderIdentity(t *testing.T) {
+	orgID, username, err := (Pulp{}).ImageBuilderIdentity()
+	assert.NoError(t, err)
+	assert.Empty(t, orgID)
+	assert.Empty(t, username)
+
+	for _, login := range []string{"no-separator", "org|", "|user", " |user", "org|\t", "org|user|extra"} {
+		_, _, err := (Pulp{ImageBuilderUsername: login}).ImageBuilderIdentity()
+		assert.Error(t, err, login)
+	}
 }
 
 func TestConfigureCertificateFile(t *testing.T) {

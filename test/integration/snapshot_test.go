@@ -18,6 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/jobs"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
@@ -592,5 +593,48 @@ func (s *SnapshotSuite) verifyImageBuilderAccess(url string) {
 		s.Run(tc.name, func() {
 			require.NoError(s.T(), s.getRequest(url, tc.id, tc.status))
 		})
+	}
+}
+
+func (s *SnapshotSuite) TestImageBuilderGuardBackfill() {
+	previousLogin := config.Get().Clients.Pulp.ImageBuilderUsername
+	previousCoprDomain := config.Get().Clients.Pulp.CoprDomain
+	s.T().Cleanup(func() {
+		config.Get().Clients.Pulp.ImageBuilderUsername = previousLogin
+		config.Get().Clients.Pulp.CoprDomain = previousCoprDomain
+	})
+	config.Get().Clients.Pulp.ImageBuilderUsername = ""
+	pulp := s.newPulpGuardTestDomain(s.ctx)
+	config.Get().Clients.Pulp.CoprDomain = pulp.GetDomain()
+
+	_, err := pulp.CreateOrUpdateGuardsForOrg(s.ctx, "backfill-test-org")
+	require.NoError(s.T(), err)
+	_, err = pulp.CreateOrUpdateGuardsForRhelRepo(s.ctx, "historical-test-feature")
+	require.NoError(s.T(), err)
+	originals, err := pulp.ListCompositeContentGuards(s.ctx)
+	require.NoError(s.T(), err)
+	require.GreaterOrEqual(s.T(), len(originals), 2)
+
+	// Limit the job's inventory to this test's domain.
+	require.NoError(s.T(), s.tx.Create(&models.Domain{DomainName: pulp.GetDomain(), OrgId: pulp.GetDomain()}).Error)
+	config.Get().Clients.Pulp.ImageBuilderUsername = "backfill-test-worker-org|backfill-test-worker"
+	previousDB := db.DB
+	db.DB = s.tx.Where("domain_name = ?", pulp.GetDomain())
+	defer func() { db.DB = previousDB }()
+	jobs.UpdateImageBuilderGuards(nil)
+
+	imageBuilder, err := pulp.FetchHeaderContentGuard(s.ctx, "image_builder_guard")
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), imageBuilder)
+	for _, original := range originals {
+		updated, err := pulp.FetchCompositeContentGuard(s.ctx, original.Name)
+		require.NoError(s.T(), err)
+		require.NotNil(s.T(), updated)
+		assert.Equal(s.T(), original.PulpHref, updated.PulpHref)
+		want := original.Guards
+		if original.Name == "composite_guard" || strings.HasPrefix(original.Name, "rhel_composite_") {
+			want = append(append([]*string{}, original.Guards...), imageBuilder.PulpHref)
+		}
+		assert.Equal(s.T(), want, updated.Guards)
 	}
 }
