@@ -3,23 +3,33 @@ package parser
 import (
 	"strings"
 
-	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/package-url/packageurl-go"
 )
 
 // parsePURL converts a Package URL into a coverage package.
 // Invalid PURLs return nil. Known types get a display name; all others use the PURL type with the first letter capitalized and the rest lowercased.
 func parsePURL(raw string) *Package {
-	parsed := utils.ParsePURL(strings.TrimSpace(raw))
-	if parsed == nil {
+	pkg, err := ParsePURL(raw)
+	if err != nil {
 		return nil
 	}
+	return &pkg
+}
 
-	return &Package{
+// ParsePURL parses a Package URL into a Package using the same ecosystem display
+// names as coverage reports. Surrounding whitespace is ignored. It returns the
+// Package URL parser's error when raw is not a valid PURL.
+func ParsePURL(raw string) (Package, error) {
+	parsed, err := packageurl.FromString(strings.TrimSpace(raw))
+	if err != nil {
+		return Package{}, err
+	}
+	return Package{
 		Ecosystem: ecosystemFromPURLType(parsed.Type),
 		Name:      parsed.Name,
 		Version:   parsed.Version,
 		Namespace: parsed.Namespace,
-	}
+	}, nil
 }
 
 // purlTypeToEcosystem maps Package URL types onto the shared parser display names.

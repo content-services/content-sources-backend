@@ -243,6 +243,7 @@ func (p clearinghouseCaller) submission(upload dao.ClearinghouseUpload, files []
 		VulnerabilityCount: count,
 		Status:             upload.Status,
 		ErrorMessage:       upload.ErrorMessage,
+		PackageSummary:     upload.PackageSummary,
 		CanDelete:          p.checkDeleteSubmission(upload) == nil,
 		CanDownload:        canDownload,
 		CanAddReproducers:  p.checkAddFiles(upload) == nil,

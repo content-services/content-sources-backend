@@ -19,6 +19,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
+	"github.com/content-services/content-sources-backend/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -455,6 +456,8 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	otherID := uuid.New()
 	now := time.Now().UTC()
 	mine := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	summary := &api.ClearinghousePackageSummary{Total: 1, Ecosystems: []api.ClearinghousePackageEcosystemSummary{{Ecosystem: "Go", Total: 1}}}
+	mine.PackageSummary = summary
 	other := dao.ClearinghouseUpload{
 		UUID:      otherID,
 		OrgID:     "other-org",
@@ -502,6 +505,7 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.False(listed.Data[0].CanProcess)
 	s.Contains(string(body), `"can_add_reproducers":true`)
 	s.Contains(string(body), `"can_process":false`)
+	s.Equal(summary, listed.Data[0].PackageSummary)
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
 	s.Require().Equal(http.StatusOK, code, string(body))
@@ -515,6 +519,7 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.True(fetched.CanDelete)
 	s.True(fetched.CanSubmit)
 	s.True(fetched.Files[0].CanDelete)
+	s.Equal(summary, fetched.PackageSummary)
 
 	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()))
 	s.Equal(http.StatusNotFound, code, string(body))
@@ -549,6 +554,122 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 	s.Require().NoError(json.Unmarshal(body, &listed))
 	s.Empty(listed.Data)
 }
+func (s *ClearinghouseSuite) TestCreateParsesPackages() {
+	s.enableClearinghouse()
+	s.allowPut()
+	var stored dao.CreateClearinghouseUploadParams
+	s.reg.ClearinghouseUpload.On("CreateWithFiles", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(func(_ context.Context, upload dao.CreateClearinghouseUploadParams, params []dao.CreateClearinghouseUploadFileParams, before func([]dao.ClearinghouseUploadFile) error) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
+			stored = upload
+			rows := clearinghouseRows(params)
+			if err := before(rows); err != nil {
+				return dao.ClearinghouseUpload{}, nil, err
+			}
+			return dao.ClearinghouseUpload{UUID: upload.UUID, OrgID: upload.OrgID, Username: upload.Username, Status: upload.Status, VulnerabilityCount: upload.VulnerabilityCount, PackageSummary: upload.PackageSummary}, rows, nil
+		}).Once()
+
+	log4j := `{"vulnerability_id":"CVE-1","packageurl":"pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1","title":"t","description":"d"}`
+	invalid := `{"vulnerability_id":"CVE-2","packageurl":"log4j-core 2.14","title":"t","description":"d"}`
+	submission := clearinghouseSubmissionJSON("Packages", log4j, invalid, log4j)
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", submission))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+
+	s.Equal([]dao.CreateClearinghouseUploadPackageParams{
+		{Packageurl: "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1", Ecosystem: "Java", Namespace: "org.apache.logging.log4j", Name: "log4j-core", Version: "2.14.1", ValidPurl: true},
+		{Packageurl: "log4j-core 2.14", Ecosystem: api.ClearinghouseEcosystemUnknown,
+			InvalidReason: api.ClearinghouseInvalidReasonNotAPurl, InvalidDetail: `purl scheme is not "pkg": "log4j-core 2.14"`},
+	}, stored.Packages)
+	want := &api.ClearinghousePackageSummary{
+		Total:        2,
+		InvalidPurls: 1,
+		Ecosystems: []api.ClearinghousePackageEcosystemSummary{
+			{Ecosystem: "Java", Total: 1},
+			{Ecosystem: api.ClearinghouseEcosystemUnknown, Total: 1},
+		},
+	}
+	s.Equal(want, stored.PackageSummary)
+	var created api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &created))
+	s.Equal(want, created.PackageSummary)
+	s.Require().NotNil(created.VulnerabilityCount)
+	s.Equal(3, *created.VulnerabilityCount)
+}
+
+func (s *ClearinghouseSuite) TestListPackages() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	otherID := uuid.New()
+	mine := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending)
+	other := clearinghouseUpload(otherID, api.ClearinghouseSubmissionStatusSubmitted)
+	other.OrgID = "other-org"
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(mine, nil)
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, otherID).Return(other, nil)
+
+	packages := []dao.ClearinghouseUploadPackage{
+		{Packageurl: "pkg:maven/org.example/lib@1.0", Ecosystem: "Java", Namespace: "org.example", Name: "lib", Version: "1.0", ValidPurl: true},
+		{Packageurl: "not a purl", Ecosystem: api.ClearinghouseEcosystemUnknown, InvalidReason: api.ClearinghouseInvalidReasonNotAPurl, InvalidDetail: "bad purl"},
+	}
+	s.reg.ClearinghouseUpload.On("ListPackages", mock.Anything, id, dao.ListClearinghouseUploadPackagesParams{Limit: 100}).
+		Return(packages, int64(2), nil).Once()
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/packages"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var listed api.ClearinghouseSubmissionPackageCollectionResponse
+	s.Require().NoError(json.Unmarshal(body, &listed))
+	s.Equal(int64(2), listed.Meta.Count)
+	s.Equal([]api.ClearinghouseSubmissionPackage{
+		{Packageurl: "pkg:maven/org.example/lib@1.0", Ecosystem: "Java", Name: "org.example:lib", Version: "1.0", ValidPurl: true},
+		{Packageurl: "not a purl", Ecosystem: api.ClearinghouseEcosystemUnknown, InvalidReason: utils.Ptr(api.ClearinghouseInvalidReasonNotAPurl), InvalidDetail: utils.Ptr("bad purl")},
+	}, listed.Data)
+	s.Contains(string(body), `"invalid_reason":"not_a_purl","invalid_detail":"bad purl"`)
+	s.NotContains(string(body[:strings.Index(string(body), "not a purl")]), "invalid_reason", "valid packages omit invalid_reason")
+
+	invalidOnly := false
+	s.reg.ClearinghouseUpload.On("ListPackages", mock.Anything, id, dao.ListClearinghouseUploadPackagesParams{
+		Ecosystems: []string{"Java", api.ClearinghouseEcosystemUnknown},
+		ValidPurl:  &invalidOnly,
+		Limit:      1,
+		Offset:     1,
+	}).Return(packages[1:], int64(2), nil).Once()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/packages?ecosystem=Java,Unknown&valid_purl=false&limit=1&offset=1"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/packages?valid_purl=maybe"))
+	s.Equal(http.StatusBadRequest, code, string(body))
+
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/not-a-uuid/packages"))
+	s.Equal(http.StatusBadRequest, code, string(body))
+
+	// Another org's submission is hidden from customers.
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()+"/packages"))
+	s.Equal(http.StatusNotFound, code, string(body))
+
+	// Callers with clearinghouse read cannot list packages for a CID that does not list them.
+	s.enableRead()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()+"/packages"))
+	s.Equal(http.StatusNotFound, code, string(body))
+
+	// Callers with clearinghouse read can list packages for a CID that lists them.
+	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
+		`{"CidOrgId":{"CID-00001":"other-org"},"CidTam":{"CID-00001":["user"]}}`,
+	)
+	s.reg.ClearinghouseUpload.On("ListPackages", mock.Anything, otherID, dao.ListClearinghouseUploadPackagesParams{Limit: 100}).
+		Return([]dao.ClearinghouseUploadPackage{}, int64(0), nil).Once()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+otherID.String()+"/packages"))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Contains(string(body), `"data":[]`)
+}
+
+func (s *ClearinghouseSuite) TestListPackagesStoreError() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(clearinghouseUpload(id, api.ClearinghouseSubmissionStatusPending), nil).Once()
+	s.reg.ClearinghouseUpload.On("ListPackages", mock.Anything, id, mock.Anything).Return(nil, int64(0), errors.New("db down")).Once()
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()+"/packages"))
+	s.Equal(http.StatusInternalServerError, code, string(body))
+}
+
 func (s *ClearinghouseSuite) TestSubmit() {
 	s.enableClearinghouse()
 	id := uuid.New()

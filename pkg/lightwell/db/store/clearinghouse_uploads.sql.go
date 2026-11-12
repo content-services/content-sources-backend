@@ -9,7 +9,29 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const countClearinghouseUploadPackages = `-- name: CountClearinghouseUploadPackages :one
+SELECT COUNT(*)::bigint
+FROM clearinghouse_upload_packages
+WHERE clearinghouse_upload_uuid = $1
+    AND ($2::text[] IS NULL OR ecosystem = ANY($2::text[]))
+    AND ($3::boolean IS NULL OR valid_purl = $3::boolean)
+`
+
+type CountClearinghouseUploadPackagesParams struct {
+	ClearinghouseUploadUuid uuid.UUID   `json:"clearinghouse_upload_uuid"`
+	Ecosystems              []string    `json:"ecosystems"`
+	ValidPurl               pgtype.Bool `json:"valid_purl"`
+}
+
+func (q *Queries) CountClearinghouseUploadPackages(ctx context.Context, arg CountClearinghouseUploadPackagesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countClearinghouseUploadPackages, arg.ClearinghouseUploadUuid, arg.Ecosystems, arg.ValidPurl)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
 
 const countClearinghouseUploads = `-- name: CountClearinghouseUploads :one
 SELECT COUNT(*)::bigint
@@ -43,7 +65,8 @@ INSERT INTO clearinghouse_uploads (
     filename,
     vulnerability_count,
     status,
-    error_message
+    error_message,
+    package_summary
 ) VALUES (
     $1,
     $2,
@@ -52,9 +75,10 @@ INSERT INTO clearinghouse_uploads (
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9
 )
-RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by, package_summary
 `
 
 type CreateClearinghouseUploadParams struct {
@@ -66,6 +90,7 @@ type CreateClearinghouseUploadParams struct {
 	VulnerabilityCount *int32    `json:"vulnerability_count"`
 	Status             string    `json:"status"`
 	ErrorMessage       *string   `json:"error_message"`
+	PackageSummary     []byte    `json:"package_summary"`
 }
 
 func (q *Queries) CreateClearinghouseUpload(ctx context.Context, arg CreateClearinghouseUploadParams) (ClearinghouseUpload, error) {
@@ -78,6 +103,7 @@ func (q *Queries) CreateClearinghouseUpload(ctx context.Context, arg CreateClear
 		arg.VulnerabilityCount,
 		arg.Status,
 		arg.ErrorMessage,
+		arg.PackageSummary,
 	)
 	var i ClearinghouseUpload
 	err := row.Scan(
@@ -94,6 +120,7 @@ func (q *Queries) CreateClearinghouseUpload(ctx context.Context, arg CreateClear
 		&i.SubmittedBy,
 		&i.ProcessedAt,
 		&i.ProcessedBy,
+		&i.PackageSummary,
 	)
 	return i, err
 }
@@ -148,6 +175,20 @@ func (q *Queries) CreateClearinghouseUploadFile(ctx context.Context, arg CreateC
 	return i, err
 }
 
+type CreateClearinghouseUploadPackagesParams struct {
+	Uuid                    uuid.UUID `json:"uuid"`
+	ClearinghouseUploadUuid uuid.UUID `json:"clearinghouse_upload_uuid"`
+	Position                int32     `json:"position"`
+	Packageurl              string    `json:"packageurl"`
+	Ecosystem               string    `json:"ecosystem"`
+	Namespace               *string   `json:"namespace"`
+	Name                    string    `json:"name"`
+	Version                 string    `json:"version"`
+	ValidPurl               bool      `json:"valid_purl"`
+	InvalidReason           *string   `json:"invalid_reason"`
+	InvalidDetail           *string   `json:"invalid_detail"`
+}
+
 const deleteClearinghouseUpload = `-- name: DeleteClearinghouseUpload :exec
 DELETE FROM clearinghouse_uploads
 WHERE uuid = $1
@@ -169,7 +210,7 @@ func (q *Queries) DeleteClearinghouseUploadFile(ctx context.Context, argUuid uui
 }
 
 const getClearinghouseUpload = `-- name: GetClearinghouseUpload :one
-SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by, package_summary
 FROM clearinghouse_uploads
 WHERE uuid = $1
 `
@@ -191,6 +232,7 @@ func (q *Queries) GetClearinghouseUpload(ctx context.Context, argUuid uuid.UUID)
 		&i.SubmittedBy,
 		&i.ProcessedAt,
 		&i.ProcessedBy,
+		&i.PackageSummary,
 	)
 	return i, err
 }
@@ -223,7 +265,7 @@ func (q *Queries) GetClearinghouseUploadFileByName(ctx context.Context, arg GetC
 }
 
 const getClearinghouseUploadForUpdate = `-- name: GetClearinghouseUploadForUpdate :one
-SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by, package_summary
 FROM clearinghouse_uploads
 WHERE uuid = $1
 FOR UPDATE
@@ -246,6 +288,7 @@ func (q *Queries) GetClearinghouseUploadForUpdate(ctx context.Context, argUuid u
 		&i.SubmittedBy,
 		&i.ProcessedAt,
 		&i.ProcessedBy,
+		&i.PackageSummary,
 	)
 	return i, err
 }
@@ -320,8 +363,64 @@ func (q *Queries) ListClearinghouseUploadFilesByUploads(ctx context.Context, upl
 	return items, nil
 }
 
+const listClearinghouseUploadPackages = `-- name: ListClearinghouseUploadPackages :many
+SELECT uuid, clearinghouse_upload_uuid, position, packageurl, ecosystem, namespace, name, version, valid_purl, invalid_reason, invalid_detail
+FROM clearinghouse_upload_packages
+WHERE clearinghouse_upload_uuid = $1
+    AND ($2::text[] IS NULL OR ecosystem = ANY($2::text[]))
+    AND ($3::boolean IS NULL OR valid_purl = $3::boolean)
+ORDER BY position
+LIMIT $5 OFFSET $4
+`
+
+type ListClearinghouseUploadPackagesParams struct {
+	ClearinghouseUploadUuid uuid.UUID   `json:"clearinghouse_upload_uuid"`
+	Ecosystems              []string    `json:"ecosystems"`
+	ValidPurl               pgtype.Bool `json:"valid_purl"`
+	PageOffset              int32       `json:"page_offset"`
+	PageLimit               int32       `json:"page_limit"`
+}
+
+func (q *Queries) ListClearinghouseUploadPackages(ctx context.Context, arg ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, error) {
+	rows, err := q.db.Query(ctx, listClearinghouseUploadPackages,
+		arg.ClearinghouseUploadUuid,
+		arg.Ecosystems,
+		arg.ValidPurl,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ClearinghouseUploadPackage{}
+	for rows.Next() {
+		var i ClearinghouseUploadPackage
+		if err := rows.Scan(
+			&i.Uuid,
+			&i.ClearinghouseUploadUuid,
+			&i.Position,
+			&i.Packageurl,
+			&i.Ecosystem,
+			&i.Namespace,
+			&i.Name,
+			&i.Version,
+			&i.ValidPurl,
+			&i.InvalidReason,
+			&i.InvalidDetail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listClearinghouseUploads = `-- name: ListClearinghouseUploads :many
-SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+SELECT uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by, package_summary
 FROM clearinghouse_uploads
 WHERE ($1::text IS NULL OR org_id = $1::text)
   AND (
@@ -369,6 +468,7 @@ func (q *Queries) ListClearinghouseUploads(ctx context.Context, arg ListClearing
 			&i.SubmittedBy,
 			&i.ProcessedAt,
 			&i.ProcessedBy,
+			&i.PackageSummary,
 		); err != nil {
 			return nil, err
 		}
@@ -387,7 +487,7 @@ SET status = 'processed',
     processed_by = $1
 WHERE uuid = $2
     AND status = 'submitted'
-RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by, package_summary
 `
 
 type ProcessClearinghouseUploadParams struct {
@@ -412,6 +512,7 @@ func (q *Queries) ProcessClearinghouseUpload(ctx context.Context, arg ProcessCle
 		&i.SubmittedBy,
 		&i.ProcessedAt,
 		&i.ProcessedBy,
+		&i.PackageSummary,
 	)
 	return i, err
 }
@@ -423,7 +524,7 @@ SET status = 'submitted',
     submitted_by = $1
 WHERE uuid = $2
     AND status = 'pending'
-RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by
+RETURNING uuid, created_at, org_id, username, name, filename, vulnerability_count, status, error_message, submitted_at, submitted_by, processed_at, processed_by, package_summary
 `
 
 type SubmitClearinghouseUploadParams struct {
@@ -448,6 +549,7 @@ func (q *Queries) SubmitClearinghouseUpload(ctx context.Context, arg SubmitClear
 		&i.SubmittedBy,
 		&i.ProcessedAt,
 		&i.ProcessedBy,
+		&i.PackageSummary,
 	)
 	return i, err
 }

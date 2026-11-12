@@ -573,6 +573,78 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/{uuid}/packages": {
+            "get": {
+                "description": "List the unique packages referenced by the vulnerabilities in a submission's JSON, in the order they first appear. Packages are unique by ecosystem, namespace, name and version. A packageurl is valid when it parses as a Package URL and includes a version. A packageurl without a version keeps its ecosystem with valid_purl false; one that does not parse is listed under the Unknown ecosystem with valid_purl false. Visible to the same callers as the submission.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "List the packages in a clearinghouse submission",
+                "operationId": "listClearinghouseSubmissionPackages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Clearinghouse submission UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "A comma separated list of ecosystems to filter on, for example Java,Unknown",
+                        "name": "ecosystem",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Only list packages whose packageurl is (true) or is not (false) valid. Valid means it parses as a Package URL and includes a version.",
+                        "name": "valid_purl",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items to include in response. Use it to control the number of items, particularly when dealing with large datasets. Default value: ` + "`" + `100` + "`" + `.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting point for retrieving a subset of results. Default value: 0.",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmissionPackageCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/clearinghouse/submissions/{uuid}/process": {
             "post": {
                 "description": "Mark a submitted clearinghouse submission as processed. Records the time and the username of the caller. Requires the Lightwell clearinghouse read feature, and the caller must be listed on the submission's CID.",
@@ -1542,6 +1614,37 @@ const docTemplatelightwell = `{
         }
     },
     "definitions": {
+        "api.ClearinghousePackageEcosystemSummary": {
+            "type": "object",
+            "properties": {
+                "ecosystem": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.ClearinghousePackageSummary": {
+            "type": "object",
+            "properties": {
+                "ecosystems": {
+                    "description": "Ecosystems is the per-ecosystem breakdown, largest first.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghousePackageEcosystemSummary"
+                    }
+                },
+                "invalid_purls": {
+                    "description": "InvalidPurls is the number of unique packageurls that are invalid: they do not parse as a Package URL (counted under the Unknown ecosystem) or have no version (counted under their ecosystem).",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "Total is the number of unique packages. A package is unique by ecosystem, namespace, name and version; invalid packageurls are unique by their value.",
+                    "type": "integer"
+                }
+            }
+        },
         "api.ClearinghouseSubmission": {
             "type": "object",
             "properties": {
@@ -1582,6 +1685,14 @@ const docTemplatelightwell = `{
                 },
                 "org_id": {
                     "type": "string"
+                },
+                "package_summary": {
+                    "description": "PackageSummary is the per-ecosystem breakdown of the packages in the submission JSON. Absent for submissions created before package parsing was added.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.ClearinghousePackageSummary"
+                        }
+                    ]
                 },
                 "processed_at": {
                     "type": "string"
@@ -1655,6 +1766,60 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "api.ClearinghouseSubmissionPackage": {
+            "type": "object",
+            "properties": {
+                "ecosystem": {
+                    "description": "Ecosystem is the package ecosystem, or Unknown when the packageurl does not parse as a Package URL.",
+                    "type": "string"
+                },
+                "invalid_detail": {
+                    "description": "InvalidDetail is a human-readable explanation of invalid_reason, such as the Package URL parser error. Set only when valid_purl is false.",
+                    "type": "string"
+                },
+                "invalid_reason": {
+                    "description": "InvalidReason is a fixed code saying why the package is invalid. Set only when valid_purl is false.",
+                    "type": "string",
+                    "enum": [
+                        "not_a_purl",
+                        "missing_version"
+                    ]
+                },
+                "name": {
+                    "description": "Name is the package name including its namespace. Empty when the packageurl does not parse as a Package URL.",
+                    "type": "string"
+                },
+                "packageurl": {
+                    "description": "Packageurl is the packageurl as submitted.",
+                    "type": "string"
+                },
+                "valid_purl": {
+                    "description": "ValidPurl is false when the packageurl does not parse as a Package URL or has no version.",
+                    "type": "boolean"
+                },
+                "version": {
+                    "description": "Version is the package version. Empty when the packageurl does not parse as a Package URL or has no version.",
+                    "type": "string"
+                }
+            }
+        },
+        "api.ClearinghouseSubmissionPackageCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ClearinghouseSubmissionPackage"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
         "api.ClearinghouseSubmissionWithCID": {
             "type": "object",
             "properties": {
@@ -1699,6 +1864,14 @@ const docTemplatelightwell = `{
                 },
                 "org_id": {
                     "type": "string"
+                },
+                "package_summary": {
+                    "description": "PackageSummary is the per-ecosystem breakdown of the packages in the submission JSON. Absent for submissions created before package parsing was added.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.ClearinghousePackageSummary"
+                        }
+                    ]
                 },
                 "processed_at": {
                     "type": "string"

@@ -15,10 +15,12 @@ type Querier interface {
 	CountAdvisoriesByRepo(ctx context.Context, repositoryConfigUuid uuid.UUID) (int64, error)
 	CountAggregates(ctx context.Context, arg CountAggregatesParams) (CountAggregatesRow, error)
 	CountByStage(ctx context.Context, arg CountByStageParams) ([]CountByStageRow, error)
+	CountClearinghouseUploadPackages(ctx context.Context, arg CountClearinghouseUploadPackagesParams) (int64, error)
 	CountClearinghouseUploads(ctx context.Context, arg CountClearinghouseUploadsParams) (int64, error)
 	CountStoredPackageContent(ctx context.Context, repositoryConfigurationUuid uuid.UUID) (CountStoredPackageContentRow, error)
 	CreateClearinghouseUpload(ctx context.Context, arg CreateClearinghouseUploadParams) (ClearinghouseUpload, error)
 	CreateClearinghouseUploadFile(ctx context.Context, arg CreateClearinghouseUploadFileParams) (ClearinghouseUploadFile, error)
+	CreateClearinghouseUploadPackages(ctx context.Context, arg []CreateClearinghouseUploadPackagesParams) (int64, error)
 	DeleteClearinghouseUpload(ctx context.Context, argUuid uuid.UUID) error
 	DeleteClearinghouseUploadFile(ctx context.Context, argUuid uuid.UUID) error
 	DeleteVulnerabilityByKey(ctx context.Context, vulnerabilityKey string) (int64, error)
@@ -37,6 +39,7 @@ type Querier interface {
 	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
 	ListClearinghouseUploadFiles(ctx context.Context, clearinghouseUploadUuid uuid.UUID) ([]ClearinghouseUploadFile, error)
 	ListClearinghouseUploadFilesByUploads(ctx context.Context, uploadUuids []uuid.UUID) ([]ClearinghouseUploadFile, error)
+	ListClearinghouseUploadPackages(ctx context.Context, arg ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, error)
 	ListClearinghouseUploads(ctx context.Context, arg ListClearinghouseUploadsParams) ([]ClearinghouseUpload, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLensCatalog(ctx context.Context, arg ListLensCatalogParams) ([]ListLensCatalogRow, error)
