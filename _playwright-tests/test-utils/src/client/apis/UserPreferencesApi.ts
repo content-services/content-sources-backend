@@ -137,6 +137,7 @@ export class UserPreferencesApi extends runtime.BaseAPI {
  */
 export const SetUserPreferenceLabelEnum = {
     LightwellNotificationEnabled: 'lightwell-notification-enabled',
-    LightwellNotificationMinimum: 'lightwell-notification-minimum'
+    LightwellNotificationMinimum: 'lightwell-notification-minimum',
+    LightwellTechPreviewAlertDismissed: 'lightwell-tech-preview-alert-dismissed'
 } as const;
 export type SetUserPreferenceLabelEnum = typeof SetUserPreferenceLabelEnum[keyof typeof SetUserPreferenceLabelEnum];

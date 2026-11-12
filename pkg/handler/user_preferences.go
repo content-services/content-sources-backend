@@ -53,7 +53,7 @@ func (h *UserPreferencesHandler) listUserPreferences(c echo.Context) error {
 // @Tags         user_preferences
 // @Accept       json
 // @Produce      json
-// @Param        label path string true "Preference label" Enums(lightwell-notification-enabled, lightwell-notification-minimum)
+// @Param        label path string true "Preference label" Enums(lightwell-notification-enabled, lightwell-notification-minimum, lightwell-tech-preview-alert-dismissed)
 // @Param        body body string true "Preference value as a JSON string"
 // @Success      200 {object} api.UserPreferenceResponse
 // @Failure      400 {object} ce.ErrorResponse
