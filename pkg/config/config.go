@@ -153,6 +153,18 @@ type Pulp struct {
 	CoprDomain             string       `mapstructure:"copr_domain"` // Pulp domain for Copr-initiated snapshots
 }
 
+// ImageBuilderIdentity parses the TBR login; an empty login leaves the guard unconfigured.
+func (p Pulp) ImageBuilderIdentity() (string, string, error) {
+	if p.ImageBuilderUsername == "" {
+		return "", "", nil
+	}
+	orgID, username, found := strings.Cut(p.ImageBuilderUsername, "|")
+	if !found || strings.TrimSpace(orgID) == "" || strings.TrimSpace(username) == "" || strings.Contains(username, "|") {
+		return "", "", fmt.Errorf("clients.pulp.image_builder_username must be in orgID|username format with both values non-empty")
+	}
+	return orgID, username, nil
+}
+
 type Lightwell struct {
 	Username string
 	Password string
