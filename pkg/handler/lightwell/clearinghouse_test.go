@@ -651,7 +651,7 @@ func (s *ClearinghouseSuite) TestListPackages() {
 
 	// Callers with clearinghouse read can list packages for a CID that lists them.
 	config.Get().Clients.Lightwell.ClearinghouseMapping = config.ParseClearinghouseMappings(
-		`{"CidOrgId":{"CID-00001":"other-org"},"CidTam":{"CID-00001":["user"]}}`,
+		`{"CID-00001":["other-org"]}`, `{"CID-00001":["user"]}`,
 	)
 	s.reg.ClearinghouseUpload.On("ListPackages", mock.Anything, otherID, dao.ListClearinghouseUploadPackagesParams{Limit: 100}).
 		Return([]dao.ClearinghouseUploadPackage{}, int64(0), nil).Once()
