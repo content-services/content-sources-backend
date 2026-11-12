@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -47,6 +48,9 @@ type OSVRecord struct {
 type RegistryClient interface {
 	FetchJAR(ctx context.Context, groupID, artifactID, version string) (body []byte, sha256hex string, err error)
 	FetchPOM(ctx context.Context, groupID, artifactID, version string) ([]byte, error)
+	// FetchClassifier fetches an optional classified JAR (e.g. "sources",
+	// "javadoc"). It returns (nil, nil) when the registry reports 404.
+	FetchClassifier(ctx context.Context, groupID, artifactID, version, classifier string) ([]byte, error)
 	FetchSBOM(ctx context.Context, groupID, artifactID, version string) (bom, asc []byte, err error)
 	FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error)
 	FetchVEX(ctx context.Context, cveIDs []string) ([]byte, error)
@@ -94,6 +98,16 @@ func (c *httpRegistryClient) FetchPOM(ctx context.Context, groupID, artifactID, 
 	data, err := c.getWithRetry(ctx, path)
 	if err != nil {
 		return nil, fmt.Errorf("fetch POM: %w", err)
+	}
+	return data, nil
+}
+
+func (c *httpRegistryClient) FetchClassifier(ctx context.Context, groupID, artifactID, version, classifier string) ([]byte, error) {
+	path := fmt.Sprintf("%s/%s/%s/%s/%s-%s-%s.jar",
+		c.registryURL, groupPath(groupID), artifactID, version, artifactID, version, classifier)
+	data, err := c.getOptionalWithRetry(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("fetch %s JAR: %w", classifier, err)
 	}
 	return data, nil
 }
@@ -212,6 +226,32 @@ func (c *httpRegistryClient) getWithRetry(ctx context.Context, rawURL string) ([
 	return data, err
 }
 
+// getOptionalWithRetry is like getWithRetry but treats HTTP 404 as "absent":
+// it returns (nil, nil) immediately without retrying.
+func (c *httpRegistryClient) getOptionalWithRetry(ctx context.Context, rawURL string) ([]byte, error) {
+	var data []byte
+	err := retryWithBackoff(ctx, c.maxRetries, func() error {
+		var fetchErr error
+		data, fetchErr = c.doGet(ctx, rawURL)
+		var statusErr *httpStatusError
+		if errors.As(fetchErr, &statusErr) && statusErr.StatusCode == http.StatusNotFound {
+			data = nil
+			return nil
+		}
+		return fetchErr
+	})
+	return data, err
+}
+
+type httpStatusError struct {
+	StatusCode int
+	URL        string
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("HTTP %d from %s", e.StatusCode, e.URL)
+}
+
 func (c *httpRegistryClient) doGet(ctx context.Context, rawURL string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -228,7 +268,7 @@ func (c *httpRegistryClient) doGet(ctx context.Context, rawURL string) ([]byte, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
+		return nil, &httpStatusError{StatusCode: resp.StatusCode, URL: rawURL}
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, maxRegistryResponseBytes))
 }

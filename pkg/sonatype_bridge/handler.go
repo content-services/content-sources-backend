@@ -3,7 +3,6 @@ package sonatype_bridge
 import (
 	"context"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"sort"
@@ -19,6 +18,9 @@ const (
 )
 
 const maxProcessedGAVs = 10000
+
+// optionalClassifiers are classified JARs added to the bundle when published.
+var optionalClassifiers = []string{"sources", "javadoc"}
 
 // BridgeHandler implements sarama.ConsumerGroupHandler and orchestrates
 // the full pipeline for each remediation message.
@@ -155,6 +157,24 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("fetch POM: %w", err)
 	}
 
+	bundleFiles := []bundleFile{
+		{Name: jarFilename, Data: jarData},
+		{Name: fmt.Sprintf("%s-%s.pom", rem.ArtifactID, rem.Version), Data: pomData},
+	}
+	for _, classifier := range optionalClassifiers {
+		data, err := h.registry.FetchClassifier(ctx, rem.GroupID, rem.ArtifactID, rem.Version, classifier)
+		if err != nil {
+			return fmt.Errorf("fetch %s JAR: %w", classifier, err)
+		}
+		if data == nil {
+			continue
+		}
+		bundleFiles = append(bundleFiles, bundleFile{
+			Name: fmt.Sprintf("%s-%s-%s.jar", rem.ArtifactID, rem.Version, classifier),
+			Data: data,
+		})
+	}
+
 	// 2. Fetch OSV records
 	osvRecords, err := h.registry.FetchOSVRecords(ctx, rem.GroupID, rem.ArtifactID, rem.BaseVersion)
 	if err != nil {
@@ -178,42 +198,42 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("fetch VEX: %w", err)
 	}
 
-	// 5. Upload bundle to the partner S3 bucket
-	gp := groupPath(rem.GroupID)
-	deployBase := fmt.Sprintf("%s/%s/%s", gp, rem.ArtifactID, rem.Version)
-
-	jarPath := fmt.Sprintf("%s/%s-%s.jar", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.s3.UploadFile(ctx, jarPath, jarData, "application/java-archive"); err != nil {
-		return fmt.Errorf("upload JAR: %w", err)
+	// 5. Derive the bucket layout from the SBOM and check it describes this artifact.
+	coords, err := parseBOMCoordinates(sbomData, rem)
+	if err != nil {
+		return fmt.Errorf("SBOM coordinates: %w", err)
+	}
+	if err := validateCoordinates(coords, rem); err != nil {
+		return fmt.Errorf("SBOM coordinates: %w", err)
 	}
 
-	pomPath := fmt.Sprintf("%s/%s-%s.pom", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.s3.UploadFile(ctx, pomPath, pomData, "application/xml"); err != nil {
-		return fmt.Errorf("upload POM: %w", err)
+	// 6. Build the flat zip bundle (JAR, POM, optional sources/javadoc).
+	zipData, err := buildBundleZip(bundleFiles)
+	if err != nil {
+		return fmt.Errorf("build bundle: %w", err)
 	}
 
-	sbomPath := fmt.Sprintf("%s/sbom/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.s3.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
-		return fmt.Errorf("upload SBOM: %w", err)
+	// 7. Upload to the partner S3 bucket. The SBOM goes last so its presence
+	// marks a complete delivery.
+	keyBase := fmt.Sprintf("%s/%s-%s", bundleBasePath(coords), coords.Name, coords.Version)
+	zipPath := keyBase + ".zip"
+	sbomPath := keyBase + ".bom.json"
+
+	if err := h.s3.UploadFile(ctx, zipPath, zipData, "application/zip"); err != nil {
+		return fmt.Errorf("upload bundle: %w", err)
 	}
 	if err := h.s3.UploadFile(ctx, sbomPath+".asc", sbomASC, "application/pgp-signature"); err != nil {
 		return fmt.Errorf("upload SBOM signature: %w", err)
 	}
-
-	vexPath := fmt.Sprintf("%s/vex/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.s3.UploadFile(ctx, vexPath, vexData, "application/json"); err != nil {
+	if err := h.s3.UploadFile(ctx, keyBase+".vex.json", vexData, "application/json"); err != nil {
 		return fmt.Errorf("upload VEX: %w", err)
 	}
-
-	// 6. Upload maven-metadata.xml
-	metadataXML := generateMavenMetadata(rem.GroupID, rem.ArtifactID, rem.Version)
-	metadataPath := fmt.Sprintf("%s/%s/maven-metadata.xml", gp, rem.ArtifactID)
-	if err := h.s3.UploadFile(ctx, metadataPath, metadataXML, "application/xml"); err != nil {
-		return fmt.Errorf("upload maven-metadata.xml: %w", err)
+	if err := h.s3.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
+		return fmt.Errorf("upload SBOM: %w", err)
 	}
 
-	// 7. Verify
-	if err := h.s3.VerifyDelivery(ctx, jarPath); err != nil {
+	// 8. Verify
+	if err := h.s3.VerifyDelivery(ctx, zipPath); err != nil {
 		return fmt.Errorf("verify delivery: %w", err)
 	}
 
@@ -222,45 +242,6 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 
 func gavKey(rem Remediation) string {
 	return fmt.Sprintf("%s:%s:%s", rem.GroupID, rem.ArtifactID, rem.Version)
-}
-
-type mavenMetadata struct {
-	XMLName    xml.Name        `xml:"metadata"`
-	GroupID    string          `xml:"groupId"`
-	ArtifactID string          `xml:"artifactId"`
-	Versioning mavenVersioning `xml:"versioning"`
-}
-
-type mavenVersioning struct {
-	Latest      string           `xml:"latest"`
-	Release     string           `xml:"release"`
-	Versions    mavenVersionList `xml:"versions"`
-	LastUpdated string           `xml:"lastUpdated"`
-}
-
-type mavenVersionList struct {
-	Version []string `xml:"version"`
-}
-
-func generateMavenMetadata(groupID, artifactID, version string) []byte {
-	ts := time.Now().UTC().Format("20060102150405")
-	meta := mavenMetadata{
-		GroupID:    groupID,
-		ArtifactID: artifactID,
-		Versioning: mavenVersioning{
-			Latest:  version,
-			Release: version,
-			Versions: mavenVersionList{
-				Version: []string{version},
-			},
-			LastUpdated: ts,
-		},
-	}
-	data, err := xml.MarshalIndent(meta, "", "  ")
-	if err != nil {
-		return []byte{}
-	}
-	return append([]byte(xml.Header), data...)
 }
 
 // verifyJARChecksum compares the fetched JAR's SHA-256 against the checksum

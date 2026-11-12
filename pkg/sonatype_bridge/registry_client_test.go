@@ -412,3 +412,45 @@ func TestFetchVEX_NoIntersection(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no shared VEX timestamp")
 }
+
+func TestFetchClassifier_Success(t *testing.T) {
+	var path string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path = r.URL.Path
+		_, _ = w.Write([]byte("src"))
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	data, err := client.FetchClassifier(context.Background(), "org.example", "lib", "1.0.rhlw-00001", "sources")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("src"), data)
+	assert.Equal(t, "/org/example/lib/1.0.rhlw-00001/lib-1.0.rhlw-00001-sources.jar", path)
+}
+
+func TestFetchClassifier_NotFoundIsAbsentWithoutRetry(t *testing.T) {
+	var hits int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 3}
+	data, err := client.FetchClassifier(context.Background(), "org.example", "lib", "1.0", "javadoc")
+	require.NoError(t, err)
+	assert.Nil(t, data)
+	assert.Equal(t, 1, hits, "404 must not be retried")
+}
+
+func TestFetchClassifier_ServerError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	_, err := client.FetchClassifier(context.Background(), "org.example", "lib", "1.0", "sources")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
+}
