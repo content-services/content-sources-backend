@@ -12,12 +12,17 @@ const TableNameUserPreferences = "user_preferences"
 const (
 	UserPreferenceLightwellNotificationEnabled = "lightwell-notification-enabled"
 	UserPreferenceLightwellNotificationMinimum = "lightwell-notification-minimum"
+
+	// UserPreferenceLightwellTechPreviewAlertDismissed is "true" once the user dismisses the
+	// Technology Preview alert shown on JavaScript repositories.
+	UserPreferenceLightwellTechPreviewAlertDismissed = "lightwell-tech-preview-alert-dismissed"
 )
 
 // ValidUserPreferenceLabels is the set of accepted preference labels
 var ValidUserPreferenceLabels = map[string]bool{
-	UserPreferenceLightwellNotificationEnabled: true,
-	UserPreferenceLightwellNotificationMinimum: true,
+	UserPreferenceLightwellNotificationEnabled:       true,
+	UserPreferenceLightwellNotificationMinimum:       true,
+	UserPreferenceLightwellTechPreviewAlertDismissed: true,
 }
 
 // ValidUserPreferenceValues maps labels to their accepted values.
@@ -32,6 +37,10 @@ var ValidUserPreferenceValues = map[string]map[string]bool{
 		"high":     true,
 		"medium":   true,
 		"low":      true,
+	},
+	UserPreferenceLightwellTechPreviewAlertDismissed: {
+		"true":  true,
+		"false": true,
 	},
 }
 

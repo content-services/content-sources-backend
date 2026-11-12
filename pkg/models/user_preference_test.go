@@ -9,6 +9,7 @@ import (
 func TestIsValidUserPreferenceLabel(t *testing.T) {
 	assert.True(t, IsValidUserPreferenceLabel(UserPreferenceLightwellNotificationEnabled))
 	assert.True(t, IsValidUserPreferenceLabel(UserPreferenceLightwellNotificationMinimum))
+	assert.True(t, IsValidUserPreferenceLabel(UserPreferenceLightwellTechPreviewAlertDismissed))
 	assert.False(t, IsValidUserPreferenceLabel("unknown-label"))
 }
 
@@ -20,6 +21,10 @@ func TestValidateUserPreferenceValue(t *testing.T) {
 	assert.NoError(t, ValidateUserPreferenceValue(UserPreferenceLightwellNotificationMinimum, "critical"))
 	assert.NoError(t, ValidateUserPreferenceValue(UserPreferenceLightwellNotificationMinimum, "high"))
 	assert.Error(t, ValidateUserPreferenceValue(UserPreferenceLightwellNotificationMinimum, "urgent"))
+
+	assert.NoError(t, ValidateUserPreferenceValue(UserPreferenceLightwellTechPreviewAlertDismissed, "true"))
+	assert.NoError(t, ValidateUserPreferenceValue(UserPreferenceLightwellTechPreviewAlertDismissed, "false"))
+	assert.Error(t, ValidateUserPreferenceValue(UserPreferenceLightwellTechPreviewAlertDismissed, "dismissed"))
 	assert.Error(t, ValidateUserPreferenceValue("unknown", "true"))
 }
 

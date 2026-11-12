@@ -5190,7 +5190,8 @@ const docTemplate = `{
                     {
                         "enum": [
                             "lightwell-notification-enabled",
-                            "lightwell-notification-minimum"
+                            "lightwell-notification-minimum",
+                            "lightwell-tech-preview-alert-dismissed"
                         ],
                         "type": "string",
                         "description": "Preference label",
