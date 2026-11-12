@@ -314,7 +314,7 @@ func TestFetchSBOM_SignatureNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "signature")
 }
 
-func TestMultiCVEVEXFilename(t *testing.T) {
+func TestLatestVEXFilename(t *testing.T) {
 	entries := []vulnerability_parser.ManifestEntry{
 		{Filename: "CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json"},
 		{Filename: "CVE-2023-20860-2026-06-01T00:00:00+00:00.bom.json"},
@@ -322,32 +322,45 @@ func TestMultiCVEVEXFilename(t *testing.T) {
 		{Filename: "2026-07-15T14:02:27+00:00.bom.json"},
 		{Filename: "x_RHLW-CVE-2025-41249-5.3.18.json"},
 		{Filename: "CVE-2025-1-2026-07-15T14:02:27+00:00.bom.json"},
-		{Filename: "CVE-2025-12-2026-01-01T00:00:00+00:00.bom.json"},
+		{Filename: "CVE-2025-12-2026-09-01T00:00:00+00:00.bom.json"},
 	}
 
-	name, err := multiCVEVEXFilename(entries, []string{"CVE-2025-41249", "CVE-2023-20860"})
+	name, ts, err := latestVEXFilename(entries, "CVE-2025-41249")
 	require.NoError(t, err)
-	assert.Equal(t, "2026-07-15T14:02:27+00:00.bom.json", name)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json", name)
+	assert.Equal(t, "2026-07-15T14:02:27+00:00", ts)
 
-	short, err := multiCVEVEXFilename(entries, []string{"CVE-2025-1"})
+	name, _, err = latestVEXFilename(entries, "CVE-2023-20860")
 	require.NoError(t, err)
-	assert.Equal(t, "2026-07-15T14:02:27+00:00.bom.json", short)
+	assert.Equal(t, "CVE-2023-20860-2026-07-15T14:02:27+00:00.bom.json", name, "newest timestamp wins")
 
-	_, err = multiCVEVEXFilename(entries, nil)
-	require.Error(t, err)
+	name, _, err = latestVEXFilename(entries, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-1-2026-07-15T14:02:27+00:00.bom.json", name, "CVE-2025-12 must not match CVE-2025-1")
 
-	_, err = multiCVEVEXFilename(entries, []string{"CVE-2025-41249", "CVE-2099-0001"})
+	_, _, err = latestVEXFilename(entries, "CVE-2099-0001")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "CVE-2025-41249")
 	assert.Contains(t, err.Error(), "CVE-2099-0001")
 
-	multi := []vulnerability_parser.ManifestEntry{
-		{Filename: "CVE-2024-1-2026-01-01T00:00:00+00:00.bom.json"},
-		{Filename: "CVE-2024-1-2026-02-01T00:00:00+00:00.bom.json"},
-	}
-	chosen, err := multiCVEVEXFilename(multi, []string{"CVE-2024-1"})
+	_, _, err = latestVEXFilename(entries, "")
+	require.Error(t, err)
+}
+
+func TestVEXObjectName(t *testing.T) {
+	name, err := vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27+00:00")
 	require.NoError(t, err)
-	assert.Equal(t, "2026-02-01T00:00:00+00:00.bom.json", chosen)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", name)
+
+	name, err = vexObjectName("CVE-2025-41249", "2026-07-15T23:30:00-05:00")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-41249-2026-07-16.bom.json", name, "date is normalized to UTC")
+
+	name, err = vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27.123456Z")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", name)
+
+	_, err = vexObjectName("CVE-2025-41249", "not-a-date")
+	require.Error(t, err)
 }
 
 func TestFetchVEX_Success(t *testing.T) {
@@ -377,12 +390,48 @@ func TestFetchVEX_Success(t *testing.T) {
 		osvURL:     osvServer.URL,
 		maxRetries: 0,
 	}
-	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249"})
+	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249", "CVE-2025-41249"})
 	require.NoError(t, err)
-	assert.Equal(t, []byte(body), got)
-	require.Len(t, requestURIs, 2)
+	assert.Equal(t, []VEXDocument{{Name: "CVE-2025-41249-2026-07-15.bom.json", Data: []byte(body)}}, got)
+	require.Len(t, requestURIs, 2, "manifest once, duplicate CVE fetched once")
 	assert.Contains(t, requestURIs[0], "PULP_MANIFEST")
-	assert.Contains(t, requestURIs[1], "2026-07-15T14:02:27%2B00:00.bom.json")
+	assert.Contains(t, requestURIs[1], "/CVE-2025-41249-2026-07-15T14:02:27%2B00:00.bom.json")
+}
+
+func TestFetchVEX_MultipleCVEs(t *testing.T) {
+	manifest := strings.Join([]string{
+		"CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json,a,1",
+		"CVE-2023-20860-2026-06-01T00:00:00+00:00.bom.json,b,1",
+		"CVE-2023-20860-2026-05-01T00:00:00+00:00.bom.json,c,1",
+		"2026-07-15T14:02:27+00:00.bom.json,d,1",
+	}, "\n") + "\n"
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
+			_, _ = w.Write([]byte(manifest))
+			return
+		}
+		paths = append(paths, r.URL.Path)
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/CVE-2025-41249-"):
+			_, _ = w.Write([]byte("body-41249"))
+		case strings.HasPrefix(r.URL.Path, "/CVE-2023-20860-2026-06-01"):
+			_, _ = w.Write([]byte("body-20860"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
+	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249", "CVE-2023-20860"})
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", got[0].Name)
+	assert.Equal(t, "body-41249", string(got[0].Data))
+	assert.Equal(t, "CVE-2023-20860-2026-06-01.bom.json", got[1].Name)
+	assert.Equal(t, "body-20860", string(got[1].Data))
+	assert.Len(t, paths, 2, "the multi-CVE document must not be fetched")
 }
 
 func TestFetchVEX_NotFound(t *testing.T) {
@@ -401,16 +450,27 @@ func TestFetchVEX_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "2026-07-15T14:02:27+00:00.bom.json")
 }
 
-func TestFetchVEX_NoIntersection(t *testing.T) {
+func TestFetchVEX_MissingCVE(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("CVE-2025-1-2026-01-01T00:00:00+00:00.bom.json,abc,10\nCVE-2025-2-2026-02-01T00:00:00+00:00.bom.json,def,10\n"))
+		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
+			_, _ = w.Write([]byte("CVE-2025-1-2026-01-01T00:00:00+00:00.bom.json,abc,10\n"))
+			return
+		}
+		_, _ = w.Write([]byte("{}"))
 	}))
 	defer server.Close()
 
 	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
-	_, err := client.FetchVEX(context.Background(), []string{"CVE-2025-1", "CVE-2025-2"})
+	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-1", "CVE-2025-2"})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no shared VEX timestamp")
+	assert.Nil(t, got)
+	assert.Contains(t, err.Error(), "no VEX document for CVE-2025-2")
+}
+
+func TestFetchVEX_NoCVEs(t *testing.T) {
+	client := &httpRegistryClient{httpClient: http.DefaultClient, vexURL: "http://unused.invalid"}
+	_, err := client.FetchVEX(context.Background(), nil)
+	require.Error(t, err)
 }
 
 func TestFetchClassifier_Success(t *testing.T) {
