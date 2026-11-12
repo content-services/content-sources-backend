@@ -12,6 +12,12 @@
     "feature_name": "lightwell-network-demo"
   },
   {
+    "name": "lightwell/java/predisclosure-demo",
+    "type": "maven",
+    "base_path": "java/predisclosure",
+    "feature_name": "lightwell-network-demo"
+  },
+  {
     "name": "lightwell/python/validated-demo",
     "type": "python",
     "base_path": "python/validated",
