@@ -7,7 +7,6 @@ package sonatype_bridge
 import (
 	"bytes"
 	"context"
-	"encoding/xml"
 	"errors"
 	"io"
 	"net/http"
@@ -27,7 +26,7 @@ import (
 const testVEXTimestamp = "2026-07-15T14:02:27+00:00"
 
 var (
-	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7"}`)
+	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","metadata":{"timestamp":"2026-11-04T17:26:03Z"},"components":[{"type":"library","group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003?repository_url=https://packages.redhat.com/lightwell/java/remediated/&type=jar"}]}`)
 	testASCBody  = []byte("-----BEGIN PGP SIGNATURE-----\ntest\n")
 	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[]}`)
 )
@@ -51,6 +50,8 @@ func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
 				return
 			}
 			_, _ = w.Write(sbom)
+		case strings.HasSuffix(r.URL.Path, "-sources.jar"), strings.HasSuffix(r.URL.Path, "-javadoc.jar"):
+			http.NotFound(w, r)
 		case strings.HasSuffix(r.URL.Path, ".jar"):
 			_, _ = w.Write(jar)
 		case strings.HasSuffix(r.URL.Path, ".pom"):
@@ -220,26 +221,23 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Assert: JAR uploaded
-	jarKey := "/" + testS3Bucket + "/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.jar"
-	assert.Equal(t, 1, s3Puts[jarKey], "JAR should be uploaded")
+	base := "/" + testS3Bucket + "/packages/maven/org.springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003"
+	zipKey := base + ".zip"
+	require.Equal(t, 1, s3Puts[zipKey], "bundle should be uploaded")
+	assert.Equal(t, map[string][]byte{
+		"spring-core-5.3.18.rhlw-00003.jar": jarData,
+		"spring-core-5.3.18.rhlw-00003.pom": pomData,
+	}, readZip(t, capturedBodies[zipKey]))
 
-	// Assert: POM uploaded
-	pomKey := "/" + testS3Bucket + "/org/springframework/spring-core/5.3.18.rhlw-00003/spring-core-5.3.18.rhlw-00003.pom"
-	assert.Equal(t, 1, s3Puts[pomKey], "POM should be uploaded")
-
-	base := "/" + testS3Bucket + "/org/springframework/spring-core/5.3.18.rhlw-00003"
-	sbomKey := base + "/sbom/spring-core-5.3.18.rhlw-00003.bom.json"
+	sbomKey := base + ".bom.json"
+	vexKey := base + ".vex.json"
 	assert.Equal(t, 1, s3Puts[sbomKey], "SBOM should be uploaded")
 	assert.Equal(t, 1, s3Puts[sbomKey+".asc"], "SBOM signature should be uploaded")
-	vexKey := base + "/vex/spring-core-5.3.18.rhlw-00003.bom.json"
 	assert.Equal(t, 1, s3Puts[vexKey], "VEX should be uploaded")
 	require.True(t, bytes.Equal(testVEXBody, capturedBodies[vexKey]), "VEX uploaded to S3 must be byte-identical to what the registry served")
 	require.True(t, bytes.Equal(testSBOMBody, capturedBodies[sbomKey]), "SBOM uploaded to S3 must be byte-identical to what the registry served")
 	require.True(t, bytes.Equal(testASCBody, capturedBodies[sbomKey+".asc"]), "SBOM signature uploaded to S3 must be byte-identical to what the registry served")
-
-	metaKey := "/" + testS3Bucket + "/org/springframework/spring-core/maven-metadata.xml"
-	assert.Equal(t, 1, s3Puts[metaKey], "maven-metadata.xml should be uploaded")
+	assert.Len(t, s3Puts, 4)
 }
 
 func TestGAVDedup(t *testing.T) {
@@ -509,18 +507,4 @@ func TestConsumeClaim_ChecksumMismatchCommitsOffset(t *testing.T) {
 	}
 	assert.Equal(t, float64(1), checksumCount, "checksumRejections should be incremented")
 	assert.Equal(t, float64(1), failedCount, "messagesFailed should be incremented")
-}
-
-func TestGenerateMavenMetadata_SpecialChars(t *testing.T) {
-	data := generateMavenMetadata("<foo>&bar", "test-artifact", "1.0.0")
-	require.NotEmpty(t, data)
-
-	xmlStr := string(data)
-	assert.Contains(t, xmlStr, "&lt;foo&gt;&amp;bar")
-	assert.Contains(t, xmlStr, "<artifactId>test-artifact</artifactId>")
-	assert.Contains(t, xmlStr, "<version>1.0.0</version>")
-
-	var meta mavenMetadata
-	require.NoError(t, xml.Unmarshal(data, &meta), "output must be well-formed XML")
-	assert.Equal(t, "<foo>&bar", meta.GroupID)
 }
