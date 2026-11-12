@@ -15,6 +15,7 @@ import (
 
 const (
 	allowedEventType = "java-remediated"
+	vexDir           = "vex"
 )
 
 const maxProcessedGAVs = 10000
@@ -88,6 +89,13 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 				if errors.As(err, &checksumErr) {
 					log.Error().Err(err).Str("gav", gav).Msg("JAR checksum mismatch")
 					h.metrics.checksumRejections.Inc()
+					h.metrics.messagesFailed.Inc()
+					continue
+				}
+				var conflictErr *ObjectConflictError
+				if errors.As(err, &conflictErr) {
+					log.Error().Err(err).Str("gav", gav).Msg("partner bucket object conflict")
+					h.metrics.conflictRejections.Inc()
 					h.metrics.messagesFailed.Inc()
 					continue
 				}
@@ -192,8 +200,8 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("fetch SBOM: %w", err)
 	}
 
-	// 4. Fetch the multi-CVE VEX from the VEX file distribution.
-	vexData, err := h.registry.FetchVEX(ctx, rem.CVEsFixed)
+	// 4. Fetch the single-CVE VEX documents from the VEX file distribution.
+	vexDocs, err := h.registry.FetchVEX(ctx, rem.CVEsFixed)
 	if err != nil {
 		return fmt.Errorf("fetch VEX: %w", err)
 	}
@@ -213,8 +221,9 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("build bundle: %w", err)
 	}
 
-	// 7. Upload to the partner S3 bucket. The SBOM goes last so its presence
-	// marks a complete delivery.
+	// 7. Upload to the partner S3 bucket. VEX documents go under the
+	// bucket-root vex/ directory. The SBOM goes last so its presence marks
+	// a complete delivery.
 	keyBase := fmt.Sprintf("%s/%s-%s", bundleBasePath(coords), coords.Name, coords.Version)
 	zipPath := keyBase + ".zip"
 	sbomPath := keyBase + ".bom.json"
@@ -225,8 +234,10 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	if err := h.s3.UploadFile(ctx, sbomPath+".asc", sbomASC, "application/pgp-signature"); err != nil {
 		return fmt.Errorf("upload SBOM signature: %w", err)
 	}
-	if err := h.s3.UploadFile(ctx, keyBase+".vex.json", vexData, "application/json"); err != nil {
-		return fmt.Errorf("upload VEX: %w", err)
+	for _, doc := range vexDocs {
+		if err := h.s3.UploadRootFile(ctx, vexDir+"/"+doc.Name, doc.Data, "application/json"); err != nil {
+			return fmt.Errorf("upload VEX %s: %w", doc.Name, err)
+		}
 	}
 	if err := h.s3.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
 		return fmt.Errorf("upload SBOM: %w", err)

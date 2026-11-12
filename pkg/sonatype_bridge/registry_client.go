@@ -53,8 +53,16 @@ type RegistryClient interface {
 	FetchClassifier(ctx context.Context, groupID, artifactID, version, classifier string) ([]byte, error)
 	FetchSBOM(ctx context.Context, groupID, artifactID, version string) (bom, asc []byte, err error)
 	FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error)
-	FetchVEX(ctx context.Context, cveIDs []string) ([]byte, error)
+	// FetchVEX fetches the latest single-CVE VEX document for each CVE.
+	FetchVEX(ctx context.Context, cveIDs []string) ([]VEXDocument, error)
 	Ping(ctx context.Context) error
+}
+
+// VEXDocument is a single-CVE VEX document ready for delivery.
+type VEXDocument struct {
+	// Name is the delivered filename, e.g. "CVE-2025-41249-2026-07-15.bom.json".
+	Name string
+	Data []byte
 }
 
 type httpRegistryClient struct {
@@ -170,7 +178,7 @@ func isRootRHLWFilename(filename string) bool {
 	return !strings.Contains(name, "/") && strings.HasPrefix(name, "RHLW-") && strings.HasSuffix(name, ".json")
 }
 
-func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string) ([]byte, error) {
+func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string) ([]VEXDocument, error) {
 	if len(cveIDs) == 0 {
 		return nil, fmt.Errorf("fetch VEX: no CVE IDs")
 	}
@@ -178,22 +186,38 @@ func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string) ([]b
 	if err != nil {
 		return nil, fmt.Errorf("fetch VEX: %w", err)
 	}
-	filename, err := multiCVEVEXFilename(vulnerability_parser.ParseManifest(manifestData), cveIDs)
-	if err != nil {
-		return nil, fmt.Errorf("fetch VEX: %w", err)
+	entries := vulnerability_parser.ParseManifest(manifestData)
+
+	seen := make(map[string]struct{}, len(cveIDs))
+	docs := make([]VEXDocument, 0, len(cveIDs))
+	for _, cveID := range cveIDs {
+		if _, dup := seen[cveID]; dup {
+			continue
+		}
+		seen[cveID] = struct{}{}
+
+		filename, ts, err := latestVEXFilename(entries, cveID)
+		if err != nil {
+			return nil, fmt.Errorf("fetch VEX: %w", err)
+		}
+		name, err := vexObjectName(cveID, ts)
+		if err != nil {
+			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+		}
+		// PathEscape leaves '+' alone. Encode it so the request target cannot
+		// be read as a space by a query-style decoder.
+		segment := strings.ReplaceAll(url.PathEscape(filename), "+", "%2B")
+		vexURL, err := url.JoinPath(c.vexURL, segment)
+		if err != nil {
+			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+		}
+		data, err := c.getWithRetry(ctx, vexURL)
+		if err != nil {
+			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+		}
+		docs = append(docs, VEXDocument{Name: name, Data: data})
 	}
-	// PathEscape leaves '+' alone. Encode it so the request target cannot
-	// be read as a space by a query-style decoder.
-	segment := strings.ReplaceAll(url.PathEscape(filename), "+", "%2B")
-	vexURL, err := url.JoinPath(c.vexURL, segment)
-	if err != nil {
-		return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
-	}
-	data, err := c.getWithRetry(ctx, vexURL)
-	if err != nil {
-		return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
-	}
-	return data, nil
+	return docs, nil
 }
 
 func (c *httpRegistryClient) Ping(ctx context.Context) error {
@@ -472,56 +496,48 @@ func cvssScoreToSeverity(score float64) string {
 	}
 }
 
-// multiCVEVEXFilename chooses the multi-CVE VEX object for cveIDs.
+// latestVEXFilename chooses the single-CVE VEX object for cveID.
 // Per-CVE manifest names are "{cveID}-{rawCreated}.bom.json". The raw
-// build-index created string is not the OSV "published" value.
-// Timestamps present for every CVE are intersected. When more than one
-// remains, the lexicographically greatest is used.
-func multiCVEVEXFilename(entries []vulnerability_parser.ManifestEntry, cveIDs []string) (string, error) {
-	if len(cveIDs) == 0 {
-		return "", fmt.Errorf("no CVE IDs")
+// build-index created string is not the OSV "published" value. When more
+// than one timestamp exists, the lexicographically greatest is used.
+func latestVEXFilename(entries []vulnerability_parser.ManifestEntry, cveID string) (filename, timestamp string, err error) {
+	if cveID == "" {
+		return "", "", fmt.Errorf("empty CVE ID")
 	}
-
-	var intersection map[string]struct{}
-	for _, cveID := range cveIDs {
-		re := regexp.MustCompile("^" + regexp.QuoteMeta(cveID) + `-(.+)\.bom\.json$`)
-		found := make(map[string]struct{})
-		for _, entry := range entries {
-			match := re.FindStringSubmatch(entry.Filename)
-			if match == nil {
-				continue
-			}
-			found[match[1]] = struct{}{}
-		}
-		if intersection == nil {
-			intersection = found
+	re := regexp.MustCompile("^" + regexp.QuoteMeta(cveID) + `-(.+)\.bom\.json$`)
+	var timestamps []string
+	for _, entry := range entries {
+		match := re.FindStringSubmatch(entry.Filename)
+		if match == nil {
 			continue
 		}
-		next := make(map[string]struct{})
-		for ts := range found {
-			if _, ok := intersection[ts]; ok {
-				next[ts] = struct{}{}
-			}
-		}
-		intersection = next
+		timestamps = append(timestamps, match[1])
 	}
-	if len(intersection) == 0 {
-		return "", fmt.Errorf("no shared VEX timestamp for %s", strings.Join(cveIDs, ", "))
+	if len(timestamps) == 0 {
+		return "", "", fmt.Errorf("no VEX document for %s", cveID)
 	}
 
-	timestamps := make([]string, 0, len(intersection))
-	for ts := range intersection {
-		timestamps = append(timestamps, ts)
-	}
 	sort.Strings(timestamps)
 	chosen := timestamps[len(timestamps)-1]
 	if len(timestamps) > 1 {
 		log.Info().
+			Str("cve", cveID).
 			Strs("candidates", timestamps).
 			Str("chosen", chosen).
 			Msg("multiple VEX timestamps; using lexicographically greatest")
 	}
-	return chosen + ".bom.json", nil
+	return cveID + "-" + chosen + ".bom.json", chosen, nil
+}
+
+// vexObjectName builds the delivered VEX filename
+// "{cveID}-{YYYY-MM-DD}.bom.json" from the ISO-8601 build timestamp,
+// normalized to UTC.
+func vexObjectName(cveID, timestamp string) (string, error) {
+	t, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return "", fmt.Errorf("parse VEX timestamp %q: %w", timestamp, err)
+	}
+	return fmt.Sprintf("%s-%s.bom.json", cveID, t.UTC().Format(time.DateOnly)), nil
 }
 
 func groupPath(groupID string) string {

@@ -2,6 +2,11 @@ package sonatype_bridge
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec // ETag comparison in tests
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -199,4 +204,144 @@ func TestNewS3Uploader_IgnoresAmbientAWSEnv(t *testing.T) {
 	assert.Contains(t, (*reqs)[0].auth, "Credential=partner-ak/")
 	assert.Contains(t, (*reqs)[0].auth, "/us-east-1/s3/")
 	assert.NotContains(t, (*reqs)[0].auth, "ambient-ak")
+}
+
+func TestS3Uploader_UploadFileIsConditional(t *testing.T) {
+	var mu sync.Mutex
+	var headers http.Header
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		headers = r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "")
+	data := []byte("payload")
+	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
+
+	sum := sha256.Sum256(data)
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, "*", headers.Get("If-None-Match"))
+	assert.Equal(t, base64.StdEncoding.EncodeToString(sum[:]), headers.Get("X-Amz-Checksum-Sha256"))
+}
+
+func TestS3Uploader_UploadRootFileIgnoresPrefix(t *testing.T) {
+	server, reqs, mu := newRecordingS3Server(http.StatusOK)
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "maven2")
+	require.NoError(t, u.UploadRootFile(context.Background(), "vex/CVE-2025-1-2026-07-15.bom.json", []byte("{}"), "application/json"))
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.Len(t, *reqs, 1)
+	assert.Equal(t, http.MethodPut, (*reqs)[0].method)
+	assert.Equal(t, "/"+testS3Bucket+"/vex/CVE-2025-1-2026-07-15.bom.json", (*reqs)[0].path)
+}
+
+// newExistingObjectServer answers PUT with 412 and HEAD with the given headers.
+func newExistingObjectServer(headHeaders map[string]string) (*httptest.Server, *[]string, *sync.Mutex) {
+	var mu sync.Mutex
+	var methods []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		methods = append(methods, r.Method)
+		mu.Unlock()
+		switch r.Method {
+		case http.MethodPut:
+			w.Header().Set("Content-Type", "application/xml")
+			w.WriteHeader(http.StatusPreconditionFailed)
+			_, _ = w.Write([]byte(`<Error><Code>PreconditionFailed</Code><Message>At least one of the pre-conditions you specified did not hold</Message></Error>`))
+		case http.MethodHead:
+			for k, v := range headHeaders {
+				w.Header().Set(k, v)
+			}
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	return server, &methods, &mu
+}
+
+func TestS3Uploader_ExistingIdenticalChecksumSkips(t *testing.T) {
+	data := []byte("payload")
+	sum := sha256.Sum256(data)
+	server, methods, mu := newExistingObjectServer(map[string]string{
+		"x-amz-checksum-sha256": base64.StdEncoding.EncodeToString(sum[:]),
+	})
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "")
+	u.maxRetries = 2
+	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, []string{http.MethodPut, http.MethodHead}, *methods, "412 must not be retried")
+}
+
+func TestS3Uploader_ExistingDifferentChecksumConflicts(t *testing.T) {
+	other := sha256.Sum256([]byte("other"))
+	server, _, _ := newExistingObjectServer(map[string]string{
+		"x-amz-checksum-sha256": base64.StdEncoding.EncodeToString(other[:]),
+	})
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "maven2")
+	err := u.UploadFile(context.Background(), "a.json", []byte("payload"), "application/json")
+	require.Error(t, err)
+	var conflictErr *ObjectConflictError
+	require.True(t, errors.As(err, &conflictErr))
+	assert.Equal(t, "maven2/a.json", conflictErr.Key)
+}
+
+func TestS3Uploader_ExistingMatchingETagSkips(t *testing.T) {
+	data := []byte("payload")
+	sum := md5.Sum(data) //nolint:gosec // test
+	server, _, _ := newExistingObjectServer(map[string]string{
+		"ETag": `"` + hex.EncodeToString(sum[:]) + `"`,
+	})
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "")
+	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
+}
+
+func TestS3Uploader_ExistingUnverifiableConflicts(t *testing.T) {
+	server, _, _ := newExistingObjectServer(map[string]string{
+		"ETag": `"d41d8cd98f00b204e9800998ecf8427e-2"`,
+	})
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "")
+	err := u.UploadFile(context.Background(), "a.json", []byte("payload"), "application/json")
+	var conflictErr *ObjectConflictError
+	require.True(t, errors.As(err, &conflictErr))
+}
+
+func TestS3Uploader_ConditionalConflictRetried(t *testing.T) {
+	var mu sync.Mutex
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		attempts++
+		if attempts == 1 {
+			w.Header().Set("Content-Type", "application/xml")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`<Error><Code>ConditionalRequestConflict</Code></Error>`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	u := newTestS3Uploader(server, "")
+	u.maxRetries = 1
+	require.NoError(t, u.UploadFile(context.Background(), "a.json", []byte("x"), "application/json"))
+	assert.Equal(t, 2, attempts)
 }

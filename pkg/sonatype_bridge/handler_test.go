@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -23,17 +24,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testVEXTimestamp = "2026-07-15T14:02:27+00:00"
+const (
+	testVEXTimestamp     = "2026-07-15T14:02:27+00:00"
+	testVEXDeliveredName = "CVE-2025-41249-2026-07-15.bom.json"
+)
 
 var (
 	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","metadata":{"timestamp":"2026-11-04T17:26:03Z"},"components":[{"type":"library","group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003?repository_url=https://packages.redhat.com/lightwell/java/remediated/&type=jar"}]}`)
 	testASCBody  = []byte("-----BEGIN PGP SIGNATURE-----\ntest\n")
 	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[]}`)
 )
-
-func testVEXObjectName() string {
-	return testVEXTimestamp + ".bom.json"
-}
 
 func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -63,12 +63,13 @@ func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
 }
 
 // pipelineOSVHandler serves the fixture OSV directory and adds the per-CVE
-// and multi-CVE VEX names the bridge derives from PULP_MANIFEST.
+// VEX entry the bridge selects from PULP_MANIFEST. The multi-CVE entry is
+// listed to prove it is not fetched.
 func pipelineOSVHandler() http.Handler {
 	dir := testdataPath("osv", "java", "remediated")
 	files := http.FileServer(http.Dir(dir))
 	perCVE := "CVE-2025-41249-" + testVEXTimestamp + ".bom.json"
-	multi := testVEXObjectName()
+	multi := testVEXTimestamp + ".bom.json"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
 			base, err := os.ReadFile(filepath.Join(dir, "PULP_MANIFEST"))
@@ -82,7 +83,11 @@ func pipelineOSVHandler() http.Handler {
 			_, _ = w.Write(append(base, []byte(perCVE+",abc,10\n"+multi+",def,10\n")...))
 			return
 		}
-		if strings.Contains(r.URL.Path, testVEXTimestamp) && !strings.Contains(r.URL.Path, "CVE-") {
+		if strings.Contains(r.URL.Path, testVEXTimestamp) {
+			if !strings.HasPrefix(path.Base(r.URL.Path), "CVE-2025-41249-") {
+				http.Error(w, "unexpected VEX request", http.StatusTeapot)
+				return
+			}
 			_, _ = w.Write(testVEXBody)
 			return
 		}
@@ -230,7 +235,7 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 	}, readZip(t, capturedBodies[zipKey]))
 
 	sbomKey := base + ".bom.json"
-	vexKey := base + ".vex.json"
+	vexKey := "/" + testS3Bucket + "/vex/" + testVEXDeliveredName
 	assert.Equal(t, 1, s3Puts[sbomKey], "SBOM should be uploaded")
 	assert.Equal(t, 1, s3Puts[sbomKey+".asc"], "SBOM signature should be uploaded")
 	assert.Equal(t, 1, s3Puts[vexKey], "VEX should be uploaded")
@@ -507,4 +512,35 @@ func TestConsumeClaim_ChecksumMismatchCommitsOffset(t *testing.T) {
 	}
 	assert.Equal(t, float64(1), checksumCount, "checksumRejections should be incremented")
 	assert.Equal(t, float64(1), failedCount, "messagesFailed should be incremented")
+}
+
+func TestConsumeClaim_ObjectConflictCommitsOffset(t *testing.T) {
+	uploader := newFakeS3Uploader()
+	uploader.objects["vex/"+testVEXDeliveredName] = uploadedObject{data: []byte("other")}
+
+	reg := prometheus.NewRegistry()
+	handler := NewBridgeHandler(newFakeRegistry(), uploader, newBridgeMetrics(reg))
+
+	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.springframework:spring-core","releases":[{"release_names":[{"name":"5.3.18.rhlw-00003"}],"related_cve":[{"cve":"CVE-2025-41249","severity":"important"}]}]}}]}`
+	ch := make(chan *sarama.ConsumerMessage, 1)
+	ch <- &sarama.ConsumerMessage{Value: []byte(payload)}
+	close(ch)
+
+	session := &mockConsumerGroupSession{ctx: context.Background()}
+	require.NoError(t, handler.ConsumeClaim(session, &mockConsumerGroupClaim{ch: ch}))
+	assert.Len(t, session.marked, 1, "offset should be committed for non-retryable object conflict")
+
+	gathered, err := reg.Gather()
+	require.NoError(t, err)
+	var conflictCount, failedCount float64
+	for _, mf := range gathered {
+		switch mf.GetName() {
+		case "content_sources_sonatype_bridge_conflict_rejections_total":
+			conflictCount = mf.GetMetric()[0].GetCounter().GetValue()
+		case "content_sources_sonatype_bridge_messages_failed_total":
+			failedCount = mf.GetMetric()[0].GetCounter().GetValue()
+		}
+	}
+	assert.Equal(t, float64(1), conflictCount)
+	assert.Equal(t, float64(1), failedCount)
 }

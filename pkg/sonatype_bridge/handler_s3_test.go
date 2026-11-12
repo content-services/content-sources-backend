@@ -18,10 +18,11 @@ import (
 )
 
 type fakeRegistry struct {
-	jar, pom, sbom, asc, vex []byte
-	osv                      []OSVRecord
-	classifiers              map[string][]byte
-	classifierErr            error
+	jar, pom, sbom, asc []byte
+	vex                 []VEXDocument
+	osv                 []OSVRecord
+	classifiers         map[string][]byte
+	classifierErr       error
 }
 
 func (f *fakeRegistry) FetchJAR(_ context.Context, _, _, _ string) ([]byte, string, error) {
@@ -48,7 +49,7 @@ func (f *fakeRegistry) FetchOSVRecords(_ context.Context, _, _, _ string) ([]OSV
 	return f.osv, nil
 }
 
-func (f *fakeRegistry) FetchVEX(_ context.Context, _ []string) ([]byte, error) {
+func (f *fakeRegistry) FetchVEX(_ context.Context, _ []string) ([]VEXDocument, error) {
 	return f.vex, nil
 }
 
@@ -72,15 +73,28 @@ func newFakeS3Uploader() *fakeS3Uploader {
 	return &fakeS3Uploader{objects: map[string]uploadedObject{}}
 }
 
+// UploadFile mimics the partner bucket's no-overwrite policy: identical
+// content is accepted as already delivered, different content conflicts.
 func (f *fakeS3Uploader) UploadFile(_ context.Context, key string, data []byte, contentType string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.uploadErr != nil {
 		return f.uploadErr
 	}
-	f.objects[key] = uploadedObject{data: data, contentType: contentType}
 	f.order = append(f.order, key)
+	if existing, ok := f.objects[key]; ok {
+		if !bytes.Equal(existing.data, data) {
+			return &ObjectConflictError{Key: key}
+		}
+		return nil
+	}
+	f.objects[key] = uploadedObject{data: data, contentType: contentType}
 	return nil
+}
+
+// UploadRootFile records root keys in the same map; the fake has no prefix.
+func (f *fakeS3Uploader) UploadRootFile(ctx context.Context, key string, data []byte, contentType string) error {
+	return f.UploadFile(ctx, key, data, contentType)
 }
 
 func (f *fakeS3Uploader) VerifyDelivery(_ context.Context, key string) error {
@@ -98,7 +112,7 @@ func newFakeRegistry() *fakeRegistry {
 		pom:  []byte("<project/>"),
 		sbom: testSBOMBody,
 		asc:  testASCBody,
-		vex:  testVEXBody,
+		vex:  []VEXDocument{{Name: testVEXDeliveredName, Data: testVEXBody}},
 		osv:  []OSVRecord{{CVEID: "CVE-2025-41249"}},
 	}
 }
@@ -112,17 +126,18 @@ func TestProcessRemediation_UploadsBundleToS3(t *testing.T) {
 
 	base := springKeyBase
 	zipKey := base + ".zip"
+	vexKey := "vex/" + testVEXDeliveredName
 	assert.Equal(t, []string{
 		zipKey,
 		base + ".bom.json.asc",
-		base + ".vex.json",
+		vexKey,
 		base + ".bom.json",
 	}, uploader.order, "SBOM must be uploaded last")
 
 	expected := map[string]uploadedObject{
 		base + ".bom.json":     {testSBOMBody, "application/json"},
 		base + ".bom.json.asc": {testASCBody, "application/pgp-signature"},
-		base + ".vex.json":     {testVEXBody, "application/json"},
+		vexKey:                 {testVEXBody, "application/json"},
 	}
 	for key, want := range expected {
 		got, ok := uploader.objects[key]
@@ -267,11 +282,54 @@ func TestProcessRemediation_WithFilePrefixOverHTTP(t *testing.T) {
 	zip := "/" + testS3Bucket + "/maven2/" + springKeyBase + ".zip"
 	assert.Contains(t, paths, zip)
 	assert.Contains(t, paths, "/"+testS3Bucket+"/maven2/"+springKeyBase+".bom.json")
+	assert.Contains(t, paths, "/"+testS3Bucket+"/vex/"+testVEXDeliveredName, "VEX ignores the file prefix")
+	assert.NotContains(t, paths, "/"+testS3Bucket+"/maven2/vex/"+testVEXDeliveredName)
 	// 4 PUTs + 1 HEAD (verify on the zip)
 	assert.Len(t, *reqs, 5)
 	last := (*reqs)[len(*reqs)-1]
 	assert.Equal(t, "HEAD", last.method)
 	assert.Equal(t, zip, last.path)
+}
+
+func TestProcessRemediation_RerunSkipsIdenticalObjects(t *testing.T) {
+	uploader := newFakeS3Uploader()
+	handler := NewBridgeHandler(newFakeRegistry(), uploader, newBridgeMetrics(prometheus.NewRegistry()))
+
+	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()))
+	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()),
+		"a retry must succeed when every object already exists with identical content")
+	assert.Len(t, uploader.objects, 4)
+	assert.Len(t, uploader.verified, 2)
+}
+
+func TestProcessRemediation_VEXConflictStopsDelivery(t *testing.T) {
+	uploader := newFakeS3Uploader()
+	vexKey := "vex/" + testVEXDeliveredName
+	uploader.objects[vexKey] = uploadedObject{data: []byte(`{"different":true}`), contentType: "application/json"}
+	handler := NewBridgeHandler(newFakeRegistry(), uploader, newBridgeMetrics(prometheus.NewRegistry()))
+
+	err := handler.processRemediation(context.Background(), springRemediation())
+	require.Error(t, err)
+	var conflictErr *ObjectConflictError
+	require.True(t, errors.As(err, &conflictErr))
+	assert.Equal(t, vexKey, conflictErr.Key)
+	assert.NotContains(t, uploader.objects, springKeyBase+".bom.json", "SBOM marks completion and must not be uploaded")
+	assert.Empty(t, uploader.verified)
+}
+
+func TestProcessRemediation_UploadsOneVEXPerCVE(t *testing.T) {
+	registry := newFakeRegistry()
+	registry.vex = []VEXDocument{
+		{Name: "CVE-2025-41249-2026-07-15.bom.json", Data: []byte("a")},
+		{Name: "CVE-2023-20860-2026-06-01.bom.json", Data: []byte("b")},
+	}
+	uploader := newFakeS3Uploader()
+	handler := NewBridgeHandler(registry, uploader, newBridgeMetrics(prometheus.NewRegistry()))
+
+	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()))
+	assert.Equal(t, []byte("a"), uploader.objects["vex/CVE-2025-41249-2026-07-15.bom.json"].data)
+	assert.Equal(t, []byte("b"), uploader.objects["vex/CVE-2023-20860-2026-06-01.bom.json"].data)
+	assert.Equal(t, springKeyBase+".bom.json", uploader.order[len(uploader.order)-1])
 }
 
 func TestProcessRemediation_NoPrefixKeysStartWithPackages(t *testing.T) {
@@ -285,7 +343,8 @@ func TestProcessRemediation_NoPrefixKeysStartWithPackages(t *testing.T) {
 	defer mu.Unlock()
 	require.NotEmpty(t, *reqs)
 	for _, r := range *reqs {
-		assert.True(t, strings.HasPrefix(r.path, "/"+testS3Bucket+"/packages/"), r.path)
+		assert.True(t, strings.HasPrefix(r.path, "/"+testS3Bucket+"/packages/") ||
+			strings.HasPrefix(r.path, "/"+testS3Bucket+"/vex/"), r.path)
 	}
 }
 
