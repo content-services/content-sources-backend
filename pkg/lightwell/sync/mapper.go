@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -62,6 +63,10 @@ type Vulnerability struct {
 	// stage/promotion mismatches against Jira.
 	JiraStatus     *string
 	JiraResolution *string
+	// OnHoldReasons are slugs (e.g. "missing-sources") explaining why an On Hold
+	// vulnerability is stuck. Set by the ingestor once the final stage is known;
+	// mapVulnerability leaves it empty.
+	OnHoldReasons []string
 }
 
 // TicketLink associates a vulnerability with a customer account. CustomerID comes
@@ -81,6 +86,7 @@ type adfNode struct {
 
 type issueLink struct {
 	Type struct {
+		Name    string `json:"name"`
 		Inward  string `json:"inward"`
 		Outward string `json:"outward"`
 	} `json:"type"`
@@ -88,8 +94,21 @@ type issueLink struct {
 	OutwardIssue *linkedIssue `json:"outwardIssue"`
 }
 
+// linkedIssue is the issue on the far side of an issue link. Jira embeds the
+// linked issue's type and status in the link payload, so an On Hold blocker can be
+// classified without fetching it.
 type linkedIssue struct {
-	Key string `json:"key"`
+	Key    string `json:"key"`
+	Fields struct {
+		IssueType struct {
+			Name string `json:"name"`
+		} `json:"issuetype"`
+		Status struct {
+			StatusCategory struct {
+				Key string `json:"key"`
+			} `json:"statusCategory"`
+		} `json:"status"`
+	} `json:"fields"`
 }
 
 func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
@@ -620,6 +639,84 @@ func linkedIssueKeys(issue jira_client.JiraIssue, label string) []string {
 		}
 	}
 	return keys
+}
+
+const (
+	issueTypeBuildTask        = "Build Task"
+	issueTypeComponentUpgrade = "Component Upgrade"
+	linkTypeIncorporates      = "Incorporates"
+	linkIsBlockedBy           = "is blocked by"
+	blockedLabelPrefix        = "blocked:"
+	// ReasonBlockedByTicket is the slug used when an open work ticket blocks the
+	// vulnerability. Unlike the label-based reasons it needs no Jira label.
+	ReasonBlockedByTicket = "blocked-by-ticket"
+)
+
+// onHoldBlockers inspects an IVT's issue links and returns the keys of its open
+// Build Task and Component Upgrade blockers (whose labels carry the reason) and
+// whether any other open ticket blocks it. A blocker is open unless its Jira status
+// category is "done".
+//
+//   - "Incorporates" link (either direction) to a Component Upgrade: label source
+//   - "is blocked by" link to a Build Task: label source
+//   - "is blocked by" link to any other issue type: work ticket
+func onHoldBlockers(ivt jira_client.JiraIssue) (labelSources []string, blockedByTicket bool) {
+	var links []issueLink
+	if json.Unmarshal(ivt.Fields["issuelinks"], &links) != nil {
+		return nil, false
+	}
+	for _, link := range links {
+		if link.Type.Name == linkTypeIncorporates {
+			for _, other := range []*linkedIssue{link.InwardIssue, link.OutwardIssue} {
+				if other != nil && other.Fields.IssueType.Name == issueTypeComponentUpgrade && isOpenIssue(*other) {
+					labelSources = append(labelSources, other.Key)
+				}
+			}
+			continue
+		}
+		if link.InwardIssue == nil || link.Type.Inward != linkIsBlockedBy || !isOpenIssue(*link.InwardIssue) {
+			continue
+		}
+		if link.InwardIssue.Fields.IssueType.Name == issueTypeBuildTask {
+			labelSources = append(labelSources, link.InwardIssue.Key)
+		} else {
+			blockedByTicket = true
+		}
+	}
+	return labelSources, blockedByTicket
+}
+
+func isOpenIssue(issue linkedIssue) bool {
+	return issue.Fields.Status.StatusCategory.Key != "done"
+}
+
+// onHoldReasons returns the sorted, de-duplicated reason slugs for an IVT.
+// blockerLabels maps a blocker's issue key to its Jira labels. A "blocked:<reason>"
+// label on an open Build Task or Component Upgrade yields "<reason>" (lowercased),
+// and any open work ticket yields ReasonBlockedByTicket. An open Build Task or
+// Component Upgrade with no "blocked:" label contributes nothing.
+//
+// It does not look at the IVT's stage; the caller only asks for On Hold IVTs. The
+// result is sorted so the same Jira state always stores the same value, otherwise
+// link order changes would look like data changes to the database upsert.
+func onHoldReasons(ivt jira_client.JiraIssue, blockerLabels map[string][]string) []string {
+	labelSources, blockedByTicket := onHoldBlockers(ivt)
+
+	var reasons []string
+	for _, key := range labelSources {
+		for _, label := range blockerLabels[key] {
+			label = strings.ToLower(strings.TrimSpace(label))
+			if reason, found := strings.CutPrefix(label, blockedLabelPrefix); found && reason != "" {
+				reasons = append(reasons, reason)
+			}
+		}
+	}
+	if blockedByTicket {
+		reasons = append(reasons, ReasonBlockedByTicket)
+	}
+
+	slices.Sort(reasons)
+	return slices.Compact(reasons)
 }
 
 func parentIssueKey(issue jira_client.JiraIssue) string {
