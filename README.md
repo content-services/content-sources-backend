@@ -384,5 +384,6 @@ To use pre-commit linter: `make install-pre-commit`
 
 - [Architecture](docs/architecture.md)
 - [Beacon vulnerability statuses](docs/lightwell_vulnerabilities_dev.md#beacon-status-mapping)
+- [Beacon On Hold reasons](docs/lightwell_vulnerabilities_dev.md#on-hold-reasons)
 - [Lightwell package seed](docs/lightwell_packages_dev.md)
 - [OpenApi Docs](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/content-services/content-sources-backend/main/api/openapi.json)

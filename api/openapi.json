@@ -756,6 +756,13 @@
                         },
                         "type": "array"
                     },
+                    "on_hold_reasons": {
+                        "description": "Customer-facing reasons an On Hold vulnerability is blocked",
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
                     "package": {
                         "description": "Alias of component_name",
                         "type": "string"
