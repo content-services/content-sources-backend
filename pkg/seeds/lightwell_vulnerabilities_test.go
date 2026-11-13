@@ -79,6 +79,30 @@ func (s *SeedSuite) TestSeedLightwellVulnerabilities() {
 	assert.Equal(t, int64(lightwellSeedVulnerabilityCount), total)
 	assert.Equal(t, int64(3), s.count(`SELECT COUNT(*) FROM lightwell_vulnerabilities WHERE uuid::text LIKE '00000000-0000-4000-8000-%' AND stage = 'On Hold'`))
 
+	// On Hold rows demonstrate several reasons, a work-ticket reason, and no reason.
+	var onHold []struct {
+		VulnerabilityID string
+		Reasons         string
+	}
+	err = s.tx.Raw(`
+		SELECT vulnerability_id, array_to_string(on_hold_reasons, ',') AS reasons
+		FROM lightwell_vulnerabilities
+		WHERE uuid::text LIKE '00000000-0000-4000-8000-%' AND stage = 'On Hold'
+		ORDER BY vulnerability_id
+	`).Scan(&onHold).Error
+	require.NoError(t, err)
+	require.Len(t, onHold, 3)
+	assert.Equal(t, "LWL-2026-3501", onHold[0].VulnerabilityID)
+	assert.Equal(t, "cumulative-build-failure,missing-sources", onHold[0].Reasons)
+	assert.Equal(t, "LWL-2026-3502", onHold[1].VulnerabilityID)
+	assert.Equal(t, "blocked-by-ticket", onHold[1].Reasons)
+	assert.Equal(t, "LWL-2026-3503", onHold[2].VulnerabilityID)
+	assert.Empty(t, onHold[2].Reasons)
+	assert.Equal(t, int64(0), s.count(`
+		SELECT COUNT(*) FROM lightwell_vulnerabilities
+		WHERE uuid::text LIKE '00000000-0000-4000-8000-%' AND stage <> 'On Hold' AND cardinality(on_hold_reasons) > 0
+	`))
+
 	var reasons []string
 	err = s.tx.Raw(`
 		SELECT resolution_reason
