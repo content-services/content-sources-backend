@@ -92,6 +92,7 @@ CREATE TABLE lightwell_vulnerabilities (
     resolution_reason TEXT,
     jira_status TEXT,
     jira_resolution TEXT,
+    on_hold_reasons TEXT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
