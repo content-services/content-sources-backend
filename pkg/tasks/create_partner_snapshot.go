@@ -27,7 +27,11 @@ func CreatePartnerSnapshotHandler(ctx context.Context, task *models.TaskInfo, qu
 
 	logger := LogForTask(task.Id.String(), task.Typename, task.RequestID)
 	daoReg := dao.GetDaoRegistry(db.DB)
-	domainName := config.Get().Clients.Pulp.CoprDomain
+	// Resolve through the DAO so the org's domain mapping is persisted and matches what other tasks use
+	domainName, err := daoReg.Domain.FetchOrCreateDomain(ctx, task.OrgId)
+	if err != nil {
+		return fmt.Errorf("failed to fetch or create domain: %w", err)
+	}
 	pulpClient := pulp_client.GetPulpClientWithDomain(domainName)
 
 	cps := CreatePartnerSnapshot{
@@ -67,18 +71,25 @@ func (cps *CreatePartnerSnapshot) Run() error {
 		return fmt.Errorf("failed to lookup or create Copr domain: %w", err)
 	}
 
-	// Get publication to extract repository version href
+	// Get publication to extract the Copr repository href and repository version href
 	publication, err := cps.pulpClient.GetRpmPublication(cps.ctx, cps.payload.PublicationHref)
 	if err != nil {
 		return fmt.Errorf("failed to get publication: %w", err)
 	}
-	if publication == nil || publication.RepositoryVersion == nil {
-		return fmt.Errorf("publication not found or missing repository version")
+	if publication == nil {
+		return fmt.Errorf("publication not found")
 	}
+	if publication.Repository == nil || *publication.Repository == "" {
+		return fmt.Errorf("publication is missing repository href")
+	}
+	if publication.RepositoryVersion == nil || *publication.RepositoryVersion == "" {
+		return fmt.Errorf("publication is missing repository version")
+	}
+	coprRepoHref := *publication.Repository
 	versionHref := *publication.RepositoryVersion
 
 	// Find or create repository configuration (by Copr repository href)
-	cps.repoConfig, err = cps.findOrCreateRepoConfig()
+	cps.repoConfig, err = cps.findOrCreateRepoConfig(coprRepoHref)
 	if err != nil {
 		return fmt.Errorf("failed to find or create repository config: %w", err)
 	}
@@ -131,16 +142,17 @@ func (cps *CreatePartnerSnapshot) Run() error {
 	return nil
 }
 
-func (cps *CreatePartnerSnapshot) findOrCreateRepoConfig() (api.RepositoryResponse, error) {
+// findOrCreateRepoConfig looks up the repository configuration by the Pulp repository href, creating it if needed.
+func (cps *CreatePartnerSnapshot) findOrCreateRepoConfig(coprRepoHref string) (api.RepositoryResponse, error) {
 	repoConfig, err := cps.daoReg.RepositoryConfig.InternalOnly_FetchRepoConfigByCoprRepositoryHref(
 		cps.ctx,
 		cps.orgID,
-		cps.payload.CoprRepositoryHref,
+		coprRepoHref,
 	)
 	if err == nil {
 		cps.logger.Debug().
 			Str("repo_config_uuid", repoConfig.UUID).
-			Str("copr_repository_href", cps.payload.CoprRepositoryHref).
+			Str("copr_repository_href", coprRepoHref).
 			Msg("Found existing repository configuration by Copr repository href")
 		return repoConfig, nil
 	}
@@ -155,7 +167,7 @@ func (cps *CreatePartnerSnapshot) findOrCreateRepoConfig() (api.RepositoryRespon
 		Str("version", cps.payload.RepositoryVersion).
 		Str("arch", cps.payload.RepositoryArch).
 		Str("copr_project_id", cps.payload.CoprProjectID).
-		Str("copr_repository_href", cps.payload.CoprRepositoryHref).
+		Str("copr_repository_href", coprRepoHref).
 		Msg("Creating new repository configuration")
 
 	newRepoReq := api.RepositoryRequest{
@@ -177,7 +189,7 @@ func (cps *CreatePartnerSnapshot) findOrCreateRepoConfig() (api.RepositoryRespon
 		cps.ctx,
 		repoConfig.UUID,
 		cps.payload.CoprProjectID,
-		cps.payload.CoprRepositoryHref,
+		coprRepoHref,
 	)
 	if err != nil {
 		return api.RepositoryResponse{}, fmt.Errorf("failed to update Copr metadata: %w", err)
@@ -186,7 +198,7 @@ func (cps *CreatePartnerSnapshot) findOrCreateRepoConfig() (api.RepositoryRespon
 	cps.logger.Info().
 		Str("repo_config_uuid", repoConfig.UUID).
 		Str("repository_uuid", repoConfig.RepositoryUUID).
-		Str("copr_repository_href", cps.payload.CoprRepositoryHref).
+		Str("copr_repository_href", coprRepoHref).
 		Msg("Created new repository configuration with Copr metadata")
 
 	return repoConfig, nil

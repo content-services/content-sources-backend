@@ -52,13 +52,12 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotent() {
 	coprRepoHref := "/pulp/api/v3/repositories/rpm/rpm/copr-repo-uuid/"
 
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    publicationHref,
-		RepositoryName:     "test-partner-repo",
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "copr-project-123",
-		CoprRepositoryHref: coprRepoHref,
-		CoprBuildID:        "copr-build-456",
+		PublicationHref:   publicationHref,
+		RepositoryName:    "test-partner-repo",
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "copr-project-123",
+		CoprBuildID:       "copr-build-456",
 	}
 
 	task := models.TaskInfo{
@@ -74,6 +73,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_Idempotent() {
 	// Mock publication lookup
 	publication := zest.RpmRpmPublicationResponse{
 		PulpHref:          &publicationHref,
+		Repository:        &coprRepoHref,
 		RepositoryVersion: &versionHref,
 	}
 	s.MockPulpClient.On("GetRpmPublication", ctx, publicationHref).Return(&publication, nil)
@@ -126,13 +126,12 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_PublicationNotFou
 	publicationHref := "/pulp/api/v3/publications/rpm/rpm/nonexistent/"
 
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    publicationHref,
-		RepositoryName:     "test-partner-repo",
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "copr-project-123",
-		CoprRepositoryHref: "/pulp/api/v3/repositories/rpm/rpm/copr-repo-uuid/",
-		CoprBuildID:        "copr-build-456",
+		PublicationHref:   publicationHref,
+		RepositoryName:    "test-partner-repo",
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "copr-project-123",
+		CoprBuildID:       "copr-build-456",
 	}
 
 	task := models.TaskInfo{
@@ -178,13 +177,12 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_RepositoryCreatio
 	coprRepoHref := "/pulp/api/v3/repositories/rpm/rpm/copr-repo-uuid/"
 
 	payload := payloads.CreatePartnerSnapshotPayload{
-		PublicationHref:    publicationHref,
-		RepositoryName:     "test-partner-repo",
-		RepositoryVersion:  "9",
-		RepositoryArch:     "x86_64",
-		CoprProjectID:      "copr-project-123",
-		CoprRepositoryHref: coprRepoHref,
-		CoprBuildID:        "copr-build-456",
+		PublicationHref:   publicationHref,
+		RepositoryName:    "test-partner-repo",
+		RepositoryVersion: "9",
+		RepositoryArch:    "x86_64",
+		CoprProjectID:     "copr-project-123",
+		CoprBuildID:       "copr-build-456",
 	}
 
 	task := models.TaskInfo{
@@ -200,6 +198,7 @@ func (s *CreatePartnerSnapshotSuite) TestCreatePartnerSnapshot_RepositoryCreatio
 	// Mock publication lookup
 	publication := zest.RpmRpmPublicationResponse{
 		PulpHref:          &publicationHref,
+		Repository:        &coprRepoHref,
 		RepositoryVersion: &versionHref,
 	}
 	s.MockPulpClient.On("GetRpmPublication", ctx, publicationHref).Return(&publication, nil)

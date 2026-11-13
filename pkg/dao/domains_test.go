@@ -7,6 +7,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	uuid2 "github.com/google/uuid"
@@ -39,6 +40,18 @@ func (ds *DomainSuite) TestCreate() {
 	name, err = dd.Fetch(context.Background(), orgId)
 	assert.NoError(ds.T(), err)
 	assert.NotEmpty(ds.T(), name)
+}
+
+func (ds *DomainSuite) TestCreateCoprDomain() {
+	dd := domainDaoImpl{db: ds.tx}
+
+	name, err := dd.FetchOrCreateDomain(context.Background(), config.Get().Clients.Pulp.CoprOrgID)
+	assert.NoError(ds.T(), err)
+	assert.Equal(ds.T(), config.Get().Clients.Pulp.CoprDomain, name)
+
+	name, err = dd.Fetch(context.Background(), config.Get().Clients.Pulp.CoprOrgID)
+	assert.NoError(ds.T(), err)
+	assert.Equal(ds.T(), config.Get().Clients.Pulp.CoprDomain, name)
 }
 
 func (ds *DomainSuite) TestList() {
