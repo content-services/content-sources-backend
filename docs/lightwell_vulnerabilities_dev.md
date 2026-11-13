@@ -80,6 +80,40 @@ Jira resolution can override that, or drop the issue. Won't Do and Not a Bug are
 
 Ignored resolutions are logged at warning level with the message `beacon_ignored_resolution`, plus `issue`, `resolution`, and `detail` when the selection is Not a Customer.
 
+## On Hold reasons
+
+When a vulnerability's stored stage is **On Hold**, the sync also records why. The reasons come from the tickets linked to the vulnerability (the IVT), never from labels on the IVT itself. Only **open** blockers count, meaning the linked ticket's Jira status category is not `done`.
+
+| Linked ticket | Link | Where the reason comes from |
+| --- | --- | --- |
+| Build Task | "is blocked by" | Its `blocked:<reason>` labels |
+| Component Upgrade | "Incorporates" (either direction) | Its `blocked:<reason>` labels |
+| Any other issue type | "is blocked by" | No label needed: `blocked-by-ticket` |
+
+Each `blocked:<reason>` label has its prefix stripped and is lowercased to a slug. Slugs are de-duplicated, sorted, and stored in `lightwell_vulnerabilities.on_hold_reasons` (`TEXT[]`, never `NULL`). An open Build Task or Component Upgrade without a `blocked:` label contributes nothing, so an On Hold vulnerability can legitimately have no reasons. Any other stage saves an empty list, which clears reasons left from an earlier On Hold period.
+
+The slugs the API knows how to word are `ant-build`, `native-build`, `missing-sources`, `invalid-license`, `validation-failure`, `version-nonexistent`, `root-gav-unidentified`, `build-system-unknown`, `unsupported-ecosystem`, `monorepo`, `synthesis-conflict`, `cumulative-build-failure`, `integration-failure`, `cant-build-policy`, and `blocked-by-ticket`.
+
+The database keeps the slugs. The list API returns `on_hold_reasons` as customer-facing text, in stored order, and omits the field when there is nothing to show. The wording lives in one place, `onHoldReasonDisplay` in `pkg/dao/lightwell_vulnerability.go`. A slug that map does not contain is shown as "Blocked on a dependency", so a new Jira label never silently disappears.
+
+Labels are batch-fetched once per sync for the open blockers of On Hold vulnerabilities. If a blocker's labels cannot be fetched, that vulnerability is counted as failed and not saved, so the reasons it already has are not wiped.
+
+Observability:
+
+- An On Hold vulnerability saved with no reasons is logged at **debug** level with the message `beacon_on_hold_without_reason`, plus `issue` and `open_blockers` (open Build Task and Component Upgrade blockers that had no `blocked:` label).
+- The job's final "Finished syncing" line includes `on_hold_without_reason`, the number of such vulnerabilities.
+- Set `logging.level: debug` in `configs/config.yaml` to see the per-issue lines (the example config already does).
+
+The demo seed gives the three On Hold rows one case each: `PROJ-3501` has `cumulative-build-failure` and `missing-sources`, `PROJ-3502` has `blocked-by-ticket`, and `PROJ-3503` has none. The seeder only loads into a database without the demo rows, so on a database seeded before this change, delete the demo rows (those with a `uuid` starting `00000000-0000-4000-8000-`) and run migrations again.
+
+To run the real sync against Jira locally, with the database up and migrated, supply the Jira user and token from your team's password manager. Never commit them:
+
+```bash
+CLIENTS_JIRA_URL="https://redhat.atlassian.net/" CLIENTS_JIRA_USER="<username>" CLIENTS_JIRA_TOKEN="<token>" go run cmd/jobs/main.go sync-lightwell-vulnerabilities
+```
+
+This writes real vulnerabilities into your local database. Compare a few On Hold rows' `on_hold_reasons` against their Jira tickets.
+
 ## Run tests
 
 Integration tests use the configured database and roll back per test:
