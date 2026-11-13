@@ -5988,6 +5988,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "on_hold_reasons": {
+                    "description": "Customer-facing reasons an On Hold vulnerability is blocked",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "package": {
                     "description": "Alias of component_name",
                     "type": "string"
