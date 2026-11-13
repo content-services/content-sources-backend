@@ -522,6 +522,173 @@ func captureLogs(t *testing.T) *bytes.Buffer {
 	return &buf
 }
 
+// onHoldIVT builds an On Hold vulnerability carrying the given issue links.
+func onHoldIVT(key string, links ...string) jira_client.JiraIssue {
+	issue := validJiraIssue(key)
+	issue.Fields["status"] = json.RawMessage(`{"name":"On Hold"}`)
+	issue.Fields["issuelinks"] = json.RawMessage("[" + strings.Join(links, ",") + "]")
+	return issue
+}
+
+func buildTaskBlocker(key, statusCategory string) string {
+	return blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", key, "Build Task", statusCategory)
+}
+
+// labelledBlocker is a blocker as returned when its labels are requested.
+func labelledBlocker(key string, labels ...string) jira_client.JiraIssue {
+	raw, _ := json.Marshal(labels)
+	return jira_client.JiraIssue{Key: key, Fields: map[string]json.RawMessage{"labels": raw}}
+}
+
+func TestIngestorSavesOnHoldReasonsFromBlockerLabels(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		buildTaskBlocker("VBT-1", "new"),
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"),
+		blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-1", "Bug", "new"),
+		buildTaskBlocker("VBT-2", "done"),
+	)
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources"),
+			"CT-1":  labelledBlocker("CT-1", "blocked:monorepo"),
+			"VBT-2": labelledBlocker("VBT-2", "blocked:ant-build"),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket", "missing-sources", "monorepo"}, store.saved[0].OnHoldReasons)
+	// One batch search for the open blockers' labels only: the done blocker is skipped
+	// and no ticket is fetched individually.
+	assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1", "VBT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Equal(t, []string{"labels"}, jira.searchFields[1])
+	assert.Empty(t, jira.issueCalls)
+}
+
+func TestIngestorOnHoldBlockedByTicketNeedsNoLabelFetch(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-1", "Bug", "indeterminate"))
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{VulnerabilityJQL, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Empty(t, jira.issueCalls)
+	assert.Zero(t, summary.OnHoldWithoutReason)
+}
+
+func TestIngestorSavesNoReasonsWhenNotOnHold(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	ivt.Fields["status"] = json.RawMessage(`{"name":"In Progress"}`)
+	jira := &fakeJira{
+		pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Fix in Progress", store.saved[0].Stage)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{VulnerabilityJQL, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Empty(t, jira.issueCalls)
+	assert.Zero(t, summary.OnHoldWithoutReason)
+}
+
+func TestIngestorCountsOnHoldWithoutReason(t *testing.T) {
+	logs := captureLogs(t)
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"), buildTaskBlocker("VBT-2", "done"))
+	jira := &fakeJira{
+		pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{"VBT-1": labelledBlocker("VBT-1", "java")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Inserted)
+	assert.Equal(t, 1, summary.OnHoldWithoutReason)
+	require.Len(t, store.saved, 1)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Contains(t, logs.String(), onHoldNoReasonLog)
+	assert.Contains(t, logs.String(), `"issue":"LTWL-1"`)
+	assert.Contains(t, logs.String(), `"open_blockers":1`)
+}
+
+// An earlier prefetch for other fields can leave a copy of a blocker in the shared
+// cache without labels. The fallback must ask Jira for the labels instead of reading it.
+func TestIngestorFetchesBlockerLabelsDirectlyWhenBatchFails(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+		issues:         map[string]jira_client.JiraIssue{"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	ingestor := NewIngestor(jira, store, nil, nil)
+	ingestor.cache["VBT-1"] = cachedIssue{issue: jira_client.JiraIssue{
+		Key:    "VBT-1",
+		Fields: map[string]json.RawMessage{"issuelinks": json.RawMessage(`[]`)},
+	}}
+
+	summary, err := ingestor.Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Inserted)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"missing-sources"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{"VBT-1"}, jira.issueCalls)
+	assert.Equal(t, [][]string{{"labels"}}, jira.issueFields)
+}
+
+func TestIngestorFailsOnHoldIssueWhenBlockerLabelsUnavailable(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Failed)
+	assert.Zero(t, summary.Inserted)
+	// Not saved, so reasons stored by an earlier sync are never wiped by a failed fetch.
+	assert.Empty(t, store.saved)
+	require.Len(t, summary.Failures, 1)
+	assert.Contains(t, summary.Failures[0], "LTWL-1")
+	assert.Contains(t, summary.Failures[0], "VBT-1")
+}
+
+func TestIngestorRequestsUnavailableBlockerOnlyOnce(t *testing.T) {
+	first := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	second := onHoldIVT("LTWL-2", buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{first, second}}},
+		batchSearchErr: errors.New("bulk search failed"),
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, summary.Failed)
+	assert.Empty(t, store.saved)
+	assert.Equal(t, []string{"VBT-1"}, jira.issueCalls)
+}
+
 func TestIngestorSavesClosedResolutions(t *testing.T) {
 	for _, tt := range []struct {
 		resolution string
