@@ -636,11 +636,8 @@ func (r *rpmDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, p
 	// in existingChecksums and return a slice of models.Rpm
 	dbPkgs := FilteredConvert(pkgs, existingChecksums)
 
-	// Insert the filtered packages in rpms table
-	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "checksum"}},
-		DoNothing: true,
-	}).Create(dbPkgs)
+	// Insert with automatic sorting to prevent deadlocks during concurrent introspection
+	result := createRpmsSorted(r.db.WithContext(ctx), dbPkgs)
 	if result.Error != nil {
 		return 0, fmt.Errorf("failed to PagedRpmInsert: %w", result.Error)
 	}
@@ -670,10 +667,9 @@ func (r *rpmDaoImpl) InsertForRepository(ctx context.Context, repoUuid string, p
 
 	// Add the RepositoryRpm entries we do need
 	associations := prepRepositoryRpms(repo, rpmUuids)
-	result = r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "repository_uuid"}, {Name: "rpm_uuid"}},
-		DoNothing: true}).
-		Create(&associations)
+
+	// Insert with automatic sorting to prevent deadlocks during concurrent introspection
+	result = createRepositoryRpmsSorted(r.db.WithContext(ctx), associations)
 	if result.Error != nil {
 		return result.RowsAffected, fmt.Errorf("failed to Create: %w", result.Error)
 	}
@@ -724,6 +720,7 @@ func (r *rpmDaoImpl) deleteUnneeded(ctx context.Context, repo models.Repository,
 	rpmsToDelete := difference(existing_rpm_uuids, rpm_uuids)
 
 	// Delete the many2many relationship for the unneeded rpms
+	// Note: No sorting needed - each transaction deletes from its own repository_uuid partition
 	if err := r.db.WithContext(ctx).
 		Unscoped().
 		Where("repositories_rpms.repository_uuid = ?", repo.UUID).
