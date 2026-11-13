@@ -11,6 +11,18 @@
         "extended_release_version": "9.4"
     },
     {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - AppStream - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-appstream-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/aarch64/appstream/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4",
+        "selector": "debug"
+    },
+    {
         "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
         "content_label": "rhel-9.4-for-aarch64-baseos-eus-rpms",
         "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/aarch64/baseos/os",
@@ -20,6 +32,18 @@
         "origin": "red_hat",
         "extended_release": "eus",
         "extended_release_version": "9.4"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - BaseOS - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-9.4-for-aarch64-baseos-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.4/aarch64/baseos/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.4",
+        "selector": "debug"
     },
     {
         "name": "Red Hat Enterprise Linux 9.4 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
@@ -44,6 +68,18 @@
         "extended_release_version": "9.6"
     },
     {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - AppStream - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-appstream-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/aarch64/appstream/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6",
+        "selector": "debug"
+    },
+    {
         "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
         "content_label": "rhel-9.6-for-aarch64-baseos-eus-rpms",
         "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/aarch64/baseos/os",
@@ -53,6 +89,18 @@
         "origin": "red_hat",
         "extended_release": "eus",
         "extended_release_version": "9.6"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - BaseOS - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-9.6-for-aarch64-baseos-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.6/aarch64/baseos/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.6",
+        "selector": "debug"
     },
     {
         "name": "Red Hat Enterprise Linux 9.6 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
@@ -77,6 +125,18 @@
         "extended_release_version": "9.8"
     },
     {
+        "name": "Red Hat Enterprise Linux 9.8 for ARM 64 - AppStream - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-9.8-for-aarch64-appstream-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.8/aarch64/appstream/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.8",
+        "selector": "debug"
+    },
+    {
         "name": "Red Hat Enterprise Linux 9.8 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
         "content_label": "rhel-9.8-for-aarch64-baseos-eus-rpms",
         "url": "https://cdn.redhat.com/content/eus/rhel9/9.8/aarch64/baseos/os",
@@ -86,6 +146,18 @@
         "origin": "red_hat",
         "extended_release": "eus",
         "extended_release_version": "9.8"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 9.8 for ARM 64 - BaseOS - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-9.8-for-aarch64-baseos-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel9/9.8/aarch64/baseos/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "9",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "9.8",
+        "selector": "debug"
     },
     {
         "name": "Red Hat Enterprise Linux 9.8 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
@@ -110,6 +182,18 @@
         "extended_release_version": "10.0"
     },
     {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - AppStream - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-appstream-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/aarch64/appstream/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0",
+        "selector": "debug"
+    },
+    {
         "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
         "content_label": "rhel-10.0-for-aarch64-baseos-eus-rpms",
         "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/aarch64/baseos/os",
@@ -119,6 +203,18 @@
         "origin": "red_hat",
         "extended_release": "eus",
         "extended_release_version": "10.0"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - BaseOS - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-10.0-for-aarch64-baseos-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.0/aarch64/baseos/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.0",
+        "selector": "debug"
     },
     {
         "name": "Red Hat Enterprise Linux 10.0 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
@@ -143,6 +239,18 @@
         "extended_release_version": "10.2"
     },
     {
+        "name": "Red Hat Enterprise Linux 10.2 for ARM 64 - AppStream - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-10.2-for-aarch64-appstream-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.2/aarch64/appstream/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.2",
+        "selector": "debug"
+    },
+    {
         "name": "Red Hat Enterprise Linux 10.2 for ARM 64 - BaseOS - Extended Update Support (RPMs)",
         "content_label": "rhel-10.2-for-aarch64-baseos-eus-rpms",
         "url": "https://cdn.redhat.com/content/eus/rhel10/10.2/aarch64/baseos/os",
@@ -152,6 +260,18 @@
         "origin": "red_hat",
         "extended_release": "eus",
         "extended_release_version": "10.2"
+    },
+    {
+        "name": "Red Hat Enterprise Linux 10.2 for ARM 64 - BaseOS - Extended Update Support (Debug RPMs)",
+        "content_label": "rhel-10.2-for-aarch64-baseos-eus-debug-rpms",
+        "url": "https://cdn.redhat.com/content/eus/rhel10/10.2/aarch64/baseos/debug",
+        "distribution_arch": "aarch64",
+        "distribution_version": "10",
+        "feature_name": "RHEL-EUS-aarch64",
+        "origin": "red_hat",
+        "extended_release": "eus",
+        "extended_release_version": "10.2",
+        "selector": "debug"
     },
     {
         "name": "Red Hat Enterprise Linux 10.2 for ARM 64 - Supplementary - Extended Update Support (RPMs)",
