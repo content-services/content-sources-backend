@@ -146,6 +146,7 @@ type LightwellVulnerability struct {
 	ResolutionReason   *string   `json:"resolution_reason"`
 	JiraStatus         *string   `json:"jira_status"`
 	JiraResolution     *string   `json:"jira_resolution"`
+	OnHoldReasons      []string  `json:"on_hold_reasons"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
 }
