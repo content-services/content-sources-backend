@@ -892,6 +892,66 @@ func (_c *MockPulpClient_CreateOrUpdateGuardsForRhelRepo_Call) RunAndReturn(run 
 	return _c
 }
 
+// CreateOrUpdateImageBuilderGuard provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) CreateOrUpdateImageBuilderGuard(ctx context.Context) (string, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateOrUpdateImageBuilderGuard")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (string, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) string); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_CreateOrUpdateImageBuilderGuard_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateOrUpdateImageBuilderGuard'
+type MockPulpClient_CreateOrUpdateImageBuilderGuard_Call struct {
+	*mock.Call
+}
+
+// CreateOrUpdateImageBuilderGuard is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockPulpClient_Expecter) CreateOrUpdateImageBuilderGuard(ctx any) *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call {
+	return &MockPulpClient_CreateOrUpdateImageBuilderGuard_Call{Call: _e.mock.On("CreateOrUpdateImageBuilderGuard", ctx)}
+}
+
+func (_c *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call) Run(run func(ctx context.Context)) *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call) Return(s string, err error) *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call) RunAndReturn(run func(ctx context.Context) (string, error)) *MockPulpClient_CreateOrUpdateImageBuilderGuard_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateRpmDistribution provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) CreateRpmDistribution(ctx context.Context, publicationHref string, name string, basePath string, contentGuardHref *string) (*string, error) {
 	ret := _mock.Called(ctx, publicationHref, name, basePath, contentGuardHref)
@@ -1616,6 +1676,142 @@ func (_c *MockPulpClient_DeleteUpload_Call) Return(n int, err error) *MockPulpCl
 }
 
 func (_c *MockPulpClient_DeleteUpload_Call) RunAndReturn(run func(ctx context.Context, uploadHref string) (int, error)) *MockPulpClient_DeleteUpload_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FetchCompositeContentGuard provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) FetchCompositeContentGuard(ctx context.Context, name string) (*zest.CompositeContentGuardResponse, error) {
+	ret := _mock.Called(ctx, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchCompositeContentGuard")
+	}
+
+	var r0 *zest.CompositeContentGuardResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*zest.CompositeContentGuardResponse, error)); ok {
+		return returnFunc(ctx, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *zest.CompositeContentGuardResponse); ok {
+		r0 = returnFunc(ctx, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.CompositeContentGuardResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_FetchCompositeContentGuard_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchCompositeContentGuard'
+type MockPulpClient_FetchCompositeContentGuard_Call struct {
+	*mock.Call
+}
+
+// FetchCompositeContentGuard is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+func (_e *MockPulpClient_Expecter) FetchCompositeContentGuard(ctx any, name any) *MockPulpClient_FetchCompositeContentGuard_Call {
+	return &MockPulpClient_FetchCompositeContentGuard_Call{Call: _e.mock.On("FetchCompositeContentGuard", ctx, name)}
+}
+
+func (_c *MockPulpClient_FetchCompositeContentGuard_Call) Run(run func(ctx context.Context, name string)) *MockPulpClient_FetchCompositeContentGuard_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_FetchCompositeContentGuard_Call) Return(compositeContentGuardResponse *zest.CompositeContentGuardResponse, err error) *MockPulpClient_FetchCompositeContentGuard_Call {
+	_c.Call.Return(compositeContentGuardResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_FetchCompositeContentGuard_Call) RunAndReturn(run func(ctx context.Context, name string) (*zest.CompositeContentGuardResponse, error)) *MockPulpClient_FetchCompositeContentGuard_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FetchHeaderContentGuard provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) FetchHeaderContentGuard(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error) {
+	ret := _mock.Called(ctx, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FetchHeaderContentGuard")
+	}
+
+	var r0 *zest.HeaderContentGuardResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*zest.HeaderContentGuardResponse, error)); ok {
+		return returnFunc(ctx, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *zest.HeaderContentGuardResponse); ok {
+		r0 = returnFunc(ctx, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*zest.HeaderContentGuardResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_FetchHeaderContentGuard_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FetchHeaderContentGuard'
+type MockPulpClient_FetchHeaderContentGuard_Call struct {
+	*mock.Call
+}
+
+// FetchHeaderContentGuard is a helper method to define mock.On call
+//   - ctx context.Context
+//   - name string
+func (_e *MockPulpClient_Expecter) FetchHeaderContentGuard(ctx any, name any) *MockPulpClient_FetchHeaderContentGuard_Call {
+	return &MockPulpClient_FetchHeaderContentGuard_Call{Call: _e.mock.On("FetchHeaderContentGuard", ctx, name)}
+}
+
+func (_c *MockPulpClient_FetchHeaderContentGuard_Call) Run(run func(ctx context.Context, name string)) *MockPulpClient_FetchHeaderContentGuard_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_FetchHeaderContentGuard_Call) Return(headerContentGuardResponse *zest.HeaderContentGuardResponse, err error) *MockPulpClient_FetchHeaderContentGuard_Call {
+	_c.Call.Return(headerContentGuardResponse, err)
+	return _c
+}
+
+func (_c *MockPulpClient_FetchHeaderContentGuard_Call) RunAndReturn(run func(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error)) *MockPulpClient_FetchHeaderContentGuard_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2667,6 +2863,68 @@ func (_c *MockPulpClient_GetTask_Call) Return(taskResponse zest.TaskResponse, er
 }
 
 func (_c *MockPulpClient_GetTask_Call) RunAndReturn(run func(ctx context.Context, taskHref string) (zest.TaskResponse, error)) *MockPulpClient_GetTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListCompositeContentGuards provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListCompositeContentGuards(ctx context.Context) ([]zest.CompositeContentGuardResponse, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListCompositeContentGuards")
+	}
+
+	var r0 []zest.CompositeContentGuardResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]zest.CompositeContentGuardResponse, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []zest.CompositeContentGuardResponse); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]zest.CompositeContentGuardResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ListCompositeContentGuards_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListCompositeContentGuards'
+type MockPulpClient_ListCompositeContentGuards_Call struct {
+	*mock.Call
+}
+
+// ListCompositeContentGuards is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockPulpClient_Expecter) ListCompositeContentGuards(ctx any) *MockPulpClient_ListCompositeContentGuards_Call {
+	return &MockPulpClient_ListCompositeContentGuards_Call{Call: _e.mock.On("ListCompositeContentGuards", ctx)}
+}
+
+func (_c *MockPulpClient_ListCompositeContentGuards_Call) Run(run func(ctx context.Context)) *MockPulpClient_ListCompositeContentGuards_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListCompositeContentGuards_Call) Return(compositeContentGuardResponses []zest.CompositeContentGuardResponse, err error) *MockPulpClient_ListCompositeContentGuards_Call {
+	_c.Call.Return(compositeContentGuardResponses, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListCompositeContentGuards_Call) RunAndReturn(run func(ctx context.Context) ([]zest.CompositeContentGuardResponse, error)) *MockPulpClient_ListCompositeContentGuards_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -3993,6 +4251,78 @@ func (_c *MockPulpClient_SyncRpmRepository_Call) Return(s string, err error) *Mo
 }
 
 func (_c *MockPulpClient_SyncRpmRepository_Call) RunAndReturn(run func(ctx context.Context, rpmRpmRepositoryHref string, remoteHref *string) (string, error)) *MockPulpClient_SyncRpmRepository_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateCompositeGuardChildren provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) UpdateCompositeGuardChildren(ctx context.Context, href string, guardHrefs []string) (string, error) {
+	ret := _mock.Called(ctx, href, guardHrefs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateCompositeGuardChildren")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) (string, error)); ok {
+		return returnFunc(ctx, href, guardHrefs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []string) string); ok {
+		r0 = returnFunc(ctx, href, guardHrefs)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []string) error); ok {
+		r1 = returnFunc(ctx, href, guardHrefs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_UpdateCompositeGuardChildren_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateCompositeGuardChildren'
+type MockPulpClient_UpdateCompositeGuardChildren_Call struct {
+	*mock.Call
+}
+
+// UpdateCompositeGuardChildren is a helper method to define mock.On call
+//   - ctx context.Context
+//   - href string
+//   - guardHrefs []string
+func (_e *MockPulpClient_Expecter) UpdateCompositeGuardChildren(ctx any, href any, guardHrefs any) *MockPulpClient_UpdateCompositeGuardChildren_Call {
+	return &MockPulpClient_UpdateCompositeGuardChildren_Call{Call: _e.mock.On("UpdateCompositeGuardChildren", ctx, href, guardHrefs)}
+}
+
+func (_c *MockPulpClient_UpdateCompositeGuardChildren_Call) Run(run func(ctx context.Context, href string, guardHrefs []string)) *MockPulpClient_UpdateCompositeGuardChildren_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []string
+		if args[2] != nil {
+			arg2 = args[2].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_UpdateCompositeGuardChildren_Call) Return(s string, err error) *MockPulpClient_UpdateCompositeGuardChildren_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockPulpClient_UpdateCompositeGuardChildren_Call) RunAndReturn(run func(ctx context.Context, href string, guardHrefs []string) (string, error)) *MockPulpClient_UpdateCompositeGuardChildren_Call {
 	_c.Call.Return(run)
 	return _c
 }
