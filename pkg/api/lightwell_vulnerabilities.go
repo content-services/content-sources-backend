@@ -22,6 +22,7 @@ type LightwellVulnerabilityResponse struct {
 	CustomerPriority   *string   `json:"customer_priority,omitempty"` // Customer priority
 	Status             string    `json:"status"`                      // Workflow status. A closure without a shipped fix is Unremediated
 	ResolutionReason   *string   `json:"resolution_reason,omitempty"` // Explanation when a vulnerability is closed without a shipped fix
+	OnHoldReasons      []string  `json:"on_hold_reasons,omitempty"`   // Customer-facing reasons an On Hold vulnerability is blocked
 	Ecosystem          *string   `json:"ecosystem,omitempty"`         // Derived ecosystem (java, python, javascript, csharp)
 	Complexity         string    `json:"complexity"`                  // Standard, Complex, or Extensive
 	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
