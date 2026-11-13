@@ -218,6 +218,16 @@ SET published_versions = ARRAY[
 ]
 WHERE vulnerability_id = 'LWL-2026-4003';
 
+-- On Hold reasons (raw slugs, sorted as the sync stores them). One row with several
+-- reasons, one blocked by a work ticket, and PROJ-3503 left with none.
+UPDATE lightwell_vulnerabilities
+SET on_hold_reasons = ARRAY['cumulative-build-failure', 'missing-sources']
+WHERE vulnerability_id = 'LWL-2026-3501';
+
+UPDATE lightwell_vulnerabilities
+SET on_hold_reasons = ARRAY['blocked-by-ticket']
+WHERE vulnerability_id = 'LWL-2026-3502';
+
 -- Fixed freshness for this dummy dataset. A timestamp written by a real sync is left as-is.
 INSERT INTO lightwell_beacon_sync (id, last_processed_at)
 VALUES (true, '2026-08-18 07:00:00+00')
