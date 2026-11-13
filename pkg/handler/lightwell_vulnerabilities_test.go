@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -364,6 +365,67 @@ func (suite *LightwellVulnerabilitiesSuite) TestListIncludesClosedResolutionReas
 	assert.Equal(suite.T(), reason, *resp.Data[0].ResolutionReason)
 	assert.Contains(suite.T(), string(body), `"resolution_reason":"The package's license is not in the list of software licenses Lightwell will ship."`)
 	assert.Equal(suite.T(), int64(1), resp.Meta.StatusCounts["Unremediated"])
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestListIncludesOnHoldReasons() {
+	now := time.Date(2026, 8, 18, 0, 0, 0, 0, time.UTC)
+	reasons := []string{"Source code unavailable", "Waiting on related engineering work"}
+	rows := []api.LightwellVulnerabilityResponse{
+		{
+			UUID:              "00000000-0000-4000-8000-000000000031",
+			VulnerabilityID:   "LWL-2026-4601",
+			ComponentName:     "lodash",
+			Package:           "lodash",
+			ComponentVersion:  "4.17.20",
+			Severity:          "Moderate",
+			Status:            "On Hold",
+			OnHoldReasons:     reasons,
+			Complexity:        "Standard",
+			SubmittedDate:     now,
+			LastUpdated:       now,
+			LtwlsuptTicketIDs: []string{},
+			PublishedVersions: []string{},
+		},
+		{
+			UUID:              "00000000-0000-4000-8000-000000000032",
+			VulnerabilityID:   "LWL-2026-4602",
+			ComponentName:     "express",
+			Package:           "express",
+			ComponentVersion:  "4.18.0",
+			Severity:          "Moderate",
+			Status:            "On Hold",
+			Complexity:        "Standard",
+			SubmittedDate:     now,
+			LastUpdated:       now,
+			LtwlsuptTicketIDs: []string{},
+			PublishedVersions: []string{},
+		},
+	}
+	opts := dao.ListLightwellVulnerabilitiesOptions{
+		CustomerID: "demo-customer-1",
+		Limit:      100,
+	}
+	suite.reg.LightwellVulnerability.On("List", test.MockCtx(), opts).Return(
+		rows,
+		dao.LightwellVulnerabilityAggregates{TotalCount: 2},
+		[]dao.LightwellVulnerabilityStageCount{{Stage: "On Hold", Count: 2}},
+		int64(2),
+		nil,
+	)
+
+	path := fmt.Sprintf("%s/lightwell/beacon/vulnerabilities/?customer_id=demo-customer-1", api.FullRootPath())
+	code, body, err := suite.serveRouter(suite.newGet(path))
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), http.StatusOK, code)
+
+	var resp api.LightwellVulnerabilityCollectionResponse
+	assert.NoError(suite.T(), json.Unmarshal(body, &resp))
+	require.Len(suite.T(), resp.Data, 2)
+	assert.Equal(suite.T(), reasons, resp.Data[0].OnHoldReasons)
+	assert.Empty(suite.T(), resp.Data[1].OnHoldReasons)
+	assert.Contains(suite.T(), string(body), `"on_hold_reasons":["Source code unavailable","Waiting on related engineering work"]`)
+	// The field is omitted for a row with no reasons, so it appears exactly once.
+	assert.Equal(suite.T(), 1, strings.Count(string(body), `"on_hold_reasons"`))
 }
 
 func (suite *LightwellVulnerabilitiesSuite) TestListEmptyPublishedVersionsSerializesAsArray() {
