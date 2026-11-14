@@ -527,6 +527,12 @@ const docTemplate = `{
                         "description": "Number of items to include in response. Default value: ` + "`" + `100` + "`" + `. Maximum: ` + "`" + `200` + "`" + `.",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort the results as ` + "`" + `field:direction` + "`" + `. Fields: ` + "`" + `last_updated` + "`" + `, ` + "`" + `submitted_date` + "`" + `, ` + "`" + `cvss` + "`" + `, ` + "`" + `severity` + "`" + `, ` + "`" + `status` + "`" + `, ` + "`" + `vulnerability_id` + "`" + `. Directions: ` + "`" + `asc` + "`" + `, ` + "`" + `desc` + "`" + `. Default value: ` + "`" + `last_updated:desc` + "`" + `.",
+                        "name": "sort_by",
+                        "in": "query"
                     }
                 ],
                 "responses": {

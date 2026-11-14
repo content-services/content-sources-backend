@@ -3862,6 +3862,14 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "description": "Sort the results as `field:direction`. Fields: `last_updated`, `submitted_date`, `cvss`, `severity`, `status`, `vulnerability_id`. Directions: `asc`, `desc`. Default value: `last_updated:desc`.",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

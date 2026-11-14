@@ -53,7 +53,35 @@ FROM lightwell_filtered_vulnerabilities(
     sqlc.narg(flags)::text[],
     sqlc.narg(search)::text
 ) AS v
-ORDER BY v.last_updated DESC, v.vulnerability_id ASC
+/*
+ ASC/DESC can't be parameterized and CASE branches must share a type, so each
+ field/direction pair gets its own CASE; unselected CASEs are NULL for every row.
+ The DAO defaults sort_field/sort_direction to last_updated/desc and rejects unknown values.
+*/
+ORDER BY
+    CASE WHEN sqlc.arg(sort_field)::text = 'last_updated' AND sqlc.arg(sort_direction)::text = 'asc' THEN v.last_updated END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'last_updated' AND sqlc.arg(sort_direction)::text = 'desc' THEN v.last_updated END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'submitted_date' AND sqlc.arg(sort_direction)::text = 'asc' THEN v.submitted_date END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'submitted_date' AND sqlc.arg(sort_direction)::text = 'desc' THEN v.submitted_date END DESC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'cvss' AND sqlc.arg(sort_direction)::text = 'asc' THEN v.cvss END ASC NULLS LAST,
+    CASE WHEN sqlc.arg(sort_field)::text = 'cvss' AND sqlc.arg(sort_direction)::text = 'desc' THEN v.cvss END DESC NULLS LAST,
+    -- severity_rank (from the DAO) runs least to most severe; values not in it are NULL and sort last.
+    CASE WHEN sqlc.arg(sort_field)::text = 'severity' AND sqlc.arg(sort_direction)::text = 'asc'
+        THEN array_position(sqlc.arg(severity_rank)::text[], v.severity) END ASC NULLS LAST,
+    CASE WHEN sqlc.arg(sort_field)::text = 'severity' AND sqlc.arg(sort_direction)::text = 'desc'
+        THEN array_position(sqlc.arg(severity_rank)::text[], v.severity) END DESC NULLS LAST,
+    -- status sorts on stage by its position in status_rank (from the DAO); values not in it sort last.
+    CASE WHEN sqlc.arg(sort_field)::text = 'status' AND sqlc.arg(sort_direction)::text = 'asc'
+        THEN array_position(sqlc.arg(status_rank)::text[], v.stage) END ASC NULLS LAST,
+    CASE WHEN sqlc.arg(sort_field)::text = 'status' AND sqlc.arg(sort_direction)::text = 'desc'
+        THEN array_position(sqlc.arg(status_rank)::text[], v.stage) END DESC NULLS LAST,
+    -- Zero-pad the number after the last hyphen and compare bytewise,
+    -- so CVE-2026-9999 sorts before CVE-2026-10000.
+    CASE WHEN sqlc.arg(sort_field)::text = 'vulnerability_id' AND sqlc.arg(sort_direction)::text = 'asc'
+        THEN regexp_replace(v.vulnerability_id, '-[^-]*$', '') || '-' || lpad(regexp_replace(v.vulnerability_id, '^.*-', ''), 20, '0') COLLATE "C" END ASC,
+    CASE WHEN sqlc.arg(sort_field)::text = 'vulnerability_id' AND sqlc.arg(sort_direction)::text = 'desc'
+        THEN regexp_replace(v.vulnerability_id, '-[^-]*$', '') || '-' || lpad(regexp_replace(v.vulnerability_id, '^.*-', ''), 20, '0') COLLATE "C" END DESC,
+    v.vulnerability_id ASC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
 
 -- name: CountAggregates :one

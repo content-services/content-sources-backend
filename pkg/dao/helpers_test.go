@@ -30,6 +30,28 @@ func (s *RepositorySuite) TestConvertSortByToPulpOrdering() {
 	assert.Equal(t, []string{"-release", "arch"}, convertSortByToPulpOrdering("release:desc,invalid,arch:other", sortMap, defaultOrdering))
 }
 
+func (s *RepositorySuite) TestParseSortBy() {
+	t := s.T()
+	fields := []string{"name", "created_at"}
+
+	valid := map[string][2]string{
+		"":                {"", ""},
+		"name:asc":        {"name", "asc"},
+		"created_at:desc": {"created_at", "desc"},
+	}
+	for sortBy, want := range valid {
+		field, direction, err := ParseSortBy(sortBy, fields)
+		assert.NoError(t, err, sortBy)
+		assert.Equal(t, want, [2]string{field, direction}, sortBy)
+	}
+
+	for _, sortBy := range []string{"url:asc", "name", "name:", "name:up", "name:asc:extra", "NAME:asc", "name:ASC", ":asc", "name: asc", " name:asc"} {
+		field, direction, err := ParseSortBy(sortBy, fields)
+		assert.Error(t, err, sortBy)
+		assert.Empty(t, field+direction, sortBy)
+	}
+}
+
 func (s *RepositorySuite) TestConvertSortByToSQL() {
 	t := s.T()
 

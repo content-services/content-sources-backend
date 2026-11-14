@@ -320,8 +320,36 @@ FROM lightwell_filtered_vulnerabilities(
     $6::text[],
     $7::text
 ) AS v
-ORDER BY v.last_updated DESC, v.vulnerability_id ASC
-LIMIT $9 OFFSET $8
+/*
+ ASC/DESC can't be parameterized and CASE branches must share a type, so each
+ field/direction pair gets its own CASE; unselected CASEs are NULL for every row.
+ The DAO defaults sort_field/sort_direction to last_updated/desc and rejects unknown values.
+*/
+ORDER BY
+    CASE WHEN $8::text = 'last_updated' AND $9::text = 'asc' THEN v.last_updated END ASC,
+    CASE WHEN $8::text = 'last_updated' AND $9::text = 'desc' THEN v.last_updated END DESC,
+    CASE WHEN $8::text = 'submitted_date' AND $9::text = 'asc' THEN v.submitted_date END ASC,
+    CASE WHEN $8::text = 'submitted_date' AND $9::text = 'desc' THEN v.submitted_date END DESC,
+    CASE WHEN $8::text = 'cvss' AND $9::text = 'asc' THEN v.cvss END ASC NULLS LAST,
+    CASE WHEN $8::text = 'cvss' AND $9::text = 'desc' THEN v.cvss END DESC NULLS LAST,
+    -- severity_rank (from the DAO) runs least to most severe; values not in it are NULL and sort last.
+    CASE WHEN $8::text = 'severity' AND $9::text = 'asc'
+        THEN array_position($10::text[], v.severity) END ASC NULLS LAST,
+    CASE WHEN $8::text = 'severity' AND $9::text = 'desc'
+        THEN array_position($10::text[], v.severity) END DESC NULLS LAST,
+    -- status sorts on stage by its position in status_rank (from the DAO); values not in it sort last.
+    CASE WHEN $8::text = 'status' AND $9::text = 'asc'
+        THEN array_position($11::text[], v.stage) END ASC NULLS LAST,
+    CASE WHEN $8::text = 'status' AND $9::text = 'desc'
+        THEN array_position($11::text[], v.stage) END DESC NULLS LAST,
+    -- Zero-pad the number after the last hyphen and compare bytewise,
+    -- so CVE-2026-9999 sorts before CVE-2026-10000.
+    CASE WHEN $8::text = 'vulnerability_id' AND $9::text = 'asc'
+        THEN regexp_replace(v.vulnerability_id, '-[^-]*$', '') || '-' || lpad(regexp_replace(v.vulnerability_id, '^.*-', ''), 20, '0') COLLATE "C" END ASC,
+    CASE WHEN $8::text = 'vulnerability_id' AND $9::text = 'desc'
+        THEN regexp_replace(v.vulnerability_id, '-[^-]*$', '') || '-' || lpad(regexp_replace(v.vulnerability_id, '^.*-', ''), 20, '0') COLLATE "C" END DESC,
+    v.vulnerability_id ASC
+LIMIT $13 OFFSET $12
 `
 
 type ListVulnerabilitiesParams struct {
@@ -332,6 +360,10 @@ type ListVulnerabilitiesParams struct {
 	LtwlsuptTicketIds []string `json:"ltwlsupt_ticket_ids"`
 	Flags             []string `json:"flags"`
 	Search            *string  `json:"search"`
+	SortField         string   `json:"sort_field"`
+	SortDirection     string   `json:"sort_direction"`
+	SeverityRank      []string `json:"severity_rank"`
+	StatusRank        []string `json:"status_rank"`
 	PageOffset        int32    `json:"page_offset"`
 	PageLimit         int32    `json:"page_limit"`
 }
@@ -375,6 +407,10 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 		arg.LtwlsuptTicketIds,
 		arg.Flags,
 		arg.Search,
+		arg.SortField,
+		arg.SortDirection,
+		arg.SeverityRank,
+		arg.StatusRank,
 		arg.PageOffset,
 		arg.PageLimit,
 	)
