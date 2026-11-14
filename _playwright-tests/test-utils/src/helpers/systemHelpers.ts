@@ -1,14 +1,14 @@
 import { expect, Page } from '@playwright/test';
 import { ensureValidToken, usesIdentityHeaderAuth } from './tokenHelpers';
 
-/** Poll timeout for system propagation to inventory and patch (3 minutes) */
-export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 180_000;
+/** Poll timeout for system propagation to inventory and patch (20 seconds) */
+export const INVENTORY_PATCH_POLL_TIMEOUT_MS = 20_000;
 
 /**
- * Delay between Inventory and Patch polling attempts. Playwright can emit a network line per
- * `page.request` call; a modest interval keeps logs readable without materially slowing success.
+ * Delay between Inventory and Patch polling attempts. Kept short relative to the
+ * overall timeout so failures still gather several samples before dumping debug.
  */
-const INVENTORY_PATCH_POLL_INTERVAL_MS = 10_000;
+const INVENTORY_PATCH_POLL_INTERVAL_MS = 2_000;
 
 type PatchSystemAttributes = {
   display_name: string;
@@ -17,6 +17,14 @@ type PatchSystemAttributes = {
 
 type PatchSystemRecord = {
   attributes: PatchSystemAttributes;
+};
+
+type InventoryHostRecord = {
+  id?: string;
+  display_name?: string;
+  fqdn?: string;
+  insights_id?: string;
+  reporter?: string;
 };
 
 /** Result of looking up a host in the Patch systems API by display name. */
@@ -60,6 +68,84 @@ export async function getPatchSystemByHostname(
     console.log('⚠️  Error checking system in patch:', error);
     return { kind: 'api_error' };
   }
+}
+
+/**
+ * Dump Inventory and Patch API payloads once after a waitInPatch poll fails.
+ * Helps distinguish hostname mismatch, empty search hits, and API errors.
+ */
+export async function logWaitInPatchDebug(
+  page: Page,
+  hostname: string,
+  reason: string,
+): Promise<void> {
+  console.log(`\n=== waitInPatch debug (${reason}) hostname="${hostname}" ===`);
+
+  try {
+    const inventoryUrl = `/api/inventory/v1/hosts?display_name=${encodeURIComponent(hostname)}`;
+    const inventoryResponse = await page.request.get(inventoryUrl);
+    console.log(`Inventory GET ${inventoryUrl} -> ${inventoryResponse.status()}`);
+
+    if (inventoryResponse.status() === 200) {
+      const body = await inventoryResponse.json();
+      const results = (body.results as InventoryHostRecord[] | undefined) ?? [];
+      console.log(`Inventory match count: ${results.length}`);
+      console.log(
+        'Inventory hosts:',
+        JSON.stringify(
+          results.map((host) => ({
+            id: host.id,
+            display_name: host.display_name,
+            fqdn: host.fqdn,
+            insights_id: host.insights_id,
+            reporter: host.reporter,
+          })),
+          null,
+          2,
+        ),
+      );
+    } else {
+      console.log('Inventory body:', await inventoryResponse.text());
+    }
+  } catch (error) {
+    console.log('⚠️  Failed to fetch Inventory debug payload:', error);
+  }
+
+  try {
+    const patchUrl = `/api/patch/v3/systems?search=${encodeURIComponent(hostname)}&limit=100`;
+    const patchResponse = await page.request.get(patchUrl);
+    console.log(`Patch GET ${patchUrl} -> ${patchResponse.status()}`);
+
+    if (patchResponse.status() === 200) {
+      const body = await patchResponse.json();
+      const systems = (body.data as PatchSystemRecord[] | undefined) ?? [];
+      const exactMatch = systems.find((sys) => sys.attributes.display_name === hostname);
+      console.log(`Patch search hit count: ${systems.length}`);
+      console.log(
+        'Patch display_names:',
+        JSON.stringify(
+          systems.map((sys) => ({
+            display_name: sys.attributes.display_name,
+            template_uuid: sys.attributes.template_uuid ?? null,
+          })),
+          null,
+          2,
+        ),
+      );
+      console.log(
+        `Exact display_name match: ${exactMatch ? 'yes' : 'no'}` +
+          (exactMatch
+            ? ` (template_uuid=${exactMatch.attributes.template_uuid ?? null})`
+            : ''),
+      );
+    } else {
+      console.log('Patch body:', await patchResponse.text());
+    }
+  } catch (error) {
+    console.log('⚠️  Failed to fetch Patch debug payload:', error);
+  }
+
+  console.log('=== end waitInPatch debug ===\n');
 }
 
 /**
@@ -173,6 +259,8 @@ export const getTemplateSystemsCount = async (
  * Refreshes the browser JWT on each poll iteration so long waits (up to timeoutMs) do not fail
  * after the token expires. No-op when the token is still valid, or when IDENTITY_HEADER auth is used.
  *
+ * On poll failure, dumps Inventory and Patch API payloads once for debugging.
+ *
  * @param authStateFile - Playwright storageState filename for ensureValidToken (default: ADMIN_TOKEN.json)
  */
 export const waitInPatch = async (
@@ -194,35 +282,32 @@ export const waitInPatch = async (
     return check();
   };
 
-  await expect
-    .poll(() => withValidToken(() => isInInventory(page, hostname)), {
-      ...pollOptions,
-      message: 'System did not appear in inventory in time',
-    })
-    .toBe(1);
+  const pollUntil = async (check: () => Promise<number>, message: string): Promise<void> => {
+    try {
+      await expect.poll(() => withValidToken(check), { ...pollOptions, message }).toBe(1);
+    } catch (error) {
+      await logWaitInPatchDebug(page, hostname, message);
+      throw error;
+    }
+  };
+
+  await pollUntil(() => isInInventory(page, hostname), 'System did not appear in inventory in time');
 
   if (expectedAttachment) {
-    await expect
-      .poll(() => withValidToken(() => isSystemListedInPatch(page, hostname)), {
-        ...pollOptions,
-        message: 'System did not appear in Patch in time',
-      })
-      .toBe(1);
+    await pollUntil(
+      () => isSystemListedInPatch(page, hostname),
+      'System did not appear in Patch in time',
+    );
 
-    await expect
-      .poll(() => withValidToken(() => hasTemplateUuidInPatch(page, hostname)), {
-        ...pollOptions,
-        message:
-          'System is in Patch but template_uuid is not set (content-template facts may not be uploaded yet)',
-      })
-      .toBe(1);
+    await pollUntil(
+      () => hasTemplateUuidInPatch(page, hostname),
+      'System is in Patch but template_uuid is not set (content-template facts might not be uploaded yet)',
+    );
     return;
   }
 
-  await expect
-    .poll(() => withValidToken(() => isInPatch(page, hostname, false)), {
-      ...pollOptions,
-      message: 'System did not appear in Patch without a template in time',
-    })
-    .toBe(1);
+  await pollUntil(
+    () => isInPatch(page, hostname, false),
+    'System did not appear in Patch without a template in time',
+  );
 };
