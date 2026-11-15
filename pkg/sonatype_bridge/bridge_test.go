@@ -63,11 +63,11 @@ func TestLoadConfig(t *testing.T) {
 	config.LoadedConfig.SonatypeBridge = config.SonatypeBridge{
 		Enabled: true,
 		S3: config.ObjectStore{
-			URL:        "http://localhost:9002",
-			Name:       "partner-bucket",
-			Region:     "us-east-1",
-			AccessKey:  "partner-access-key",
-			SecretKey:  "partner-secret-key",
+			URL:       "http://localhost:9002",
+			Name:      "partner-bucket",
+			Region:    "us-east-1",
+			AccessKey: "partner-access-key",
+			SecretKey: "partner-secret-key",
 		},
 		UsePathStyle:    true,
 		RegistryURL:     "https://test.registry/java",

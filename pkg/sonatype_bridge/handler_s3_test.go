@@ -320,14 +320,14 @@ func TestProcessRemediation_VEXConflictStopsDelivery(t *testing.T) {
 
 func TestProcessRemediation_UploadsBundledVEX(t *testing.T) {
 	registry := newFakeRegistry()
-	registry.vex = VEXDocument{Name: "2026-07-15.bom.json", Data: []byte("bundled")}
+	registry.vex = VEXDocument{Name: "2026-07-15T14:02:27Z.bom.json", Data: []byte("bundled")}
 	uploader := newFakeS3Uploader()
 	handler := NewBridgeHandler(registry, uploader, newBridgeMetrics(prometheus.NewRegistry()))
 
 	rem := springRemediation()
 	rem.CVEsFixed = []string{"CVE-2025-41249", "CVE-2023-20860"}
 	require.NoError(t, handler.processRemediation(context.Background(), rem))
-	assert.Equal(t, []byte("bundled"), uploader.objects["vex/2026-07-15.bom.json"].data)
+	assert.Equal(t, []byte("bundled"), uploader.objects["vex/2026-07-15T14:02:27Z.bom.json"].data)
 	assert.Equal(t, springKeyBase+".bom.json", uploader.order[len(uploader.order)-1])
 }
 

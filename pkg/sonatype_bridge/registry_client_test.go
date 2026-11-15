@@ -317,15 +317,15 @@ func TestFetchSBOM_SignatureNotFound(t *testing.T) {
 func TestVEXObjectName(t *testing.T) {
 	name, err := vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27+00:00")
 	require.NoError(t, err)
-	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", name)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27Z.bom.json", name)
 
 	name, err = vexObjectName("CVE-2025-41249", "2026-07-15T23:30:00-05:00")
 	require.NoError(t, err)
-	assert.Equal(t, "CVE-2025-41249-2026-07-16.bom.json", name, "date is normalized to UTC")
+	assert.Equal(t, "CVE-2025-41249-2026-07-16T04:30:00Z.bom.json", name, "timestamp is normalized to UTC")
 
 	name, err = vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27.123456Z")
 	require.NoError(t, err)
-	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", name)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27.123456Z.bom.json", name)
 
 	_, err = vexObjectName("CVE-2025-41249", "not-a-date")
 	require.Error(t, err)
@@ -334,11 +334,11 @@ func TestVEXObjectName(t *testing.T) {
 func TestBundledVEXObjectName(t *testing.T) {
 	name, err := bundledVEXObjectName("2026-08-28T14:02:27+00:00")
 	require.NoError(t, err)
-	assert.Equal(t, "2026-08-28.bom.json", name)
+	assert.Equal(t, "2026-08-28T14:02:27Z.bom.json", name)
 
 	name, err = bundledVEXObjectName("2026-08-28T23:30:00-05:00")
 	require.NoError(t, err)
-	assert.Equal(t, "2026-08-29.bom.json", name, "date is normalized to UTC")
+	assert.Equal(t, "2026-08-29T04:30:00Z.bom.json", name, "timestamp is normalized to UTC")
 
 	_, err = bundledVEXObjectName("not-a-date")
 	require.Error(t, err)
@@ -442,7 +442,7 @@ func TestFetchVEX_OneCVERequestsPerCVEName(t *testing.T) {
 	}, "CVE-2025-41249")
 	require.NoError(t, err)
 	assert.Equal(t, body, string(got.Data))
-	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", got.Name)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27Z.bom.json", got.Name)
 	require.Len(t, uris, 2)
 	assert.Contains(t, uris[0], "PULP_MANIFEST")
 	assert.Equal(t, []string{"/" + strings.ReplaceAll(perCVE, "+", "%2B")}, fileRequests(uris))
@@ -458,7 +458,7 @@ func TestFetchVEX_DuplicateCVETreatedAsSingle(t *testing.T) {
 		bundled: body,
 	}, "CVE-2025-1", "CVE-2025-1")
 	require.NoError(t, err)
-	assert.Equal(t, "CVE-2025-1-2026-07-15.bom.json", got.Name)
+	assert.Equal(t, "CVE-2025-1-2026-07-15T14:02:27Z.bom.json", got.Name)
 	assert.Equal(t, []string{"/" + perCVE}, fileRequests(uris))
 }
 
@@ -475,7 +475,7 @@ func TestFetchVEX_TwoCVEsRequestBundledFile(t *testing.T) {
 	}, "CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
 	assert.Equal(t, body, string(got.Data))
-	assert.Equal(t, "2026-07-15.bom.json", got.Name)
+	assert.Equal(t, "2026-07-15T14:02:27Z.bom.json", got.Name)
 	assert.Equal(t, []string{"/" + bundled}, fileRequests(uris))
 }
 
@@ -490,7 +490,7 @@ func TestFetchVEX_TwoCVEsBundledAbsentUsesMatchingPerCVE(t *testing.T) {
 	}, "CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
 	assert.Equal(t, match, string(got.Data))
-	assert.Equal(t, "CVE-2025-2-2026-07-15.bom.json", got.Name)
+	assert.Equal(t, "CVE-2025-2-2026-07-15T14:02:27Z.bom.json", got.Name)
 	assert.Equal(t, []string{"/" + perA, "/" + perB}, fileRequests(uris))
 }
 
@@ -518,7 +518,7 @@ func TestFetchVEX_OtherUUIDTriesNextTimestamp(t *testing.T) {
 	}, "CVE-2025-1")
 	require.NoError(t, err)
 	assert.Equal(t, match, string(got.Data))
-	assert.Equal(t, "CVE-2025-1-2026-01-01.bom.json", got.Name)
+	assert.Equal(t, "CVE-2025-1-2026-01-01T00:00:00Z.bom.json", got.Name)
 	assert.Equal(t, []string{"/" + newName, "/" + oldName}, fileRequests(uris))
 }
 
@@ -543,7 +543,7 @@ func TestFetchVEX_BundledMismatchSkipsPerCVEAtSameTimestamp(t *testing.T) {
 		"CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
 	assert.Equal(t, match, string(got.Data))
-	assert.Equal(t, "2026-01-01.bom.json", got.Name)
+	assert.Equal(t, "2026-01-01T00:00:00Z.bom.json", got.Name)
 	assert.Equal(t, []string{"/" + newBundle, "/" + oldBundle}, fileRequests(uris))
 }
 
