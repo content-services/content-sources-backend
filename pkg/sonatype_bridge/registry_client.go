@@ -62,8 +62,8 @@ type RegistryClient interface {
 
 // VEXDocument is a VEX document ready for delivery.
 type VEXDocument struct {
-	// Name is the delivered filename: "CVE-2025-41249-2026-07-15.bom.json"
-	// for a single-CVE document, "2026-07-15.bom.json" for a multi-CVE one.
+	// Name is the delivered filename: "CVE-2025-41249-2026-07-15T14:02:27Z.bom.json"
+	// for a single-CVE document, "2026-07-15T14:02:27Z.bom.json" for a multi-CVE one.
 	Name string
 	Data []byte
 }
@@ -631,32 +631,32 @@ func mavenPurlMatches(raw, groupID, artifactID, version string) bool {
 }
 
 // vexObjectName builds the delivered single-CVE VEX filename
-// "{cveID}-{YYYY-MM-DD}.bom.json" from the ISO-8601 build timestamp,
+// "{cveID}-{full-UTC-timestamp}.bom.json" from the ISO-8601 build timestamp,
 // normalized to UTC.
 func vexObjectName(cveID, timestamp string) (string, error) {
-	date, err := vexDate(timestamp)
+	utcTimestamp, err := vexTimestamp(timestamp)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s-%s.bom.json", cveID, date), nil
+	return fmt.Sprintf("%s-%s.bom.json", cveID, utcTimestamp), nil
 }
 
 // bundledVEXObjectName builds the delivered multi-CVE VEX filename
-// "{YYYY-MM-DD}.bom.json" from the ISO-8601 build timestamp, normalized to UTC.
+// "{full-UTC-timestamp}.bom.json" from the ISO-8601 build timestamp, normalized to UTC.
 func bundledVEXObjectName(timestamp string) (string, error) {
-	date, err := vexDate(timestamp)
+	utcTimestamp, err := vexTimestamp(timestamp)
 	if err != nil {
 		return "", err
 	}
-	return date + ".bom.json", nil
+	return utcTimestamp + ".bom.json", nil
 }
 
-func vexDate(timestamp string) (string, error) {
+func vexTimestamp(timestamp string) (string, error) {
 	t, err := time.Parse(time.RFC3339, timestamp)
 	if err != nil {
 		return "", fmt.Errorf("parse VEX timestamp %q: %w", timestamp, err)
 	}
-	return t.UTC().Format(time.DateOnly), nil
+	return t.UTC().Format(time.RFC3339Nano), nil
 }
 
 func groupPath(groupID string) string {

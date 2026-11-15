@@ -52,10 +52,10 @@ func TestSimulateHandler_Status(t *testing.T) {
 	config.LoadedConfig.SonatypeBridge = config.SonatypeBridge{
 		Enabled: true,
 		S3: config.ObjectStore{
-			Name:       "partner-bucket",
-			Region:     "us-east-1",
-			AccessKey:  "partner-access-key",
-			SecretKey:  "partner-secret-key",
+			Name:      "partner-bucket",
+			Region:    "us-east-1",
+			AccessKey: "partner-access-key",
+			SecretKey: "partner-secret-key",
 		},
 		RegistryURL:    "https://test.registry",
 		RegistryOSVURL: "https://test.osv",

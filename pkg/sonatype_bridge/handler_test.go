@@ -26,7 +26,7 @@ import (
 
 const (
 	testVEXTimestamp     = "2026-07-15T14:02:27+00:00"
-	testVEXDeliveredName = "CVE-2025-41249-2026-07-15.bom.json"
+	testVEXDeliveredName = "CVE-2025-41249-2026-07-15T14:02:27Z.bom.json"
 	testSBOMUUID         = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 )
 

@@ -227,13 +227,13 @@ func TestS3Uploader_UploadRootFile(t *testing.T) {
 	defer server.Close()
 
 	u := newTestS3Uploader(server)
-	require.NoError(t, u.UploadRootFile(context.Background(), "vex/CVE-2025-1-2026-07-15.bom.json", []byte("{}"), "application/json"))
+	require.NoError(t, u.UploadRootFile(context.Background(), "vex/CVE-2025-1-2026-07-15T14:02:27Z.bom.json", []byte("{}"), "application/json"))
 
 	mu.Lock()
 	defer mu.Unlock()
 	require.Len(t, *reqs, 1)
 	assert.Equal(t, http.MethodPut, (*reqs)[0].method)
-	assert.Equal(t, "/"+testS3Bucket+"/vex/CVE-2025-1-2026-07-15.bom.json", (*reqs)[0].path)
+	assert.Equal(t, "/"+testS3Bucket+"/vex/CVE-2025-1-2026-07-15T14:02:27Z.bom.json", (*reqs)[0].path)
 }
 
 // newExistingObjectServer answers PUT with 412 and HEAD with the given headers.
