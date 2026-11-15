@@ -22,7 +22,7 @@ func TestHealthHandler_AllHealthy(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	uploader := newTestS3Uploader(s3Server, "")
+	uploader := newTestS3Uploader(s3Server)
 	registry := &httpRegistryClient{
 		httpClient: registryServer.Client(),
 		osvURL:     registryServer.URL,
@@ -57,7 +57,7 @@ func TestHealthHandler_S3Down(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	uploader := newTestS3Uploader(s3Server, "")
+	uploader := newTestS3Uploader(s3Server)
 	registry := &httpRegistryClient{
 		httpClient: registryServer.Client(),
 		osvURL:     registryServer.URL,
@@ -93,7 +93,7 @@ func TestHealthHandler_RegistryDown(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	uploader := newTestS3Uploader(s3Server, "")
+	uploader := newTestS3Uploader(s3Server)
 	registry := &httpRegistryClient{
 		httpClient: registryServer.Client(),
 		osvURL:     registryServer.URL,
@@ -129,7 +129,7 @@ func TestHealthHandler_BothDown(t *testing.T) {
 	}))
 	defer registryServer.Close()
 
-	uploader := newTestS3Uploader(s3Server, "")
+	uploader := newTestS3Uploader(s3Server)
 	registry := &httpRegistryClient{
 		httpClient: registryServer.Client(),
 		osvURL:     registryServer.URL,

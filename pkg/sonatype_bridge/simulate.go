@@ -87,7 +87,6 @@ func (h *adminHandler) status(c echo.Context) error {
 		"s3_url":           cfg.S3.URL,
 		"s3_bucket":        cfg.S3.Name,
 		"s3_region":        cfg.S3.Region,
-		"s3_file_prefix":   cfg.S3.FilePrefix,
 		"registry_url":     cfg.RegistryURL,
 		"registry_osv_url": cfg.RegistryOSVURL,
 		"registry_vex_url": cfg.RegistryVEXURL,

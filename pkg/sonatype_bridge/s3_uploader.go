@@ -28,9 +28,8 @@ import (
 // already delivered, and one with different content yields an
 // *ObjectConflictError.
 type S3Uploader interface {
-	// UploadFile uploads key under the configured file prefix.
 	UploadFile(ctx context.Context, key string, data []byte, contentType string) error
-	// UploadRootFile uploads key relative to the bucket root, ignoring the file prefix.
+	// UploadRootFile is an alias for UploadFile; partner keys are always bucket-relative paths.
 	UploadRootFile(ctx context.Context, key string, data []byte, contentType string) error
 	VerifyDelivery(ctx context.Context, key string) error
 	Ping(ctx context.Context) error
@@ -57,7 +56,6 @@ type s3API interface {
 type awsS3Uploader struct {
 	client     s3API
 	bucket     string
-	prefix     string
 	maxRetries int
 }
 
@@ -86,17 +84,12 @@ func newS3Uploader(cfg bridgeConfig) (S3Uploader, error) {
 	return &awsS3Uploader{
 		client:     client,
 		bucket:     cfg.S3Bucket,
-		prefix:     strings.Trim(cfg.S3FilePrefix, "/"),
 		maxRetries: cfg.MaxRetries,
 	}, nil
 }
 
 func (u *awsS3Uploader) objectKey(key string) string {
-	key = strings.TrimPrefix(key, "/")
-	if u.prefix == "" {
-		return key
-	}
-	return u.prefix + "/" + key
+	return strings.TrimPrefix(key, "/")
 }
 
 func (u *awsS3Uploader) UploadFile(ctx context.Context, key string, data []byte, contentType string) error {
@@ -104,7 +97,7 @@ func (u *awsS3Uploader) UploadFile(ctx context.Context, key string, data []byte,
 }
 
 func (u *awsS3Uploader) UploadRootFile(ctx context.Context, key string, data []byte, contentType string) error {
-	return u.putObject(ctx, strings.TrimPrefix(key, "/"), data, contentType)
+	return u.putObject(ctx, u.objectKey(key), data, contentType)
 }
 
 // putObject writes objKey only if it does not already exist. When the

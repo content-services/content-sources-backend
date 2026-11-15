@@ -68,7 +68,6 @@ func TestLoadConfig(t *testing.T) {
 			Region:     "us-east-1",
 			AccessKey:  "partner-access-key",
 			SecretKey:  "partner-secret-key",
-			FilePrefix: "maven2",
 		},
 		UsePathStyle:    true,
 		RegistryURL:     "https://test.registry/java",
@@ -92,7 +91,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "us-east-1", cfg.S3Region)
 	assert.Equal(t, "partner-access-key", cfg.S3AccessKey)
 	assert.Equal(t, "partner-secret-key", cfg.S3SecretKey)
-	assert.Equal(t, "maven2", cfg.S3FilePrefix)
 	assert.True(t, cfg.S3UsePathStyle)
 	assert.Equal(t, "https://test.registry/java", cfg.RegistryURL)
 	assert.Equal(t, "https://test.registry/osv", cfg.RegistryOSVURL)

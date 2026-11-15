@@ -24,7 +24,6 @@ type bridgeConfig struct {
 	S3Region       string
 	S3AccessKey    string
 	S3SecretKey    string
-	S3FilePrefix   string
 	S3UsePathStyle bool
 }
 
@@ -46,7 +45,6 @@ func loadConfig() bridgeConfig {
 		S3Region:         cfg.SonatypeBridge.S3.Region,
 		S3AccessKey:      cfg.SonatypeBridge.S3.AccessKey,
 		S3SecretKey:      cfg.SonatypeBridge.S3.SecretKey,
-		S3FilePrefix:     cfg.SonatypeBridge.S3.FilePrefix,
 		S3UsePathStyle:   cfg.SonatypeBridge.UsePathStyle,
 	}
 }

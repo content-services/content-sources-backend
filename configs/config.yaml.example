@@ -286,8 +286,6 @@ sonatype_bridge:
     access_key:
     # Env: SONATYPE_BRIDGE_S3_SECRET_KEY (equivalent of AWS_SECRET_ACCESS_KEY)
     secret_key:
-    # Optional key prefix inside the bucket, e.g. "maven2"
-    file_prefix:
   # true for MinIO, false for AWS
   use_path_style: false
 
