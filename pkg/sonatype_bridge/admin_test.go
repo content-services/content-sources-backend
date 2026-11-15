@@ -56,7 +56,6 @@ func TestSimulateHandler_Status(t *testing.T) {
 			Region:     "us-east-1",
 			AccessKey:  "partner-access-key",
 			SecretKey:  "partner-secret-key",
-			FilePrefix: "maven2",
 		},
 		RegistryURL:    "https://test.registry",
 		RegistryOSVURL: "https://test.osv",
@@ -73,7 +72,6 @@ func TestSimulateHandler_Status(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "partner-bucket")
-	assert.Contains(t, rec.Body.String(), "maven2")
 	assert.NotContains(t, rec.Body.String(), "partner-access-key", "status must not expose credentials")
 	assert.NotContains(t, rec.Body.String(), "partner-secret-key", "status must not expose credentials")
 }

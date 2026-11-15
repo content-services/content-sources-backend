@@ -644,7 +644,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("sonatype_bridge.s3.region", "")
 	v.SetDefault("sonatype_bridge.s3.access_key", "")
 	v.SetDefault("sonatype_bridge.s3.secret_key", "")
-	v.SetDefault("sonatype_bridge.s3.file_prefix", "")
 	v.SetDefault("sonatype_bridge.use_path_style", false)
 	v.SetDefault("sonatype_bridge.registry_url", "https://packages.redhat.com/lightwell/java/remediated")
 	v.SetDefault("sonatype_bridge.registry_osv_url", "https://packages.redhat.com/lightwell/osv/java/remediated")

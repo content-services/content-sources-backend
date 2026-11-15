@@ -94,7 +94,6 @@ func (f *fakeS3Uploader) UploadFile(_ context.Context, key string, data []byte, 
 	return nil
 }
 
-// UploadRootFile records root keys in the same map; the fake has no prefix.
 func (f *fakeS3Uploader) UploadRootFile(ctx context.Context, key string, data []byte, contentType string) error {
 	return f.UploadFile(ctx, key, data, contentType)
 }
@@ -269,11 +268,11 @@ func TestProcessRemediation_ChecksumMismatchNotUploaded(t *testing.T) {
 	assert.Empty(t, uploader.objects)
 }
 
-func TestProcessRemediation_WithFilePrefixOverHTTP(t *testing.T) {
+func TestProcessRemediation_S3PathsOverHTTP(t *testing.T) {
 	server, reqs, mu := newRecordingS3Server(200)
 	defer server.Close()
 
-	handler := NewBridgeHandler(newFakeRegistry(), newTestS3Uploader(server, "maven2"), newBridgeMetrics(prometheus.NewRegistry()))
+	handler := NewBridgeHandler(newFakeRegistry(), newTestS3Uploader(server), newBridgeMetrics(prometheus.NewRegistry()))
 	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()))
 
 	mu.Lock()
@@ -282,11 +281,10 @@ func TestProcessRemediation_WithFilePrefixOverHTTP(t *testing.T) {
 	for _, r := range *reqs {
 		paths[r.path] = r.method
 	}
-	zip := "/" + testS3Bucket + "/maven2/" + springKeyBase + ".zip"
+	zip := "/" + testS3Bucket + "/" + springKeyBase + ".zip"
 	assert.Contains(t, paths, zip)
-	assert.Contains(t, paths, "/"+testS3Bucket+"/maven2/"+springKeyBase+".bom.json")
-	assert.Contains(t, paths, "/"+testS3Bucket+"/vex/"+testVEXDeliveredName, "VEX ignores the file prefix")
-	assert.NotContains(t, paths, "/"+testS3Bucket+"/maven2/vex/"+testVEXDeliveredName)
+	assert.Contains(t, paths, "/"+testS3Bucket+"/"+springKeyBase+".bom.json")
+	assert.Contains(t, paths, "/"+testS3Bucket+"/vex/"+testVEXDeliveredName)
 	// 4 PUTs + 1 HEAD (verify on the zip)
 	assert.Len(t, *reqs, 5)
 	last := (*reqs)[len(*reqs)-1]
@@ -357,7 +355,7 @@ func TestProcessRemediation_NoPrefixKeysStartWithPackages(t *testing.T) {
 	server, reqs, mu := newRecordingS3Server(200)
 	defer server.Close()
 
-	handler := NewBridgeHandler(newFakeRegistry(), newTestS3Uploader(server, ""), newBridgeMetrics(prometheus.NewRegistry()))
+	handler := NewBridgeHandler(newFakeRegistry(), newTestS3Uploader(server), newBridgeMetrics(prometheus.NewRegistry()))
 	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()))
 
 	mu.Lock()

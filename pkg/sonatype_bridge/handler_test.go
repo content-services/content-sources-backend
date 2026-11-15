@@ -221,7 +221,7 @@ func TestProcessRemediation_SpringCore(t *testing.T) {
 		vexURL:      osvServer.URL,
 		maxRetries:  0,
 	}
-	uploader := newTestS3Uploader(s3Server, "")
+	uploader := newTestS3Uploader(s3Server)
 
 	metrics := newBridgeMetrics(prometheus.NewRegistry())
 	handler := NewBridgeHandler(registry, uploader, metrics)
@@ -459,7 +459,7 @@ func newPipelineHandlerVEX(registryServer, osvServer, vexServer, s3Server *httpt
 		vexURL:      vexServer.URL,
 		maxRetries:  0,
 	}
-	return NewBridgeHandler(registry, newTestS3Uploader(s3Server, ""), newBridgeMetrics(prometheus.NewRegistry()))
+	return NewBridgeHandler(registry, newTestS3Uploader(s3Server), newBridgeMetrics(prometheus.NewRegistry()))
 }
 
 func TestConsumeClaim_ChecksumMismatchCommitsOffset(t *testing.T) {

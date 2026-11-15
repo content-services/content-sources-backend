@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 
@@ -25,7 +24,7 @@ const testS3Bucket = "test-bucket"
 
 // newTestS3Uploader returns an uploader that talks to a fake S3 endpoint
 // using path-style addressing (/<bucket>/<key>).
-func newTestS3Uploader(server *httptest.Server, prefix string) *awsS3Uploader {
+func newTestS3Uploader(server *httptest.Server) *awsS3Uploader {
 	client := s3.New(s3.Options{
 		Region:                     "us-east-1",
 		Credentials:                credentials.NewStaticCredentialsProvider("test-ak", "test-sk", ""),
@@ -38,7 +37,6 @@ func newTestS3Uploader(server *httptest.Server, prefix string) *awsS3Uploader {
 	return &awsS3Uploader{
 		client: client,
 		bucket: testS3Bucket,
-		prefix: strings.Trim(prefix, "/"),
 	}
 }
 
@@ -71,19 +69,15 @@ func newRecordingS3Server(status int) (*httptest.Server, *[]capturedRequest, *sy
 
 func TestS3Uploader_ObjectKey(t *testing.T) {
 	cases := []struct {
-		prefix string
-		key    string
-		want   string
+		key  string
+		want string
 	}{
-		{"", "org/test/a.jar", "org/test/a.jar"},
-		{"", "/org/test/a.jar", "org/test/a.jar"},
-		{"maven2", "org/test/a.jar", "maven2/org/test/a.jar"},
-		{"/maven2/", "org/test/a.jar", "maven2/org/test/a.jar"},
-		{"a/b", "org/test/a.jar", "a/b/org/test/a.jar"},
+		{"org/test/a.jar", "org/test/a.jar"},
+		{"/org/test/a.jar", "org/test/a.jar"},
 	}
 	for _, tc := range cases {
-		u := &awsS3Uploader{prefix: strings.Trim(tc.prefix, "/")}
-		assert.Equal(t, tc.want, u.objectKey(tc.key), "prefix=%q key=%q", tc.prefix, tc.key)
+		u := &awsS3Uploader{}
+		assert.Equal(t, tc.want, u.objectKey(tc.key), "key=%q", tc.key)
 	}
 }
 
@@ -91,7 +85,7 @@ func TestS3Uploader_UploadFile(t *testing.T) {
 	server, reqs, mu := newRecordingS3Server(http.StatusOK)
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "maven2")
+	u := newTestS3Uploader(server)
 	err := u.UploadFile(context.Background(), "org/test/1.0/test-1.0.jar", []byte("jar-bytes"), "application/java-archive")
 	require.NoError(t, err)
 
@@ -100,7 +94,7 @@ func TestS3Uploader_UploadFile(t *testing.T) {
 	require.Len(t, *reqs, 1)
 	r := (*reqs)[0]
 	assert.Equal(t, http.MethodPut, r.method)
-	assert.Equal(t, "/"+testS3Bucket+"/maven2/org/test/1.0/test-1.0.jar", r.path)
+	assert.Equal(t, "/"+testS3Bucket+"/org/test/1.0/test-1.0.jar", r.path)
 	assert.Equal(t, "application/java-archive", r.contentType)
 	assert.Equal(t, []byte("jar-bytes"), r.body)
 }
@@ -120,7 +114,7 @@ func TestS3Uploader_UploadFileRetries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	u.maxRetries = 1
 	require.NoError(t, u.UploadFile(context.Background(), "a.pom", []byte("pom"), "application/xml"))
 	assert.Equal(t, 2, attempts)
@@ -130,7 +124,7 @@ func TestS3Uploader_UploadFileError(t *testing.T) {
 	server, _, _ := newRecordingS3Server(http.StatusForbidden)
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	err := u.UploadFile(context.Background(), "org/test/a.jar", []byte("x"), "application/java-archive")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "upload org/test/a.jar")
@@ -140,21 +134,21 @@ func TestS3Uploader_VerifyDelivery(t *testing.T) {
 	server, reqs, mu := newRecordingS3Server(http.StatusOK)
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "maven2")
+	u := newTestS3Uploader(server)
 	require.NoError(t, u.VerifyDelivery(context.Background(), "org/test/a.jar"))
 
 	mu.Lock()
 	defer mu.Unlock()
 	require.Len(t, *reqs, 1)
 	assert.Equal(t, http.MethodHead, (*reqs)[0].method)
-	assert.Equal(t, "/"+testS3Bucket+"/maven2/org/test/a.jar", (*reqs)[0].path)
+	assert.Equal(t, "/"+testS3Bucket+"/org/test/a.jar", (*reqs)[0].path)
 }
 
 func TestS3Uploader_VerifyDeliveryNotFound(t *testing.T) {
 	server, _, _ := newRecordingS3Server(http.StatusNotFound)
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	err := u.VerifyDelivery(context.Background(), "org/test/a.jar")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "verify delivery")
@@ -164,7 +158,7 @@ func TestS3Uploader_Ping(t *testing.T) {
 	server, reqs, mu := newRecordingS3Server(http.StatusOK)
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	require.NoError(t, u.Ping(context.Background()))
 
 	mu.Lock()
@@ -217,7 +211,7 @@ func TestS3Uploader_UploadFileIsConditional(t *testing.T) {
 	}))
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	data := []byte("payload")
 	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
 
@@ -228,11 +222,11 @@ func TestS3Uploader_UploadFileIsConditional(t *testing.T) {
 	assert.Equal(t, base64.StdEncoding.EncodeToString(sum[:]), headers.Get("X-Amz-Checksum-Sha256"))
 }
 
-func TestS3Uploader_UploadRootFileIgnoresPrefix(t *testing.T) {
+func TestS3Uploader_UploadRootFile(t *testing.T) {
 	server, reqs, mu := newRecordingS3Server(http.StatusOK)
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "maven2")
+	u := newTestS3Uploader(server)
 	require.NoError(t, u.UploadRootFile(context.Background(), "vex/CVE-2025-1-2026-07-15.bom.json", []byte("{}"), "application/json"))
 
 	mu.Lock()
@@ -275,7 +269,7 @@ func TestS3Uploader_ExistingIdenticalChecksumSkips(t *testing.T) {
 	})
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	u.maxRetries = 2
 	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
 
@@ -291,12 +285,12 @@ func TestS3Uploader_ExistingDifferentChecksumConflicts(t *testing.T) {
 	})
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "maven2")
+	u := newTestS3Uploader(server)
 	err := u.UploadFile(context.Background(), "a.json", []byte("payload"), "application/json")
 	require.Error(t, err)
 	var conflictErr *ObjectConflictError
 	require.True(t, errors.As(err, &conflictErr))
-	assert.Equal(t, "maven2/a.json", conflictErr.Key)
+	assert.Equal(t, "a.json", conflictErr.Key)
 }
 
 func TestS3Uploader_ExistingMatchingETagSkips(t *testing.T) {
@@ -307,7 +301,7 @@ func TestS3Uploader_ExistingMatchingETagSkips(t *testing.T) {
 	})
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
 }
 
@@ -317,7 +311,7 @@ func TestS3Uploader_ExistingUnverifiableConflicts(t *testing.T) {
 	})
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	err := u.UploadFile(context.Background(), "a.json", []byte("payload"), "application/json")
 	var conflictErr *ObjectConflictError
 	require.True(t, errors.As(err, &conflictErr))
@@ -340,7 +334,7 @@ func TestS3Uploader_ConditionalConflictRetried(t *testing.T) {
 	}))
 	defer server.Close()
 
-	u := newTestS3Uploader(server, "")
+	u := newTestS3Uploader(server)
 	u.maxRetries = 1
 	require.NoError(t, u.UploadFile(context.Background(), "a.json", []byte("x"), "application/json"))
 	assert.Equal(t, 2, attempts)
