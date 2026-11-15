@@ -27,12 +27,13 @@ import (
 const (
 	testVEXTimestamp     = "2026-07-15T14:02:27+00:00"
 	testVEXDeliveredName = "CVE-2025-41249-2026-07-15.bom.json"
+	testSBOMUUID         = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 )
 
 var (
-	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","metadata":{"timestamp":"2026-11-04T17:26:03Z"},"components":[{"type":"library","group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003?repository_url=https://packages.redhat.com/lightwell/java/remediated/&type=jar"}]}`)
+	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","serialNumber":"urn:uuid:` + testSBOMUUID + `","metadata":{"timestamp":"2026-11-04T17:26:03Z"},"components":[{"type":"library","group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003?repository_url=https://packages.redhat.com/lightwell/java/remediated/&type=jar"}]}`)
 	testASCBody  = []byte("-----BEGIN PGP SIGNATURE-----\ntest\n")
-	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[]}`)
+	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[{"affects":[{"ref":"urn:cdx:` + testSBOMUUID + `/1#pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003"}]}]}`)
 )
 
 func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
@@ -62,9 +63,9 @@ func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
 	})
 }
 
-// pipelineOSVHandler serves the fixture OSV directory and adds the per-CVE
-// VEX entry the bridge selects from PULP_MANIFEST. The multi-CVE entry is
-// listed to prove it is not fetched.
+// pipelineOSVHandler serves the fixture OSV directory and the one-CVE VEX
+// name the bridge selects from PULP_MANIFEST. The multi-CVE entry is listed
+// to prove a one-CVE release does not fetch it.
 func pipelineOSVHandler() http.Handler {
 	dir := testdataPath("osv", "java", "remediated")
 	files := http.FileServer(http.Dir(dir))
@@ -122,6 +123,19 @@ func (m *mockConsumerGroupClaim) Partition() int32                         { ret
 func (m *mockConsumerGroupClaim) InitialOffset() int64                     { return 0 }
 func (m *mockConsumerGroupClaim) HighWaterMarkOffset() int64               { return 0 }
 func (m *mockConsumerGroupClaim) Messages() <-chan *sarama.ConsumerMessage { return m.ch }
+
+func TestSBOMSerialNumber(t *testing.T) {
+	got, err := sbomSerialNumber(testSBOMBody)
+	require.NoError(t, err)
+	assert.Equal(t, "urn:uuid:"+testSBOMUUID, got)
+
+	_, err = sbomSerialNumber([]byte(`{"bomFormat":"CycloneDX"}`))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+
+	_, err = sbomSerialNumber([]byte(`{`))
+	require.Error(t, err)
+}
 
 func TestVerifyJARChecksum_Match(t *testing.T) {
 	checksums := map[string]string{

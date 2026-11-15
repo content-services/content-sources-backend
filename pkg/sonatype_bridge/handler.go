@@ -200,8 +200,12 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("fetch SBOM: %w", err)
 	}
 
-	// 4. Fetch the single-CVE VEX documents from the VEX file distribution.
-	vexDocs, err := h.registry.FetchVEX(ctx, rem.CVEsFixed)
+	// 4. Fetch the VEX whose BOM-Link matches this SBOM.
+	serial, err := sbomSerialNumber(sbomData)
+	if err != nil {
+		return fmt.Errorf("sbom serialNumber: %w", err)
+	}
+	vexDoc, err := h.registry.FetchVEX(ctx, rem.CVEsFixed, rem.GroupID, rem.ArtifactID, rem.Version, serial)
 	if err != nil {
 		return fmt.Errorf("fetch VEX: %w", err)
 	}
@@ -221,7 +225,7 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("build bundle: %w", err)
 	}
 
-	// 7. Upload to the partner S3 bucket. VEX documents go under the
+	// 7. Upload to the partner S3 bucket. The VEX document goes under the
 	// bucket-root vex/ directory. The SBOM goes last so its presence marks
 	// a complete delivery.
 	keyBase := fmt.Sprintf("%s/%s-%s", bundleBasePath(coords), coords.Name, coords.Version)
@@ -234,10 +238,8 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 	if err := h.s3.UploadFile(ctx, sbomPath+".asc", sbomASC, "application/pgp-signature"); err != nil {
 		return fmt.Errorf("upload SBOM signature: %w", err)
 	}
-	for _, doc := range vexDocs {
-		if err := h.s3.UploadRootFile(ctx, vexDir+"/"+doc.Name, doc.Data, "application/json"); err != nil {
-			return fmt.Errorf("upload VEX %s: %w", doc.Name, err)
-		}
+	if err := h.s3.UploadRootFile(ctx, vexDir+"/"+vexDoc.Name, vexDoc.Data, "application/json"); err != nil {
+		return fmt.Errorf("upload VEX %s: %w", vexDoc.Name, err)
 	}
 	if err := h.s3.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
 		return fmt.Errorf("upload SBOM: %w", err)
@@ -253,6 +255,19 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 
 func gavKey(rem Remediation) string {
 	return fmt.Sprintf("%s:%s:%s", rem.GroupID, rem.ArtifactID, rem.Version)
+}
+
+func sbomSerialNumber(data []byte) (string, error) {
+	var doc struct {
+		SerialNumber string `json:"serialNumber"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return "", fmt.Errorf("parse SBOM: %w", err)
+	}
+	if doc.SerialNumber == "" {
+		return "", fmt.Errorf("SBOM serialNumber is empty")
+	}
+	return doc.SerialNumber, nil
 }
 
 // verifyJARChecksum compares the fetched JAR's SHA-256 against the checksum
