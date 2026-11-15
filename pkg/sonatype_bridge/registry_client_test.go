@@ -7,6 +7,7 @@ package sonatype_bridge
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -314,38 +314,6 @@ func TestFetchSBOM_SignatureNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "signature")
 }
 
-func TestLatestVEXFilename(t *testing.T) {
-	entries := []vulnerability_parser.ManifestEntry{
-		{Filename: "CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json"},
-		{Filename: "CVE-2023-20860-2026-06-01T00:00:00+00:00.bom.json"},
-		{Filename: "CVE-2023-20860-2026-07-15T14:02:27+00:00.bom.json"},
-		{Filename: "2026-07-15T14:02:27+00:00.bom.json"},
-		{Filename: "x_RHLW-CVE-2025-41249-5.3.18.json"},
-		{Filename: "CVE-2025-1-2026-07-15T14:02:27+00:00.bom.json"},
-		{Filename: "CVE-2025-12-2026-09-01T00:00:00+00:00.bom.json"},
-	}
-
-	name, ts, err := latestVEXFilename(entries, "CVE-2025-41249")
-	require.NoError(t, err)
-	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json", name)
-	assert.Equal(t, "2026-07-15T14:02:27+00:00", ts)
-
-	name, _, err = latestVEXFilename(entries, "CVE-2023-20860")
-	require.NoError(t, err)
-	assert.Equal(t, "CVE-2023-20860-2026-07-15T14:02:27+00:00.bom.json", name, "newest timestamp wins")
-
-	name, _, err = latestVEXFilename(entries, "CVE-2025-1")
-	require.NoError(t, err)
-	assert.Equal(t, "CVE-2025-1-2026-07-15T14:02:27+00:00.bom.json", name, "CVE-2025-12 must not match CVE-2025-1")
-
-	_, _, err = latestVEXFilename(entries, "CVE-2099-0001")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "CVE-2099-0001")
-
-	_, _, err = latestVEXFilename(entries, "")
-	require.Error(t, err)
-}
-
 func TestVEXObjectName(t *testing.T) {
 	name, err := vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27+00:00")
 	require.NoError(t, err)
@@ -363,113 +331,359 @@ func TestVEXObjectName(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestFetchVEX_Success(t *testing.T) {
-	const (
-		ts   = "2026-07-15T14:02:27+00:00"
-		body = `{"bomFormat":"CycloneDX"}`
-	)
-	var requestURIs []string
-	vexServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestURIs = append(requestURIs, r.RequestURI)
-		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
-			_, _ = w.Write([]byte("CVE-2025-41249-" + ts + ".bom.json,abc,10\n"))
-			return
-		}
-		_, _ = w.Write([]byte(body))
-	}))
-	defer vexServer.Close()
-
-	osvServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Errorf("OSV server must not be contacted, got %s", r.URL.Path)
-	}))
-	defer osvServer.Close()
-
-	client := &httpRegistryClient{
-		httpClient: vexServer.Client(),
-		vexURL:     vexServer.URL,
-		osvURL:     osvServer.URL,
-		maxRetries: 0,
-	}
-	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249", "CVE-2025-41249"})
+func TestBundledVEXObjectName(t *testing.T) {
+	name, err := bundledVEXObjectName("2026-08-28T14:02:27+00:00")
 	require.NoError(t, err)
-	assert.Equal(t, []VEXDocument{{Name: "CVE-2025-41249-2026-07-15.bom.json", Data: []byte(body)}}, got)
-	require.Len(t, requestURIs, 2, "manifest once, duplicate CVE fetched once")
-	assert.Contains(t, requestURIs[0], "PULP_MANIFEST")
-	assert.Contains(t, requestURIs[1], "/CVE-2025-41249-2026-07-15T14:02:27%2B00:00.bom.json")
+	assert.Equal(t, "2026-08-28.bom.json", name)
+
+	name, err = bundledVEXObjectName("2026-08-28T23:30:00-05:00")
+	require.NoError(t, err)
+	assert.Equal(t, "2026-08-29.bom.json", name, "date is normalized to UTC")
+
+	_, err = bundledVEXObjectName("not-a-date")
+	require.Error(t, err)
 }
 
-func TestFetchVEX_MultipleCVEs(t *testing.T) {
-	manifest := strings.Join([]string{
-		"CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json,a,1",
-		"CVE-2023-20860-2026-06-01T00:00:00+00:00.bom.json,b,1",
-		"CVE-2023-20860-2026-05-01T00:00:00+00:00.bom.json,c,1",
-		"2026-07-15T14:02:27+00:00.bom.json,d,1",
-	}, "\n") + "\n"
-	var paths []string
+const (
+	vexTestUUID    = "11111111-2222-3333-4444-555555555555"
+	vexTestSerial  = "urn:uuid:" + vexTestUUID
+	vexTestGroup   = "org.example"
+	vexTestName    = "demo"
+	vexTestVersion = "1.2.3"
+	vexOtherUUID   = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+)
+
+func vexRef(uuid string) string {
+	return "urn:cdx:" + uuid + "/1#pkg:maven/org.example/demo@1.2.3"
+}
+
+func vexDocument(refs []string, purl string, withComponent bool) string {
+	doc := map[string]any{
+		"bomFormat": "CycloneDX",
+		"vulnerabilities": []map[string]any{
+			{"affects": affectsRefs(refs)},
+		},
+	}
+	if withComponent {
+		doc["metadata"] = map[string]any{
+			"component": map[string]any{"purl": purl},
+		}
+	}
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
+}
+
+func affectsRefs(refs []string) []map[string]string {
+	out := make([]map[string]string, 0, len(refs))
+	for _, ref := range refs {
+		out = append(out, map[string]string{"ref": ref})
+	}
+	return out
+}
+
+func manifestLines(names ...string) string {
+	var b strings.Builder
+	for _, name := range names {
+		b.WriteString(name)
+		b.WriteString(",abc,10\n")
+	}
+	return b.String()
+}
+
+func fetchVEXForTest(t *testing.T, manifest string, files map[string]string, cveIDs ...string) (VEXDocument, []string, error) {
+	t.Helper()
+	var requestURIs []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestURIs = append(requestURIs, r.RequestURI)
 		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
 			_, _ = w.Write([]byte(manifest))
 			return
 		}
-		paths = append(paths, r.URL.Path)
-		switch {
-		case strings.HasPrefix(r.URL.Path, "/CVE-2025-41249-"):
-			_, _ = w.Write([]byte("body-41249"))
-		case strings.HasPrefix(r.URL.Path, "/CVE-2023-20860-2026-06-01"):
-			_, _ = w.Write([]byte("body-20860"))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
-	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249", "CVE-2023-20860"})
-	require.NoError(t, err)
-	require.Len(t, got, 2)
-	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", got[0].Name)
-	assert.Equal(t, "body-41249", string(got[0].Data))
-	assert.Equal(t, "CVE-2023-20860-2026-06-01.bom.json", got[1].Name)
-	assert.Equal(t, "body-20860", string(got[1].Data))
-	assert.Len(t, paths, 2, "the multi-CVE document must not be fetched")
-}
-
-func TestFetchVEX_NotFound(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
-			_, _ = w.Write([]byte("CVE-2025-41249-2026-07-15T14:02:27+00:00.bom.json,abc,10\n"))
-			return
+		for name, body := range files {
+			if r.URL.Path == "/"+name {
+				if body == "" {
+					http.NotFound(w, r)
+					return
+				}
+				_, _ = w.Write([]byte(body))
+				return
+			}
 		}
 		http.NotFound(w, r)
 	}))
-	defer server.Close()
-
+	t.Cleanup(server.Close)
 	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
-	_, err := client.FetchVEX(context.Background(), []string{"CVE-2025-41249"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "2026-07-15T14:02:27+00:00.bom.json")
+	got, err := client.FetchVEX(context.Background(), cveIDs, vexTestGroup, vexTestName, vexTestVersion, vexTestSerial)
+	return got, requestURIs, err
 }
 
-func TestFetchVEX_MissingCVE(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "PULP_MANIFEST") {
-			_, _ = w.Write([]byte("CVE-2025-1-2026-01-01T00:00:00+00:00.bom.json,abc,10\n"))
-			return
+func fileRequests(uris []string) []string {
+	var out []string
+	for _, uri := range uris {
+		if strings.Contains(uri, "PULP_MANIFEST") {
+			continue
 		}
-		_, _ = w.Write([]byte("{}"))
+		out = append(out, uri)
+	}
+	return out
+}
+
+func TestFetchVEX_OneCVERequestsPerCVEName(t *testing.T) {
+	const ts = "2026-07-15T14:02:27+00:00"
+	perCVE := "CVE-2025-41249-" + ts + ".bom.json"
+	bundled := ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t, manifestLines(perCVE, bundled), map[string]string{
+		perCVE:  body,
+		bundled: vexDocument([]string{vexRef(vexOtherUUID)}, "", false),
+	}, "CVE-2025-41249")
+	require.NoError(t, err)
+	assert.Equal(t, body, string(got.Data))
+	assert.Equal(t, "CVE-2025-41249-2026-07-15.bom.json", got.Name)
+	require.Len(t, uris, 2)
+	assert.Contains(t, uris[0], "PULP_MANIFEST")
+	assert.Equal(t, []string{"/" + strings.ReplaceAll(perCVE, "+", "%2B")}, fileRequests(uris))
+}
+
+func TestFetchVEX_DuplicateCVETreatedAsSingle(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	perCVE := "CVE-2025-1-" + ts + ".bom.json"
+	bundled := ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t, manifestLines(perCVE, bundled), map[string]string{
+		perCVE:  body,
+		bundled: body,
+	}, "CVE-2025-1", "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-1-2026-07-15.bom.json", got.Name)
+	assert.Equal(t, []string{"/" + perCVE}, fileRequests(uris))
+}
+
+func TestFetchVEX_TwoCVEsRequestBundledFile(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	bundled := ts + ".bom.json"
+	perA := "CVE-2025-1-" + ts + ".bom.json"
+	perB := "CVE-2025-2-" + ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t, manifestLines(perA, perB, bundled), map[string]string{
+		bundled: body,
+		perA:    "unused",
+		perB:    "unused",
+	}, "CVE-2025-1", "CVE-2025-2")
+	require.NoError(t, err)
+	assert.Equal(t, body, string(got.Data))
+	assert.Equal(t, "2026-07-15.bom.json", got.Name)
+	assert.Equal(t, []string{"/" + bundled}, fileRequests(uris))
+}
+
+func TestFetchVEX_TwoCVEsBundledAbsentUsesMatchingPerCVE(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	perA := "CVE-2025-1-" + ts + ".bom.json"
+	perB := "CVE-2025-2-" + ts + ".bom.json"
+	match := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t, manifestLines(perA, perB), map[string]string{
+		perA: vexDocument([]string{vexRef(vexOtherUUID)}, "", false),
+		perB: match,
+	}, "CVE-2025-1", "CVE-2025-2")
+	require.NoError(t, err)
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, "CVE-2025-2-2026-07-15.bom.json", got.Name)
+	assert.Equal(t, []string{"/" + perA, "/" + perB}, fileRequests(uris))
+}
+
+func TestFetchVEX_URNSerialAndCDXRef(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	name := "CVE-2025-1-" + ts + ".bom.json"
+	body := vexDocument([]string{"urn:cdx:" + vexTestUUID + "/1#pkg:maven/org.example/demo@1.2.3?type=jar"}, "", false)
+	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, body, string(got.Data))
+}
+
+func TestFetchVEX_OtherUUIDTriesNextTimestamp(t *testing.T) {
+	const (
+		newer = "2026-02-01T00:00:00Z"
+		older = "2026-01-01T00:00:00Z"
+	)
+	newName := "CVE-2025-1-" + newer + ".bom.json"
+	oldName := "CVE-2025-1-" + older + ".bom.json"
+	match := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t, manifestLines(newName, older+".bom.json", oldName), map[string]string{
+		newName:             vexDocument([]string{vexRef(vexOtherUUID)}, "", false),
+		older + ".bom.json": match,
+		oldName:             match,
+	}, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, "CVE-2025-1-2026-01-01.bom.json", got.Name)
+	assert.Equal(t, []string{"/" + newName, "/" + oldName}, fileRequests(uris))
+}
+
+func TestFetchVEX_BundledMismatchSkipsPerCVEAtSameTimestamp(t *testing.T) {
+	const (
+		newer = "2026-02-01T00:00:00Z"
+		older = "2026-01-01T00:00:00Z"
+	)
+	newBundle := newer + ".bom.json"
+	oldBundle := older + ".bom.json"
+	perA := "CVE-2025-1-" + newer + ".bom.json"
+	perB := "CVE-2025-2-" + newer + ".bom.json"
+	match := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t,
+		manifestLines(perA, perB, newBundle, "CVE-2025-1-"+older+".bom.json", "CVE-2025-2-"+older+".bom.json", oldBundle),
+		map[string]string{
+			newBundle: vexDocument([]string{vexRef(vexOtherUUID)}, "", false),
+			perA:      match,
+			perB:      match,
+			oldBundle: match,
+		},
+		"CVE-2025-1", "CVE-2025-2")
+	require.NoError(t, err)
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, "2026-01-01.bom.json", got.Name)
+	assert.Equal(t, []string{"/" + newBundle, "/" + oldBundle}, fileRequests(uris))
+}
+
+func TestFetchVEX_CVEIDDoesNotMatchLongerID(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	short := "CVE-2025-1-" + ts + ".bom.json"
+	long := "CVE-2025-12-" + ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	_, uris, err := fetchVEXForTest(t, manifestLines(long, short), map[string]string{
+		short: body,
+		long:  body,
+	}, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"/" + short}, fileRequests(uris))
+}
+
+func TestFetchVEX_PurlQualifiersMatchThisGAV(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	name := "CVE-2025-1-" + ts + ".bom.json"
+	body := vexDocument(
+		[]string{vexRef(vexTestUUID)},
+		"pkg:maven/org.example/demo@1.2.3?repository_url=https://repo.test/maven&type=jar",
+		true,
+	)
+	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, body, string(got.Data))
+}
+
+func TestFetchVEX_PurlOtherArtifactRejected(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	name := "CVE-2025-1-" + ts + ".bom.json"
+	body := vexDocument(
+		[]string{vexRef(vexTestUUID)},
+		"pkg:maven/org.example/other@1.2.3?type=jar",
+		true,
+	)
+	_, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no document matches")
+}
+
+func TestFetchVEX_NoComponentAccepted(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	name := "CVE-2025-1-" + ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, body, string(got.Data))
+}
+
+func TestFetchVEX_TwoRefsOneUUIDAccepted(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	name := "CVE-2025-1-" + ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexOtherUUID), vexRef(vexTestUUID)}, "", false)
+	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
+	require.NoError(t, err)
+	assert.Equal(t, body, string(got.Data))
+}
+
+func TestFetchVEX_NoMatchingBody(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	name := "CVE-2025-1-" + ts + ".bom.json"
+	_, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{
+		name: vexDocument([]string{vexRef(vexOtherUUID)}, "", false),
+	}, "CVE-2025-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no document matches")
+}
+
+func TestFetchVEX_NoCandidates(t *testing.T) {
+	_, uris, err := fetchVEXForTest(t, manifestLines("CVE-2025-2-2026-01-01T00:00:00Z.bom.json"), nil, "CVE-2025-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no VEX file for CVE-2025-1")
+	assert.Empty(t, fileRequests(uris))
+}
+
+func TestFetchVEX_DownloadErrorStopsWalk(t *testing.T) {
+	const (
+		newer = "2026-02-01T00:00:00Z"
+		older = "2026-01-01T00:00:00Z"
+	)
+	newName := "CVE-2025-1-" + newer + ".bom.json"
+	oldName := "CVE-2025-1-" + older + ".bom.json"
+	_, uris, err := fetchVEXForTest(t, manifestLines(newName, oldName), map[string]string{
+		newName: "",
+		oldName: vexDocument([]string{vexRef(vexTestUUID)}, "", false),
+	}, "CVE-2025-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), newName)
+	assert.Equal(t, []string{"/" + newName}, fileRequests(uris))
+}
+
+func TestFetchVEX_InvalidJSONStopsWalk(t *testing.T) {
+	const (
+		newer = "2026-02-01T00:00:00Z"
+		older = "2026-01-01T00:00:00Z"
+	)
+	newName := "CVE-2025-1-" + newer + ".bom.json"
+	oldName := "CVE-2025-1-" + older + ".bom.json"
+	_, uris, err := fetchVEXForTest(t, manifestLines(newName, oldName), map[string]string{
+		newName: "not-json",
+		oldName: vexDocument([]string{vexRef(vexTestUUID)}, "", false),
+	}, "CVE-2025-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), newName)
+	assert.Equal(t, []string{"/" + newName}, fileRequests(uris))
+}
+
+func TestFetchVEX_EmptySerialDoesNotReadManifest(t *testing.T) {
+	var hits int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		_, _ = w.Write([]byte("CVE-2025-1-2026-01-01T00:00:00Z.bom.json,abc,10\n"))
 	}))
 	defer server.Close()
-
 	client := &httpRegistryClient{httpClient: server.Client(), vexURL: server.URL, maxRetries: 0}
-	got, err := client.FetchVEX(context.Background(), []string{"CVE-2025-1", "CVE-2025-2"})
+	_, err := client.FetchVEX(context.Background(), []string{"CVE-2025-1"}, vexTestGroup, vexTestName, vexTestVersion, "")
 	require.Error(t, err)
-	assert.Nil(t, got)
-	assert.Contains(t, err.Error(), "no VEX document for CVE-2025-2")
+	assert.Contains(t, err.Error(), "serialNumber")
+	assert.Equal(t, 0, hits)
+}
+
+func TestFetchVEX_BadPurlTriesNextFile(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	perA := "CVE-2025-1-" + ts + ".bom.json"
+	perB := "CVE-2025-2-" + ts + ".bom.json"
+	match := vexDocument([]string{vexRef(vexTestUUID)}, "pkg:maven/org.example/demo@1.2.3", true)
+	got, uris, err := fetchVEXForTest(t, manifestLines(perA, perB), map[string]string{
+		perA: vexDocument([]string{vexRef(vexTestUUID)}, "not a purl", true),
+		perB: match,
+	}, "CVE-2025-1", "CVE-2025-2")
+	require.NoError(t, err)
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, []string{"/" + perA, "/" + perB}, fileRequests(uris))
 }
 
 func TestFetchVEX_NoCVEs(t *testing.T) {
 	client := &httpRegistryClient{httpClient: http.DefaultClient, vexURL: "http://unused.invalid"}
-	_, err := client.FetchVEX(context.Background(), nil)
+	_, err := client.FetchVEX(context.Background(), nil, vexTestGroup, vexTestName, vexTestVersion, vexTestSerial)
 	require.Error(t, err)
 }
 

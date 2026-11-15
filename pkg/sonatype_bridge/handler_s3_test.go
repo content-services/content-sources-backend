@@ -19,7 +19,8 @@ import (
 
 type fakeRegistry struct {
 	jar, pom, sbom, asc []byte
-	vex                 []VEXDocument
+	vex                 VEXDocument
+	vexSerial           string
 	osv                 []OSVRecord
 	classifiers         map[string][]byte
 	classifierErr       error
@@ -49,7 +50,8 @@ func (f *fakeRegistry) FetchOSVRecords(_ context.Context, _, _, _ string) ([]OSV
 	return f.osv, nil
 }
 
-func (f *fakeRegistry) FetchVEX(_ context.Context, _ []string) ([]VEXDocument, error) {
+func (f *fakeRegistry) FetchVEX(_ context.Context, _ []string, _, _, _, serialNumber string) (VEXDocument, error) {
+	f.vexSerial = serialNumber
 	return f.vex, nil
 }
 
@@ -112,7 +114,7 @@ func newFakeRegistry() *fakeRegistry {
 		pom:  []byte("<project/>"),
 		sbom: testSBOMBody,
 		asc:  testASCBody,
-		vex:  []VEXDocument{{Name: testVEXDeliveredName, Data: testVEXBody}},
+		vex:  VEXDocument{Name: testVEXDeliveredName, Data: testVEXBody},
 		osv:  []OSVRecord{{CVEID: "CVE-2025-41249"}},
 	}
 }
@@ -189,7 +191,7 @@ func TestProcessRemediation_ClassifierFetchError(t *testing.T) {
 
 func TestProcessRemediation_EmptyGroupOmitsNamespace(t *testing.T) {
 	registry := newFakeRegistry()
-	registry.sbom = []byte(`{"components":[{"name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003"}]}`)
+	registry.sbom = []byte(`{"serialNumber":"urn:uuid:` + testSBOMUUID + `","components":[{"name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003"}]}`)
 	uploader := newFakeS3Uploader()
 	handler := NewBridgeHandler(registry, uploader, newBridgeMetrics(prometheus.NewRegistry()))
 
@@ -198,11 +200,12 @@ func TestProcessRemediation_EmptyGroupOmitsNamespace(t *testing.T) {
 }
 
 func TestProcessRemediation_SBOMMismatchNotUploaded(t *testing.T) {
+	serial := `"serialNumber":"urn:uuid:` + testSBOMUUID + `",`
 	tests := map[string]string{
-		"name":    `{"components":[{"group":"org.springframework","name":"spring-beans","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-beans@5.3.18.rhlw-00003"}]}`,
-		"version": `{"components":[{"group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00004","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00004"}]}`,
-		"group":   `{"components":[{"group":"org.other","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.other/spring-core@5.3.18.rhlw-00003"}]}`,
-		"missing": `{"bomFormat":"CycloneDX"}`,
+		"name":    `{` + serial + `"components":[{"group":"org.springframework","name":"spring-beans","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-beans@5.3.18.rhlw-00003"}]}`,
+		"version": `{` + serial + `"components":[{"group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00004","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00004"}]}`,
+		"group":   `{` + serial + `"components":[{"group":"org.other","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.other/spring-core@5.3.18.rhlw-00003"}]}`,
+		"missing": `{` + serial + `"bomFormat":"CycloneDX"}`,
 	}
 	for name, sbom := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -317,19 +320,37 @@ func TestProcessRemediation_VEXConflictStopsDelivery(t *testing.T) {
 	assert.Empty(t, uploader.verified)
 }
 
-func TestProcessRemediation_UploadsOneVEXPerCVE(t *testing.T) {
+func TestProcessRemediation_UploadsBundledVEX(t *testing.T) {
 	registry := newFakeRegistry()
-	registry.vex = []VEXDocument{
-		{Name: "CVE-2025-41249-2026-07-15.bom.json", Data: []byte("a")},
-		{Name: "CVE-2023-20860-2026-06-01.bom.json", Data: []byte("b")},
-	}
+	registry.vex = VEXDocument{Name: "2026-07-15.bom.json", Data: []byte("bundled")}
 	uploader := newFakeS3Uploader()
 	handler := NewBridgeHandler(registry, uploader, newBridgeMetrics(prometheus.NewRegistry()))
 
-	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()))
-	assert.Equal(t, []byte("a"), uploader.objects["vex/CVE-2025-41249-2026-07-15.bom.json"].data)
-	assert.Equal(t, []byte("b"), uploader.objects["vex/CVE-2023-20860-2026-06-01.bom.json"].data)
+	rem := springRemediation()
+	rem.CVEsFixed = []string{"CVE-2025-41249", "CVE-2023-20860"}
+	require.NoError(t, handler.processRemediation(context.Background(), rem))
+	assert.Equal(t, []byte("bundled"), uploader.objects["vex/2026-07-15.bom.json"].data)
 	assert.Equal(t, springKeyBase+".bom.json", uploader.order[len(uploader.order)-1])
+}
+
+func TestProcessRemediation_PassesSBOMSerialToFetchVEX(t *testing.T) {
+	registry := newFakeRegistry()
+	handler := NewBridgeHandler(registry, newFakeS3Uploader(), newBridgeMetrics(prometheus.NewRegistry()))
+
+	require.NoError(t, handler.processRemediation(context.Background(), springRemediation()))
+	assert.Equal(t, "urn:uuid:"+testSBOMUUID, registry.vexSerial)
+}
+
+func TestProcessRemediation_SBOMWithoutSerialNotUploaded(t *testing.T) {
+	registry := newFakeRegistry()
+	registry.sbom = []byte(`{"components":[{"group":"org.springframework","name":"spring-core","version":"5.3.18.rhlw-00003","purl":"pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003"}]}`)
+	uploader := newFakeS3Uploader()
+	handler := NewBridgeHandler(registry, uploader, newBridgeMetrics(prometheus.NewRegistry()))
+
+	err := handler.processRemediation(context.Background(), springRemediation())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "serialNumber")
+	assert.Empty(t, uploader.objects)
 }
 
 func TestProcessRemediation_NoPrefixKeysStartWithPackages(t *testing.T) {

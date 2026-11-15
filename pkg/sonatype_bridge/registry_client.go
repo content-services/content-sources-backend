@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/external_repos/vulnerability_parser"
+	"github.com/package-url/packageurl-go"
 	"github.com/rs/zerolog/log"
 )
 
@@ -53,16 +54,26 @@ type RegistryClient interface {
 	FetchClassifier(ctx context.Context, groupID, artifactID, version, classifier string) ([]byte, error)
 	FetchSBOM(ctx context.Context, groupID, artifactID, version string) (bom, asc []byte, err error)
 	FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error)
-	// FetchVEX fetches the latest single-CVE VEX document for each CVE.
-	FetchVEX(ctx context.Context, cveIDs []string) ([]VEXDocument, error)
+	// FetchVEX fetches the newest VEX document whose BOM-Link points at the
+	// SBOM identified by serialNumber.
+	FetchVEX(ctx context.Context, cveIDs []string, groupID, artifactID, version, serialNumber string) (VEXDocument, error)
 	Ping(ctx context.Context) error
 }
 
-// VEXDocument is a single-CVE VEX document ready for delivery.
+// VEXDocument is a VEX document ready for delivery.
 type VEXDocument struct {
-	// Name is the delivered filename, e.g. "CVE-2025-41249-2026-07-15.bom.json".
+	// Name is the delivered filename: "CVE-2025-41249-2026-07-15.bom.json"
+	// for a single-CVE document, "2026-07-15.bom.json" for a multi-CVE one.
 	Name string
 	Data []byte
+}
+
+// vexCandidate is a VEX object listed in PULP_MANIFEST. CVEID is empty for
+// a multi-CVE (bundled) document.
+type vexCandidate struct {
+	Filename  string
+	Timestamp string
+	CVEID     string
 }
 
 type httpRegistryClient struct {
@@ -178,46 +189,69 @@ func isRootRHLWFilename(filename string) bool {
 	return !strings.Contains(name, "/") && strings.HasPrefix(name, "RHLW-") && strings.HasSuffix(name, ".json")
 }
 
-func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string) ([]VEXDocument, error) {
+func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string, groupID, artifactID, version, serialNumber string) (VEXDocument, error) {
+	cveIDs = dedupeStrings(cveIDs)
 	if len(cveIDs) == 0 {
-		return nil, fmt.Errorf("fetch VEX: no CVE IDs")
+		return VEXDocument{}, fmt.Errorf("fetch VEX: no CVE IDs")
+	}
+	uuid := strings.TrimPrefix(serialNumber, "urn:uuid:")
+	if uuid == "" {
+		return VEXDocument{}, fmt.Errorf("fetch VEX: empty SBOM serialNumber")
 	}
 	manifestData, err := c.getWithRetry(ctx, c.vexURL+"/PULP_MANIFEST")
 	if err != nil {
-		return nil, fmt.Errorf("fetch VEX: %w", err)
+		return VEXDocument{}, fmt.Errorf("fetch VEX: %w", err)
 	}
-	entries := vulnerability_parser.ParseManifest(manifestData)
-
-	seen := make(map[string]struct{}, len(cveIDs))
-	docs := make([]VEXDocument, 0, len(cveIDs))
-	for _, cveID := range cveIDs {
-		if _, dup := seen[cveID]; dup {
-			continue
-		}
-		seen[cveID] = struct{}{}
-
-		filename, ts, err := latestVEXFilename(entries, cveID)
-		if err != nil {
-			return nil, fmt.Errorf("fetch VEX: %w", err)
-		}
-		name, err := vexObjectName(cveID, ts)
-		if err != nil {
-			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
-		}
+	candidates := vexCandidateFilenames(vulnerability_parser.ParseManifest(manifestData), cveIDs)
+	if len(candidates) == 0 {
+		return VEXDocument{}, fmt.Errorf("fetch VEX: no VEX file for %s", strings.Join(cveIDs, ", "))
+	}
+	for _, cand := range candidates {
 		// PathEscape leaves '+' alone. Encode it so the request target cannot
 		// be read as a space by a query-style decoder.
-		segment := strings.ReplaceAll(url.PathEscape(filename), "+", "%2B")
+		segment := strings.ReplaceAll(url.PathEscape(cand.Filename), "+", "%2B")
 		vexURL, err := url.JoinPath(c.vexURL, segment)
 		if err != nil {
-			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
 		}
 		data, err := c.getWithRetry(ctx, vexURL)
 		if err != nil {
-			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
 		}
-		docs = append(docs, VEXDocument{Name: name, Data: data})
+		ok, err := vexDocumentAccepted(data, groupID, artifactID, version, uuid)
+		if err != nil {
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
+		}
+		if !ok {
+			log.Debug().Str("file", cand.Filename).Msg("VEX document does not match this SBOM")
+			continue
+		}
+		var name string
+		if cand.CVEID == "" {
+			name, err = bundledVEXObjectName(cand.Timestamp)
+		} else {
+			name, err = vexObjectName(cand.CVEID, cand.Timestamp)
+		}
+		if err != nil {
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
+		}
+		log.Info().Str("file", cand.Filename).Str("name", name).Msg("selected VEX document")
+		return VEXDocument{Name: name, Data: data}, nil
 	}
-	return docs, nil
+	return VEXDocument{}, fmt.Errorf("fetch VEX: no document matches SBOM %s", uuid)
+}
+
+func dedupeStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, v := range values {
+		if _, dup := seen[v]; dup {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
 }
 
 func (c *httpRegistryClient) Ping(ctx context.Context) error {
@@ -496,48 +530,133 @@ func cvssScoreToSeverity(score float64) string {
 	}
 }
 
-// latestVEXFilename chooses the single-CVE VEX object for cveID.
-// Per-CVE manifest names are "{cveID}-{rawCreated}.bom.json". The raw
-// build-index created string is not the OSV "published" value. When more
-// than one timestamp exists, the lexicographically greatest is used.
-func latestVEXFilename(entries []vulnerability_parser.ManifestEntry, cveID string) (filename, timestamp string, err error) {
-	if cveID == "" {
-		return "", "", fmt.Errorf("empty CVE ID")
-	}
-	re := regexp.MustCompile("^" + regexp.QuoteMeta(cveID) + `-(.+)\.bom\.json$`)
-	var timestamps []string
+// vexCandidateFilenames lists VEX objects to try, newest timestamp first.
+// Per-CVE manifest names are "{cveID}-{rawCreated}.bom.json"; the bundled
+// name is "{rawCreated}.bom.json". One CVE uses the per-CVE name. Two or
+// more CVEs use the bundled name when that name is in the manifest, and
+// otherwise the per-CVE names for that timestamp.
+func vexCandidateFilenames(entries []vulnerability_parser.ManifestEntry, cveIDs []string) []vexCandidate {
+	present := make(map[string]struct{}, len(entries))
 	for _, entry := range entries {
-		match := re.FindStringSubmatch(entry.Filename)
-		if match == nil {
+		present[entry.Filename] = struct{}{}
+	}
+
+	var timestamps []string
+	seenTS := make(map[string]struct{})
+	for _, cveID := range cveIDs {
+		re := regexp.MustCompile("^" + regexp.QuoteMeta(cveID) + `-(.+)\.bom\.json$`)
+		for _, entry := range entries {
+			match := re.FindStringSubmatch(entry.Filename)
+			if match == nil {
+				continue
+			}
+			if _, ok := seenTS[match[1]]; ok {
+				continue
+			}
+			seenTS[match[1]] = struct{}{}
+			timestamps = append(timestamps, match[1])
+		}
+	}
+	sort.Slice(timestamps, func(i, j int) bool {
+		return timestamps[i] > timestamps[j]
+	})
+
+	var candidates []vexCandidate
+	for _, ts := range timestamps {
+		if len(cveIDs) == 1 {
+			candidates = append(candidates, vexCandidate{Filename: cveIDs[0] + "-" + ts + ".bom.json", Timestamp: ts, CVEID: cveIDs[0]})
 			continue
 		}
-		timestamps = append(timestamps, match[1])
+		bundled := ts + ".bom.json"
+		if _, ok := present[bundled]; ok {
+			candidates = append(candidates, vexCandidate{Filename: bundled, Timestamp: ts})
+			continue
+		}
+		for _, cveID := range cveIDs {
+			name := cveID + "-" + ts + ".bom.json"
+			if _, ok := present[name]; ok {
+				candidates = append(candidates, vexCandidate{Filename: name, Timestamp: ts, CVEID: cveID})
+			}
+		}
 	}
-	if len(timestamps) == 0 {
-		return "", "", fmt.Errorf("no VEX document for %s", cveID)
-	}
-
-	sort.Strings(timestamps)
-	chosen := timestamps[len(timestamps)-1]
-	if len(timestamps) > 1 {
-		log.Info().
-			Str("cve", cveID).
-			Strs("candidates", timestamps).
-			Str("chosen", chosen).
-			Msg("multiple VEX timestamps; using lexicographically greatest")
-	}
-	return cveID + "-" + chosen + ".bom.json", chosen, nil
+	return candidates
 }
 
-// vexObjectName builds the delivered VEX filename
+// vexDocumentAccepted reports whether the VEX body points at this SBOM.
+// A download or JSON error is not a rejection: the caller must stop.
+func vexDocumentAccepted(data []byte, groupID, artifactID, version, uuid string) (bool, error) {
+	var doc struct {
+		Metadata *struct {
+			Component *struct {
+				Purl string `json:"purl"`
+			} `json:"component"`
+		} `json:"metadata"`
+		Vulnerabilities []struct {
+			Affects []struct {
+				Ref string `json:"ref"`
+			} `json:"affects"`
+		} `json:"vulnerabilities"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return false, err
+	}
+	needle := "urn:cdx:" + uuid + "/"
+	matched := false
+	for _, vuln := range doc.Vulnerabilities {
+		for _, affect := range vuln.Affects {
+			if strings.Contains(affect.Ref, needle) {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			break
+		}
+	}
+	if !matched {
+		return false, nil
+	}
+	if doc.Metadata == nil || doc.Metadata.Component == nil || doc.Metadata.Component.Purl == "" {
+		return true, nil
+	}
+	return mavenPurlMatches(doc.Metadata.Component.Purl, groupID, artifactID, version), nil
+}
+
+func mavenPurlMatches(raw, groupID, artifactID, version string) bool {
+	parsed, err := packageurl.FromString(raw)
+	if err != nil || parsed.Type != "maven" || parsed.Namespace == "" || parsed.Name == "" || parsed.Version == "" {
+		return false
+	}
+	return parsed.Namespace == groupID && parsed.Name == artifactID && parsed.Version == version
+}
+
+// vexObjectName builds the delivered single-CVE VEX filename
 // "{cveID}-{YYYY-MM-DD}.bom.json" from the ISO-8601 build timestamp,
 // normalized to UTC.
 func vexObjectName(cveID, timestamp string) (string, error) {
+	date, err := vexDate(timestamp)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s-%s.bom.json", cveID, date), nil
+}
+
+// bundledVEXObjectName builds the delivered multi-CVE VEX filename
+// "{YYYY-MM-DD}.bom.json" from the ISO-8601 build timestamp, normalized to UTC.
+func bundledVEXObjectName(timestamp string) (string, error) {
+	date, err := vexDate(timestamp)
+	if err != nil {
+		return "", err
+	}
+	return date + ".bom.json", nil
+}
+
+func vexDate(timestamp string) (string, error) {
 	t, err := time.Parse(time.RFC3339, timestamp)
 	if err != nil {
 		return "", fmt.Errorf("parse VEX timestamp %q: %w", timestamp, err)
 	}
-	return fmt.Sprintf("%s-%s.bom.json", cveID, t.UTC().Format(time.DateOnly)), nil
+	return t.UTC().Format(time.DateOnly), nil
 }
 
 func groupPath(groupID string) string {
