@@ -298,6 +298,10 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
+  admin_lens_demand_signals:
+    enabled: true
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
   lightwell_lens:
     enabled: true
     accounts: #["lightwellAccount"]

@@ -91,6 +91,14 @@ env:
     value: ${FEATURES_ADMIN_NOTIFICATIONS_ACCOUNTS}
   - name: FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS
     value: ${FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS}
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ENABLED
+    value: ${FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ENABLED}
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ACCOUNTS
+    value: ${FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ACCOUNTS}
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ORGANIZATIONS
+    value: ${FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ORGANIZATIONS}
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_USERS
+    value: ${FEATURES_ADMIN_LENS_DEMAND_SIGNALS_USERS}
   - name: FEATURES_LIGHTWELL_BEACON_ENABLED
     value: ${FEATURES_LIGHTWELL_BEACON_ENABLED}
   - name: FEATURES_LIGHTWELL_BEACON_ACCOUNTS
@@ -548,6 +556,15 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_ADMIN_NOTIFICATIONS_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ENABLED
+    description: Whether the Admin Lens Demand Signals feature should be turned on
+    value: 'false'
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ACCOUNTS
+    description: Comma separated list of account numbers that can access the feature
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_LENS_DEMAND_SIGNALS_USERS
+    description: Comma separated list of usernames that can access the feature
   - name: FEATURES_LIGHTWELL_BEACON_ENABLED
     description: Whether the Lightwell Beacon feature should be turned on
     value: 'false'
