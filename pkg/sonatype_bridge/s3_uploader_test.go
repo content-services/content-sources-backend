@@ -2,10 +2,8 @@ package sonatype_bridge
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec // ETag comparison in tests
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"io"
 	"net/http"
@@ -293,16 +291,21 @@ func TestS3Uploader_ExistingDifferentChecksumConflicts(t *testing.T) {
 	assert.Equal(t, "a.json", conflictErr.Key)
 }
 
-func TestS3Uploader_ExistingMatchingETagSkips(t *testing.T) {
-	data := []byte("payload")
-	sum := md5.Sum(data) //nolint:gosec // test
+// TestS3Uploader_ExistingWithoutChecksumConflicts covers an object that was
+// not written by this uploader (no stored SHA-256 checksum): a single-part
+// ETag is not trusted as a content match, even when it looks like it could
+// correspond to the payload. sameContent only trusts the SHA-256 checksum
+// this uploader always writes, so a missing checksum is a conflict, not a skip.
+func TestS3Uploader_ExistingWithoutChecksumConflicts(t *testing.T) {
 	server, _, _ := newExistingObjectServer(map[string]string{
-		"ETag": `"` + hex.EncodeToString(sum[:]) + `"`,
+		"ETag": `"d41d8cd98f00b204e9800998ecf8427e"`,
 	})
 	defer server.Close()
 
 	u := newTestS3Uploader(server)
-	require.NoError(t, u.UploadFile(context.Background(), "a.json", data, "application/json"))
+	err := u.UploadFile(context.Background(), "a.json", []byte("payload"), "application/json")
+	var conflictErr *ObjectConflictError
+	require.True(t, errors.As(err, &conflictErr))
 }
 
 func TestS3Uploader_ExistingUnverifiableConflicts(t *testing.T) {
