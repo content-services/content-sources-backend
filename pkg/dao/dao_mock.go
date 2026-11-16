@@ -12579,6 +12579,84 @@ func (_c *MockCoverageReportDao_InternalOnlyFetchCoverageUpload_Call) RunAndRetu
 	return _c
 }
 
+// ListDemandSignals provides a mock function for the type MockCoverageReportDao
+func (_mock *MockCoverageReportDao) ListDemandSignals(ctx context.Context, pageData api.PaginationData, filterData api.AdminDemandSignalFilterData) (api.AdminDemandSignalCollectionResponse, int64, error) {
+	ret := _mock.Called(ctx, pageData, filterData)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListDemandSignals")
+	}
+
+	var r0 api.AdminDemandSignalCollectionResponse
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, api.PaginationData, api.AdminDemandSignalFilterData) (api.AdminDemandSignalCollectionResponse, int64, error)); ok {
+		return returnFunc(ctx, pageData, filterData)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, api.PaginationData, api.AdminDemandSignalFilterData) api.AdminDemandSignalCollectionResponse); ok {
+		r0 = returnFunc(ctx, pageData, filterData)
+	} else {
+		r0 = ret.Get(0).(api.AdminDemandSignalCollectionResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, api.PaginationData, api.AdminDemandSignalFilterData) int64); ok {
+		r1 = returnFunc(ctx, pageData, filterData)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, api.PaginationData, api.AdminDemandSignalFilterData) error); ok {
+		r2 = returnFunc(ctx, pageData, filterData)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockCoverageReportDao_ListDemandSignals_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListDemandSignals'
+type MockCoverageReportDao_ListDemandSignals_Call struct {
+	*mock.Call
+}
+
+// ListDemandSignals is a helper method to define mock.On call
+//   - ctx context.Context
+//   - pageData api.PaginationData
+//   - filterData api.AdminDemandSignalFilterData
+func (_e *MockCoverageReportDao_Expecter) ListDemandSignals(ctx any, pageData any, filterData any) *MockCoverageReportDao_ListDemandSignals_Call {
+	return &MockCoverageReportDao_ListDemandSignals_Call{Call: _e.mock.On("ListDemandSignals", ctx, pageData, filterData)}
+}
+
+func (_c *MockCoverageReportDao_ListDemandSignals_Call) Run(run func(ctx context.Context, pageData api.PaginationData, filterData api.AdminDemandSignalFilterData)) *MockCoverageReportDao_ListDemandSignals_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 api.PaginationData
+		if args[1] != nil {
+			arg1 = args[1].(api.PaginationData)
+		}
+		var arg2 api.AdminDemandSignalFilterData
+		if args[2] != nil {
+			arg2 = args[2].(api.AdminDemandSignalFilterData)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCoverageReportDao_ListDemandSignals_Call) Return(adminDemandSignalCollectionResponse api.AdminDemandSignalCollectionResponse, n int64, err error) *MockCoverageReportDao_ListDemandSignals_Call {
+	_c.Call.Return(adminDemandSignalCollectionResponse, n, err)
+	return _c
+}
+
+func (_c *MockCoverageReportDao_ListDemandSignals_Call) RunAndReturn(run func(ctx context.Context, pageData api.PaginationData, filterData api.AdminDemandSignalFilterData) (api.AdminDemandSignalCollectionResponse, int64, error)) *MockCoverageReportDao_ListDemandSignals_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListPackages provides a mock function for the type MockCoverageReportDao
 func (_mock *MockCoverageReportDao) ListPackages(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error) {
 	ret := _mock.Called(ctx, orgID, reportUUID, pageData, filterData)
