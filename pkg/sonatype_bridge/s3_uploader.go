@@ -3,10 +3,8 @@ package sonatype_bridge
 import (
 	"bytes"
 	"context"
-	"crypto/md5" //nolint:gosec // ETag comparison only, not used for security
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -132,7 +130,7 @@ func (u *awsS3Uploader) putObject(ctx context.Context, objKey string, data []byt
 		return nil
 	}
 
-	same, err := u.sameContent(ctx, objKey, checksum, data)
+	same, err := u.sameContent(ctx, objKey, checksum)
 	if err != nil {
 		return fmt.Errorf("upload %s: %w", objKey, err)
 	}
@@ -144,8 +142,13 @@ func (u *awsS3Uploader) putObject(ctx context.Context, objKey string, data []byt
 }
 
 // sameContent reports whether the existing objKey matches data, using the
-// stored SHA-256 checksum when present and a single-part MD5 ETag otherwise.
-func (u *awsS3Uploader) sameContent(ctx context.Context, objKey, checksum string, data []byte) (bool, error) {
+// stored SHA-256 checksum. Every object this uploader writes carries that
+// checksum (see putObject), so this is conclusive for anything the bridge
+// itself delivered. An object with no stored SHA-256 checksum was not
+// written by this bridge and is treated as unverifiable, not a match: the
+// caller reports an *ObjectConflictError instead of trusting a weaker
+// signal such as the ETag.
+func (u *awsS3Uploader) sameContent(ctx context.Context, objKey, checksum string) (bool, error) {
 	var out *s3.HeadObjectOutput
 	err := retryWithBackoff(ctx, u.maxRetries, func() error {
 		var err error
@@ -160,15 +163,8 @@ func (u *awsS3Uploader) sameContent(ctx context.Context, objKey, checksum string
 		return false, fmt.Errorf("inspect existing object: %w", err)
 	}
 
-	if stored := aws.ToString(out.ChecksumSHA256); stored != "" {
-		return stored == checksum, nil
-	}
-	etag := strings.Trim(aws.ToString(out.ETag), `"`)
-	if len(etag) == 32 && !strings.Contains(etag, "-") {
-		md5sum := md5.Sum(data) //nolint:gosec // ETag comparison only
-		return strings.EqualFold(etag, hex.EncodeToString(md5sum[:])), nil
-	}
-	return false, nil
+	stored := aws.ToString(out.ChecksumSHA256)
+	return stored != "" && stored == checksum, nil
 }
 
 // isPreconditionFailed reports whether a conditional write was rejected
