@@ -469,6 +469,31 @@ objects:
               - send-template-update-events
             env:{{ENV_VARS}}
 
+        - name: cleanup-missing-domains
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - cleanup-missing-domains
+            env:{{ENV_VARS}}
+
+
+        - name: update-domains
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - update-domains
+            env:{{ENV_VARS}}
+
       database:
         name: content-sources
         version: 15
