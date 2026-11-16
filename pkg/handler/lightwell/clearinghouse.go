@@ -54,6 +54,7 @@ func RegisterClearinghouseRoutes(engine *echo.Group, uploads dao.ClearinghouseUp
 	h := ClearinghouseHandler{Uploads: uploads, S3: s3Client}
 	clearinghouse := checkLightwellClearinghouseAccessible()
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create", h.createSubmission, rbac.RbacVerbRead, clearinghouse)
+	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/create/csv", h.createCSVSubmission, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/files", h.addSubmissionFiles, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodDelete, "/clearinghouse/submissions/:uuid/files/:filename", h.deleteSubmissionFile, rbac.RbacVerbRead, clearinghouse)
 	addLightwellRoute(engine, http.MethodPost, "/clearinghouse/submissions/:uuid/submit", h.submitSubmission, rbac.RbacVerbRead, clearinghouse)
@@ -94,6 +95,12 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	return h.createIntakeSubmission(c, orgID, username, name, body, vulns)
+}
+
+// createIntakeSubmission stores a validated intake submission JSON body as
+// submission.json and responds with the created submission.
+func (h *ClearinghouseHandler) createIntakeSubmission(c echo.Context, orgID, username, name string, body []byte, vulns []intakeVulnerability) error {
 	count := int32(len(vulns)) //nolint:gosec // vulnerability count is bounded by the 50 MiB body limit
 	packages, summary := clearinghousePackages(vulns)
 
@@ -133,12 +140,9 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, []intakeVulnerability
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Invalid JSON submission")
 	}
-	name := strings.TrimSpace(parsed.Name)
-	if name == "" {
-		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "A name is required")
-	}
-	if len(name) > 255 {
-		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Name is too long")
+	name, err := validateIntakeName(parsed.Name)
+	if err != nil {
+		return nil, "", nil, err
 	}
 	if len(parsed.Vulnerabilities) == 0 {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "At least one vulnerability is required")
@@ -150,6 +154,19 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, []intakeVulnerability
 		}
 	}
 	return body, name, parsed.Vulnerabilities, nil
+}
+
+// validateIntakeName returns the trimmed submission name, or an error when it is
+// blank or too long.
+func validateIntakeName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "A name is required")
+	}
+	if len(name) > 255 {
+		return "", ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Name is too long")
+	}
+	return name, nil
 }
 
 // intakeVulnerability mirrors the required fields of a ReportedVulnerability

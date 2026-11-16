@@ -1554,6 +1554,94 @@
                 ]
             }
         },
+        "/clearinghouse/submissions/create/csv": {
+            "post": {
+                "description": "Create a new clearinghouse submission from a CSV file of up to 50 MiB. The first row is a header naming the columns, using the intake submission field names: vulnerability_id, packageurl, title and description are required; component_name, component_version, cvss_severity, cvss_score, cwe, cvss_vector, exploit_tested, reproducer_filename and customer_priority are optional. Columns may appear in any order, unknown columns are rejected, and each further row is one vulnerability. Empty optional cells are treated as unset. cvss_score must be a number and exploit_tested must be true or false. The CSV must be UTF-8. It is converted to an intake submission JSON, which is stored as submission.json; the CSV itself is not kept. Requires the Lightwell clearinghouse feature.",
+                "operationId": "createClearinghouseSubmissionCSV",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "file": {
+                                        "description": "CSV file with a header row and one vulnerability per row.",
+                                        "format": "binary",
+                                        "type": "string",
+                                        "x-formData-name": "file"
+                                    },
+                                    "name": {
+                                        "description": "User-facing label for the submission, up to 255 characters.",
+                                        "type": "string",
+                                        "x-formData-name": "name"
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "name"
+                                ],
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.ClearinghouseSubmission"
+                                }
+                            }
+                        },
+                        "description": "Created"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Conflict"
+                    },
+                    "413": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Request Entity Too Large"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "Create a clearinghouse submission from a CSV file",
+                "tags": [
+                    "lightwell"
+                ]
+            }
+        },
         "/clearinghouse/submissions/{uuid}": {
             "delete": {
                 "description": "Delete a clearinghouse submission and its files while it is pending. Only the user who created the submission can delete it. Requires the Lightwell clearinghouse feature.",
