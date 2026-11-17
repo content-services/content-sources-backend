@@ -28,13 +28,13 @@ Beacon shows a vulnerability as **On Hold** but not why. Jira now records the re
 ## Consequences
 
 - Customer wording can change with a one-map edit in the DAO, with no schema change.
-- Until Jira labelling is widespread (LWLP-3983), most On Hold vulnerabilities will show `blocked-by-ticket` or no reason.
+- On the first real sync (13 Nov snapshot, 813 On Hold vulnerabilities), 697 (86%) had at least one reason and 116 (14%) had none. `blocked-by-ticket` was the most common reason (501), and label-based reasons were already widespread. Of the 116 without a reason, 113 had an open Build Task or Component Upgrade with no `blocked:` label.
 - One unreadable blocker keeps that vulnerability from updating at all while it stays unreadable, including its stage and customer links, until the blocker is readable or removed. It shows up in the sync's failed count and failure list.
 - A taxonomy label this code does not know yet shows the generic fallback text until a wording is added.
 - The sync makes extra Jira searches (batches of 100 keys) proportional to the number of distinct open blockers of On Hold vulnerabilities.
 
 ## Revisit when
 
-- A real sync shows many vulnerabilities failing because their blockers cannot be read. Then reconsider keeping the other fields updating (the two rejected failure options above).
+- A real sync shows many vulnerabilities failing because their blockers cannot be read. Then reconsider keeping the other fields updating (the two rejected failure options above). The first real sync (13 Nov) had no such failures.
 - Jira labelling lands and most On Hold vulnerabilities have a labelled blocker. Then check whether the generic fallback and `blocked-by-ticket` are still useful.
 - Product or documentation owners change the customer wording or add taxonomy labels.
