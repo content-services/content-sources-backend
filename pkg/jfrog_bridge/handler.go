@@ -173,8 +173,12 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 		return fmt.Errorf("fetch SBOM: %w", err)
 	}
 
-	// 4. Fetch the multi-CVE VEX from the VEX file distribution.
-	vexData, err := h.registry.FetchVEX(ctx, rem.CVEsFixed)
+	// 4. Fetch the VEX whose BOM-Link matches this SBOM.
+	serial, err := sbomSerialNumber(sbomData)
+	if err != nil {
+		return fmt.Errorf("sbom serialNumber: %w", err)
+	}
+	vexData, err := h.registry.FetchVEX(ctx, rem.CVEsFixed, rem.GroupID, rem.ArtifactID, rem.Version, serial)
 	if err != nil {
 		return fmt.Errorf("fetch VEX: %w", err)
 	}
@@ -239,6 +243,19 @@ func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation)
 
 func gavKey(rem Remediation) string {
 	return fmt.Sprintf("%s:%s:%s", rem.GroupID, rem.ArtifactID, rem.Version)
+}
+
+func sbomSerialNumber(data []byte) (string, error) {
+	var doc struct {
+		SerialNumber string `json:"serialNumber"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return "", fmt.Errorf("parse SBOM: %w", err)
+	}
+	if doc.SerialNumber == "" {
+		return "", fmt.Errorf("SBOM serialNumber is empty")
+	}
+	return doc.SerialNumber, nil
 }
 
 type mavenMetadata struct {

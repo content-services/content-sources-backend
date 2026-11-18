@@ -24,12 +24,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testVEXTimestamp = "2026-07-15T14:02:27+00:00"
+const (
+	testVEXTimestamp = "2026-07-15T14:02:27+00:00"
+	testSBOMUUID     = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+)
 
 var (
-	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7"}`)
+	testSBOMBody = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","serialNumber":"urn:uuid:` + testSBOMUUID + `"}`)
 	testASCBody  = []byte("-----BEGIN PGP SIGNATURE-----\ntest\n")
-	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[]}`)
+	testVEXBody  = []byte(`{"bomFormat":"CycloneDX","specVersion":"1.7","vulnerabilities":[{"affects":[{"ref":"urn:cdx:` + testSBOMUUID + `/1#pkg:maven/org.springframework/spring-core@5.3.18.rhlw-00003"}]}]}`)
 )
 
 func testVEXObjectName() string {
@@ -61,8 +64,8 @@ func pipelineRegistryHandler(jar, pom, sbom, asc []byte) http.Handler {
 	})
 }
 
-// pipelineOSVHandler serves the fixture OSV directory and adds the per-CVE
-// and multi-CVE VEX names the bridge derives from PULP_MANIFEST.
+// pipelineOSVHandler serves the fixture OSV directory and the one-CVE VEX
+// name the bridge selects from PULP_MANIFEST.
 func pipelineOSVHandler() http.Handler {
 	dir := testdataPath("osv", "java", "remediated")
 	files := http.FileServer(http.Dir(dir))
@@ -81,7 +84,7 @@ func pipelineOSVHandler() http.Handler {
 			_, _ = w.Write(append(base, []byte(perCVE+",abc,10\n"+multi+",def,10\n")...))
 			return
 		}
-		if strings.Contains(r.URL.Path, testVEXTimestamp) && !strings.Contains(r.URL.Path, "CVE-") {
+		if strings.Contains(r.URL.Path, "CVE-2025-41249-") && strings.Contains(r.URL.Path, testVEXTimestamp) {
 			_, _ = w.Write(testVEXBody)
 			return
 		}
@@ -116,6 +119,19 @@ func (m *mockConsumerGroupClaim) Partition() int32                         { ret
 func (m *mockConsumerGroupClaim) InitialOffset() int64                     { return 0 }
 func (m *mockConsumerGroupClaim) HighWaterMarkOffset() int64               { return 0 }
 func (m *mockConsumerGroupClaim) Messages() <-chan *sarama.ConsumerMessage { return m.ch }
+
+func TestSBOMSerialNumber(t *testing.T) {
+	got, err := sbomSerialNumber(testSBOMBody)
+	require.NoError(t, err)
+	assert.Equal(t, "urn:uuid:"+testSBOMUUID, got)
+
+	_, err = sbomSerialNumber([]byte(`{"bomFormat":"CycloneDX"}`))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+
+	_, err = sbomSerialNumber([]byte(`{`))
+	require.Error(t, err)
+}
 
 func TestVerifyJARChecksum_Match(t *testing.T) {
 	checksums := map[string]string{
