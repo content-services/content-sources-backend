@@ -160,7 +160,6 @@ The consumer's metrics are served on the `instrumentation` metrics endpoint (`me
   - `enqueued`: a snapshot task was enqueued.
   - `invalid`: skipped, because of the message content (e.g., an invalid CloudEvent, missing fields, a malformed chroot that isn't `<distro>-<version>-<arch>`, or a repository name longer than 255 characters).
   - `failed`: skipped, because handling a valid message failed (e.g., the task enqueue failed after retries).
-- `content_sources_copr_event_delay_seconds`: time from when Copr sent the event (the CloudEvent `time`) to when it was handled, shared by all event types on the topic. Events without a `time` aren't observed.
 
 Expected skips aren't counted in `content_sources_copr_build_end_events_total`: other event types, failed builds, and unsupported chroots are only logged at debug level.
 
