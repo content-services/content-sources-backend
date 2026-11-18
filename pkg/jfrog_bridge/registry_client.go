@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -30,7 +31,6 @@ import (
 
 const (
 	maxRegistryResponseBytes = 200 << 20 // 200 MB
-	maxJFrogPingBytes        = 1 << 10   // 1 KB
 )
 
 // OSVRecord holds the bridge-internal representation of a single CVE
@@ -49,10 +49,30 @@ type OSVRecord struct {
 type RegistryClient interface {
 	FetchJAR(ctx context.Context, groupID, artifactID, version string) (body []byte, sha256hex string, err error)
 	FetchPOM(ctx context.Context, groupID, artifactID, version string) ([]byte, error)
+	// FetchClassifier fetches an optional classified JAR (e.g. "sources",
+	// "javadoc"). It returns (nil, nil) when the registry reports 404.
+	FetchClassifier(ctx context.Context, groupID, artifactID, version, classifier string) ([]byte, error)
 	FetchSBOM(ctx context.Context, groupID, artifactID, version string) (bom, asc []byte, err error)
 	FetchOSVRecords(ctx context.Context, groupID, artifactID, baseVersion string) ([]OSVRecord, error)
-	FetchVEX(ctx context.Context, cveIDs []string, groupID, artifactID, version, serialNumber string) ([]byte, error)
+	// FetchVEX fetches the newest VEX document whose BOM-Link points at the
+	// SBOM identified by serialNumber.
+	FetchVEX(ctx context.Context, cveIDs []string, groupID, artifactID, version, serialNumber string) (VEXDocument, error)
 	Ping(ctx context.Context) error
+}
+
+// VEXDocument is the VEX document selected from PULP_MANIFEST. Partners
+// decide how to name it on delivery.
+type VEXDocument struct {
+	vexCandidate
+	Data []byte
+}
+
+// vexCandidate is a VEX object listed in PULP_MANIFEST. CVEID is empty for
+// a multi-CVE (bundled) document.
+type vexCandidate struct {
+	Filename  string
+	Timestamp string
+	CVEID     string
 }
 
 type httpRegistryClient struct {
@@ -65,7 +85,7 @@ type httpRegistryClient struct {
 	maxRetries  int
 }
 
-func newRegistryClient(cfg bridgeConfig) RegistryClient {
+func newRegistryClient(cfg registryConfig) RegistryClient {
 	return &httpRegistryClient{
 		httpClient: &http.Client{
 			Timeout: time.Duration(cfg.RequestTimeout) * time.Second,
@@ -96,6 +116,16 @@ func (c *httpRegistryClient) FetchPOM(ctx context.Context, groupID, artifactID, 
 	data, err := c.getWithRetry(ctx, path)
 	if err != nil {
 		return nil, fmt.Errorf("fetch POM: %w", err)
+	}
+	return data, nil
+}
+
+func (c *httpRegistryClient) FetchClassifier(ctx context.Context, groupID, artifactID, version, classifier string) ([]byte, error) {
+	path := fmt.Sprintf("%s/%s/%s/%s/%s-%s-%s.jar",
+		c.registryURL, groupPath(groupID), artifactID, version, artifactID, version, classifier)
+	data, err := c.getOptionalWithRetry(ctx, path)
+	if err != nil {
+		return nil, fmt.Errorf("fetch %s JAR: %w", classifier, err)
 	}
 	return data, nil
 }
@@ -158,46 +188,46 @@ func isRootRHLWFilename(filename string) bool {
 	return !strings.Contains(name, "/") && strings.HasPrefix(name, "RHLW-") && strings.HasSuffix(name, ".json")
 }
 
-func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string, groupID, artifactID, version, serialNumber string) ([]byte, error) {
+func (c *httpRegistryClient) FetchVEX(ctx context.Context, cveIDs []string, groupID, artifactID, version, serialNumber string) (VEXDocument, error) {
 	if len(cveIDs) == 0 {
-		return nil, fmt.Errorf("fetch VEX: no CVE IDs")
+		return VEXDocument{}, fmt.Errorf("fetch VEX: no CVE IDs")
 	}
 	uuid := strings.TrimPrefix(serialNumber, "urn:uuid:")
 	if uuid == "" {
-		return nil, fmt.Errorf("fetch VEX: empty SBOM serialNumber")
+		return VEXDocument{}, fmt.Errorf("fetch VEX: empty SBOM serialNumber")
 	}
 	manifestData, err := c.getWithRetry(ctx, c.vexURL+"/PULP_MANIFEST")
 	if err != nil {
-		return nil, fmt.Errorf("fetch VEX: %w", err)
+		return VEXDocument{}, fmt.Errorf("fetch VEX: %w", err)
 	}
-	names := vexCandidateFilenames(vulnerability_parser.ParseManifest(manifestData), cveIDs)
-	if len(names) == 0 {
-		return nil, fmt.Errorf("fetch VEX: no VEX file for %s", strings.Join(cveIDs, ", "))
+	candidates := vexCandidateFilenames(vulnerability_parser.ParseManifest(manifestData), cveIDs)
+	if len(candidates) == 0 {
+		return VEXDocument{}, fmt.Errorf("fetch VEX: no VEX file for %s", strings.Join(cveIDs, ", "))
 	}
-	for _, filename := range names {
+	for _, cand := range candidates {
 		// PathEscape leaves '+' alone. Encode it so the request target cannot
 		// be read as a space by a query-style decoder.
-		segment := strings.ReplaceAll(url.PathEscape(filename), "+", "%2B")
+		segment := strings.ReplaceAll(url.PathEscape(cand.Filename), "+", "%2B")
 		vexURL, err := url.JoinPath(c.vexURL, segment)
 		if err != nil {
-			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
 		}
 		data, err := c.getWithRetry(ctx, vexURL)
 		if err != nil {
-			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
 		}
 		ok, err := vexDocumentAccepted(data, groupID, artifactID, version, uuid)
 		if err != nil {
-			return nil, fmt.Errorf("fetch VEX %s: %w", filename, err)
+			return VEXDocument{}, fmt.Errorf("fetch VEX %s: %w", cand.Filename, err)
 		}
 		if !ok {
-			log.Debug().Str("file", filename).Msg("VEX document does not match this SBOM")
+			log.Debug().Str("file", cand.Filename).Msg("VEX document does not match this SBOM")
 			continue
 		}
-		log.Info().Str("file", filename).Msg("selected VEX document")
-		return data, nil
+		log.Info().Str("file", cand.Filename).Msg("selected VEX document")
+		return VEXDocument{vexCandidate: cand, Data: data}, nil
 	}
-	return nil, fmt.Errorf("fetch VEX: no document matches SBOM %s", uuid)
+	return VEXDocument{}, fmt.Errorf("fetch VEX: no document matches SBOM %s", uuid)
 }
 
 func (c *httpRegistryClient) Ping(ctx context.Context) error {
@@ -230,6 +260,32 @@ func (c *httpRegistryClient) getWithRetry(ctx context.Context, rawURL string) ([
 	return data, err
 }
 
+// getOptionalWithRetry is like getWithRetry but treats HTTP 404 as "absent":
+// it returns (nil, nil) immediately without retrying.
+func (c *httpRegistryClient) getOptionalWithRetry(ctx context.Context, rawURL string) ([]byte, error) {
+	var data []byte
+	err := retryWithBackoff(ctx, c.maxRetries, func() error {
+		var fetchErr error
+		data, fetchErr = c.doGet(ctx, rawURL)
+		var statusErr *httpStatusError
+		if errors.As(fetchErr, &statusErr) && statusErr.StatusCode == http.StatusNotFound {
+			data = nil
+			return nil
+		}
+		return fetchErr
+	})
+	return data, err
+}
+
+type httpStatusError struct {
+	StatusCode int
+	URL        string
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("HTTP %d from %s", e.StatusCode, e.URL)
+}
+
 func (c *httpRegistryClient) doGet(ctx context.Context, rawURL string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -246,7 +302,7 @@ func (c *httpRegistryClient) doGet(ctx context.Context, rawURL string) ([]byte, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
+		return nil, &httpStatusError{StatusCode: resp.StatusCode, URL: rawURL}
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, maxRegistryResponseBytes))
 }
@@ -450,10 +506,12 @@ func cvssScoreToSeverity(score float64) string {
 	}
 }
 
-// vexCandidateFilenames lists VEX object names to try, newest timestamp first.
-// One CVE uses the per-CVE name. Two or more CVEs use the bundled name when
-// that name is in the manifest, and otherwise the per-CVE names for that timestamp.
-func vexCandidateFilenames(entries []vulnerability_parser.ManifestEntry, cveIDs []string) []string {
+// vexCandidateFilenames lists VEX objects to try, newest timestamp first.
+// Per-CVE manifest names are "{cveID}-{rawCreated}.bom.json"; the bundled
+// name is "{rawCreated}.bom.json". One CVE uses the per-CVE name. Two or
+// more CVEs use the bundled name when that name is in the manifest, and
+// otherwise the per-CVE names for that timestamp.
+func vexCandidateFilenames(entries []vulnerability_parser.ManifestEntry, cveIDs []string) []vexCandidate {
 	present := make(map[string]struct{}, len(entries))
 	for _, entry := range entries {
 		present[entry.Filename] = struct{}{}
@@ -479,25 +537,25 @@ func vexCandidateFilenames(entries []vulnerability_parser.ManifestEntry, cveIDs 
 		return timestamps[i] > timestamps[j]
 	})
 
-	var names []string
+	var candidates []vexCandidate
 	for _, ts := range timestamps {
 		if len(cveIDs) == 1 {
-			names = append(names, cveIDs[0]+"-"+ts+".bom.json")
+			candidates = append(candidates, vexCandidate{Filename: cveIDs[0] + "-" + ts + ".bom.json", Timestamp: ts, CVEID: cveIDs[0]})
 			continue
 		}
 		bundled := ts + ".bom.json"
 		if _, ok := present[bundled]; ok {
-			names = append(names, bundled)
+			candidates = append(candidates, vexCandidate{Filename: bundled, Timestamp: ts})
 			continue
 		}
 		for _, cveID := range cveIDs {
 			name := cveID + "-" + ts + ".bom.json"
 			if _, ok := present[name]; ok {
-				names = append(names, name)
+				candidates = append(candidates, vexCandidate{Filename: name, Timestamp: ts, CVEID: cveID})
 			}
 		}
 	}
-	return names
+	return candidates
 }
 
 // vexDocumentAccepted reports whether the VEX body points at this SBOM.

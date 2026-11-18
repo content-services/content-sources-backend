@@ -22,7 +22,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/db"
 	"github.com/content-services/content-sources-backend/pkg/jfrog_bridge"
 	"github.com/content-services/content-sources-backend/pkg/middleware"
-	"github.com/content-services/content-sources-backend/pkg/sonatype_bridge"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/labstack/echo/v4"
@@ -119,8 +118,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterAdminTaskRoutes(group, daoReg, &fsClient, &cpClient)
 		RegisterAdminRepositoriesRoutes(group, daoReg)
 		RegisterAdminNotificationsRoutes(group)
-		jfrog_bridge.RegisterJFrogBridgeRoutes(group)
-		sonatype_bridge.RegisterSonatypeBridgeRoutes(group)
+		jfrog_bridge.RegisterBridgeRoutes(group)
 		RegisterFeaturesRoutes(group, &fsClient)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)

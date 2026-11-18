@@ -1,4 +1,4 @@
-package sonatype_bridge
+package jfrog_bridge
 
 import (
 	"context"
@@ -177,14 +177,14 @@ func TestNewS3Uploader_IgnoresAmbientAWSEnv(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "ambient-sk")
 	t.Setenv("AWS_REGION", "eu-west-1")
 
-	u, err := newS3Uploader(bridgeConfig{
+	u, err := newS3Uploader(sonatypeConfig{
+		registryConfig: registryConfig{RequestTimeout: 5},
 		S3URL:          server.URL,
 		S3Bucket:       "partner-bucket",
 		S3Region:       "us-east-1",
 		S3AccessKey:    "partner-ak",
 		S3SecretKey:    "partner-sk",
 		S3UsePathStyle: true,
-		RequestTimeout: 5,
 	})
 	require.NoError(t, err)
 	require.NoError(t, u.Ping(context.Background()))

@@ -119,8 +119,7 @@ objects:
               - /content-sources
               - api
               - instrumentation
-              - jfrog-bridge
-              - sonatype-bridge
+              - content-bridge
             livenessProbe:
               failureThreshold: 3
               httpGet:

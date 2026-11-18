@@ -5,44 +5,58 @@
 package jfrog_bridge
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/labstack/echo/v4"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestSimulateHandler_BadPayload(t *testing.T) {
+func simulateRequest(t *testing.T, bh *BridgeHandler, payload string) (*httptest.ResponseRecorder, error) {
+	t.Helper()
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
-		strings.NewReader(`{invalid`))
+	req := httptest.NewRequest(http.MethodPost, "/admin/bridge/test/simulate", strings.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	c := echoContextWithBridge(e.NewContext(req, rec), bh)
 
 	h := &adminHandler{}
-	err := h.simulate(c)
+	return rec, h.simulate(c)
+}
+
+func TestSimulateHandler_BadPayload(t *testing.T) {
+	_, err := simulateRequest(t, newTestBridgeHandler(&fakePartner{name: "test"}, nil), `{invalid`)
 	require.Error(t, err)
 }
 
 func TestSimulate_SuccessPayload(t *testing.T) {
-	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
-	config.LoadedConfig.JFrogBridge = config.JFrogBridge{Enabled: true}
-	config.LoadedConfig.Loaded = true
-
-	pomData, err := os.ReadFile(testdataPath("registry", "org", "springframework",
-		"spring-core", "5.3.18.rhlw-00003", "spring-core-5.3.18.rhlw-00003.pom"))
+	fp := &fakePartner{name: "test"}
+	rec, err := simulateRequest(t, newTestBridgeHandler(fp, nil), springPayload)
 	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "success")
+	require.Len(t, fp.calls, 1)
+	assert.Equal(t, springRemediation(), fp.calls[0])
+}
 
-	jarData := pomData
+func TestSimulate_PartnerFailure(t *testing.T) {
+	fp := &fakePartner{name: "test", err: errors.New("upload failed")}
+	rec, err := simulateRequest(t, newTestBridgeHandler(fp, nil), springPayload)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "failed")
+	assert.Contains(t, rec.Body.String(), "upload failed")
+}
 
-	registryServer := httptest.NewServer(pipelineRegistryHandler(jarData, pomData, testSBOMBody, testASCBody))
+func TestSimulate_JFrogPipeline(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
+	pomData := readSpringPOM(t)
+
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, testSBOMBody, testASCBody))
 	defer registryServer.Close()
 
 	osvServer := httptest.NewServer(pipelineOSVHandler())
@@ -61,38 +75,41 @@ func TestSimulate_SuccessPayload(t *testing.T) {
 	}))
 	defer jfrogServer.Close()
 
-	bh := newPipelineHandler(registryServer, osvServer, jfrogServer)
-	h := &adminHandler{bridgeHandler: bh}
+	bh := newTestBridgeHandler(newJFrogPipelineHandler(registryServer, osvServer, jfrogServer), nil)
+	rec, err := simulateRequest(t, bh, springPayload)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), "success")
+}
 
-	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.springframework:spring-core","releases":[{"release_names":[{"name":"5.3.18.rhlw-00003"}],"related_cve":[{"cve":"CVE-2025-41249","severity":"important"}]}]}}]}`
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
-		strings.NewReader(payload))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+func TestSimulate_SonatypePipeline(t *testing.T) {
+	skipIfFixturesAbsent(t, fixturePOM, fixtureOSVDir)
+	pomData := readSpringPOM(t)
 
-	err = h.simulate(c)
+	registryServer := httptest.NewServer(pipelineRegistryHandler(pomData, pomData, testSBOMBody, testASCBody))
+	defer registryServer.Close()
+
+	osvServer := httptest.NewServer(pipelineOSVHandler())
+	defer osvServer.Close()
+
+	s3Server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s3Server.Close()
+
+	bh := newTestBridgeHandler(newSonatypePipelineHandler(registryServer, osvServer, s3Server), nil)
+	rec, err := simulateRequest(t, bh, springPayload)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "success")
 }
 
 func TestSimulateHandler_EmbargoRejection(t *testing.T) {
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	bh := NewBridgeHandler(nil, nil, metrics)
-	h := &adminHandler{bridgeHandler: bh}
-
+	fp := &fakePartner{name: "test"}
 	payload := `{"specversion":"1.0","type":"com.redhat.console.lightwelll.lightwell-advisory-created","eventtype":"java-remediated","data":[{"metadata":{},"payload":{"package_name":"org.test:test","releases":[{"release_names":[{"name":"1.0.rhlw-00001"}],"related_cve":[{"cve":"LTWL-0001","severity":"important"}]}]}}]}`
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/admin/jfrog_bridge/simulate",
-		strings.NewReader(payload))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := h.simulate(c)
+	rec, err := simulateRequest(t, newTestBridgeHandler(fp, nil), payload)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "rejected")
+	assert.Empty(t, fp.calls)
 }

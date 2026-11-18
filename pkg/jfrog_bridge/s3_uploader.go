@@ -1,4 +1,4 @@
-package sonatype_bridge
+package jfrog_bridge
 
 import (
 	"bytes"
@@ -61,7 +61,7 @@ type awsS3Uploader struct {
 // configuration only. It deliberately does not load the default AWS config,
 // so ambient settings (IAM role, AWS_* environment variables, shared config
 // files) can never redirect uploads to a different account or endpoint.
-func newS3Uploader(cfg bridgeConfig) (S3Uploader, error) {
+func newS3Uploader(cfg sonatypeConfig) (S3Uploader, error) {
 	if err := cfg.validateS3(); err != nil {
 		return nil, err
 	}

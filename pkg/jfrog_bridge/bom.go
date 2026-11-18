@@ -1,4 +1,4 @@
-package sonatype_bridge
+package jfrog_bridge
 
 import (
 	"encoding/json"

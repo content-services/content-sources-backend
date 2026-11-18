@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const maxJFrogPingBytes = 1 << 10 // 1 KB
+
 // JFrogClient abstracts HTTP calls to the JFrog Catalog Partners Artifactory.
 type JFrogClient interface {
 	UploadFile(ctx context.Context, repoPath string, data []byte, contentType string) error
@@ -27,7 +29,7 @@ type httpJFrogClient struct {
 	maxRetries  int
 }
 
-func newJFrogClient(cfg bridgeConfig) JFrogClient {
+func newJFrogClient(cfg jfrogConfig) JFrogClient {
 	return &httpJFrogClient{
 		httpClient: &http.Client{
 			Timeout: time.Duration(cfg.RequestTimeout) * time.Second,

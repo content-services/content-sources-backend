@@ -7,22 +7,13 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestStart_Disabled(t *testing.T) {
-	config.LoadedConfig.JFrogBridge = config.JFrogBridge{
-		Enabled: false,
-	}
-	config.LoadedConfig.Loaded = true
-
-	var wg sync.WaitGroup
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer cancel()
-
-	Start(ctx, &wg)
-
-	// Should not add to WaitGroup when disabled
+func waitGroupDone(t *testing.T, wg *sync.WaitGroup) {
+	t.Helper()
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -32,41 +23,124 @@ func TestStart_Disabled(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("WaitGroup should complete immediately when bridge is disabled")
+		t.Fatal("WaitGroup should complete immediately when no partner starts")
 	}
 }
 
-func TestLoadConfig(t *testing.T) {
+func setBridgeConfig(jfrogEnabled bool, sonatype config.SonatypeBridge) {
 	config.LoadedConfig.JFrogBridge = config.JFrogBridge{
-		Enabled:         true,
-		CatalogURL:      "https://test.jfrog.io",
-		CatalogRepo:     "test-repo",
-		CatalogToken:    "test-token",
-		RegistryURL:     "https://test.registry/java",
-		RegistryOSVURL:  "https://test.registry/osv",
-		RegistryVEXURL:  "https://test.registry/vex",
-		ConsumerGroupID: "test-group",
-		MaxRetries:      5,
-		RequestTimeout:  30,
+		Enabled:         jfrogEnabled,
+		ConsumerGroupID: "content-sources-jfrog-bridge",
 	}
-	config.LoadedConfig.Clients.Lightwell = config.Lightwell{
-		Username: "user",
-		Password: "pass",
-	}
+	config.LoadedConfig.SonatypeBridge = sonatype
 	config.LoadedConfig.Loaded = true
+}
 
-	cfg := loadConfig()
+func completeSonatypeBlock(enabled bool) config.SonatypeBridge {
+	return config.SonatypeBridge{
+		Enabled:         enabled,
+		ConsumerGroupID: "content-sources-sonatype-bridge",
+		S3: config.ObjectStore{
+			Name:      "partner-bucket",
+			Region:    "us-east-1",
+			AccessKey: "ak",
+			SecretKey: "sk",
+		},
+	}
+}
 
-	assert.True(t, cfg.Enabled)
-	assert.Equal(t, "https://test.jfrog.io", cfg.CatalogURL)
-	assert.Equal(t, "test-repo", cfg.CatalogRepo)
-	assert.Equal(t, "test-token", cfg.CatalogToken)
-	assert.Equal(t, "https://test.registry/java", cfg.RegistryURL)
-	assert.Equal(t, "https://test.registry/osv", cfg.RegistryOSVURL)
-	assert.Equal(t, "https://test.registry/vex", cfg.RegistryVEXURL)
-	assert.Equal(t, "test-group", cfg.ConsumerGroupID)
-	assert.Equal(t, 5, cfg.MaxRetries)
-	assert.Equal(t, 30, cfg.RequestTimeout)
-	assert.Equal(t, "user", cfg.RegistryUsername)
-	assert.Equal(t, "pass", cfg.RegistryPassword)
+func consumerGroups(consumers []partnerConsumer) map[string]string {
+	out := map[string]string{}
+	for _, c := range consumers {
+		out[c.name] = c.consumerGroupID
+	}
+	return out
+}
+
+func TestStart_AllDisabled(t *testing.T) {
+	setBridgeConfig(false, config.SonatypeBridge{Enabled: false})
+
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	Start(ctx, &wg)
+
+	// Should not add to WaitGroup when every partner is disabled
+	waitGroupDone(t, &wg)
+}
+
+func TestStart_SonatypeMissingS3Config(t *testing.T) {
+	setBridgeConfig(false, config.SonatypeBridge{
+		Enabled: true,
+		S3:      config.ObjectStore{Name: "partner-bucket"},
+	})
+
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	Start(ctx, &wg)
+
+	// Should not start the consumer when partner S3 settings are incomplete
+	waitGroupDone(t, &wg)
+}
+
+func TestEnabledPartnerConsumers(t *testing.T) {
+	tests := map[string]struct {
+		jfrog    bool
+		sonatype config.SonatypeBridge
+		want     map[string]string
+	}{
+		"none enabled": {
+			jfrog:    false,
+			sonatype: completeSonatypeBlock(false),
+			want:     map[string]string{},
+		},
+		"jfrog only": {
+			jfrog:    true,
+			sonatype: completeSonatypeBlock(false),
+			want:     map[string]string{jfrogPartnerName: "content-sources-jfrog-bridge"},
+		},
+		"sonatype only": {
+			jfrog:    false,
+			sonatype: completeSonatypeBlock(true),
+			want:     map[string]string{sonatypePartnerName: "content-sources-sonatype-bridge"},
+		},
+		"both enabled": {
+			jfrog:    true,
+			sonatype: completeSonatypeBlock(true),
+			want: map[string]string{
+				jfrogPartnerName:    "content-sources-jfrog-bridge",
+				sonatypePartnerName: "content-sources-sonatype-bridge",
+			},
+		},
+		"sonatype enabled without S3 settings": {
+			jfrog:    true,
+			sonatype: config.SonatypeBridge{Enabled: true, ConsumerGroupID: "content-sources-sonatype-bridge"},
+			want:     map[string]string{jfrogPartnerName: "content-sources-jfrog-bridge"},
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			setBridgeConfig(tc.jfrog, tc.sonatype)
+
+			consumers := enabledPartnerConsumers(newBridgeMetrics(prometheus.NewRegistry()))
+			assert.Equal(t, tc.want, consumerGroups(consumers))
+			for _, c := range consumers {
+				require.NotNil(t, c.handler)
+				assert.Equal(t, c.name, c.handler.partner.Name())
+			}
+		})
+	}
+}
+
+func TestPartnerRegistry(t *testing.T) {
+	for _, name := range []string{jfrogPartnerName, sonatypePartnerName, sonarSourcePartnerName} {
+		p, ok := lookupPartner(name)
+		require.True(t, ok, name)
+		assert.Equal(t, name, p.name)
+	}
+	_, ok := lookupPartner("unknown")
+	assert.False(t, ok)
 }

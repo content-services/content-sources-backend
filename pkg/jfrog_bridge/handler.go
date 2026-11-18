@@ -3,7 +3,6 @@ package jfrog_bridge
 import (
 	"context"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"sort"
@@ -20,22 +19,20 @@ const (
 
 const maxProcessedGAVs = 10000
 
-// BridgeHandler implements sarama.ConsumerGroupHandler and orchestrates
-// the full pipeline for each remediation message.
+// BridgeHandler implements sarama.ConsumerGroupHandler for one partner. It
+// parses and gates each message, then hands every remediation to the
+// partner's handler.
 type BridgeHandler struct {
-	registry    RegistryClient
-	jfrog       JFrogClient
-	metrics     *bridgeMetrics
-	registryURL string
-	processed   *boundedSet
+	partner   PartnerHandler
+	metrics   *partnerMetrics
+	processed *boundedSet
 }
 
-// NewBridgeHandler creates a BridgeHandler with the given clients.
-func NewBridgeHandler(registry RegistryClient, jfrog JFrogClient, metrics *bridgeMetrics) *BridgeHandler {
+// NewBridgeHandler creates a BridgeHandler that delivers to the given partner.
+func NewBridgeHandler(partner PartnerHandler, metrics *bridgeMetrics) *BridgeHandler {
 	return &BridgeHandler{
-		registry:  registry,
-		jfrog:     jfrog,
-		metrics:   metrics,
+		partner:   partner,
+		metrics:   metrics.forPartner(partner.Name()),
 		processed: newBoundedSet(maxProcessedGAVs),
 	}
 }
@@ -48,12 +45,13 @@ func (h *BridgeHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return ni
 
 // ConsumeClaim processes messages from a single partition.
 func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	partnerName := h.partner.Name()
 	for msg := range claim.Messages() {
 		h.metrics.messagesReceived.Inc()
 
 		remediations, shouldCommit, err := h.filterAndParse(msg.Value)
 		if err != nil {
-			log.Warn().Err(err).Msg("message rejected")
+			log.Warn().Err(err).Str("partner", partnerName).Msg("message rejected")
 			if shouldCommit {
 				session.MarkMessage(msg, "")
 			}
@@ -64,33 +62,40 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 		for _, rem := range remediations {
 			gav := gavKey(rem)
 			if h.processed.Contains(gav) {
-				log.Debug().Str("gav", gav).Msg("skipping already-processed GAV")
+				log.Debug().Str("partner", partnerName).Str("gav", gav).Msg("skipping already-processed GAV")
 				continue
 			}
 
 			if err := ValidateNotificationCVEs(rem); err != nil {
-				log.Error().Err(err).Str("gav", gav).Msg("embargo check failed")
+				log.Error().Err(err).Str("partner", partnerName).Str("gav", gav).Msg("embargo check failed")
 				h.metrics.embargoRejections.Inc()
 				h.metrics.messagesFailed.Inc()
 				continue
 			}
 
-			if err := h.processRemediation(session.Context(), rem); err != nil {
+			if err := h.process(session.Context(), rem); err != nil {
 				var embargoErr *EmbargoError
 				if errors.As(err, &embargoErr) {
-					log.Error().Err(err).Str("gav", gav).Msg("embargo check failed (content)")
+					log.Error().Err(err).Str("partner", partnerName).Str("gav", gav).Msg("embargo check failed (content)")
 					h.metrics.embargoRejections.Inc()
 					h.metrics.messagesFailed.Inc()
 					continue
 				}
 				var checksumErr *ChecksumMismatchError
 				if errors.As(err, &checksumErr) {
-					log.Error().Err(err).Str("gav", gav).Msg("JAR checksum mismatch")
+					log.Error().Err(err).Str("partner", partnerName).Str("gav", gav).Msg("JAR checksum mismatch")
 					h.metrics.checksumRejections.Inc()
 					h.metrics.messagesFailed.Inc()
 					continue
 				}
-				log.Error().Err(err).Str("gav", gav).Msg("pipeline failed")
+				var conflictErr *ObjectConflictError
+				if errors.As(err, &conflictErr) {
+					log.Error().Err(err).Str("partner", partnerName).Str("gav", gav).Msg("partner object conflict")
+					h.metrics.conflictRejections.Inc()
+					h.metrics.messagesFailed.Inc()
+					continue
+				}
+				log.Error().Err(err).Str("partner", partnerName).Str("gav", gav).Msg("pipeline failed")
 				h.metrics.messagesFailed.Inc()
 				allSucceeded = false
 				continue
@@ -98,7 +103,7 @@ func (h *BridgeHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim 
 
 			h.processed.Add(gav)
 			h.metrics.messagesProcessed.Inc()
-			log.Info().Str("gav", gav).Msg("pipeline completed")
+			log.Info().Str("partner", partnerName).Str("gav", gav).Msg("pipeline completed")
 		}
 
 		if allSucceeded {
@@ -129,116 +134,15 @@ func (h *BridgeHandler) filterAndParse(data []byte) ([]Remediation, bool, error)
 	return remediations, false, nil
 }
 
-// processRemediation runs the full pipeline for a single remediation.
-func (h *BridgeHandler) processRemediation(ctx context.Context, rem Remediation) error {
+// process runs the partner pipeline for a single remediation.
+func (h *BridgeHandler) process(ctx context.Context, rem Remediation) error {
 	start := time.Now()
 	defer func() {
 		h.metrics.pipelineDuration.Observe(time.Since(start).Seconds())
 	}()
 
-	gav := gavKey(rem)
-	log.Info().Str("gav", gav).Msg("processing remediation")
-
-	// 1a. Fetch JAR from registry
-	jarData, jarSHA256, err := h.registry.FetchJAR(ctx, rem.GroupID, rem.ArtifactID, rem.Version)
-	if err != nil {
-		return fmt.Errorf("fetch JAR: %w", err)
-	}
-
-	// 1b. Verify JAR integrity against notification checksum
-	jarFilename := fmt.Sprintf("%s-%s.jar", rem.ArtifactID, rem.Version)
-	if err := verifyJARChecksum(jarFilename, jarSHA256, rem.Checksums); err != nil {
-		return fmt.Errorf("checksum verification: %w", err)
-	}
-
-	pomData, err := h.registry.FetchPOM(ctx, rem.GroupID, rem.ArtifactID, rem.Version)
-	if err != nil {
-		return fmt.Errorf("fetch POM: %w", err)
-	}
-
-	// 2. Fetch OSV records
-	osvRecords, err := h.registry.FetchOSVRecords(ctx, rem.GroupID, rem.ArtifactID, rem.BaseVersion)
-	if err != nil {
-		return fmt.Errorf("fetch OSV records: %w", err)
-	}
-
-	// 2b. Validate OSV records contain only public CVEs
-	if err := ValidateOSVRecords(osvRecords); err != nil {
-		return fmt.Errorf("content embargo check: %w", err)
-	}
-
-	// 3. Fetch the enriched SBOM and its RADAS signature from Pulp Maven.
-	sbomData, sbomASC, err := h.registry.FetchSBOM(ctx, rem.GroupID, rem.ArtifactID, rem.Version)
-	if err != nil {
-		return fmt.Errorf("fetch SBOM: %w", err)
-	}
-
-	// 4. Fetch the VEX whose BOM-Link matches this SBOM.
-	serial, err := sbomSerialNumber(sbomData)
-	if err != nil {
-		return fmt.Errorf("sbom serialNumber: %w", err)
-	}
-	vexData, err := h.registry.FetchVEX(ctx, rem.CVEsFixed, rem.GroupID, rem.ArtifactID, rem.Version, serial)
-	if err != nil {
-		return fmt.Errorf("fetch VEX: %w", err)
-	}
-
-	// 5. Upload bundle to JFrog
-	gp := groupPath(rem.GroupID)
-	deployBase := fmt.Sprintf("%s/%s/%s", gp, rem.ArtifactID, rem.Version)
-
-	jarPath := fmt.Sprintf("%s/%s-%s.jar", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.jfrog.UploadFile(ctx, jarPath, jarData, "application/java-archive"); err != nil {
-		return fmt.Errorf("upload JAR: %w", err)
-	}
-
-	pomPath := fmt.Sprintf("%s/%s-%s.pom", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.jfrog.UploadFile(ctx, pomPath, pomData, "application/xml"); err != nil {
-		return fmt.Errorf("upload POM: %w", err)
-	}
-
-	sbomPath := fmt.Sprintf("%s/sbom/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.jfrog.UploadFile(ctx, sbomPath, sbomData, "application/json"); err != nil {
-		return fmt.Errorf("upload SBOM: %w", err)
-	}
-	if err := h.jfrog.UploadFile(ctx, sbomPath+".asc", sbomASC, "application/pgp-signature"); err != nil {
-		return fmt.Errorf("upload SBOM signature: %w", err)
-	}
-
-	vexPath := fmt.Sprintf("%s/vex/%s-%s.bom.json", deployBase, rem.ArtifactID, rem.Version)
-	if err := h.jfrog.UploadFile(ctx, vexPath, vexData, "application/json"); err != nil {
-		return fmt.Errorf("upload VEX: %w", err)
-	}
-
-	// 6. Upload maven-metadata.xml
-	metadataXML := generateMavenMetadata(rem.GroupID, rem.ArtifactID, rem.Version)
-	metadataPath := fmt.Sprintf("%s/%s/maven-metadata.xml", gp, rem.ArtifactID)
-	if err := h.jfrog.UploadFile(ctx, metadataPath, metadataXML, "application/xml"); err != nil {
-		return fmt.Errorf("upload maven-metadata.xml: %w", err)
-	}
-
-	// 7. Set catalog properties on JAR
-	regURL := h.registryURL
-	if regURL == "" {
-		regURL = loadConfig().RegistryURL
-	}
-	props := map[string]string{
-		"catalog.name":                   fmt.Sprintf("%s:%s", rem.GroupID, rem.ArtifactID),
-		"catalog.version":                rem.Version,
-		"catalog.compatible_with":        rem.BaseVersion, // comma-separated if multiple base versions match in the future
-		"catalog.vendor_remote_repo_url": regURL,
-		"license":                        "Apache-2.0",
-	}
-	if err := h.jfrog.SetProperties(ctx, jarPath, props); err != nil {
-		return fmt.Errorf("set properties: %w", err)
-	}
-
-	// 8. Verify
-	if err := h.jfrog.VerifyDelivery(ctx, jarPath); err != nil {
-		return fmt.Errorf("verify delivery: %w", err)
-	}
-
-	return nil
+	log.Info().Str("partner", h.partner.Name()).Str("gav", gavKey(rem)).Msg("processing remediation")
+	return h.partner.Process(ctx, rem)
 }
 
 func gavKey(rem Remediation) string {
@@ -256,45 +160,6 @@ func sbomSerialNumber(data []byte) (string, error) {
 		return "", fmt.Errorf("SBOM serialNumber is empty")
 	}
 	return doc.SerialNumber, nil
-}
-
-type mavenMetadata struct {
-	XMLName    xml.Name        `xml:"metadata"`
-	GroupID    string          `xml:"groupId"`
-	ArtifactID string          `xml:"artifactId"`
-	Versioning mavenVersioning `xml:"versioning"`
-}
-
-type mavenVersioning struct {
-	Latest      string           `xml:"latest"`
-	Release     string           `xml:"release"`
-	Versions    mavenVersionList `xml:"versions"`
-	LastUpdated string           `xml:"lastUpdated"`
-}
-
-type mavenVersionList struct {
-	Version []string `xml:"version"`
-}
-
-func generateMavenMetadata(groupID, artifactID, version string) []byte {
-	ts := time.Now().UTC().Format("20060102150405")
-	meta := mavenMetadata{
-		GroupID:    groupID,
-		ArtifactID: artifactID,
-		Versioning: mavenVersioning{
-			Latest:  version,
-			Release: version,
-			Versions: mavenVersionList{
-				Version: []string{version},
-			},
-			LastUpdated: ts,
-		},
-	}
-	data, err := xml.MarshalIndent(meta, "", "  ")
-	if err != nil {
-		return []byte{}
-	}
-	return append([]byte(xml.Header), data...)
 }
 
 // verifyJARChecksum compares the fetched JAR's SHA-256 against the checksum
