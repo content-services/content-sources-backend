@@ -334,7 +334,7 @@ const lightwellPackageKeyBatchSize = 1000
 // Rows that are not in pkgs are deleted.
 func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error {
 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		keepPkgUUIDs, keepVerUUIDs, err := upsertLightwellPackages(tx, repoConfigUUID, pkgs)
+		keepPkgUUIDs, keepVerUUIDs, err := upsertLightwellPackages(tx, repoConfigUUID, pkgs, overwriteVersion)
 		if err != nil {
 			return err
 		}
@@ -360,6 +360,9 @@ func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, 
 // ApplyPackageChangesForRepository updates part of the mirror for a repository.
 // Versions in removals are deleted, then upserts are written. A package is deleted when a
 // removal leaves it with no versions. Rows that are in neither list are not touched.
+// An upserted version that is already stored keeps its metadata, because Pulp content is
+// immutable and every file of a version carries the same release metadata. Only its
+// published_at moves forward when the upsert is later.
 func (d lightwellPackageDaoImpl) ApplyPackageChangesForRepository(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey) error {
 	if len(upserts) == 0 && len(removals) == 0 {
 		return nil
@@ -368,17 +371,36 @@ func (d lightwellPackageDaoImpl) ApplyPackageChangesForRepository(ctx context.Co
 		if err := deleteLightwellPackageVersions(tx, repoConfigUUID, removals); err != nil {
 			return err
 		}
-		if _, _, err := upsertLightwellPackages(tx, repoConfigUUID, upserts); err != nil {
+		if _, _, err := upsertLightwellPackages(tx, repoConfigUUID, upserts, keepVersion); err != nil {
 			return err
 		}
 		return deleteEmptyLightwellPackages(tx, repoConfigUUID, removals)
 	})
 }
 
+// versionConflict says what an upsert does to a version row that is already stored.
+type versionConflict int
+
+const (
+	// overwriteVersion replaces the stored row. A version with nil Details leaves the stored metadata unchanged.
+	overwriteVersion versionConflict = iota
+	// keepVersion keeps the stored row, and only moves published_at forward when the new value is later.
+	keepVersion
+)
+
+// laterPublishedAt picks the later of the stored and the new published_at. The values are RFC3339
+// text written by different importers, so they are compared as timestamps. An empty value is the earliest.
+const laterPublishedAt = `CASE
+	WHEN COALESCE(NULLIF(excluded.published_at, '')::timestamptz, '-infinity') >
+	     COALESCE(NULLIF(lightwell_package_versions.published_at, '')::timestamptz, '-infinity')
+	THEN excluded.published_at
+	ELSE lightwell_package_versions.published_at
+END`
+
 // upsertLightwellPackages writes packages and versions in batches and returns the uuids of every row written.
 // Repeated packages are merged. A repeated version keeps its last entry.
-// A version with nil Details leaves the stored metadata unchanged.
-func upsertLightwellPackages(tx *gorm.DB, repoConfigUUID string, pkgs []LightwellPackageInput) ([]string, []string, error) {
+// conflict decides what happens to a version that is already stored.
+func upsertLightwellPackages(tx *gorm.DB, repoConfigUUID string, pkgs []LightwellPackageInput, conflict versionConflict) ([]string, []string, error) {
 	type packageKey struct{ group, name string }
 	order := make([]packageKey, 0, len(pkgs))
 	versionsByPkg := make(map[packageKey][]LightwellPackageVersionInput, len(pkgs))
@@ -424,12 +446,12 @@ func upsertLightwellPackages(tx *gorm.DB, repoConfigUUID string, pkgs []Lightwel
 				}
 			}
 		}
-		written, err := upsertLightwellPackageVersions(tx, withDetails, true)
+		written, err := upsertLightwellPackageVersions(tx, withDetails, true, conflict)
 		if err != nil {
 			return nil, nil, err
 		}
 		verUUIDs = append(verUUIDs, written...)
-		written, err = upsertLightwellPackageVersions(tx, withoutDetails, false)
+		written, err = upsertLightwellPackageVersions(tx, withoutDetails, false, conflict)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -478,10 +500,17 @@ func newLightwellPackageVersion(pkgUUID, repoConfigUUID string, v LightwellPacka
 
 // upsertLightwellPackageVersions writes versions in batches. Every row in one call must agree on
 // whether it carries metadata, because one insert has one ON CONFLICT update list.
-func upsertLightwellPackageVersions(tx *gorm.DB, versions []models.LightwellPackageVersion, withDetails bool) ([]string, error) {
+func upsertLightwellPackageVersions(tx *gorm.DB, versions []models.LightwellPackageVersion, withDetails bool, conflict versionConflict) ([]string, error) {
 	updates := []string{"release", "published_at", "purl", "upstream_version", "updated_at"}
 	if withDetails {
 		updates = append(updates, "project_url", "license", "summary", "description", "author", "author_email")
+	}
+	onConflict := clause.AssignmentColumns(updates)
+	if conflict == keepVersion {
+		onConflict = clause.Set{
+			{Column: clause.Column{Name: "published_at"}, Value: gorm.Expr(laterPublishedAt)},
+			{Column: clause.Column{Name: "updated_at"}, Value: gorm.Expr("excluded.updated_at")},
+		}
 	}
 	uuids := make([]string, 0, len(versions))
 	for start := 0; start < len(versions); start += lightwellPackageVersionBatchSize {
@@ -489,7 +518,7 @@ func upsertLightwellPackageVersions(tx *gorm.DB, versions []models.LightwellPack
 		if err := tx.Clauses(
 			clause.OnConflict{
 				Columns:   []clause.Column{{Name: "lightwell_package_uuid"}, {Name: "version"}},
-				DoUpdates: clause.AssignmentColumns(updates),
+				DoUpdates: onConflict,
 			},
 			clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
 		).Create(&batch).Error; err != nil {

@@ -1051,13 +1051,14 @@ func (s *LightwellPackageSuite) TestApplyPackageChangesForRepository() {
 	initial := []LightwellPackageInput{
 		{Name: "django", Versions: []LightwellPackageVersionInput{
 			{Version: "4.1", Purl: "pkg:pypi/django@4.1", Details: &LightwellPackageVersionDetailsInput{Summary: "4.1"}},
-			{Version: "4.2", Purl: "pkg:pypi/django@4.2", Details: &LightwellPackageVersionDetailsInput{Summary: "4.2"}},
+			{Version: "4.2", Purl: "pkg:pypi/django@4.2", PublishedAt: "2026-01-02T00:00:00Z", Details: &LightwellPackageVersionDetailsInput{Summary: "4.2"}},
 		}},
 		{Name: "requests", Versions: []LightwellPackageVersionInput{
 			{Version: "2.0", Purl: "pkg:pypi/requests@2.0"},
 		}},
 		{Name: "flask", Versions: []LightwellPackageVersionInput{
-			{Version: "3.0", Purl: "pkg:pypi/flask@3.0"},
+			// An older importer wrote an offset instead of Z.
+			{Version: "3.0", Purl: "pkg:pypi/flask@3.0", PublishedAt: "2026-01-10T00:00:00+00:00", Details: &LightwellPackageVersionDetailsInput{Summary: "flask"}},
 		}},
 	}
 	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, initial))
@@ -1072,8 +1073,11 @@ func (s *LightwellPackageSuite) TestApplyPackageChangesForRepository() {
 	err := dao.ApplyPackageChangesForRepository(ctx, rcUUID,
 		[]LightwellPackageInput{
 			{Name: "django", Versions: []LightwellPackageVersionInput{
-				{Version: "4.2", Purl: "pkg:pypi/django@4.2", Details: &LightwellPackageVersionDetailsInput{Summary: "4.2 updated"}},
-				{Version: "5.0", Purl: "pkg:pypi/django@5.0", PublishedAt: "2026-01-05T00:00:00Z"},
+				{Version: "4.2", Purl: "pkg:pypi/django@4.2", PublishedAt: "2026-01-04T00:00:00Z", Details: &LightwellPackageVersionDetailsInput{Summary: "4.2 from a wheel"}},
+				{Version: "5.0", Purl: "pkg:pypi/django@5.0", PublishedAt: "2026-01-05T00:00:00Z", Details: &LightwellPackageVersionDetailsInput{Summary: "5.0"}},
+			}},
+			{Name: "flask", Versions: []LightwellPackageVersionInput{
+				{Version: "3.0", Purl: "pkg:pypi/flask@3.0", PublishedAt: "2026-01-05T00:00:00Z", Details: &LightwellPackageVersionDetailsInput{Summary: "flask from a wheel"}},
 			}},
 			{Name: "numpy", Versions: []LightwellPackageVersionInput{
 				{Version: "2.0+rhlw.1", Purl: "pkg:pypi/numpy@2.0+rhlw.1"},
@@ -1087,15 +1091,16 @@ func (s *LightwellPackageSuite) TestApplyPackageChangesForRepository() {
 	require.NoError(t, err)
 
 	type row struct {
-		Name    string
-		Version string
-		Summary string
-		Release string
-		UUID    string
+		Name        string
+		Version     string
+		Summary     string
+		Release     string
+		PublishedAt string
+		UUID        string
 	}
 	var rows []row
 	require.NoError(t, s.tx.Raw(`
-		SELECT p.name, v.version, v.summary, v.release, v.uuid
+		SELECT p.name, v.version, v.summary, v.release, v.published_at, v.uuid
 		FROM lightwell_package_versions v
 		JOIN lightwell_packages p ON p.uuid = v.lightwell_package_uuid
 		WHERE v.repository_configuration_uuid = ?
@@ -1107,7 +1112,12 @@ func (s *LightwellPackageSuite) TestApplyPackageChangesForRepository() {
 	assert.Equal(t, []string{"django@4.1", "django@4.2", "django@5.0", "flask@3.0", "numpy@2.0+rhlw.1"}, got)
 	assert.Equal(t, unchanged.UUID, rows[0].UUID, "a version that is not in the changes is not touched")
 	assert.Equal(t, "4.1", rows[0].Summary)
-	assert.Equal(t, "4.2 updated", rows[1].Summary)
+	assert.Equal(t, "4.2", rows[1].Summary, "a stored version keeps its metadata")
+	assert.Equal(t, "2026-01-04T00:00:00Z", rows[1].PublishedAt, "published_at moves forward")
+	assert.Equal(t, "5.0", rows[2].Summary, "a new version is written with its metadata")
+	assert.Equal(t, "2026-01-05T00:00:00Z", rows[2].PublishedAt)
+	assert.Equal(t, "flask", rows[3].Summary)
+	assert.Equal(t, "2026-01-10T00:00:00+00:00", rows[3].PublishedAt, "published_at does not move back")
 	assert.Equal(t, "rhlw.1", rows[4].Release)
 
 	var djangoAfter, flaskAfter models.LightwellPackage
