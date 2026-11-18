@@ -475,7 +475,7 @@ func TestIngestorContinuesAfterIssueMappingFailure(t *testing.T) {
 }
 
 func TestIngestorSkipsDiscardedResolutions(t *testing.T) {
-	for _, name := range []string{"Duplicate", "Obsolete", "Cannot Reproduce", "Won't Fix"} {
+	for _, name := range []string{"Obsolete", "Cannot Reproduce", "Won't Fix"} {
 		t.Run(name, func(t *testing.T) {
 			logs := captureLogs(t)
 			issue := validJiraIssue("LTWL-1")
@@ -552,9 +552,38 @@ func TestIngestorSavesClosedResolutions(t *testing.T) {
 	}
 }
 
+func TestIngestorRetainsDuplicateFinding(t *testing.T) {
+	issue := validJiraIssue("LTWL-9")
+	issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+	issue.Fields["resolution"] = resolutionJSON("Duplicate")
+	issue.Fields["labels"] = json.RawMessage(`["CID-663171"]`)
+	issue.Fields["issuelinks"] = json.RawMessage(`[{
+		"type":{"name":"Duplicate","inward":"is duplicated by","outward":"duplicates"},
+		"outwardIssue":{"key":"LTWL-100","fields":{"status":{"name":"In Progress"}}}
+	}]`)
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
+	assert.Empty(t, store.deleted)
+	require.Len(t, store.saved, 1)
+	saved := store.saved[0]
+	assert.Equal(t, "LTWL-9", saved.VulnerabilityKey)
+	assert.Equal(t, "Unremediated", saved.Stage)
+	assert.True(t, saved.Duplicate)
+	require.NotNil(t, saved.ResolutionReason)
+	assert.Equal(t, "Duplicate", *saved.ResolutionReason)
+	require.NotNil(t, saved.DuplicateOf)
+	assert.Equal(t, "LTWL-100", *saved.DuplicateOf)
+	require.Len(t, saved.Tickets, 1)
+	assert.Equal(t, "CID-663171", saved.Tickets[0].CustomerID)
+}
+
 func TestIngestorDeletesPreviouslyIngestedDiscardedIssue(t *testing.T) {
 	issue := validJiraIssue("LTWL-1")
-	issue.Fields["resolution"] = resolutionJSON("Duplicate")
+	issue.Fields["resolution"] = resolutionJSON("Obsolete")
 	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
 	store := &fakeVulnerabilityStore{deleteExisted: true}
 
@@ -982,8 +1011,14 @@ func TestIngestorDoesNotVerifyNonValidationOrDiscardedIssues(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Zero(t, verifier.calls)
-	require.Len(t, store.saved, 1)
-	assert.Equal(t, "Fix in Progress", store.saved[0].Stage)
+	require.Len(t, store.saved, 2)
+	assert.Equal(t, "Fix in Progress", savedByKey(store, "LTWL-1").Stage)
+	duplicate := savedByKey(store, "LTWL-2")
+	assert.Equal(t, "Unremediated", duplicate.Stage)
+	assert.True(t, duplicate.Duplicate)
+	require.NotNil(t, duplicate.ResolutionReason)
+	assert.Equal(t, "Duplicate", *duplicate.ResolutionReason)
+	assert.Nil(t, duplicate.DuplicateOf)
 }
 
 func TestIngestorVerificationWarningsDoNotPreventOtherIssuesFromSaving(t *testing.T) {

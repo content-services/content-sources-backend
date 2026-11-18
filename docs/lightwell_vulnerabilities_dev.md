@@ -18,7 +18,7 @@ make test-db-migrations
 
 ## Apply dev seed data
 
-The seed script loads mock vulnerabilities into two demo customers (`demo-customer-1`, `demo-customer-2`). Statuses include On Hold and Unremediated. Each Unremediated row stores one supported `resolution_reason`, and the list API returns the customer explanation for that selection. Two rows set `duplicate_of` to a canonical `vulnerability_id` (not present in the mock):
+The seed script loads mock vulnerabilities into two demo customers (`demo-customer-1`, `demo-customer-2`). Statuses include On Hold and Unremediated. Each Unremediated row stores one supported `resolution_reason`, and the list API returns the customer explanation for that selection. Two rows set `duplicate_of` to a key that is not in the mock. Beacon ingestion stores the canonical Jira issue key there.
 
 ```bash
 psql "sslmode=disable dbname=content user=content host=localhost port=5433 password=content" -f db/seeds/lightwell_vulnerabilities.sql
@@ -68,14 +68,14 @@ Jira workflow status is stored as a Beacon status. A published fix promotes **Va
 | Closed | Validation |
 | Anything else | Submitted |
 
-Jira resolution can override that, or drop the issue. Won't Do and Not a Bug are stored as **Unremediated** with `resolution_reason` set to the explanation. The database keeps the Jira selection; the list API returns the explanation sentence. Those resolution names are not stored.
+Jira resolution can override that, or drop the issue. Won't Do, Not a Bug, and Duplicate are stored as **Unremediated**. Won't Do and Not a Bug set `resolution_reason` to the explanation. The database keeps the Jira selection; the list API returns the explanation sentence. Those resolution names are not stored. Duplicate keeps the finding, sets `resolution_reason` to `Duplicate`, and links `duplicate_of` to the canonical Jira issue key from a duplicates / is duplicated by issue link. The list API sets `duplicate_of_status` from that stored issue's Beacon status. It is omitted when the canonical issue is not stored.
 
 | Jira resolution | Result |
 | --- | --- |
 | Done | Stored from the workflow status above. No explanation. |
 | Won't Do | Stored as Unremediated. Explanation comes from Lightwell Closure Reasoning Context. Selection **Not a Customer** is ignored and the issue is deleted. |
 | Not a Bug | Stored as Unremediated. Explanation comes from VEX Justification. |
-| Duplicate | Ignored. Deleted if it was stored before. |
+| Duplicate | Stored as Unremediated with reason Duplicate. `duplicate` is true. `duplicate_of` is the canonical tracker key (for example LTWL-1234). `duplicate_of_status` is that issue's Beacon status when the issue is stored. |
 | Obsolete | Ignored. Deleted if it was stored before. |
 | Cannot Reproduce | Ignored. Deleted if it was stored before. |
 | Won't Fix | Ignored. Deleted if it was stored before. |
