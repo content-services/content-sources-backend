@@ -102,7 +102,7 @@ func (h *BuildEndHandler) handleBuildEnd(ctx context.Context, eventID string, da
 	if err := h.enqueue(ctx, eventID, payload); err != nil {
 		return err
 	}
-	h.metrics.RecordCoprBuildEndResult(instrumentation.CoprBuildEndResultEnqueued)
+	h.metrics.RecordCoprBuildEndIngest(instrumentation.CoprBuildEndIngestEnqueued)
 	return nil
 }
 

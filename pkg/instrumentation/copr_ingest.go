@@ -12,12 +12,12 @@ const (
 	CoprBuildEndEventsTotal = "copr_build_end_events_total" // build end events
 )
 
-type CoprBuildEndResult string
+type CoprBuildEndIngestOutcome string
 
 const (
-	CoprBuildEndResultEnqueued CoprBuildEndResult = "enqueued" // snapshot task enqueued
-	CoprBuildEndResultInvalid  CoprBuildEndResult = "invalid"  // skipped, the message content is invalid
-	CoprBuildEndResultFailed   CoprBuildEndResult = "failed"   // skipped, handling a valid message failed (e.g., enqueue failed)
+	CoprBuildEndIngestEnqueued CoprBuildEndIngestOutcome = "enqueued" // snapshot task enqueued
+	CoprBuildEndIngestInvalid  CoprBuildEndIngestOutcome = "invalid"  // skipped, the message content is invalid
+	CoprBuildEndIngestFailed   CoprBuildEndIngestOutcome = "failed"   // skipped, handling a valid message failed (e.g., enqueue failed)
 )
 
 type CoprIngestMetrics struct {
@@ -25,10 +25,10 @@ type CoprIngestMetrics struct {
 	CoprBuildEndEventsTotal prometheus.CounterVec
 }
 
-var coprBuildEndResults = []CoprBuildEndResult{
-	CoprBuildEndResultEnqueued,
-	CoprBuildEndResultInvalid,
-	CoprBuildEndResultFailed,
+var coprBuildEndIngestOutcomes = []CoprBuildEndIngestOutcome{
+	CoprBuildEndIngestEnqueued,
+	CoprBuildEndIngestInvalid,
+	CoprBuildEndIngestFailed,
 }
 
 func newCoprIngestMetrics(reg *prometheus.Registry) CoprIngestMetrics {
@@ -43,12 +43,12 @@ func newCoprIngestMetrics(reg *prometheus.Registry) CoprIngestMetrics {
 		CoprBuildEndEventsTotal: *promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
 			Namespace: NameSpace,
 			Name:      CoprBuildEndEventsTotal,
-			Help:      "Total Copr build end events by result (enqueued, invalid, failed). Failed builds and unsupported chroots aren't counted",
-		}, []string{"result"}),
+			Help:      "Total Copr build end events by ingest outcome (enqueued, invalid, failed). Failed builds and unsupported chroots aren't counted",
+		}, []string{"outcome"}),
 	}
-	// Initialize every result label to 0 so its series is exported from startup, not only after the first event
-	for _, result := range coprBuildEndResults {
-		m.CoprBuildEndEventsTotal.WithLabelValues(string(result))
+	// Initialize every outcome label to 0 so its series is exported from startup, not only after the first event
+	for _, outcome := range coprBuildEndIngestOutcomes {
+		m.CoprBuildEndEventsTotal.WithLabelValues(string(outcome))
 	}
 	return m
 }
@@ -61,9 +61,9 @@ func (m *Metrics) RecordCoprEventDelay(sent time.Time) {
 	m.CoprEventDelay.Observe(max(time.Since(sent).Seconds(), 0)) // clock skew can make the delay negative
 }
 
-// RecordCoprBuildEndResult counts a handled Copr build end event by its result.
-func (m *Metrics) RecordCoprBuildEndResult(result CoprBuildEndResult) {
+// RecordCoprBuildEndIngest counts a handled Copr build end event by its ingest outcome.
+func (m *Metrics) RecordCoprBuildEndIngest(outcome CoprBuildEndIngestOutcome) {
 	if m != nil {
-		m.CoprBuildEndEventsTotal.With(prometheus.Labels{"result": string(result)}).Inc()
+		m.CoprBuildEndEventsTotal.With(prometheus.Labels{"outcome": string(outcome)}).Inc()
 	}
 }
