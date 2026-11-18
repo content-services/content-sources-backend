@@ -156,7 +156,7 @@ Copr currently publishes to the IT-managed Kafka instance, while the consumer co
 
 The consumer's metrics are served on the `instrumentation` metrics endpoint (`metrics.path` on `metrics.port`).
 
-- `content_sources_copr_build_end_events_total{result}`: build end events by result:
+- `content_sources_copr_build_end_events_total{outcome}`: build end events by ingest outcome:
   - `enqueued`: a snapshot task was enqueued.
   - `invalid`: skipped, because of the message content (e.g., an invalid CloudEvent, missing fields, a malformed chroot that isn't `<distro>-<version>-<arch>`, or a repository name longer than 255 characters).
   - `failed`: skipped, because handling a valid message failed (e.g., the task enqueue failed after retries).

@@ -66,10 +66,10 @@ func (h *BuildEndHandler) consumeMessage(ctx context.Context, msg *sarama.Consum
 		return false
 	}
 	if errors.Is(err, errInvalidMessage) {
-		h.metrics.RecordCoprBuildEndResult(instrumentation.CoprBuildEndResultInvalid)
+		h.metrics.RecordCoprBuildEndIngest(instrumentation.CoprBuildEndIngestInvalid)
 		logger.Warn().Err(err).Msg("skipping invalid message")
 	} else {
-		h.metrics.RecordCoprBuildEndResult(instrumentation.CoprBuildEndResultFailed)
+		h.metrics.RecordCoprBuildEndIngest(instrumentation.CoprBuildEndIngestFailed)
 		logger.Error().Err(err).Msg("failed to handle message, skipping")
 	}
 	return true
