@@ -17,7 +17,7 @@ import (
 // pythonNameInBatchSize bounds the names in one name__in query so the URL stays short.
 const pythonNameInBatchSize = 100
 
-// pythonPackageKeyFields is all a diff query needs: which name and version a file belongs to.
+// pythonPackageKeyFields is all a removal or existence check needs: which name and version a file belongs to.
 var pythonPackageKeyFields = []string{"name", "version"}
 
 // pythonPackageDetailFields is what the mirror stores, plus what picks the representative file.
@@ -45,23 +45,18 @@ func pythonContentKey(row zest.PythonPythonPackageContentResponse) pythonVersion
 type pythonVersionReducer struct {
 	best   map[pythonVersionKey]zest.PythonPythonPackageContentResponse
 	newest map[pythonVersionKey]time.Time
-	keep   func(pythonVersionKey) bool
 }
 
-func newPythonVersionReducer(keep func(pythonVersionKey) bool) *pythonVersionReducer {
+func newPythonVersionReducer() *pythonVersionReducer {
 	return &pythonVersionReducer{
 		best:   map[pythonVersionKey]zest.PythonPythonPackageContentResponse{},
 		newest: map[pythonVersionKey]time.Time{},
-		keep:   keep,
 	}
 }
 
 func (r *pythonVersionReducer) add(rows []zest.PythonPythonPackageContentResponse) error {
 	for _, row := range rows {
 		key := pythonContentKey(row)
-		if r.keep != nil && !r.keep(key) {
-			continue
-		}
 		created := row.GetPulpCreated()
 		if created.After(r.newest[key]) {
 			r.newest[key] = created
@@ -153,7 +148,7 @@ func pythonAuthor(author, authorEmail string) string {
 
 // fetchPythonPackages reads every package version in a repository version from the Pulp content API.
 func fetchPythonPackages(ctx context.Context, pulpClient pulp_client.PulpClient, versionHref string) ([]dao.LightwellPackageInput, error) {
-	reducer := newPythonVersionReducer(nil)
+	reducer := newPythonVersionReducer()
 	err := pulpClient.ListPythonPackageContent(ctx, pulp_client.PythonPackageContentFilters{
 		RepositoryVersion: versionHref,
 		Fields:            pythonPackageDetailFields,
@@ -165,37 +160,57 @@ func fetchPythonPackages(ctx context.Context, pulpClient pulp_client.PulpClient,
 }
 
 // fetchPythonPackageChanges reads what changed between two versions of a repository.
-// added_between and removed_between name the files that changed. A version is affected when any of
-// its files changed, because its metadata and published time depend on every file it has. Each
-// affected version is read again from the target version: if it still has files it is returned as
-// an upsert, and if it has none it is returned as a removal.
+// Pulp content is immutable, so only the files that changed are read:
+//   - Files in added_between are read with their metadata. A version that is not stored yet is
+//     written from them. A version that is already stored keeps its metadata (see
+//     ApplyPackageChangesForRepository) and only its published time moves forward.
+//   - Files in removed_between are read with name and version only. A version that lost files is
+//     deleted only when it has no files left in the target version. That is checked by listing
+//     the names and versions of those packages, without metadata.
+//
+// A forced import reads the whole repository instead and rebuilds every version.
 func fetchPythonPackageChanges(ctx context.Context, pulpClient pulp_client.PulpClient, baseVersion, targetVersion string) ([]dao.LightwellPackageInput, []dao.LightwellPackageVersionKey, error) {
-	affected := map[pythonVersionKey]struct{}{}
-	collect := func(rows []zest.PythonPythonPackageContentResponse) error {
-		for _, row := range rows {
-			affected[pythonContentKey(row)] = struct{}{}
-		}
-		return nil
-	}
 	between := []string{baseVersion, targetVersion}
+
+	added := newPythonVersionReducer()
 	if err := pulpClient.ListPythonPackageContent(ctx, pulp_client.PythonPackageContentFilters{
 		AddedBetween: between,
-		Fields:       pythonPackageKeyFields,
-	}, collect); err != nil {
+		Fields:       pythonPackageDetailFields,
+	}, added.add); err != nil {
 		return nil, nil, err
 	}
+
+	// Versions that lost files and gained none. A version that gained a file still has files.
+	lostFiles := map[pythonVersionKey]struct{}{}
 	if err := pulpClient.ListPythonPackageContent(ctx, pulp_client.PythonPackageContentFilters{
 		RemovedBetween: between,
 		Fields:         pythonPackageKeyFields,
-	}, collect); err != nil {
+	}, func(rows []zest.PythonPythonPackageContentResponse) error {
+		for _, row := range rows {
+			if key := pythonContentKey(row); !added.has(key) {
+				lostFiles[key] = struct{}{}
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, nil, err
 	}
-	if len(affected) == 0 {
-		return nil, nil, nil
-	}
 
+	removals, err := pythonVersionsWithoutFiles(ctx, pulpClient, targetVersion, lostFiles)
+	if err != nil {
+		return nil, nil, err
+	}
+	return added.packages(), removals, nil
+}
+
+// pythonVersionsWithoutFiles returns the versions in candidates that have no files in versionHref.
+// It reads only names and versions, in name__in batches.
+func pythonVersionsWithoutFiles(ctx context.Context, pulpClient pulp_client.PulpClient, versionHref string, candidates map[pythonVersionKey]struct{}) ([]dao.LightwellPackageVersionKey, error) {
+	if len(candidates) == 0 {
+		return nil, nil
+	}
 	nameSet := map[string]struct{}{}
-	for key := range affected {
+	for key := range candidates {
 		nameSet[key.name] = struct{}{}
 	}
 	names := make([]string, 0, len(nameSet))
@@ -204,24 +219,28 @@ func fetchPythonPackageChanges(ctx context.Context, pulpClient pulp_client.PulpC
 	}
 	sort.Strings(names)
 
-	reducer := newPythonVersionReducer(func(key pythonVersionKey) bool {
-		_, ok := affected[key]
-		return ok
-	})
+	remaining := map[pythonVersionKey]struct{}{}
 	for start := 0; start < len(names); start += pythonNameInBatchSize {
 		batch := names[start:min(start+pythonNameInBatchSize, len(names))]
 		if err := pulpClient.ListPythonPackageContent(ctx, pulp_client.PythonPackageContentFilters{
-			RepositoryVersion: targetVersion,
+			RepositoryVersion: versionHref,
 			NameIn:            batch,
-			Fields:            pythonPackageDetailFields,
-		}, reducer.add); err != nil {
-			return nil, nil, err
+			Fields:            pythonPackageKeyFields,
+		}, func(rows []zest.PythonPythonPackageContentResponse) error {
+			for _, row := range rows {
+				if key := pythonContentKey(row); hasKey(candidates, key) {
+					remaining[key] = struct{}{}
+				}
+			}
+			return nil
+		}); err != nil {
+			return nil, err
 		}
 	}
 
 	removals := make([]dao.LightwellPackageVersionKey, 0)
-	for key := range affected {
-		if !reducer.has(key) {
+	for key := range candidates {
+		if !hasKey(remaining, key) {
 			removals = append(removals, dao.LightwellPackageVersionKey{Group: "", Name: key.name, Version: key.version})
 		}
 	}
@@ -231,5 +250,10 @@ func fetchPythonPackageChanges(ctx context.Context, pulpClient pulp_client.PulpC
 		}
 		return removals[i].Version < removals[j].Version
 	})
-	return reducer.packages(), removals, nil
+	return removals, nil
+}
+
+func hasKey(set map[pythonVersionKey]struct{}, key pythonVersionKey) bool {
+	_, ok := set[key]
+	return ok
 }

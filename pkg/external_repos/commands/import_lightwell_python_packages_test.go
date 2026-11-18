@@ -148,8 +148,8 @@ func TestFetchPythonPackagesReducesDistributions(t *testing.T) {
 func TestFetchPythonPackageChanges(t *testing.T) {
 	stub := &pythonContentStub{
 		added: pyRows(
-			pyFile{name: "requests", version: "2.1", packagetype: "bdist_wheel", created: day(5)},
-			pyFile{name: "Django", version: "5.0", packagetype: "bdist_wheel", created: day(5)},
+			pyFile{name: "requests", version: "2.1", packagetype: "bdist_wheel", created: day(5), summary: "2.1 wheel"},
+			pyFile{name: "Django", version: "5.0", packagetype: "bdist_wheel", created: day(5), summary: "5.0 wheel"},
 		),
 		removed: pyRows(
 			pyFile{name: "requests", version: "2.0", packagetype: "sdist"},
@@ -157,11 +157,11 @@ func TestFetchPythonPackageChanges(t *testing.T) {
 			pyFile{name: "django", version: "4.2", packagetype: "sdist"},
 		),
 		current: pyRows(
-			pyFile{name: "django", version: "4.1", packagetype: "sdist", created: day(1), summary: "unchanged"},
-			pyFile{name: "django", version: "4.2", packagetype: "bdist_wheel", created: day(2), summary: "4.2 wheel"},
-			pyFile{name: "django", version: "5.0", packagetype: "sdist", created: day(3), summary: "5.0 sdist"},
-			pyFile{name: "django", version: "5.0", packagetype: "bdist_wheel", created: day(5), summary: "5.0 wheel"},
-			pyFile{name: "requests", version: "2.1", packagetype: "bdist_wheel", created: day(5), summary: "2.1 wheel"},
+			pyFile{name: "django", version: "4.1", packagetype: "sdist", created: day(1)},
+			pyFile{name: "django", version: "4.2", packagetype: "bdist_wheel", created: day(2)},
+			pyFile{name: "django", version: "5.0", packagetype: "sdist", created: day(3)},
+			pyFile{name: "django", version: "5.0", packagetype: "bdist_wheel", created: day(5)},
+			pyFile{name: "requests", version: "2.1", packagetype: "bdist_wheel", created: day(5)},
 			pyFile{name: "unrelated", version: "1.0", packagetype: "sdist", created: day(1)},
 		),
 	}
@@ -170,21 +170,23 @@ func TestFetchPythonPackageChanges(t *testing.T) {
 
 	require.Len(t, stub.calls, 3)
 	assert.Equal(t, []string{testPythonBase, testPythonTarget}, stub.calls[0].AddedBetween)
-	assert.Equal(t, pythonPackageKeyFields, stub.calls[0].Fields)
+	assert.Equal(t, pythonPackageDetailFields, stub.calls[0].Fields, "added files carry the metadata to store")
 	assert.Equal(t, []string{testPythonBase, testPythonTarget}, stub.calls[1].RemovedBetween)
+	assert.Equal(t, pythonPackageKeyFields, stub.calls[1].Fields)
 	assert.Equal(t, testPythonTarget, stub.calls[2].RepositoryVersion)
-	assert.Equal(t, []string{"django", "requests"}, stub.calls[2].NameIn, "only packages with changed files are read again")
+	assert.Equal(t, []string{"django", "requests"}, stub.calls[2].NameIn, "only packages that lost files are checked")
+	assert.Equal(t, pythonPackageKeyFields, stub.calls[2].Fields, "the existence check reads no metadata")
 
-	require.Len(t, upserts, 2)
+	require.Len(t, upserts, 2, "only versions with added files are written")
 	assert.Equal(t, "django", upserts[0].Name)
-	assert.Equal(t, []string{"4.2", "5.0"}, versionsOf(upserts[0]), "4.1 did not change")
-	assert.Equal(t, "4.2 wheel", upserts[0].Versions[0].Details.Summary, "a version that lost a file is rebuilt from what remains")
-	assert.Equal(t, "5.0 sdist", upserts[0].Versions[1].Details.Summary, "a version that gained a file still prefers its sdist")
-	assert.Equal(t, "2026-01-05T00:00:00Z", upserts[0].Versions[1].PublishedAt)
+	assert.Equal(t, []string{"5.0"}, versionsOf(upserts[0]))
+	assert.Equal(t, "5.0 wheel", upserts[0].Versions[0].Details.Summary)
+	assert.Equal(t, "2026-01-05T00:00:00Z", upserts[0].Versions[0].PublishedAt)
 	assert.Equal(t, "requests", upserts[1].Name)
 	assert.Equal(t, []string{"2.1"}, versionsOf(upserts[1]))
 
-	assert.Equal(t, []dao.LightwellPackageVersionKey{{Group: "", Name: "requests", Version: "2.0"}}, removals)
+	assert.Equal(t, []dao.LightwellPackageVersionKey{{Group: "", Name: "requests", Version: "2.0"}}, removals,
+		"django 4.2 still has a wheel, so only requests 2.0 is removed")
 }
 
 func TestFetchPythonPackageChangesNoChanges(t *testing.T) {
@@ -193,22 +195,35 @@ func TestFetchPythonPackageChangesNoChanges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, upserts)
 	assert.Empty(t, removals)
-	assert.Len(t, stub.calls, 2, "nothing changed, so no package is read again")
+	assert.Len(t, stub.calls, 2, "nothing was removed, so nothing is checked")
+}
+
+func TestFetchPythonPackageChangesReplacedFile(t *testing.T) {
+	// A version that lost one file and gained another still has files, so it is not checked.
+	stub := &pythonContentStub{
+		added:   pyRows(pyFile{name: "requests", version: "2.0", packagetype: "bdist_wheel", created: day(5)}),
+		removed: pyRows(pyFile{name: "requests", version: "2.0", packagetype: "bdist_wheel"}),
+	}
+	upserts, removals, err := fetchPythonPackageChanges(context.Background(), stub.mock(t), testPythonBase, testPythonTarget)
+	require.NoError(t, err)
+	assert.Len(t, stub.calls, 2)
+	require.Len(t, upserts, 1)
+	assert.Equal(t, []string{"2.0"}, versionsOf(upserts[0]))
+	assert.Empty(t, removals)
 }
 
 func TestFetchPythonPackageChangesBatchesNames(t *testing.T) {
 	stub := &pythonContentStub{}
 	for i := 0; i < pythonNameInBatchSize+1; i++ {
-		stub.added = append(stub.added, pyFile{name: fmt.Sprintf("pkg-%03d", i), version: "1.0"}.row())
+		stub.removed = append(stub.removed, pyFile{name: fmt.Sprintf("pkg-%03d", i), version: "1.0"}.row())
 	}
-	stub.current = stub.added
 	upserts, removals, err := fetchPythonPackageChanges(context.Background(), stub.mock(t), testPythonBase, testPythonTarget)
 	require.NoError(t, err)
 	require.Len(t, stub.calls, 4)
 	assert.Len(t, stub.calls[2].NameIn, pythonNameInBatchSize)
 	assert.Len(t, stub.calls[3].NameIn, 1)
-	assert.Len(t, upserts, pythonNameInBatchSize+1)
-	assert.Empty(t, removals)
+	assert.Empty(t, upserts)
+	assert.Len(t, removals, pythonNameInBatchSize+1)
 }
 
 func TestIncrementalBaseVersion(t *testing.T) {

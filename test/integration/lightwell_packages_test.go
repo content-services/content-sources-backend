@@ -294,12 +294,12 @@ func (s *LightwellPackagesSuite) TestPythonImportAndList() {
 	s.Equal("2021-01-01T00:00:00Z", row.CreatedAt)
 
 	// A later run reads only what changed since the stored version: 1.2.3 was replaced by 1.2.4.
+	// The added 1.2.4 sdist carries its metadata. The removed 1.2.3 files only name what to check.
 	between := []string{versionHref, nextVersionHref}
 	pulp.On("GetLatestVersionHref", mock.Anything, repoHref).Return(&nextVersionHref, nil).Once()
-	pulp.EXPECT().ListPythonPackageContent(mock.Anything, pulp_client.PythonPackageContentFilters{
-		AddedBetween: between,
-		Fields:       []string{"name", "version"},
-	}, mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
+	pulp.EXPECT().ListPythonPackageContent(mock.Anything, mock.MatchedBy(func(f pulp_client.PythonPackageContentFilters) bool {
+		return len(f.AddedBetween) == 2 && f.AddedBetween[0] == versionHref && f.AddedBetween[1] == nextVersionHref
+	}), mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
 		return each([]zest.PythonPythonPackageContentResponse{secondSdist})
 	}).Once()
 	pulp.EXPECT().ListPythonPackageContent(mock.Anything, pulp_client.PythonPackageContentFilters{
@@ -309,7 +309,9 @@ func (s *LightwellPackagesSuite) TestPythonImportAndList() {
 		return each([]zest.PythonPythonPackageContentResponse{firstSdist, firstWheel})
 	}).Once()
 	pulp.EXPECT().ListPythonPackageContent(mock.Anything, mock.MatchedBy(func(f pulp_client.PythonPackageContentFilters) bool {
-		return f.RepositoryVersion == nextVersionHref && len(f.NameIn) == 1 && f.NameIn[0] == s.pythonPackage
+		// 1.2.3 lost every file, so only its existence is checked, without metadata.
+		return f.RepositoryVersion == nextVersionHref && len(f.NameIn) == 1 && f.NameIn[0] == s.pythonPackage &&
+			len(f.Fields) == 2
 	}), mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
 		return each([]zest.PythonPythonPackageContentResponse{secondSdist})
 	}).Once()
