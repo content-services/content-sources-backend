@@ -20,7 +20,7 @@ func expectedTask() queue.Task {
 	}
 }
 
-func TestBuildEndHandler_EnqueueRetriesAndSucceeds(t *testing.T) {
+func TestBuildEventHandler_EnqueueRetriesAndSucceeds(t *testing.T) {
 	h, taskClient := newTestHandler(t)
 	transientErr := errors.New("db unavailable")
 	taskClient.EXPECT().Enqueue(expectedTask()).Return(uuid.Nil, transientErr).Times(maxEnqueueAttempts - 1)
@@ -30,7 +30,7 @@ func TestBuildEndHandler_EnqueueRetriesAndSucceeds(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestBuildEndHandler_EnqueueExhaustsRetries(t *testing.T) {
+func TestBuildEventHandler_EnqueueExhaustsRetries(t *testing.T) {
 	h, taskClient := newTestHandler(t)
 	enqueueErr := errors.New("db unavailable")
 	taskClient.EXPECT().Enqueue(expectedTask()).Return(uuid.Nil, enqueueErr).Times(maxEnqueueAttempts)
