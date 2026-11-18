@@ -115,6 +115,7 @@ type FeatureSet struct {
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
 	LightwellTerms                        Feature `mapstructure:"lightwell_terms"`
 	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
+	AdminLensDemandSignals                Feature `mapstructure:"admin_lens_demand_signals"`
 }
 
 type Feature struct {
@@ -584,6 +585,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
 	v.SetDefault("features.admin_notifications.users", nil)
+	v.SetDefault("features.admin_lens_demand_signals.enabled", false)
+	v.SetDefault("features.admin_lens_demand_signals.accounts", nil)
+	v.SetDefault("features.admin_lens_demand_signals.organizations", nil)
+	v.SetDefault("features.admin_lens_demand_signals.users", nil)
 	v.SetDefault("features.lightwell_lens.enabled", false)
 	v.SetDefault("features.lightwell_lens.accounts", nil)
 	v.SetDefault("features.lightwell_lens.organizations", nil)

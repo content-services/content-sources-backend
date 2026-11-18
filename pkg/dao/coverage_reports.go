@@ -362,3 +362,42 @@ func (d coverageReportDaoImpl) toApiError(e error) *ce.DaoError {
 	daoError.Wrap(e)
 	return &daoError
 }
+
+const demandSignalGroupBy = "ecosystem, namespace, name, version"
+
+// ListDemandSignals aggregates coverage demand signals across all orgs, grouped by package version.
+func (d coverageReportDaoImpl) ListDemandSignals(ctx context.Context, pageData api.PaginationData, filterData api.AdminDemandSignalFilterData) (api.AdminDemandSignalCollectionResponse, int64, error) {
+	resp := api.AdminDemandSignalCollectionResponse{Data: []api.AdminDemandSignalResponse{}}
+
+	filtered := func() *gorm.DB {
+		query := d.db.WithContext(ctx).Model(&models.CoverageDemandSignal{})
+		if filterData.Ecosystem != "" {
+			query = query.Where("ecosystem = ?", filterData.Ecosystem)
+		}
+		if filterData.BeforeCreatedDate != nil {
+			query = query.Where("created_at < ?", *filterData.BeforeCreatedDate)
+		}
+		if filterData.AfterCreatedDate != nil {
+			query = query.Where("created_at >= ?", *filterData.AfterCreatedDate)
+		}
+		return query
+	}
+
+	var total int64
+	groups := filtered().Select("1").Group(demandSignalGroupBy)
+	if err := d.db.WithContext(ctx).Table("(?) AS g", groups).Count(&total).Error; err != nil {
+		return resp, 0, err
+	}
+
+	err := filtered().
+		Select("COUNT(*) AS count, name, version, ecosystem, namespace").
+		Group(demandSignalGroupBy).
+		Order("namespace ASC, name ASC, version ASC, ecosystem ASC").
+		Limit(pageData.Limit).
+		Offset(pageData.Offset).
+		Scan(&resp.Data).Error
+	if err != nil {
+		return resp, 0, err
+	}
+	return resp, total, nil
+}

@@ -172,6 +172,18 @@ func CheckAdminNotificationsAccessible(ctx context.Context) (err error) {
 	}
 }
 
+func CheckAdminLensDemandSignalsAccessible(ctx context.Context) (err error) {
+	if !config.Get().Features.AdminLensDemandSignals.Enabled {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot list demand signals",
+			"Admin lens demand signals feature is disabled.")
+	} else if config.FeatureAccessible(ctx, config.Get().Features.AdminLensDemandSignals) {
+		return nil
+	} else {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Cannot list demand signals",
+			"Neither the user nor account is allowed.")
+	}
+}
+
 func CheckLightwellClearinghouseAccessible(ctx context.Context) (err error) {
 	orgID, _ := lightwellCaller(ctx)
 	if config.Get().Clients.Lightwell.ClearinghouseMapping.HasOrg(orgID) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -596,4 +597,124 @@ func (s *CoverageReportDaoSuite) TestListPackagesNamespacedIdentity() {
 			assert.Equal(s.T(), tc.fullName, resp.Data[0].Name)
 		}
 	}
+}
+
+func (s *CoverageReportDaoSuite) createDemandSignal(ecosystem string, namespace *string, name string, version string, createdAt time.Time) {
+	signal := models.CoverageDemandSignal{
+		CreatedAt:   createdAt,
+		Ecosystem:   ecosystem,
+		Namespace:   namespace,
+		Name:        name,
+		Version:     version,
+		MatchStatus: models.CoverageDemandMatchStatusNone,
+		Source:      models.CoverageDemandSourceProspectDriven,
+	}
+	require.NoError(s.T(), s.tx.Create(&signal).Error)
+}
+
+func (s *CoverageReportDaoSuite) TestListDemandSignalsGroupsAndCounts() {
+	eco := "test-" + uuid.NewString()
+	now := time.Now()
+	for i := 0; i < 3; i++ {
+		s.createDemandSignal(eco, utils.Ptr("org.a"), "lib", "1.0", now)
+	}
+	s.createDemandSignal(eco, utils.Ptr("org.a"), "lib", "2.0", now)
+	s.createDemandSignal(eco, utils.Ptr("org.b"), "lib", "1.0", now)
+	s.createDemandSignal(eco, utils.Ptr("org.b"), "lib", "1.0", now)
+
+	resp, total, err := s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 100}, api.AdminDemandSignalFilterData{Ecosystem: eco})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(3), total)
+	require.Len(s.T(), resp.Data, 3)
+
+	expected := []api.AdminDemandSignalResponse{
+		{Count: 3, Namespace: utils.Ptr("org.a"), Name: "lib", Version: "1.0", Ecosystem: eco},
+		{Count: 1, Namespace: utils.Ptr("org.a"), Name: "lib", Version: "2.0", Ecosystem: eco},
+		{Count: 2, Namespace: utils.Ptr("org.b"), Name: "lib", Version: "1.0", Ecosystem: eco},
+	}
+	assert.Equal(s.T(), expected, resp.Data)
+}
+
+func (s *CoverageReportDaoSuite) TestListDemandSignalsNullNamespace() {
+	eco := "test-" + uuid.NewString()
+	now := time.Now()
+	s.createDemandSignal(eco, nil, "zlib", "1.0", now)
+	s.createDemandSignal(eco, nil, "zlib", "1.0", now)
+	s.createDemandSignal(eco, utils.Ptr("org.a"), "zlib", "1.0", now)
+
+	resp, total, err := s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 100}, api.AdminDemandSignalFilterData{Ecosystem: eco})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	require.Len(s.T(), resp.Data, 2)
+	require.NotNil(s.T(), resp.Data[0].Namespace)
+	assert.Equal(s.T(), "org.a", *resp.Data[0].Namespace)
+	assert.Equal(s.T(), int64(1), resp.Data[0].Count)
+	assert.Nil(s.T(), resp.Data[1].Namespace)
+	assert.Equal(s.T(), int64(2), resp.Data[1].Count)
+}
+
+func (s *CoverageReportDaoSuite) createDateBoundarySignals(eco string, cutoff time.Time) {
+	s.createDemandSignal(eco, utils.Ptr("ns"), "a", "1", cutoff.Add(-time.Second))
+	s.createDemandSignal(eco, utils.Ptr("ns"), "b", "1", cutoff)
+	s.createDemandSignal(eco, utils.Ptr("ns"), "c", "1", cutoff.Add(24*time.Hour))
+}
+
+func demandSignalNames(data []api.AdminDemandSignalResponse) []string {
+	names := make([]string, 0, len(data))
+	for _, d := range data {
+		names = append(names, d.Name)
+	}
+	return names
+}
+
+func (s *CoverageReportDaoSuite) TestListDemandSignalsBeforeCreatedDate() {
+	eco := "test-" + uuid.NewString()
+	cutoff := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+	s.createDateBoundarySignals(eco, cutoff)
+
+	resp, total, err := s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 100}, api.AdminDemandSignalFilterData{Ecosystem: eco, BeforeCreatedDate: &cutoff})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Equal(s.T(), []string{"a"}, demandSignalNames(resp.Data))
+
+	_, total, err = s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 100}, api.AdminDemandSignalFilterData{Ecosystem: eco})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(3), total)
+}
+
+func (s *CoverageReportDaoSuite) TestListDemandSignalsAfterCreatedDate() {
+	eco := "test-" + uuid.NewString()
+	cutoff := time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)
+	s.createDateBoundarySignals(eco, cutoff)
+
+	resp, total, err := s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 100}, api.AdminDemandSignalFilterData{Ecosystem: eco, AfterCreatedDate: &cutoff})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+	assert.Equal(s.T(), []string{"b", "c"}, demandSignalNames(resp.Data))
+
+	nextDay := cutoff.Add(24 * time.Hour)
+	resp, total, err = s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 100}, api.AdminDemandSignalFilterData{Ecosystem: eco, AfterCreatedDate: &cutoff, BeforeCreatedDate: &nextDay})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(1), total)
+	assert.Equal(s.T(), []string{"b"}, demandSignalNames(resp.Data))
+}
+
+func (s *CoverageReportDaoSuite) TestListDemandSignalsPagination() {
+	eco := "test-" + uuid.NewString()
+	now := time.Now()
+	for i := 0; i < 5; i++ {
+		s.createDemandSignal(eco, utils.Ptr("ns"), fmt.Sprintf("p%d", i), "1", now)
+	}
+
+	resp, total, err := s.dao().ListDemandSignals(context.Background(),
+		api.PaginationData{Limit: 2, Offset: 2}, api.AdminDemandSignalFilterData{Ecosystem: eco})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(5), total)
+	assert.Equal(s.T(), []string{"p2", "p3"}, demandSignalNames(resp.Data))
 }
