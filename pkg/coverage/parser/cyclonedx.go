@@ -33,21 +33,12 @@ func parseCycloneDX(r *bufio.Reader, skipped *int) ([]Package, error) {
 	}
 }
 
-// parseCycloneDXJSON streams metadata.component and components[] without loading the rest of the BOM.
+// parseCycloneDXJSON streams components[] without loading the rest of the BOM.
 func parseCycloneDXJSON(r io.Reader, skipped *int) ([]Package, error) {
 	dec := json.NewDecoder(r)
 	var pkgs []Package
 
 	err := readJSONObject(dec, map[string]jsonFieldHandler{
-		"metadata": func(d *json.Decoder) error {
-			return readJSONObject(d, map[string]jsonFieldHandler{
-				"component": func(d *json.Decoder) error {
-					extracted, err := parseCDXJSONComponent(d, skipped)
-					pkgs = append(pkgs, extracted...)
-					return err
-				},
-			})
-		},
 		"components": func(d *json.Decoder) error {
 			return appendParsedJSONArray(d, &pkgs, func(d *json.Decoder) ([]Package, error) { return parseCDXJSONComponent(d, skipped) })
 		},
@@ -80,12 +71,12 @@ func parseCDXJSONComponent(dec *json.Decoder, skipped *int) ([]Package, error) {
 	return pkgs, nil
 }
 
-// parseCycloneDXXML walks component elements and skips tools/vulnerabilities so they are not treated as inventory.
+// parseCycloneDXXML walks component elements and skips metadata/tools/vulnerabilities so they are not treated as inventory.
 func parseCycloneDXXML(r io.Reader, skipped *int) ([]Package, error) {
 	var pkgs []Package
 	err := forEachXMLStart(r, func(dec *xml.Decoder, se xml.StartElement) error {
 		switch se.Name.Local {
-		case "tools", "vulnerabilities", "dependencies", "services", "compositions",
+		case "metadata", "tools", "vulnerabilities", "dependencies", "services", "compositions",
 			"formulation", "annotations", "declarations", "externalReferences":
 			return dec.Skip()
 		case "component":
