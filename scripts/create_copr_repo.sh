@@ -11,8 +11,7 @@
 #
 # Then it copies two committed payloads from test/kafka/copr into test/kafka/copr/generated
 # (gitignored), filling in the real publication hrefs (the snapshot task resolves the repository
-# from the publication) and the current time as the CloudEvent time (so the event delay metric
-# is recorded):
+# from the publication):
 #   build-end.json              -> build 1001, publication of version 1
 #   build-end-second-build.json -> build 1006, publication of version 2 (same repository)
 #
@@ -287,7 +286,7 @@ ensure_publication() {
   echo "    Created publication: ${RESULT}"
 }
 
-# Copies a committed payload into OUTPUT_DIR with the publication href and current time filled in.
+# Copies a committed payload into OUTPUT_DIR with the publication href filled in.
 #   write_payload <FILE_NAME> <PUBLICATION_HREF>
 write_payload() {
   local name="$1"
@@ -295,7 +294,7 @@ write_payload() {
 
   mkdir -p "$OUTPUT_DIR"
   jq --arg pub "$publication_href" \
-    '.data.publication_href = $pub | .time = (now | todate)' "${TEMPLATE_DIR}/${name}" >"${OUTPUT_DIR}/${name}"
+    '.data.publication_href = $pub' "${TEMPLATE_DIR}/${name}" >"${OUTPUT_DIR}/${name}"
   echo "    Wrote ${OUTPUT_DIR#"${REPO_DIR}/"}/${name}"
 }
 
