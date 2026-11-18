@@ -2,10 +2,13 @@ package copr_ingest
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/IBM/sarama"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/tasks/client"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -14,8 +17,9 @@ import (
 )
 
 const (
-	testChroot  = "rhel-9-x86_64"
-	testEventID = "test-event-001"
+	testChroot      = "rhel-9-x86_64"
+	testEventID     = "test-event-001"
+	testEventSource = "urn:content-sources:test"
 )
 
 func validBuildEndData() buildEndData {
@@ -52,9 +56,9 @@ func expectedPayload() payloads.CreatePartnerSnapshotPayload {
 	}
 }
 
-func newTestHandler(t *testing.T) (*BuildEndHandler, *client.MockTaskClient) {
+func newTestHandler(t *testing.T) (*BuildEventHandler, *client.MockTaskClient) {
 	taskClient := client.NewMockTaskClient(t)
-	h := NewBuildEndHandler(taskClient, nil)
+	h := NewBuildEventHandler(taskClient, nil)
 	h.enqueueRetryBackoff = time.Millisecond
 	return h, taskClient
 }
@@ -119,7 +123,7 @@ func TestParseValidBuildEnd_MultipleMissingFields(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid build end data: missing publication_href, build, copr")
 }
 
-func TestBuildEndHandler_HandleBuildEnd_MissingStatus(t *testing.T) {
+func TestBuildEventHandler_HandleBuildEnd_MissingStatus(t *testing.T) {
 	h, _ := newTestHandler(t)
 	data := validBuildEndData()
 	data.Status = nil
@@ -141,4 +145,37 @@ func TestToSnapshotTaskPayload_RepositoryNameOneOverLimit(t *testing.T) {
 	_, err := toSnapshotTaskPayload(build)
 	assert.ErrorIs(t, err, errInvalidMessage)
 	assert.ErrorContains(t, err, "longer than 255 characters")
+}
+
+func TestParseEnvelope_InvalidJSON(t *testing.T) {
+	_, err := parseEnvelope([]byte(`{"specversion": "1.0",`))
+	assert.ErrorIs(t, err, errInvalidMessage)
+	assert.ErrorContains(t, err, "cannot decode cloudevent")
+}
+
+func TestParseBuildEndPayload_MissingData(t *testing.T) {
+	ce := cloudevents.NewEvent()
+	ce.SetID(testEventID)
+	ce.SetSource(testEventSource)
+	ce.SetType(BuildEndEventType)
+
+	_, err := parseBuildEndPayload(ce)
+	assert.ErrorIs(t, err, errInvalidMessage)
+	assert.ErrorContains(t, err, "invalid build end data: missing data")
+}
+
+func TestBuildEventHandler_HandleCloudEvent_UnrelatedEventTypeSkipped(t *testing.T) {
+	h, taskClient := newTestHandler(t)
+	ce := cloudevents.NewEvent()
+	ce.SetID(testEventID)
+	ce.SetSource(testEventSource)
+	ce.SetType("copr.build.start")
+	require.NoError(t, ce.SetData(cloudevents.ApplicationJSON, map[string]any{"build": "not-a-number"}))
+	value, err := json.Marshal(ce)
+	require.NoError(t, err)
+	msg := &sarama.ConsumerMessage{Value: value}
+
+	err = h.handleCloudEvent(context.Background(), msg)
+	assert.NoError(t, err)
+	taskClient.AssertNumberOfCalls(t, "Enqueue", 0)
 }

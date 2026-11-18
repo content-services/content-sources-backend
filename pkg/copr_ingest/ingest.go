@@ -40,7 +40,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, metrics *instrumentation.Met
 			closeConsumer(consumer)
 			pgQueue.Close()
 		}()
-		handler := NewBuildEndHandler(taskClient, metrics)
+		handler := NewBuildEventHandler(taskClient, metrics)
 		log.Info().Str("topic", cfg.CoprIngest.Topic).Str("group", cfg.CoprIngest.ConsumerGroupID).Msg("copr-ingest started")
 		consumer.Run(ctx, []string{cfg.CoprIngest.Topic}, handler)
 	})
