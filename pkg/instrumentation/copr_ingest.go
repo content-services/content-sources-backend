@@ -1,14 +1,11 @@
 package instrumentation
 
 import (
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const (
-	CoprEventDelay          = "copr_event_delay_seconds"    // shared by all event types on the topic
 	CoprBuildEndEventsTotal = "copr_build_end_events_total" // build end events
 )
 
@@ -21,7 +18,6 @@ const (
 )
 
 type CoprIngestMetrics struct {
-	CoprEventDelay          prometheus.Histogram
 	CoprBuildEndEventsTotal prometheus.CounterVec
 }
 
@@ -33,13 +29,6 @@ var coprBuildEndIngestOutcomes = []CoprBuildEndIngestOutcome{
 
 func newCoprIngestMetrics(reg *prometheus.Registry) CoprIngestMetrics {
 	m := CoprIngestMetrics{
-		CoprEventDelay: promauto.With(reg).NewHistogram(prometheus.HistogramOpts{
-			Namespace: NameSpace,
-			Name:      CoprEventDelay,
-			Help:      "Time from when Copr sent an event to when it was handled",
-			//                               1m  5m   15m  1h    6h
-			Buckets: []float64{1, 5, 15, 30, 60, 300, 900, 3600, 21600},
-		}),
 		CoprBuildEndEventsTotal: *promauto.With(reg).NewCounterVec(prometheus.CounterOpts{
 			Namespace: NameSpace,
 			Name:      CoprBuildEndEventsTotal,
@@ -51,14 +40,6 @@ func newCoprIngestMetrics(reg *prometheus.Registry) CoprIngestMetrics {
 		m.CoprBuildEndEventsTotal.WithLabelValues(string(outcome))
 	}
 	return m
-}
-
-// RecordCoprEventDelay observes the time since a Copr event was sent. Events without a time are not observed.
-func (m *Metrics) RecordCoprEventDelay(sent time.Time) {
-	if m == nil || sent.IsZero() {
-		return
-	}
-	m.CoprEventDelay.Observe(max(time.Since(sent).Seconds(), 0)) // clock skew can make the delay negative
 }
 
 // RecordCoprBuildEndIngest counts a handled Copr build end event by its ingest outcome.

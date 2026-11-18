@@ -87,7 +87,6 @@ func (h *BuildEndHandler) handleCloudEvent(ctx context.Context, msg *sarama.Cons
 	if err != nil {
 		return err
 	}
-	h.metrics.RecordCoprEventDelay(ce.Time())
 
 	// Copr sends all event types to the same topic, so other types are expected and skipped without counting them
 	if ce.Type() != BuildEndEventType {
