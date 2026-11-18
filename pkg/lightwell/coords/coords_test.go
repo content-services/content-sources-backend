@@ -33,3 +33,17 @@ func TestBuildCoordinates(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizePythonName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"requests", "requests"},
+		{"Django", "django"},
+		{"zope.interface", "zope-interface"},
+		{"Foo__Bar-.baz", "foo-bar-baz"},
+	}
+	for _, c := range cases {
+		if got := NormalizePythonName(c.in); got != c.want {
+			t.Errorf("NormalizePythonName(%q)=%q want %q", c.in, got, c.want)
+		}
+	}
+}

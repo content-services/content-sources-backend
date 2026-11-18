@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +41,7 @@ func ImportLightwellPackagesAction(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if config.Tang == nil {
+	if needsTang(ecosystems) && config.Tang == nil {
 		if err := config.ConfigureTang(); err != nil {
 			return fmt.Errorf("failed to configure tang: %w", err)
 		}
@@ -51,6 +52,11 @@ func ImportLightwellPackagesAction(c *cli.Context) error {
 	}
 	log.Info().Msg("Successfully imported lightwell packages.")
 	return nil
+}
+
+// needsTang reports whether the import reads from Tang. Only npm does. Maven and Python read from Pulp.
+func needsTang(ecosystems []string) bool {
+	return len(ecosystems) == 0 || slices.Contains(ecosystems, config.ContentTypeNpm)
 }
 
 func lightwellPackageForceRequest() (string, error) {
@@ -148,15 +154,12 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 	// A new options.lightwell_package_import_force_at value forces this repository once.
 	// The stored value is that request, so the same value does not force it again.
 	requested := forceRequest != "" && repo.PackageImportForcedAt != forceRequest
-	if !shouldImport(currentVersion, repo.LastImportRepositoryVersion, force || requested) {
+	forced := force || requested
+	if !shouldImport(currentVersion, repo.LastImportRepositoryVersion, forced) {
 		return saveStoredContentCounts(ctx, daoReg, repo)
 	}
 
-	pkgs, err := fetchRepoPackages(ctx, daoReg.MavenPackages, pulpClient, repo.ContentType, *repoHref)
-	if err != nil {
-		return err
-	}
-	if err := daoReg.LightwellPackage.SyncPackagesForRepository(ctx, repo.RepoConfigUUID, pkgs); err != nil {
+	if err := syncRepoPackages(ctx, daoReg, pulpClient, repo, *repoHref, *currentVersion, forced); err != nil {
 		return err
 	}
 	// Counts are saved before the version stamp. A failure here leaves the repository
@@ -165,6 +168,40 @@ func importRepo(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_cl
 		return err
 	}
 	return daoReg.RepositoryConfig.InternalOnly_UpdateLastImportRepositoryVersion(ctx, repo.RepoConfigUUID, *currentVersion, forceRequest)
+}
+
+// syncRepoPackages writes the packages in currentVersion to the mirror.
+// A Python repository that was imported before only applies the changes since that import.
+// If those changes cannot be read, the whole repository is imported instead.
+func syncRepoPackages(ctx context.Context, daoReg *dao.DaoRegistry, pulpClient pulp_client.PulpClient, repo dao.LightwellRepoToImport, repoHref, currentVersion string, forced bool) error {
+	if repo.ContentType == config.ContentTypePython {
+		if base, ok := incrementalBaseVersion(repoHref, repo.LastImportRepositoryVersion, forced); ok {
+			upserts, removals, err := fetchPythonPackageChanges(ctx, pulpClient, base, currentVersion)
+			if err == nil {
+				log.Debug().Str("repo", repo.Name).Str("base_version", base).Str("version", currentVersion).
+					Int("upserted_packages", len(upserts)).Int("removed_versions", len(removals)).
+					Msg("applying python package changes")
+				return daoReg.LightwellPackage.ApplyPackageChangesForRepository(ctx, repo.RepoConfigUUID, upserts, removals)
+			}
+			log.Warn().Err(err).Str("repo", repo.Name).Str("base_version", base).
+				Msg("failed to read python package changes, importing the full repository")
+		}
+	}
+
+	pkgs, err := fetchRepoPackages(ctx, daoReg.MavenPackages, pulpClient, repo.ContentType, repoHref, currentVersion)
+	if err != nil {
+		return err
+	}
+	return daoReg.LightwellPackage.SyncPackagesForRepository(ctx, repo.RepoConfigUUID, pkgs)
+}
+
+// incrementalBaseVersion returns the last imported version when the mirror can be updated from it.
+// A forced import, a first import, or a last version from another repository needs a full import.
+func incrementalBaseVersion(repoHref, lastVersion string, forced bool) (string, bool) {
+	if forced || lastVersion == "" || repoHref == "" || !strings.HasPrefix(lastVersion, repoHref) {
+		return "", false
+	}
+	return lastVersion, true
 }
 
 func saveStoredContentCounts(ctx context.Context, daoReg *dao.DaoRegistry, repo dao.LightwellRepoToImport) error {
@@ -188,7 +225,7 @@ func shouldImport(current *string, last string, force bool) bool {
 	return *current != last
 }
 
-func fetchRepoPackages(ctx context.Context, packages dao.MavenPackagesDao, pulpClient pulp_client.PulpClient, contentType, repoHref string) ([]dao.LightwellPackageInput, error) {
+func fetchRepoPackages(ctx context.Context, packages dao.MavenPackagesDao, pulpClient pulp_client.PulpClient, contentType, repoHref, versionHref string) ([]dao.LightwellPackageInput, error) {
 	switch contentType {
 	case config.ContentTypeMaven:
 		resp, err := pulpClient.ListMavenFlatPackages(ctx, repoHref)
@@ -197,25 +234,7 @@ func fetchRepoPackages(ctx context.Context, packages dao.MavenPackagesDao, pulpC
 		}
 		return mapMavenFlatPackageInputs(resp.Results, newMavenCentralLookup(ctx, packages, loadMavenCentralMetadata)), nil
 	case config.ContentTypePython:
-		if config.Tang == nil {
-			return nil, fmt.Errorf("tang is not configured")
-		}
-		var all []dao.LightwellPackageInput
-		offset := 0
-		// PythonPackageDetailList rejects a limit above its max. Pagination is by package.
-		limit := tangy.PythonPackageDetailListMaxLimit
-		for {
-			resp, err := (*config.Tang).PythonPackageDetailList(ctx, repoHref, tangy.PageOptions{Offset: offset, Limit: limit})
-			if err != nil {
-				return nil, err
-			}
-			all = append(all, mapPythonPackageInputs(resp)...)
-			offset += len(resp.Results)
-			if len(resp.Results) == 0 || offset >= resp.Total {
-				break
-			}
-		}
-		return all, nil
+		return fetchPythonPackages(ctx, pulpClient, versionHref)
 	case config.ContentTypeNpm:
 		if config.Tang == nil {
 			return nil, fmt.Errorf("tang is not configured")
@@ -390,34 +409,6 @@ func mapMavenFlatPackageInputs(rows []zest.MavenRepositoryFlatPackageResponse, l
 			})
 		}
 		out = append(out, dao.LightwellPackageInput{Name: key.artifact, Group: key.group, Versions: versions})
-	}
-	return out
-}
-
-func mapPythonPackageInputs(resp tangy.PythonPackageDetailListResponse) []dao.LightwellPackageInput {
-	out := make([]dao.LightwellPackageInput, 0, len(resp.Results))
-	for _, item := range resp.Results {
-		versions := make([]dao.LightwellPackageVersionInput, 0, len(item.Versions))
-		for _, v := range item.Versions {
-			license := v.LicenseExpression
-			if license == "" {
-				license = v.License
-			}
-			versions = append(versions, dao.LightwellPackageVersionInput{
-				Version:     v.Version,
-				PublishedAt: v.LastUpdated,
-				Purl:        coords.BuildPURL(config.ContentTypePython, "", item.NameNormalized, v.Version),
-				Details: &dao.LightwellPackageVersionDetailsInput{
-					ProjectURL:  v.ProjectURL,
-					License:     license,
-					Summary:     v.Summary,
-					Description: v.Description,
-					Author:      v.Author,
-					AuthorEmail: v.AuthorEmail,
-				},
-			})
-		}
-		out = append(out, dao.LightwellPackageInput{Name: item.NameNormalized, Group: "", Versions: versions})
 	}
 	return out
 }

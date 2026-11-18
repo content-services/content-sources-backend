@@ -338,6 +338,7 @@ type LightwellPackageDao interface {
 	ListNpmPackageVersions(ctx context.Context, repoConfigUUID string, scope string, name string) (api.NpmPackageVersionsResponse, error)
 	GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error)
 	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
+	ApplyPackageChangesForRepository(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey) error
 	InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error)
 	InternalOnlyListStoredPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) ([]string, error)
 	InternalOnlyCountStoredContent(ctx context.Context, repoConfigUUID string) (packageCount int, buildCount int, versionCount int, err error)

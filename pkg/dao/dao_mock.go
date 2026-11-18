@@ -11087,6 +11087,75 @@ func (_m *MockLightwellPackageDao) EXPECT() *MockLightwellPackageDao_Expecter {
 	return &MockLightwellPackageDao_Expecter{mock: &_m.Mock}
 }
 
+// ApplyPackageChangesForRepository provides a mock function for the type MockLightwellPackageDao
+func (_mock *MockLightwellPackageDao) ApplyPackageChangesForRepository(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey) error {
+	ret := _mock.Called(ctx, repoConfigUUID, upserts, removals)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ApplyPackageChangesForRepository")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []LightwellPackageInput, []LightwellPackageVersionKey) error); ok {
+		r0 = returnFunc(ctx, repoConfigUUID, upserts, removals)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockLightwellPackageDao_ApplyPackageChangesForRepository_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ApplyPackageChangesForRepository'
+type MockLightwellPackageDao_ApplyPackageChangesForRepository_Call struct {
+	*mock.Call
+}
+
+// ApplyPackageChangesForRepository is a helper method to define mock.On call
+//   - ctx context.Context
+//   - repoConfigUUID string
+//   - upserts []LightwellPackageInput
+//   - removals []LightwellPackageVersionKey
+func (_e *MockLightwellPackageDao_Expecter) ApplyPackageChangesForRepository(ctx any, repoConfigUUID any, upserts any, removals any) *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call {
+	return &MockLightwellPackageDao_ApplyPackageChangesForRepository_Call{Call: _e.mock.On("ApplyPackageChangesForRepository", ctx, repoConfigUUID, upserts, removals)}
+}
+
+func (_c *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call) Run(run func(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey)) *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []LightwellPackageInput
+		if args[2] != nil {
+			arg2 = args[2].([]LightwellPackageInput)
+		}
+		var arg3 []LightwellPackageVersionKey
+		if args[3] != nil {
+			arg3 = args[3].([]LightwellPackageVersionKey)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call) Return(err error) *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call) RunAndReturn(run func(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey) error) *MockLightwellPackageDao_ApplyPackageChangesForRepository_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMavenPackageDetail provides a mock function for the type MockLightwellPackageDao
 func (_mock *MockLightwellPackageDao) GetMavenPackageDetail(ctx context.Context, repoConfigUUID string, group string, name string, version string) (api.MavenPackageDetailResponse, error) {
 	ret := _mock.Called(ctx, repoConfigUUID, group, name, version)
