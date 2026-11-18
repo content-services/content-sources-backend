@@ -19,7 +19,7 @@ const (
 )
 
 // enqueue enqueues the partner snapshot task for a successful build, retrying with a linear backoff.
-func (h *BuildEndHandler) enqueue(ctx context.Context, eventID string, payload payloads.CreatePartnerSnapshotPayload) error {
+func (h *BuildEventHandler) enqueue(ctx context.Context, eventID string, payload payloads.CreatePartnerSnapshotPayload) error {
 	task := queue.Task{
 		Typename:  config.CreatePartnerSnapshotTask,
 		Payload:   payload,
