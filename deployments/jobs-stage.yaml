@@ -103,4 +103,14 @@ objects:
       appName: content-sources-backend
       jobs:
         - sync-lightwell-advisories-force
+  - apiVersion: cloud.redhat.com/v1alpha1
+    kind: ClowdJobInvocation
+    metadata:
+      labels:
+        app: content-sources-backend
+      name: update-domains-2026-11-16
+    spec:
+      appName: content-sources-backend
+      jobs:
+        - update-domains
 

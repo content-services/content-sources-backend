@@ -30,6 +30,7 @@ func loadJobs() map[string]jobFunc {
 		"cancel-tasks":                    jobs.CancelTasks,
 		"send-template-update-events":     jobs.SendTemplateUpdateEvents,
 		"sync-lightwell-vulnerabilities":  jobs.SyncLightwellVulnerabilities,
+		"update-domains":                  jobs.UpdateDomains,
 	}
 }
 
