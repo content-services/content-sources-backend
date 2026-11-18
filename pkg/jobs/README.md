@@ -11,6 +11,36 @@ If a job needs to re-run, bump the `metadata.name` date suffix on the `ClowdJobI
 
 `./cmd/jobs/main.go` is utilized to run them.
 
+## update-image-builder-guards
+
+Backfills Image Builder TBR authorization on existing customer and RHEL composite
+guards in every provisioned Content Sources domain, including the configured Copr
+domain for partner snapshots. Repository and template distributions already
+reference these guards, so neither distributions nor snapshots need to be
+recreated. Public distributions are unchanged.
+
+Configure `CLIENTS_PULP_IMAGE_BUILDER_USERNAME` for the environment, and deploy the
+new guard code to all API and worker pods first. Older workers can remove the new
+child when reconciling a composite.
+
+```sh
+go run ./cmd/jobs update-image-builder-guards
+```
+
+The job paginates all composites and selects `composite_guard` and
+`rhel_composite_*`, including historical feature combinations. It preserves all
+existing children, including the IT certificate guard, and skips composites
+already containing the TBR child. Repeated runs also reconcile the TBR header
+guard's configured identity.
+
+The summary reports `composites_updated`, counting newly added memberships.
+Header-filter changes are not included in that count.
+
+Missing Pulp domains are reported and skipped. API failures or malformed/empty
+managed composites produce a nonzero exit after processing the remaining domains.
+Review the logs and rerun after resolving failures. Add a stage/prod invocation
+only when credentials are configured and the deployment has completed.
+
 ## send-template-update-events
 
 One-shot backfill. Command: `/jobs send-template-update-events`.

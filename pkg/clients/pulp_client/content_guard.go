@@ -2,6 +2,7 @@ package pulp_client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -17,6 +18,8 @@ const ORG_ID_JQ_FILTER = ".identity.org_id"
 
 const TURNPIKE_GUARD_NAME = "turnpike_guard"
 const TURNPIKE_JQ_FILTER = ".identity.x509.subject_dn"
+
+const IMAGE_BUILDER_GUARD_NAME = "image_builder_guard"
 
 const COMPOSITE_GUARD_NAME = "composite_guard"
 
@@ -39,10 +42,17 @@ func (r pulpDaoImpl) CreateOrUpdateGuardsForOrg(ctx context.Context, orgId strin
 	if err != nil {
 		return "", err
 	}
+	// Third create/update/fetch the TBR guard for Image Builder
+	imageBuilderHref, err := r.CreateOrUpdateImageBuilderGuard(ctx)
+	if err != nil {
+		return "", err
+	}
 
-	// lastly join them together with the composite guard
-	CompositeHref, err := r.createOrUpdateCompositeGuard(ctx, OrgIdHref, TurnpikeHref)
-	return CompositeHref, err
+	guardHrefs := []string{OrgIdHref, TurnpikeHref}
+	if imageBuilderHref != "" {
+		guardHrefs = append(guardHrefs, imageBuilderHref)
+	}
+	return r.createOrUpdateCompositeGuard(ctx, guardHrefs...)
 }
 
 func (r pulpDaoImpl) CreateOrUpdateGuardsForRhelRepo(ctx context.Context, featureName string) (string, error) {
@@ -50,7 +60,7 @@ func (r pulpDaoImpl) CreateOrUpdateGuardsForRhelRepo(ctx context.Context, featur
 	if len(features) == 0 {
 		return "", fmt.Errorf("feature name required for RHEL composite content guard")
 	}
-	guardHrefs := make([]string, 0, len(features)+1)
+	guardHrefs := make([]string, 0, len(features)+2)
 	for _, f := range features {
 		href, err := r.CreateOrUpdateFeatureGuard(ctx, f)
 		if err != nil {
@@ -63,6 +73,14 @@ func (r pulpDaoImpl) CreateOrUpdateGuardsForRhelRepo(ctx context.Context, featur
 		return "", err
 	}
 	guardHrefs = append(guardHrefs, turnpikeHref)
+	// Create/update/fetch the TBR guard for Image Builder after turnpike.
+	imageBuilderHref, err := r.CreateOrUpdateImageBuilderGuard(ctx)
+	if err != nil {
+		return "", err
+	}
+	if imageBuilderHref != "" {
+		guardHrefs = append(guardHrefs, imageBuilderHref)
+	}
 	return r.createOrUpdateRhelCompositeGuard(ctx, guardHrefs, features)
 }
 
@@ -74,6 +92,25 @@ func (r pulpDaoImpl) CreateOrUpdateTurnpikeGuard(ctx context.Context) (string, e
 	return r.createOrUpdateRHIDHeaderGuard(ctx, TURNPIKE_GUARD_NAME, TURNPIKE_JQ_FILTER, config.Get().Clients.Pulp.GuardSubjectDn)
 }
 
+// CreateOrUpdateImageBuilderGuard returns an empty href when the TBR login is unset.
+// The gateway authenticates the TBR credentials and supplies the trusted X-RH-IDENTITY header.
+func (r pulpDaoImpl) CreateOrUpdateImageBuilderGuard(ctx context.Context) (string, error) {
+	orgID, username, err := config.Get().Clients.Pulp.ImageBuilderIdentity()
+	if err != nil || orgID == "" {
+		return "", err
+	}
+
+	expectedIdentity, err := json.Marshal([]string{orgID, username})
+	if err != nil {
+		return "", fmt.Errorf("encoding Image Builder identity: %w", err)
+	}
+
+	// Compare the pair in one guard: composite children are ORed, so separate
+	// guards for the org and username would authorize either field on its own.
+	jqFilter := fmt.Sprintf(`(.identity | [.org_id, .user.username]) == %s | tostring`, expectedIdentity)
+	return r.createOrUpdateRHIDHeaderGuard(ctx, IMAGE_BUILDER_GUARD_NAME, jqFilter, "true")
+}
+
 func (r pulpDaoImpl) createOrUpdateRHIDHeaderGuard(ctx context.Context, name string, jqFilter string, value string) (string, error) {
 	pulpHref, err := r.fetchAndUpdateHeaderGuard(ctx, name, jqFilter, value)
 	if err != nil || pulpHref != "" {
@@ -82,7 +119,7 @@ func (r pulpDaoImpl) createOrUpdateRHIDHeaderGuard(ctx context.Context, name str
 	// guard doesn't exist, so create it
 	pulpHref, err = r.createRHIDHeaderGuard(ctx, name, jqFilter, value)
 	if err != nil {
-		guard, _ := r.fetchHeaderContentGuard(ctx, name)
+		guard, _ := r.FetchHeaderContentGuard(ctx, name)
 		if guard == nil {
 			return "", fmt.Errorf("failed to create and then fetch a RHID header %w", err)
 		}
@@ -115,7 +152,8 @@ func (r pulpDaoImpl) createRHIDHeaderGuard(ctx context.Context, name string, jqF
 	return *response.PulpHref, nil
 }
 
-func (r pulpDaoImpl) fetchHeaderContentGuard(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error) {
+// FetchHeaderContentGuard returns nil if no guard with this name exists.
+func (r pulpDaoImpl) FetchHeaderContentGuard(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error) {
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {
 		return nil, err
@@ -141,7 +179,7 @@ func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string,
 	if err != nil {
 		return "", err
 	}
-	guard, err := r.fetchHeaderContentGuard(ctx, name)
+	guard, err := r.FetchHeaderContentGuard(ctx, name)
 	if err != nil {
 		return "", err
 	} else if guard == nil {
@@ -165,13 +203,13 @@ func (r pulpDaoImpl) fetchAndUpdateHeaderGuard(ctx context.Context, name string,
 	return *guard.PulpHref, nil
 }
 
-func (r pulpDaoImpl) createOrUpdateCompositeGuard(ctx context.Context, guard1href string, guard2href string) (string, error) {
-	pulpHref, err := r.fetchOrUpdateCompositeGuard(ctx, guard1href, guard2href)
+func (r pulpDaoImpl) createOrUpdateCompositeGuard(ctx context.Context, guardHrefs ...string) (string, error) {
+	pulpHref, err := r.fetchOrUpdateCompositeGuard(ctx, guardHrefs...)
 	if err != nil || pulpHref != "" {
 		return pulpHref, err
 	}
 	// guard doesn't exist, so create it
-	pulpHref, err = r.createCompositeGuard(ctx, guard1href, guard2href)
+	pulpHref, err = r.createCompositeGuard(ctx, guardHrefs...)
 	if err != nil {
 		guard, _ := r.fetchCompositeContentGuard(ctx)
 		if guard == nil {
@@ -182,16 +220,16 @@ func (r pulpDaoImpl) createOrUpdateCompositeGuard(ctx context.Context, guard1hre
 	return pulpHref, err
 }
 
-func (r pulpDaoImpl) createCompositeGuard(ctx context.Context, guard1 string, guard2 string) (string, error) {
-	return r.createNamedCompositeGuard(ctx, COMPOSITE_GUARD_NAME, []string{guard1, guard2})
+func (r pulpDaoImpl) createCompositeGuard(ctx context.Context, guardHrefs ...string) (string, error) {
+	return r.createNamedCompositeGuard(ctx, COMPOSITE_GUARD_NAME, guardHrefs)
 }
 
 func (r pulpDaoImpl) fetchCompositeContentGuard(ctx context.Context) (*zest.CompositeContentGuardResponse, error) {
-	return r.fetchNamedCompositeContentGuard(ctx, COMPOSITE_GUARD_NAME)
+	return r.FetchCompositeContentGuard(ctx, COMPOSITE_GUARD_NAME)
 }
 
-func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guard1 string, guard2 string) (string, error) {
-	return r.fetchOrUpdateNamedCompositeGuard(ctx, COMPOSITE_GUARD_NAME, []string{guard1, guard2})
+func (r pulpDaoImpl) fetchOrUpdateCompositeGuard(ctx context.Context, guardHrefs ...string) (string, error) {
+	return r.fetchOrUpdateNamedCompositeGuard(ctx, COMPOSITE_GUARD_NAME, guardHrefs)
 }
 
 func ptrStringsFromHrefs(hrefs []string) []*string {
@@ -214,7 +252,8 @@ func compositeChildHrefsEqual(existing []*string, want []string) bool {
 	return true
 }
 
-func (r pulpDaoImpl) fetchNamedCompositeContentGuard(ctx context.Context, name string) (*zest.CompositeContentGuardResponse, error) {
+// FetchCompositeContentGuard returns nil if no guard with this name exists.
+func (r pulpDaoImpl) FetchCompositeContentGuard(ctx context.Context, name string) (*zest.CompositeContentGuardResponse, error) {
 	ctx, client, err := getZestClient(ctx)
 	if err != nil {
 		return nil, err
@@ -257,31 +296,38 @@ func (r pulpDaoImpl) createNamedCompositeGuard(ctx context.Context, name string,
 }
 
 func (r pulpDaoImpl) fetchOrUpdateNamedCompositeGuard(ctx context.Context, name string, guardHrefs []string) (string, error) {
-	ctx, client, err := getZestClient(ctx)
-	if err != nil {
-		return "", err
-	}
-	guard, err := r.fetchNamedCompositeContentGuard(ctx, name)
+	guard, err := r.FetchCompositeContentGuard(ctx, name)
 	if err != nil {
 		return "", err
 	} else if guard == nil {
 		return "", nil
 	}
-	if !compositeChildHrefsEqual(guard.Guards, guardHrefs) {
-		update := zest.PatchedCompositeContentGuard{
-			Guards: ptrStringsFromHrefs(guardHrefs),
-		}
-		updateResp, updateHttpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositePartialUpdate(ctx, *guard.PulpHref).
-			PatchedCompositeContentGuard(update).Execute()
-		if updateHttpResp != nil {
-			defer updateHttpResp.Body.Close()
-		}
-		if err != nil {
-			return "", errorWithResponseBody("error updating composite guard", updateHttpResp, err)
-		}
-		return *updateResp.PulpHref, nil
+
+	if compositeChildHrefsEqual(guard.Guards, guardHrefs) {
+		return *guard.PulpHref, nil
 	}
-	return *guard.PulpHref, nil
+	return r.UpdateCompositeGuardChildren(ctx, *guard.PulpHref, guardHrefs)
+}
+
+// UpdateCompositeGuardChildren replaces the child references on an existing composite.
+func (r pulpDaoImpl) UpdateCompositeGuardChildren(ctx context.Context, href string, guardHrefs []string) (string, error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	update := zest.PatchedCompositeContentGuard{
+		Guards: ptrStringsFromHrefs(guardHrefs),
+	}
+	response, httpResp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositePartialUpdate(ctx, href).
+		PatchedCompositeContentGuard(update).Execute()
+	if httpResp != nil {
+		defer httpResp.Body.Close()
+	}
+	if err != nil {
+		return "", errorWithResponseBody("error updating composite guard", httpResp, err)
+	}
+	return *response.PulpHref, nil
 }
 
 func (r pulpDaoImpl) createOrUpdateNamedCompositeGuard(ctx context.Context, name string, guardHrefs []string) (string, error) {
@@ -291,7 +337,7 @@ func (r pulpDaoImpl) createOrUpdateNamedCompositeGuard(ctx context.Context, name
 	}
 	pulpHref, err = r.createNamedCompositeGuard(ctx, name, guardHrefs)
 	if err != nil {
-		guard, _ := r.fetchNamedCompositeContentGuard(ctx, name)
+		guard, _ := r.FetchCompositeContentGuard(ctx, name)
 		if guard == nil {
 			return "", fmt.Errorf("failed to create and fetch composite content guard %q: %w", name, err)
 		}
@@ -378,4 +424,38 @@ func (r pulpDaoImpl) CreateOrUpdateFeatureGuard(ctx context.Context, featureName
 		return "", errorWithResponseBody("error creating feature guard", httpResp, err)
 	}
 	return *resp.PulpHref, nil
+}
+
+// ListCompositeContentGuards returns all composite guards in this domain.
+func (r pulpDaoImpl) ListCompositeContentGuards(ctx context.Context) ([]zest.CompositeContentGuardResponse, error) {
+	ctx, client, err := getZestClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	const pageSize int32 = 100
+	var guards []zest.CompositeContentGuardResponse
+	for offset := int32(0); ; {
+		page, resp, err := client.ContentguardsCompositeAPI.ContentguardsCoreCompositeList(ctx, r.domainName).
+			Limit(pageSize).Offset(offset).Ordering([]string{"name"}).Execute()
+		if resp != nil {
+			resp.Body.Close()
+		}
+		if err != nil {
+			return nil, fmt.Errorf("listing composite content guards: %w", err)
+		}
+
+		for _, guard := range page.Results {
+			// Advance by actual results, since Pulp may cap the requested limit.
+			offset++
+			guards = append(guards, guard)
+		}
+
+		if offset >= page.Count {
+			return guards, nil
+		}
+		if len(page.Results) == 0 {
+			return nil, fmt.Errorf("composite guard pagination returned an empty page before the end")
+		}
+	}
 }

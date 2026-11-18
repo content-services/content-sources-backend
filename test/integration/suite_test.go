@@ -8,11 +8,13 @@ import (
 	log2 "log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	caliri "github.com/content-services/caliri/release/v4"
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/candlepin_client"
+	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
@@ -23,6 +25,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/tasks/queue"
 	"github.com/content-services/content-sources-backend/pkg/tasks/worker"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	zest "github.com/content-services/zest/release/v2026"
 	uuid2 "github.com/google/uuid"
 	"github.com/labstack/gommon/random"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -316,4 +319,64 @@ func (s *Suite) getRequest(url string, id identity.Identity, expectedCode int) e
 	assert.Equal(s.T(), expectedCode, res.StatusCode)
 
 	return nil
+}
+
+func (s *Suite) newPulpGuardTestDomain(ctx context.Context) pulp_client.PulpClient {
+	pulp := pulp_client.GetPulpClientWithDomain("guard-test-" + uuid2.NewString())
+	href, err := pulp.LookupOrCreateDomain(ctx, pulp.GetDomain())
+	require.NoError(s.T(), err)
+	ctx = context.WithValue(ctx, zest.ContextServerIndex, 0)
+	httpClient, err := config.GetHTTPClient(&config.PulpCertUser{}, config.Get().Clients.Pulp.Username == "")
+	require.NoError(s.T(), err)
+
+	pulpConfig := zest.NewConfiguration()
+	pulpConfig.HTTPClient = &httpClient
+	pulpConfig.Servers = zest.ServerConfigurations{zest.ServerConfiguration{
+		URL: strings.TrimRight(config.Get().Clients.Pulp.Server, "/"),
+	}}
+	sdk := zest.NewAPIClient(pulpConfig)
+
+	if config.Get().Clients.Pulp.Username != "" {
+		ctx = context.WithValue(ctx, zest.ContextBasicAuth, zest.BasicAuth{
+			UserName: config.Get().Clients.Pulp.Username,
+			Password: config.Get().Clients.Pulp.Password,
+		})
+	}
+	s.T().Cleanup(func() {
+		guards, resp, err := sdk.ContentguardsAPI.ContentguardsList(ctx, pulp.GetDomain()).Limit(1000).Execute()
+		if resp != nil {
+			resp.Body.Close()
+		}
+		if !assert.NoError(s.T(), err) {
+			return
+		}
+		// Composite references must be removed before deleting their children.
+		for _, composites := range []bool{true, false} {
+			for _, guard := range guards.Results {
+				if strings.Contains(*guard.PulpHref, "/core/composite/") != composites {
+					continue
+				}
+				remove := sdk.ContentguardsHeaderAPI.ContentguardsCoreHeaderDelete(ctx, *guard.PulpHref).Execute
+				if composites {
+					remove = sdk.ContentguardsCompositeAPI.ContentguardsCoreCompositeDelete(ctx, *guard.PulpHref).Execute
+				} else if strings.Contains(*guard.PulpHref, "/service/feature/") {
+					remove = sdk.ContentguardsFeatureAPI.ContentguardsServiceFeatureDelete(ctx, *guard.PulpHref).Execute
+				}
+				resp, err := remove()
+				if resp != nil {
+					resp.Body.Close()
+				}
+				assert.NoError(s.T(), err)
+			}
+		}
+		task, resp, err := sdk.DomainsAPI.DomainsDelete(ctx, href).Execute()
+		if resp != nil {
+			resp.Body.Close()
+		}
+		if assert.NoError(s.T(), err) {
+			_, err = pulp.PollTask(ctx, task.Task)
+			assert.NoError(s.T(), err)
+		}
+	})
+	return pulp
 }

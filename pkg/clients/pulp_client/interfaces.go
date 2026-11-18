@@ -36,6 +36,11 @@ type PulpClient interface {
 	DeleteRpmRemote(ctx context.Context, pulpHref string) (string, error)
 
 	// Content Guards
+	ListCompositeContentGuards(ctx context.Context) ([]zest.CompositeContentGuardResponse, error)
+	FetchCompositeContentGuard(ctx context.Context, name string) (*zest.CompositeContentGuardResponse, error)
+	FetchHeaderContentGuard(ctx context.Context, name string) (*zest.HeaderContentGuardResponse, error)
+	UpdateCompositeGuardChildren(ctx context.Context, href string, guardHrefs []string) (string, error)
+	CreateOrUpdateImageBuilderGuard(ctx context.Context) (string, error)
 	CreateOrUpdateGuardsForOrg(ctx context.Context, orgId string) (string, error)
 	CreateOrUpdateFeatureGuard(ctx context.Context, featureName string) (string, error)
 	CreateOrUpdateGuardsForRhelRepo(ctx context.Context, featureName string) (string, error)
