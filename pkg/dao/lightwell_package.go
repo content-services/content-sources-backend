@@ -12,6 +12,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -39,6 +40,13 @@ type LightwellPackageInput struct {
 	Name     string
 	Group    string
 	Versions []LightwellPackageVersionInput
+}
+
+// LightwellPackageVersionKey names one stored version of a package.
+type LightwellPackageVersionKey struct {
+	Group   string
+	Name    string
+	Version string
 }
 
 type LightwellPackageRow struct {
@@ -313,81 +321,265 @@ func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts L
 	return out, total, nil
 }
 
+// lightwellPackageBatchSize keeps each package insert well under the Postgres limit of 65535 bind parameters.
+const lightwellPackageBatchSize = 1000
+
+// lightwellPackageVersionBatchSize keeps each version insert well under the Postgres limit of 65535 bind parameters.
+const lightwellPackageVersionBatchSize = 500
+
+// lightwellPackageKeyBatchSize bounds the (group, name[, version]) tuples in one delete.
+const lightwellPackageKeyBatchSize = 1000
+
+// SyncPackagesForRepository replaces the mirror for a repository with pkgs.
+// Rows that are not in pkgs are deleted.
 func (d lightwellPackageDaoImpl) SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error {
 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		keepPkgUUIDs := make([]string, 0, len(pkgs))
-		keepVerUUIDs := make([]string, 0)
-
-		for _, in := range pkgs {
-			pkg := models.LightwellPackage{
-				RepositoryConfigurationUUID: repoConfigUUID,
-				Name:                        in.Name,
-				Group:                       in.Group,
-			}
-			if err := tx.Clauses(
-				clause.OnConflict{
-					Columns:   []clause.Column{{Name: "repository_configuration_uuid"}, {Name: "package_group"}, {Name: "name"}},
-					DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
-				},
-				clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
-			).Create(&pkg).Error; err != nil {
-				return err
-			}
-			keepPkgUUIDs = append(keepPkgUUIDs, pkg.UUID)
-
-			for _, v := range in.Versions {
-				upstream, release := rhlw.SplitVersion(v.Version)
-				ver := models.LightwellPackageVersion{
-					LightwellPackageUUID:        pkg.UUID,
-					RepositoryConfigurationUUID: repoConfigUUID,
-					Version:                     v.Version,
-					Release:                     release,
-					PublishedAt:                 v.PublishedAt,
-					Purl:                        v.Purl,
-					UpstreamVersion:             upstream,
-				}
-				updates := []string{"release", "published_at", "purl", "upstream_version", "updated_at"}
-				if v.Details != nil {
-					ver.ProjectURL = v.Details.ProjectURL
-					ver.License = v.Details.License
-					ver.Summary = v.Details.Summary
-					ver.Description = v.Details.Description
-					ver.Author = v.Details.Author
-					ver.AuthorEmail = v.Details.AuthorEmail
-					updates = append(updates, "project_url", "license", "summary", "description", "author", "author_email")
-				}
-				if err := tx.Clauses(
-					clause.OnConflict{
-						Columns:   []clause.Column{{Name: "lightwell_package_uuid"}, {Name: "version"}},
-						DoUpdates: clause.AssignmentColumns(updates),
-					},
-					clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
-				).Create(&ver).Error; err != nil {
-					return err
-				}
-				keepVerUUIDs = append(keepVerUUIDs, ver.UUID)
-			}
+		keepPkgUUIDs, keepVerUUIDs, err := upsertLightwellPackages(tx, repoConfigUUID, pkgs, overwriteVersion)
+		if err != nil {
+			return err
 		}
 
-		// Delete versions that are no longer present for this repo.
-		vq := tx.Where("repository_configuration_uuid = ?", repoConfigUUID)
-		if len(keepVerUUIDs) > 0 {
-			vq = vq.Where("uuid NOT IN ?", keepVerUUIDs)
-		}
-		if err := vq.Delete(&models.LightwellPackageVersion{}).Error; err != nil {
+		// Delete versions that are no longer present for this repo. The keep list is sent as
+		// one array parameter, so it is not bound by the bind parameter limit.
+		if err := tx.Where("repository_configuration_uuid = ?", repoConfigUUID).
+			Where("NOT (uuid = ANY(?::uuid[]))", pq.Array(keepVerUUIDs)).
+			Delete(&models.LightwellPackageVersion{}).Error; err != nil {
 			return err
 		}
 
 		// Delete packages that are no longer present for this repo.
-		pq := tx.Where("repository_configuration_uuid = ?", repoConfigUUID)
-		if len(keepPkgUUIDs) > 0 {
-			pq = pq.Where("uuid NOT IN ?", keepPkgUUIDs)
-		}
-		if err := pq.Delete(&models.LightwellPackage{}).Error; err != nil {
+		if err := tx.Where("repository_configuration_uuid = ?", repoConfigUUID).
+			Where("NOT (uuid = ANY(?::uuid[]))", pq.Array(keepPkgUUIDs)).
+			Delete(&models.LightwellPackage{}).Error; err != nil {
 			return err
 		}
 		return nil
 	})
+}
+
+// ApplyPackageChangesForRepository updates part of the mirror for a repository.
+// Versions in removals are deleted, then upserts are written. A package is deleted when a
+// removal leaves it with no versions. Rows that are in neither list are not touched.
+// An upserted version that is already stored keeps its metadata, because Pulp content is
+// immutable and every file of a version carries the same release metadata. Only its
+// published_at moves forward when the upsert is later.
+func (d lightwellPackageDaoImpl) ApplyPackageChangesForRepository(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey) error {
+	if len(upserts) == 0 && len(removals) == 0 {
+		return nil
+	}
+	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := deleteLightwellPackageVersions(tx, repoConfigUUID, removals); err != nil {
+			return err
+		}
+		if _, _, err := upsertLightwellPackages(tx, repoConfigUUID, upserts, keepVersion); err != nil {
+			return err
+		}
+		return deleteEmptyLightwellPackages(tx, repoConfigUUID, removals)
+	})
+}
+
+// versionConflict says what an upsert does to a version row that is already stored.
+type versionConflict int
+
+const (
+	// overwriteVersion replaces the stored row. A version with nil Details leaves the stored metadata unchanged.
+	overwriteVersion versionConflict = iota
+	// keepVersion keeps the stored row, and only moves published_at forward when the new value is later.
+	keepVersion
+)
+
+// laterPublishedAt picks the later of the stored and the new published_at. The values are RFC3339
+// text written by different importers, so they are compared as timestamps. An empty value is the earliest.
+const laterPublishedAt = `CASE
+	WHEN COALESCE(NULLIF(excluded.published_at, '')::timestamptz, '-infinity') >
+	     COALESCE(NULLIF(lightwell_package_versions.published_at, '')::timestamptz, '-infinity')
+	THEN excluded.published_at
+	ELSE lightwell_package_versions.published_at
+END`
+
+// upsertLightwellPackages writes packages and versions in batches and returns the uuids of every row written.
+// Repeated packages are merged. A repeated version keeps its last entry.
+// conflict decides what happens to a version that is already stored.
+func upsertLightwellPackages(tx *gorm.DB, repoConfigUUID string, pkgs []LightwellPackageInput, conflict versionConflict) ([]string, []string, error) {
+	type packageKey struct{ group, name string }
+	order := make([]packageKey, 0, len(pkgs))
+	versionsByPkg := make(map[packageKey][]LightwellPackageVersionInput, len(pkgs))
+	for _, in := range pkgs {
+		key := packageKey{group: in.Group, name: in.Name}
+		if _, ok := versionsByPkg[key]; !ok {
+			order = append(order, key)
+		}
+		versionsByPkg[key] = append(versionsByPkg[key], in.Versions...)
+	}
+
+	pkgUUIDs := make([]string, 0, len(order))
+	verUUIDs := make([]string, 0)
+	for start := 0; start < len(order); start += lightwellPackageBatchSize {
+		keys := order[start:min(start+lightwellPackageBatchSize, len(order))]
+		rows := make([]models.LightwellPackage, len(keys))
+		for i, key := range keys {
+			rows[i] = models.LightwellPackage{
+				RepositoryConfigurationUUID: repoConfigUUID,
+				Name:                        key.name,
+				Group:                       key.group,
+			}
+		}
+		if err := tx.Clauses(
+			clause.OnConflict{
+				Columns:   []clause.Column{{Name: "repository_configuration_uuid"}, {Name: "package_group"}, {Name: "name"}},
+				DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+			},
+			clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
+		).Create(&rows).Error; err != nil {
+			return nil, nil, err
+		}
+
+		var withDetails, withoutDetails []models.LightwellPackageVersion
+		for i, key := range keys {
+			pkgUUIDs = append(pkgUUIDs, rows[i].UUID)
+			for _, v := range dedupeLightwellPackageVersions(versionsByPkg[key]) {
+				ver := newLightwellPackageVersion(rows[i].UUID, repoConfigUUID, v)
+				if v.Details != nil {
+					withDetails = append(withDetails, ver)
+				} else {
+					withoutDetails = append(withoutDetails, ver)
+				}
+			}
+		}
+		written, err := upsertLightwellPackageVersions(tx, withDetails, true, conflict)
+		if err != nil {
+			return nil, nil, err
+		}
+		verUUIDs = append(verUUIDs, written...)
+		written, err = upsertLightwellPackageVersions(tx, withoutDetails, false, conflict)
+		if err != nil {
+			return nil, nil, err
+		}
+		verUUIDs = append(verUUIDs, written...)
+	}
+	return pkgUUIDs, verUUIDs, nil
+}
+
+// dedupeLightwellPackageVersions keeps the last entry for each version.
+// One insert cannot update the same row twice.
+func dedupeLightwellPackageVersions(versions []LightwellPackageVersionInput) []LightwellPackageVersionInput {
+	index := make(map[string]int, len(versions))
+	out := make([]LightwellPackageVersionInput, 0, len(versions))
+	for _, v := range versions {
+		if i, ok := index[v.Version]; ok {
+			out[i] = v
+			continue
+		}
+		index[v.Version] = len(out)
+		out = append(out, v)
+	}
+	return out
+}
+
+func newLightwellPackageVersion(pkgUUID, repoConfigUUID string, v LightwellPackageVersionInput) models.LightwellPackageVersion {
+	upstream, release := rhlw.SplitVersion(v.Version)
+	ver := models.LightwellPackageVersion{
+		LightwellPackageUUID:        pkgUUID,
+		RepositoryConfigurationUUID: repoConfigUUID,
+		Version:                     v.Version,
+		Release:                     release,
+		PublishedAt:                 v.PublishedAt,
+		Purl:                        v.Purl,
+		UpstreamVersion:             upstream,
+	}
+	if v.Details != nil {
+		ver.ProjectURL = v.Details.ProjectURL
+		ver.License = v.Details.License
+		ver.Summary = v.Details.Summary
+		ver.Description = v.Details.Description
+		ver.Author = v.Details.Author
+		ver.AuthorEmail = v.Details.AuthorEmail
+	}
+	return ver
+}
+
+// upsertLightwellPackageVersions writes versions in batches. Every row in one call must agree on
+// whether it carries metadata, because one insert has one ON CONFLICT update list.
+func upsertLightwellPackageVersions(tx *gorm.DB, versions []models.LightwellPackageVersion, withDetails bool, conflict versionConflict) ([]string, error) {
+	updates := []string{"release", "published_at", "purl", "upstream_version", "updated_at"}
+	if withDetails {
+		updates = append(updates, "project_url", "license", "summary", "description", "author", "author_email")
+	}
+	onConflict := clause.AssignmentColumns(updates)
+	if conflict == keepVersion {
+		onConflict = clause.Set{
+			{Column: clause.Column{Name: "published_at"}, Value: gorm.Expr(laterPublishedAt)},
+			{Column: clause.Column{Name: "updated_at"}, Value: gorm.Expr("excluded.updated_at")},
+		}
+	}
+	uuids := make([]string, 0, len(versions))
+	for start := 0; start < len(versions); start += lightwellPackageVersionBatchSize {
+		batch := versions[start:min(start+lightwellPackageVersionBatchSize, len(versions))]
+		if err := tx.Clauses(
+			clause.OnConflict{
+				Columns:   []clause.Column{{Name: "lightwell_package_uuid"}, {Name: "version"}},
+				DoUpdates: onConflict,
+			},
+			clause.Returning{Columns: []clause.Column{{Name: "uuid"}}},
+		).Create(&batch).Error; err != nil {
+			return nil, err
+		}
+		for _, ver := range batch {
+			uuids = append(uuids, ver.UUID)
+		}
+	}
+	return uuids, nil
+}
+
+func deleteLightwellPackageVersions(tx *gorm.DB, repoConfigUUID string, keys []LightwellPackageVersionKey) error {
+	for start := 0; start < len(keys); start += lightwellPackageKeyBatchSize {
+		batch := keys[start:min(start+lightwellPackageKeyBatchSize, len(keys))]
+		tuples := make([][]any, len(batch))
+		for i, key := range batch {
+			tuples[i] = []any{key.Group, key.Name, key.Version}
+		}
+		if err := tx.Exec(`
+			DELETE FROM lightwell_package_versions v
+			USING lightwell_packages p
+			WHERE v.lightwell_package_uuid = p.uuid
+				AND p.repository_configuration_uuid = ?
+				AND (p.package_group, p.name, v.version) IN ?`,
+			repoConfigUUID, tuples,
+		).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// deleteEmptyLightwellPackages deletes the packages named in keys that have no versions left.
+func deleteEmptyLightwellPackages(tx *gorm.DB, repoConfigUUID string, keys []LightwellPackageVersionKey) error {
+	type packageKey struct{ group, name string }
+	seen := make(map[packageKey]struct{}, len(keys))
+	tuples := make([][]any, 0, len(keys))
+	for _, key := range keys {
+		pk := packageKey{group: key.Group, name: key.Name}
+		if _, ok := seen[pk]; ok {
+			continue
+		}
+		seen[pk] = struct{}{}
+		tuples = append(tuples, []any{key.Group, key.Name})
+	}
+	for start := 0; start < len(tuples); start += lightwellPackageKeyBatchSize {
+		batch := tuples[start:min(start+lightwellPackageKeyBatchSize, len(tuples))]
+		if err := tx.Exec(`
+			DELETE FROM lightwell_packages p
+			WHERE p.repository_configuration_uuid = ?
+				AND (p.package_group, p.name) IN ?
+				AND NOT EXISTS (
+					SELECT 1 FROM lightwell_package_versions v WHERE v.lightwell_package_uuid = p.uuid
+				)`,
+			repoConfigUUID, batch,
+		).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // InternalOnlyListStoredPackageVersions returns the version strings stored for one package.

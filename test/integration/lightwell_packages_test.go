@@ -22,7 +22,6 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/middleware"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	test_handler "github.com/content-services/content-sources-backend/pkg/test/handler"
-	"github.com/content-services/tang/pkg/tangy"
 	zest "github.com/content-services/zest/release/v2026"
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
@@ -213,36 +212,35 @@ func (s *LightwellPackagesSuite) TestPythonImportAndList() {
 
 	s.pythonRepoUUID, s.pythonConfigUUID = s.createLightwellRepo(s.pythonName, config.ContentTypePython, "lightwell-python", basePath)
 
-	origTang := config.Tang
-	mockTang := tangy.NewMockTangy(s.T())
-	var tangClient tangy.Tangy = mockTang
-	config.Tang = &tangClient
-	s.T().Cleanup(func() { config.Tang = origTang })
-
-	mockTang.On("PythonPackageDetailList", mock.Anything, repoHref, tangy.PageOptions{
-		Offset: 0,
-		Limit:  tangy.PythonPackageDetailListMaxLimit,
-	}).Return(tangy.PythonPackageDetailListResponse{
-		Total: 1,
-		Results: []tangy.PythonPackageDetailListItem{{
-			NameNormalized: s.pythonPackage,
-			Versions: []tangy.PythonPackageVersionDetail{{
-				Version:           "1.2.3+rhlw.1",
-				LastUpdated:       "2021-01-01T00:00:00Z",
-				Summary:           "HTTP library",
-				Description:       "HTTP library for humans",
-				LicenseExpression: "Apache-2.0",
-				License:           "Apache Software License",
-				Author:            "Kenneth",
-				AuthorEmail:       "kenneth@example.com",
-				ProjectURL:        "https://example.com/requests",
-			}},
-		}},
-	}, nil).Once()
+	nextVersionHref := repoHref + "versions/2/"
+	pythonFile := func(version, packagetype string, created time.Time) zest.PythonPythonPackageContentResponse {
+		row := zest.PythonPythonPackageContentResponse{}
+		row.SetName(s.pythonPackage)
+		row.SetVersion(version)
+		row.SetPackagetype(packagetype)
+		row.SetPulpCreated(created)
+		row.SetSummary("HTTP library")
+		row.SetDescription("HTTP library for humans")
+		row.SetLicenseExpression("Apache-2.0")
+		row.SetLicense("Apache Software License")
+		row.SetAuthor("Kenneth")
+		row.SetAuthorEmail("kenneth@example.com")
+		row.SetProjectUrl("https://example.com/requests")
+		return row
+	}
+	firstSdist := pythonFile("1.2.3+rhlw.1", "sdist", time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	firstWheel := pythonFile("1.2.3+rhlw.1", "bdist_wheel", time.Date(2020, 12, 1, 0, 0, 0, 0, time.UTC))
+	secondSdist := pythonFile("1.2.4+rhlw.1", "sdist", time.Date(2021, 2, 1, 0, 0, 0, 0, time.UTC))
+	secondSdist.SetSummary("HTTP library, updated")
 
 	pulp := pulp_client.NewMockPulpClient(s.T())
 	pulp.On("ResolveRepositoryFromBasePath", mock.Anything, basePath).Return(&repoHref, nil)
-	pulp.On("GetLatestVersionHref", mock.Anything, repoHref).Return(&versionHref, nil)
+	pulp.On("GetLatestVersionHref", mock.Anything, repoHref).Return(&versionHref, nil).Once()
+	pulp.EXPECT().ListPythonPackageContent(mock.Anything, mock.MatchedBy(func(f pulp_client.PythonPackageContentFilters) bool {
+		return f.RepositoryVersion == versionHref && len(f.NameIn) == 0
+	}), mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
+		return each([]zest.PythonPythonPackageContentResponse{firstWheel, firstSdist})
+	}).Once()
 
 	repo := s.repoToImport(s.pythonRepoUUID, s.pythonConfigUUID, s.pythonName, config.ContentTypePython, basePath)
 	s.Require().NoError(commands.ImportLightwellRepo(context.Background(), db.DB, pulp, repo, false))
@@ -294,6 +292,43 @@ func (s *LightwellPackagesSuite) TestPythonImportAndList() {
 	s.Equal(s.pythonPackage, row.Coordinates)
 	s.Equal("pkg:pypi/"+s.pythonPackage+"@1.2.3+rhlw.1", row.Purl)
 	s.Equal("2021-01-01T00:00:00Z", row.CreatedAt)
+
+	// A later run reads only what changed since the stored version: 1.2.3 was replaced by 1.2.4.
+	// The added 1.2.4 sdist carries its metadata. The removed 1.2.3 files only name what to check.
+	between := []string{versionHref, nextVersionHref}
+	pulp.On("GetLatestVersionHref", mock.Anything, repoHref).Return(&nextVersionHref, nil).Once()
+	pulp.EXPECT().ListPythonPackageContent(mock.Anything, mock.MatchedBy(func(f pulp_client.PythonPackageContentFilters) bool {
+		return len(f.AddedBetween) == 2 && f.AddedBetween[0] == versionHref && f.AddedBetween[1] == nextVersionHref
+	}), mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
+		return each([]zest.PythonPythonPackageContentResponse{secondSdist})
+	}).Once()
+	pulp.EXPECT().ListPythonPackageContent(mock.Anything, pulp_client.PythonPackageContentFilters{
+		RemovedBetween: between,
+		Fields:         []string{"name", "version"},
+	}, mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
+		return each([]zest.PythonPythonPackageContentResponse{firstSdist, firstWheel})
+	}).Once()
+	pulp.EXPECT().ListPythonPackageContent(mock.Anything, mock.MatchedBy(func(f pulp_client.PythonPackageContentFilters) bool {
+		// 1.2.3 lost every file, so only its existence is checked, without metadata.
+		return f.RepositoryVersion == nextVersionHref && len(f.NameIn) == 1 && f.NameIn[0] == s.pythonPackage &&
+			len(f.Fields) == 2
+	}), mock.Anything).RunAndReturn(func(_ context.Context, _ pulp_client.PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error {
+		return each([]zest.PythonPythonPackageContentResponse{secondSdist})
+	}).Once()
+
+	repo.LastImportRepositoryVersion = versionHref
+	s.Require().NoError(commands.ImportLightwellRepo(context.Background(), db.DB, pulp, repo, false))
+
+	versions = nil
+	s.Require().NoError(db.DB.Where("repository_configuration_uuid = ?", s.pythonConfigUUID).Find(&versions).Error)
+	s.Require().Len(versions, 1)
+	s.Equal("1.2.4+rhlw.1", versions[0].Version)
+	s.Equal("HTTP library, updated", versions[0].Summary)
+	s.Equal("2021-02-01T00:00:00Z", versions[0].PublishedAt)
+
+	var stored models.RepositoryConfiguration
+	s.Require().NoError(db.DB.Where("uuid = ?", s.pythonConfigUUID).First(&stored).Error)
+	s.Equal(nextVersionHref, stored.LastImportRepositoryVersion)
 }
 
 func (s *LightwellPackagesSuite) createLightwellRepo(name, contentType, feature, basePath string) (string, string) {
