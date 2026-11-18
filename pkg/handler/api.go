@@ -118,7 +118,7 @@ func RegisterRoutes(ctx context.Context, engine *echo.Echo) {
 		RegisterAdminTaskRoutes(group, daoReg, &fsClient, &cpClient)
 		RegisterAdminRepositoriesRoutes(group, daoReg)
 		RegisterAdminNotificationsRoutes(group)
-		jfrog_bridge.RegisterJFrogBridgeRoutes(group)
+		jfrog_bridge.RegisterBridgeRoutes(group)
 		RegisterFeaturesRoutes(group, &fsClient)
 		RegisterPublicRepositoriesRoutes(group, daoReg)
 		RegisterPackageGroupRoutes(group, daoReg)

@@ -56,13 +56,13 @@
             }
         },
         {
-            "name": "jfrog-bridge",
+            "name": "content-bridge",
             "type": "go",
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/content-sources",
             "args": [
-                "jfrog-bridge"
+                "content-bridge"
             ],
             "cwd": "${workspaceFolder}",
             "env": {

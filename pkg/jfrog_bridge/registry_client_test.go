@@ -314,6 +314,36 @@ func TestFetchSBOM_SignatureNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "signature")
 }
 
+func TestVEXObjectName(t *testing.T) {
+	name, err := vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27+00:00")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27Z.bom.json", name)
+
+	name, err = vexObjectName("CVE-2025-41249", "2026-07-15T23:30:00-05:00")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-41249-2026-07-16T04:30:00Z.bom.json", name, "timestamp is normalized to UTC")
+
+	name, err = vexObjectName("CVE-2025-41249", "2026-07-15T14:02:27.123456Z")
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27.123456Z.bom.json", name)
+
+	_, err = vexObjectName("CVE-2025-41249", "not-a-date")
+	require.Error(t, err)
+}
+
+func TestBundledVEXObjectName(t *testing.T) {
+	name, err := bundledVEXObjectName("2026-08-28T14:02:27+00:00")
+	require.NoError(t, err)
+	assert.Equal(t, "2026-08-28T14:02:27Z.bom.json", name)
+
+	name, err = bundledVEXObjectName("2026-08-28T23:30:00-05:00")
+	require.NoError(t, err)
+	assert.Equal(t, "2026-08-29T04:30:00Z.bom.json", name, "timestamp is normalized to UTC")
+
+	_, err = bundledVEXObjectName("not-a-date")
+	require.Error(t, err)
+}
+
 const (
 	vexTestUUID    = "11111111-2222-3333-4444-555555555555"
 	vexTestSerial  = "urn:uuid:" + vexTestUUID
@@ -363,7 +393,14 @@ func manifestLines(names ...string) string {
 	return b.String()
 }
 
-func fetchVEXForTest(t *testing.T, manifest string, files map[string]string, cveIDs ...string) ([]byte, []string, error) {
+func mustSonatypeVEXName(t *testing.T, doc VEXDocument) string {
+	t.Helper()
+	name, err := sonatypeVEXName(doc)
+	require.NoError(t, err)
+	return name
+}
+
+func fetchVEXForTest(t *testing.T, manifest string, files map[string]string, cveIDs ...string) (VEXDocument, []string, error) {
 	t.Helper()
 	var requestURIs []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -411,10 +448,27 @@ func TestFetchVEX_OneCVERequestsPerCVEName(t *testing.T) {
 		bundled: vexDocument([]string{vexRef(vexOtherUUID)}, "", false),
 	}, "CVE-2025-41249")
 	require.NoError(t, err)
-	assert.Equal(t, body, string(got))
+	assert.Equal(t, body, string(got.Data))
+	assert.Equal(t, "CVE-2025-41249-2026-07-15T14:02:27Z.bom.json", mustSonatypeVEXName(t, got))
 	require.Len(t, uris, 2)
 	assert.Contains(t, uris[0], "PULP_MANIFEST")
 	assert.Equal(t, []string{"/" + strings.ReplaceAll(perCVE, "+", "%2B")}, fileRequests(uris))
+}
+
+// The Sonatype handler dedupes the notification CVEs before FetchVEX, so a
+// repeated CVE selects the per-CVE document.
+func TestFetchVEX_DedupedDuplicateCVETreatedAsSingle(t *testing.T) {
+	const ts = "2026-07-15T14:02:27Z"
+	perCVE := "CVE-2025-1-" + ts + ".bom.json"
+	bundled := ts + ".bom.json"
+	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
+	got, uris, err := fetchVEXForTest(t, manifestLines(perCVE, bundled), map[string]string{
+		perCVE:  body,
+		bundled: body,
+	}, dedupeStrings([]string{"CVE-2025-1", "CVE-2025-1"})...)
+	require.NoError(t, err)
+	assert.Equal(t, "CVE-2025-1-2026-07-15T14:02:27Z.bom.json", mustSonatypeVEXName(t, got))
+	assert.Equal(t, []string{"/" + perCVE}, fileRequests(uris))
 }
 
 func TestFetchVEX_TwoCVEsRequestBundledFile(t *testing.T) {
@@ -429,7 +483,8 @@ func TestFetchVEX_TwoCVEsRequestBundledFile(t *testing.T) {
 		perB:    "unused",
 	}, "CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
-	assert.Equal(t, body, string(got))
+	assert.Equal(t, body, string(got.Data))
+	assert.Equal(t, "2026-07-15T14:02:27Z.bom.json", mustSonatypeVEXName(t, got))
 	assert.Equal(t, []string{"/" + bundled}, fileRequests(uris))
 }
 
@@ -443,7 +498,8 @@ func TestFetchVEX_TwoCVEsBundledAbsentUsesMatchingPerCVE(t *testing.T) {
 		perB: match,
 	}, "CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
-	assert.Equal(t, match, string(got))
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, "CVE-2025-2-2026-07-15T14:02:27Z.bom.json", mustSonatypeVEXName(t, got))
 	assert.Equal(t, []string{"/" + perA, "/" + perB}, fileRequests(uris))
 }
 
@@ -453,7 +509,7 @@ func TestFetchVEX_URNSerialAndCDXRef(t *testing.T) {
 	body := vexDocument([]string{"urn:cdx:" + vexTestUUID + "/1#pkg:maven/org.example/demo@1.2.3?type=jar"}, "", false)
 	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
 	require.NoError(t, err)
-	assert.Equal(t, body, string(got))
+	assert.Equal(t, body, string(got.Data))
 }
 
 func TestFetchVEX_OtherUUIDTriesNextTimestamp(t *testing.T) {
@@ -470,7 +526,8 @@ func TestFetchVEX_OtherUUIDTriesNextTimestamp(t *testing.T) {
 		oldName:             match,
 	}, "CVE-2025-1")
 	require.NoError(t, err)
-	assert.Equal(t, match, string(got))
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, "CVE-2025-1-2026-01-01T00:00:00Z.bom.json", mustSonatypeVEXName(t, got))
 	assert.Equal(t, []string{"/" + newName, "/" + oldName}, fileRequests(uris))
 }
 
@@ -494,7 +551,8 @@ func TestFetchVEX_BundledMismatchSkipsPerCVEAtSameTimestamp(t *testing.T) {
 		},
 		"CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
-	assert.Equal(t, match, string(got))
+	assert.Equal(t, match, string(got.Data))
+	assert.Equal(t, "2026-01-01T00:00:00Z.bom.json", mustSonatypeVEXName(t, got))
 	assert.Equal(t, []string{"/" + newBundle, "/" + oldBundle}, fileRequests(uris))
 }
 
@@ -521,7 +579,7 @@ func TestFetchVEX_PurlQualifiersMatchThisGAV(t *testing.T) {
 	)
 	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
 	require.NoError(t, err)
-	assert.Equal(t, body, string(got))
+	assert.Equal(t, body, string(got.Data))
 }
 
 func TestFetchVEX_PurlOtherArtifactRejected(t *testing.T) {
@@ -543,7 +601,7 @@ func TestFetchVEX_NoComponentAccepted(t *testing.T) {
 	body := vexDocument([]string{vexRef(vexTestUUID)}, "", false)
 	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
 	require.NoError(t, err)
-	assert.Equal(t, body, string(got))
+	assert.Equal(t, body, string(got.Data))
 }
 
 func TestFetchVEX_TwoRefsOneUUIDAccepted(t *testing.T) {
@@ -552,7 +610,7 @@ func TestFetchVEX_TwoRefsOneUUIDAccepted(t *testing.T) {
 	body := vexDocument([]string{vexRef(vexOtherUUID), vexRef(vexTestUUID)}, "", false)
 	got, _, err := fetchVEXForTest(t, manifestLines(name), map[string]string{name: body}, "CVE-2025-1")
 	require.NoError(t, err)
-	assert.Equal(t, body, string(got))
+	assert.Equal(t, body, string(got.Data))
 }
 
 func TestFetchVEX_NoMatchingBody(t *testing.T) {
@@ -563,6 +621,13 @@ func TestFetchVEX_NoMatchingBody(t *testing.T) {
 	}, "CVE-2025-1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no document matches")
+}
+
+func TestFetchVEX_NoCandidates(t *testing.T) {
+	_, uris, err := fetchVEXForTest(t, manifestLines("CVE-2025-2-2026-01-01T00:00:00Z.bom.json"), nil, "CVE-2025-1")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no VEX file for CVE-2025-1")
+	assert.Empty(t, fileRequests(uris))
 }
 
 func TestFetchVEX_DownloadErrorStopsWalk(t *testing.T) {
@@ -621,6 +686,54 @@ func TestFetchVEX_BadPurlTriesNextFile(t *testing.T) {
 		perB: match,
 	}, "CVE-2025-1", "CVE-2025-2")
 	require.NoError(t, err)
-	assert.Equal(t, match, string(got))
+	assert.Equal(t, match, string(got.Data))
 	assert.Equal(t, []string{"/" + perA, "/" + perB}, fileRequests(uris))
+}
+
+func TestFetchVEX_NoCVEs(t *testing.T) {
+	client := &httpRegistryClient{httpClient: http.DefaultClient, vexURL: "http://unused.invalid"}
+	_, err := client.FetchVEX(context.Background(), nil, vexTestGroup, vexTestName, vexTestVersion, vexTestSerial)
+	require.Error(t, err)
+}
+
+func TestFetchClassifier_Success(t *testing.T) {
+	var path string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path = r.URL.Path
+		_, _ = w.Write([]byte("src"))
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	data, err := client.FetchClassifier(context.Background(), "org.example", "lib", "1.0.rhlw-00001", "sources")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("src"), data)
+	assert.Equal(t, "/org/example/lib/1.0.rhlw-00001/lib-1.0.rhlw-00001-sources.jar", path)
+}
+
+func TestFetchClassifier_NotFoundIsAbsentWithoutRetry(t *testing.T) {
+	var hits int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 3}
+	data, err := client.FetchClassifier(context.Background(), "org.example", "lib", "1.0", "javadoc")
+	require.NoError(t, err)
+	assert.Nil(t, data)
+	assert.Equal(t, 1, hits, "404 must not be retried")
+}
+
+func TestFetchClassifier_ServerError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := &httpRegistryClient{httpClient: server.Client(), registryURL: server.URL, maxRetries: 0}
+	_, err := client.FetchClassifier(context.Background(), "org.example", "lib", "1.0", "sources")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "HTTP 500")
 }

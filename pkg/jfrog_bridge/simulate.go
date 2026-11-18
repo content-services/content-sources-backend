@@ -4,21 +4,20 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/content-services/content-sources-backend/pkg/config"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
 
-// simulate runs the full remediation pipeline for a posted CloudEvents body,
-// without consuming from Kafka. The body must be the same CloudEvents envelope
+// simulate runs the partner's full remediation pipeline for a posted
+// CloudEvents body, without consuming from Kafka. The body must be the same CloudEvents envelope
 // the bridge receives on platform.lightwell.advisory-created (see
 // ParseRemediations). Unlike the Kafka path it does not apply the eventtype
 // gate, so any ecosystem can be exercised.
 //
 // Example:
 //
-//	curl -X POST https://<host>/api/content-sources/v1/admin/jfrog_bridge/simulate/ \
+//	curl -X POST https://<host>/api/content-sources/v1/admin/bridge/<partner>/simulate/ \
 //	  -H 'Content-Type: application/json' \
 //	  -H "x-rh-identity: $(echo -n '{"identity":{"type":"Associate","account_number":"11111"}}' | base64 -w0)" \
 //	  -d '{
@@ -49,11 +48,12 @@ func (h *adminHandler) simulate(c echo.Context) error {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error parsing remediations", err.Error())
 	}
 
+	bh := bridgeFromContext(c)
 	var results []map[string]string
 	for _, rem := range remediations {
 		gav := gavKey(rem)
 		if err := ValidateNotificationCVEs(rem); err != nil {
-			log.Warn().Err(err).Str("gav", gav).Msg("embargo check rejected")
+			log.Warn().Err(err).Str("partner", bh.partner.Name()).Str("gav", gav).Msg("embargo check rejected")
 			results = append(results, map[string]string{
 				"gav":    gav,
 				"status": "rejected",
@@ -61,8 +61,8 @@ func (h *adminHandler) simulate(c echo.Context) error {
 			})
 			continue
 		}
-		if err := h.bridgeHandler.processRemediation(c.Request().Context(), rem); err != nil {
-			log.Error().Err(err).Str("gav", gav).Msg("simulate pipeline failed")
+		if err := bh.process(c.Request().Context(), rem); err != nil {
+			log.Error().Err(err).Str("partner", bh.partner.Name()).Str("gav", gav).Msg("simulate pipeline failed")
 			results = append(results, map[string]string{
 				"gav":    gav,
 				"status": "failed",
@@ -80,14 +80,5 @@ func (h *adminHandler) simulate(c echo.Context) error {
 }
 
 func (h *adminHandler) status(c echo.Context) error {
-	cfg := config.Get().JFrogBridge
-	status := map[string]interface{}{
-		"enabled":          cfg.Enabled,
-		"catalog_url":      cfg.CatalogURL,
-		"catalog_repo":     cfg.CatalogRepo,
-		"registry_url":     cfg.RegistryURL,
-		"registry_osv_url": cfg.RegistryOSVURL,
-		"registry_vex_url": cfg.RegistryVEXURL,
-	}
-	return c.JSON(http.StatusOK, status)
+	return c.JSON(http.StatusOK, bridgeFromContext(c).partner.Status())
 }

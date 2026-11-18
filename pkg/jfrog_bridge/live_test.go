@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/config"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,12 +48,11 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 	osvServer := httptest.NewServer(pipelineOSVHandler())
 	defer osvServer.Close()
 
-	cfg := bridgeConfig{
+	cfg := jfrogConfig{
+		registryConfig: registryConfig{MaxRetries: 2, RequestTimeout: 60},
 		CatalogURL:     "https://jfscatalogpartners.jfrog.io",
 		CatalogRepo:    "redhat-partner-maven-lightwell",
 		CatalogToken:   token,
-		MaxRetries:     2,
-		RequestTimeout: 60,
 	}
 
 	registry := &httpRegistryClient{
@@ -66,8 +64,7 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 	}
 
 	jfrog := newJFrogClient(cfg)
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	handler := NewBridgeHandler(registry, jfrog, metrics)
+	handler := newJFrogHandler(registry, jfrog, "")
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
@@ -78,7 +75,7 @@ func TestLocalPublish_SpringCore(t *testing.T) {
 	}
 
 	t.Log("pipeline: fetch(local testdata) -> SBOM+VEX -> upload(JFrog) -> verify")
-	err = handler.processRemediation(context.Background(), rem)
+	err = handler.Process(context.Background(), rem)
 	require.NoError(t, err)
 
 	t.Log("pipeline completed")
@@ -110,23 +107,24 @@ func TestLivePublish_SpringCore(t *testing.T) {
 		t.Skip("clients.lightwell credentials not set; skipping")
 	}
 
-	cfg := bridgeConfig{
-		CatalogURL:       "https://jfscatalogpartners.jfrog.io",
-		CatalogRepo:      "redhat-partner-maven-lightwell",
-		CatalogToken:     token,
-		RegistryURL:      config.Get().JFrogBridge.RegistryURL,
-		RegistryOSVURL:   config.Get().JFrogBridge.RegistryOSVURL,
-		RegistryVEXURL:   config.Get().JFrogBridge.RegistryVEXURL,
-		MaxRetries:       2,
-		RequestTimeout:   60,
-		RegistryUsername: lwCfg.Username,
-		RegistryPassword: lwCfg.Password,
+	cfg := jfrogConfig{
+		registryConfig: registryConfig{
+			RegistryURL:      config.Get().JFrogBridge.RegistryURL,
+			RegistryOSVURL:   config.Get().JFrogBridge.RegistryOSVURL,
+			RegistryVEXURL:   config.Get().JFrogBridge.RegistryVEXURL,
+			MaxRetries:       2,
+			RequestTimeout:   60,
+			RegistryUsername: lwCfg.Username,
+			RegistryPassword: lwCfg.Password,
+		},
+		CatalogURL:   "https://jfscatalogpartners.jfrog.io",
+		CatalogRepo:  "redhat-partner-maven-lightwell",
+		CatalogToken: token,
 	}
 
-	registry := newRegistryClient(cfg)
+	registry := newRegistryClient(cfg.registryConfig)
 	jfrog := newJFrogClient(cfg)
-	metrics := newBridgeMetrics(prometheus.NewRegistry())
-	handler := NewBridgeHandler(registry, jfrog, metrics)
+	handler := newJFrogHandler(registry, jfrog, "")
 
 	rem := Remediation{
 		GroupID:     "org.springframework",
@@ -137,7 +135,7 @@ func TestLivePublish_SpringCore(t *testing.T) {
 	}
 
 	t.Log("pipeline: fetch(packages.redhat.com) -> SBOM+VEX -> upload(JFrog) -> verify")
-	err := handler.processRemediation(context.Background(), rem)
+	err := handler.Process(context.Background(), rem)
 	require.NoError(t, err)
 
 	t.Log("pipeline completed")
