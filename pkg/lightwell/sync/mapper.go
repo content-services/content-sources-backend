@@ -59,6 +59,8 @@ type Vulnerability struct {
 	LastUpdated        time.Time
 	Embargo            bool
 	Duplicate          bool
+	// DuplicateOf is the canonical Jira issue key this finding duplicates.
+	DuplicateOf *string
 	// JiraStatus and JiraResolution are the raw Jira state, stored for debugging
 	// stage/promotion mismatches against Jira.
 	JiraStatus     *string
@@ -82,6 +84,7 @@ type adfNode struct {
 
 type issueLink struct {
 	Type struct {
+		Name    string `json:"name"`
 		Inward  string `json:"inward"`
 		Outward string `json:"outward"`
 	} `json:"type"`
@@ -120,6 +123,10 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		workflowStage = closed
 		resolutionReason = optionalString(closureSelection(issue.Fields))
 	}
+	var duplicateOf *string
+	if duplicateResolution(issue.Fields["resolution"]) {
+		duplicateOf = optionalString(canonicalDuplicate(issue))
+	}
 	cvss, vector := parseCVSS(issue.Fields[fieldCVSS])
 	purl := packageURL(issue.Fields[fieldPURL], description)
 	var parsedPURL *utils.PURL
@@ -147,6 +154,8 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		SubmittedDate:    created.UTC(),
 		LastUpdated:      updated.UTC(),
 		Embargo:          rawBool(issue.Fields[fieldEmbargo]),
+		Duplicate:        duplicateResolution(issue.Fields["resolution"]),
+		DuplicateOf:      duplicateOf,
 		JiraStatus:       optionalString(statusName(issue.Fields["status"])),
 		JiraResolution:   optionalString(resolutionName(issue.Fields["resolution"])),
 	}, nil
@@ -396,16 +405,19 @@ func mapSeverityName(value string) string {
 }
 
 var discardedResolutions = map[string]struct{}{
-	"duplicate":        {},
 	"obsolete":         {},
 	"cannot reproduce": {},
 	"won't fix":        {},
 }
 
+const duplicateResolutionReason = "Duplicate"
+
 // Customer closures are stored as Unremediated. The Jira resolution only selects which reason field to read.
+// Duplicate keeps the finding and records the canonical tracker separately.
 var closedResolutionStatuses = map[string]string{
 	"won't do":  "Unremediated",
 	"not a bug": "Unremediated",
+	"duplicate": "Unremediated",
 }
 
 func resolutionName(raw json.RawMessage) string {
@@ -450,12 +462,18 @@ func beaconDiscardReason(fields map[string]json.RawMessage) (resolution, detail 
 	return "", "", false
 }
 
+func duplicateResolution(raw json.RawMessage) bool {
+	return normalizeResolutionName(resolutionName(raw)) == "duplicate"
+}
+
 func closureSelection(fields map[string]json.RawMessage) string {
 	switch normalizeResolutionName(resolutionName(fields["resolution"])) {
 	case "won't do":
 		return optionValue(fields[fieldClosureReason])
 	case "not a bug":
 		return optionValue(fields[fieldVEXJustification])
+	case "duplicate":
+		return duplicateResolutionReason
 	default:
 		return ""
 	}
@@ -608,6 +626,77 @@ func parseCVSS(raw json.RawMessage) (*float64, *string) {
 		return nil, nil
 	}
 	return &score, &value
+}
+
+// canonicalDuplicate returns the Jira key this issue duplicates. The canonical
+// is the issue on the "duplicates" side of a duplicates / is duplicated by
+// link. A link that only says "is duplicated by" is used when no "duplicates"
+// target is present.
+func canonicalDuplicate(issue jira_client.JiraIssue) string {
+	var links []issueLink
+	if json.Unmarshal(issue.Fields["issuelinks"], &links) != nil {
+		return ""
+	}
+	fallback := ""
+	for _, link := range links {
+		if !duplicateIssueLink(link) {
+			continue
+		}
+		if key, ok := canonicalKey(issue.Key, duplicatesDirectionTarget(link)); ok {
+			return key
+		}
+		if fallback == "" {
+			if key, ok := canonicalKey(issue.Key, otherLinkedIssue(link)); ok {
+				fallback = key
+			}
+		}
+	}
+	return fallback
+}
+
+func duplicateIssueLink(link issueLink) bool {
+	for _, label := range []string{link.Type.Name, link.Type.Inward, link.Type.Outward} {
+		switch normalizeLinkLabel(label) {
+		case "duplicate", "duplicates", "is duplicated by":
+			return true
+		}
+	}
+	return false
+}
+
+func duplicatesDirectionTarget(link issueLink) *linkedIssue {
+	if normalizeLinkLabel(link.Type.Outward) == "duplicates" && link.OutwardIssue != nil {
+		return link.OutwardIssue
+	}
+	if normalizeLinkLabel(link.Type.Inward) == "duplicates" && link.InwardIssue != nil {
+		return link.InwardIssue
+	}
+	return nil
+}
+
+func otherLinkedIssue(link issueLink) *linkedIssue {
+	if link.OutwardIssue != nil && strings.TrimSpace(link.OutwardIssue.Key) != "" {
+		return link.OutwardIssue
+	}
+	if link.InwardIssue != nil && strings.TrimSpace(link.InwardIssue.Key) != "" {
+		return link.InwardIssue
+	}
+	return nil
+}
+
+func canonicalKey(self string, issue *linkedIssue) (string, bool) {
+	if issue == nil {
+		return "", false
+	}
+	key := strings.TrimSpace(issue.Key)
+	if key == "" || key == self {
+		return "", false
+	}
+	return key, true
+}
+
+func normalizeLinkLabel(label string) string {
+	return strings.ToLower(strings.Join(strings.Fields(label), " "))
 }
 
 func linkedIssueKey(issue jira_client.JiraIssue, label string) string {
