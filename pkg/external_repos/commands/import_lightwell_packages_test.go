@@ -223,45 +223,6 @@ func TestMavenCentralLookup(t *testing.T) {
 	})
 }
 
-func TestMapPythonPackageInputs(t *testing.T) {
-	resp := tangy.PythonPackageDetailListResponse{
-		Results: []tangy.PythonPackageDetailListItem{{
-			NameNormalized: "requests",
-			Versions: []tangy.PythonPackageVersionDetail{{
-				Version:           "1.2.3+rhlw.1",
-				LastUpdated:       "2021-01-01T00:00:00Z",
-				Summary:           "HTTP library",
-				Description:       "HTTP library for humans",
-				LicenseExpression: "Apache-2.0",
-				License:           "Apache Software License",
-				Author:            "Kenneth",
-				AuthorEmail:       "kenneth@example.com",
-				ProjectURL:        "https://example.com/requests",
-			}},
-		}},
-	}
-	got := mapPythonPackageInputs(resp)
-	assert.Len(t, got, 1)
-	assert.Equal(t, "requests", got[0].Name)
-	assert.Equal(t, "", got[0].Group)
-	assert.Len(t, got[0].Versions, 1)
-	ver := got[0].Versions[0]
-	assert.Equal(t, "1.2.3+rhlw.1", ver.Version)
-	upstream, release := rhlw.SplitVersion(ver.Version)
-	assert.Equal(t, "1.2.3", upstream)
-	assert.Equal(t, "rhlw.1", release)
-	assert.Equal(t, "pkg:pypi/requests@1.2.3+rhlw.1", ver.Purl)
-	assert.Equal(t, "2021-01-01T00:00:00Z", ver.PublishedAt)
-	if assert.NotNil(t, ver.Details) {
-		assert.Equal(t, "HTTP library", ver.Details.Summary)
-		assert.Equal(t, "HTTP library for humans", ver.Details.Description)
-		assert.Equal(t, "Apache-2.0", ver.Details.License)
-		assert.Equal(t, "Kenneth", ver.Details.Author)
-		assert.Equal(t, "kenneth@example.com", ver.Details.AuthorEmail)
-		assert.Equal(t, "https://example.com/requests", ver.Details.ProjectURL)
-	}
-}
-
 func TestMapNpmPackageInputs(t *testing.T) {
 	resp := tangy.NpmPackageListResponse{
 		Results: []tangy.NpmPackageListItem{{

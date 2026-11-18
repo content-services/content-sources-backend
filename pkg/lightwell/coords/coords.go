@@ -41,3 +41,22 @@ func BuildCoordinates(contentType, group, name string) string {
 		return ""
 	}
 }
+
+// NormalizePythonName applies PEP 503 normalization: lowercase, and each run of '-', '_', or '.' becomes one '-'.
+func NormalizePythonName(name string) string {
+	var b strings.Builder
+	b.Grow(len(name))
+	separatorWritten := false
+	for _, ch := range strings.ToLower(name) {
+		if ch == '-' || ch == '_' || ch == '.' {
+			if !separatorWritten {
+				b.WriteByte('-')
+				separatorWritten = true
+			}
+			continue
+		}
+		b.WriteRune(ch)
+		separatorWritten = false
+	}
+	return b.String()
+}

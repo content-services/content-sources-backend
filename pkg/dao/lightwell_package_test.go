@@ -974,6 +974,160 @@ func (s *LightwellPackageSuite) TestSyncPackagesEmptyDeletesAll() {
 	assert.Equal(t, int64(0), pkgCount)
 }
 
+func (s *LightwellPackageSuite) TestSyncPackagesBatchesLargeRepositories() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetLightwellPackageDao(s.tx)
+	rcUUID := s.seedLightwellRepoConfig("python", "validated", "lightwell-python-large")
+
+	// More packages than one package batch, and one package with more versions than one version batch.
+	pkgs := make([]LightwellPackageInput, 0, lightwellPackageBatchSize+1)
+	for i := 0; i < lightwellPackageBatchSize; i++ {
+		name := fmt.Sprintf("pkg-%04d", i)
+		pkgs = append(pkgs, LightwellPackageInput{Name: name, Versions: []LightwellPackageVersionInput{
+			{Version: "1.0", Purl: "pkg:pypi/" + name + "@1.0", Details: &LightwellPackageVersionDetailsInput{Summary: name}},
+		}})
+	}
+	big := LightwellPackageInput{Name: "big"}
+	for i := 0; i < lightwellPackageVersionBatchSize+1; i++ {
+		big.Versions = append(big.Versions, LightwellPackageVersionInput{Version: fmt.Sprintf("0.%d", i), Purl: fmt.Sprintf("pkg:pypi/big@0.%d", i)})
+	}
+	pkgs = append(pkgs, big)
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, pkgs))
+
+	var pkgCount, verCount int64
+	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
+	s.tx.Model(&models.LightwellPackageVersion{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&verCount)
+	assert.Equal(t, int64(lightwellPackageBatchSize+1), pkgCount)
+	assert.Equal(t, int64(lightwellPackageBatchSize+lightwellPackageVersionBatchSize+1), verCount)
+
+	// Every version points at the package it was written for.
+	var mismatched int64
+	require.NoError(t, s.tx.Raw(`
+		SELECT COUNT(*) FROM lightwell_package_versions v
+		JOIN lightwell_packages p ON p.uuid = v.lightwell_package_uuid
+		WHERE v.repository_configuration_uuid = ? AND v.summary <> '' AND v.summary <> p.name`, rcUUID).Scan(&mismatched).Error)
+	assert.Equal(t, int64(0), mismatched)
+	var bigVersions int64
+	require.NoError(t, s.tx.Raw(`
+		SELECT COUNT(*) FROM lightwell_package_versions v
+		JOIN lightwell_packages p ON p.uuid = v.lightwell_package_uuid
+		WHERE v.repository_configuration_uuid = ? AND p.name = 'big'`, rcUUID).Scan(&bigVersions).Error)
+	assert.Equal(t, int64(lightwellPackageVersionBatchSize+1), bigVersions)
+
+	// A second sync keeps half the small packages and drops "big".
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, pkgs[:lightwellPackageBatchSize/2]))
+	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&pkgCount)
+	s.tx.Model(&models.LightwellPackageVersion{}).Where("repository_configuration_uuid = ?", rcUUID).Count(&verCount)
+	assert.Equal(t, int64(lightwellPackageBatchSize/2), pkgCount)
+	assert.Equal(t, int64(lightwellPackageBatchSize/2), verCount)
+}
+
+func (s *LightwellPackageSuite) TestSyncPackagesMergesRepeatedEntries() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetLightwellPackageDao(s.tx)
+	rcUUID := s.seedLightwellRepoConfig("python", "validated", "lightwell-python-repeat")
+
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, []LightwellPackageInput{
+		{Name: "requests", Versions: []LightwellPackageVersionInput{{Version: "1.0", Purl: "first"}}},
+		{Name: "requests", Versions: []LightwellPackageVersionInput{{Version: "1.0", Purl: "last"}, {Version: "2.0"}}},
+	}))
+
+	var versions []models.LightwellPackageVersion
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ?", rcUUID).Order("version").Find(&versions).Error)
+	require.Len(t, versions, 2)
+	assert.Equal(t, "last", versions[0].Purl)
+	assert.Equal(t, versions[0].LightwellPackageUUID, versions[1].LightwellPackageUUID)
+}
+
+func (s *LightwellPackageSuite) TestApplyPackageChangesForRepository() {
+	t := s.T()
+	ctx := context.Background()
+	dao := GetLightwellPackageDao(s.tx)
+	rcUUID := s.seedLightwellRepoConfig("python", "validated", "lightwell-python-changes")
+	otherUUID := s.seedLightwellRepoConfig("python", "validated", "lightwell-python-other")
+
+	initial := []LightwellPackageInput{
+		{Name: "django", Versions: []LightwellPackageVersionInput{
+			{Version: "4.1", Purl: "pkg:pypi/django@4.1", Details: &LightwellPackageVersionDetailsInput{Summary: "4.1"}},
+			{Version: "4.2", Purl: "pkg:pypi/django@4.2", Details: &LightwellPackageVersionDetailsInput{Summary: "4.2"}},
+		}},
+		{Name: "requests", Versions: []LightwellPackageVersionInput{
+			{Version: "2.0", Purl: "pkg:pypi/requests@2.0"},
+		}},
+		{Name: "flask", Versions: []LightwellPackageVersionInput{
+			{Version: "3.0", Purl: "pkg:pypi/flask@3.0"},
+		}},
+	}
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, rcUUID, initial))
+	require.NoError(t, dao.SyncPackagesForRepository(ctx, otherUUID, initial))
+
+	var djangoBefore, flaskBefore models.LightwellPackage
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "django").First(&djangoBefore).Error)
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "flask").First(&flaskBefore).Error)
+	var unchanged models.LightwellPackageVersion
+	require.NoError(t, s.tx.Where("lightwell_package_uuid = ? AND version = ?", djangoBefore.UUID, "4.1").First(&unchanged).Error)
+
+	err := dao.ApplyPackageChangesForRepository(ctx, rcUUID,
+		[]LightwellPackageInput{
+			{Name: "django", Versions: []LightwellPackageVersionInput{
+				{Version: "4.2", Purl: "pkg:pypi/django@4.2", Details: &LightwellPackageVersionDetailsInput{Summary: "4.2 updated"}},
+				{Version: "5.0", Purl: "pkg:pypi/django@5.0", PublishedAt: "2026-01-05T00:00:00Z"},
+			}},
+			{Name: "numpy", Versions: []LightwellPackageVersionInput{
+				{Version: "2.0+rhlw.1", Purl: "pkg:pypi/numpy@2.0+rhlw.1"},
+			}},
+		},
+		[]LightwellPackageVersionKey{
+			{Name: "requests", Version: "2.0"},
+			{Name: "django", Version: "9.9"}, // not stored: ignored
+		},
+	)
+	require.NoError(t, err)
+
+	type row struct {
+		Name    string
+		Version string
+		Summary string
+		Release string
+		UUID    string
+	}
+	var rows []row
+	require.NoError(t, s.tx.Raw(`
+		SELECT p.name, v.version, v.summary, v.release, v.uuid
+		FROM lightwell_package_versions v
+		JOIN lightwell_packages p ON p.uuid = v.lightwell_package_uuid
+		WHERE v.repository_configuration_uuid = ?
+		ORDER BY p.name, v.version`, rcUUID).Scan(&rows).Error)
+	got := make([]string, 0, len(rows))
+	for _, r := range rows {
+		got = append(got, r.Name+"@"+r.Version)
+	}
+	assert.Equal(t, []string{"django@4.1", "django@4.2", "django@5.0", "flask@3.0", "numpy@2.0+rhlw.1"}, got)
+	assert.Equal(t, unchanged.UUID, rows[0].UUID, "a version that is not in the changes is not touched")
+	assert.Equal(t, "4.1", rows[0].Summary)
+	assert.Equal(t, "4.2 updated", rows[1].Summary)
+	assert.Equal(t, "rhlw.1", rows[4].Release)
+
+	var djangoAfter, flaskAfter models.LightwellPackage
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "django").First(&djangoAfter).Error)
+	require.NoError(t, s.tx.Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "flask").First(&flaskAfter).Error)
+	assert.Equal(t, djangoBefore.UUID, djangoAfter.UUID)
+	assert.Equal(t, flaskBefore.UUID, flaskAfter.UUID)
+
+	var requestsCount int64
+	s.tx.Model(&models.LightwellPackage{}).Where("repository_configuration_uuid = ? AND name = ?", rcUUID, "requests").Count(&requestsCount)
+	assert.Equal(t, int64(0), requestsCount, "a package with no versions left is deleted")
+
+	var otherVersions int64
+	s.tx.Model(&models.LightwellPackageVersion{}).Where("repository_configuration_uuid = ?", otherUUID).Count(&otherVersions)
+	assert.Equal(t, int64(4), otherVersions, "another repository is not touched")
+
+	// No changes is a no-op.
+	require.NoError(t, dao.ApplyPackageChangesForRepository(ctx, rcUUID, nil, nil))
+}
+
 func (s *LightwellPackageSuite) TestGetPythonPackageDetail() {
 	ctx, pkgDao := s.dao()
 	repoConfigUUID, _ := s.createLightwellRepoWithFeature(
