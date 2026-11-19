@@ -1,0 +1,15 @@
+{
+  "specversion": "1.0",
+  "id": "00000000-0000-0000-0000-000000000001",
+  "source": "urn:content-sources:example",
+  "type": "copr.build.end",
+  "datacontenttype": "application/json",
+  "data": {
+    "build": 1001,
+    "owner": "@nvidia",
+    "copr": "cuda",
+    "chroot": "rhel-9-x86_64",
+    "status": 1,
+    "publication_href": "/api/pulp/cs-partner/api/v3/publications/rpm/rpm/0196f0e9-1a2b-7c3d-8e4f-5a6b7c8d9e01/"
+  }
+}
