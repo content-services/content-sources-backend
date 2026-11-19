@@ -5,6 +5,7 @@ import "time"
 // LightwellVulnerabilityResponse is a single vulnerability in list responses.
 type LightwellVulnerabilityResponse struct {
 	UUID               string    `json:"uuid"`                        // UUID of the vulnerability
+	VulnerabilityKey   string    `json:"vulnerability_key"`           // Jira issue key (e.g. LTWL-5717)
 	VulnerabilityID    string    `json:"vulnerability_id"`            // Business identifier (e.g. LWL-2026-4401)
 	Purl               *string   `json:"purl,omitempty"`              // Package URL
 	ComponentName      string    `json:"component_name"`              // Component / package name

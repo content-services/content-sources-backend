@@ -512,7 +512,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Search vulnerability_id, component_name, and title. Minimum 2 characters.",
+                        "description": "Search vulnerability_id, vulnerability_key, component_name, and title. Minimum 2 characters.",
                         "name": "search",
                         "in": "query"
                     },
@@ -6040,6 +6040,10 @@ const docTemplate = `{
                 },
                 "vulnerability_id": {
                     "description": "Business identifier (e.g. LWL-2026-4401)",
+                    "type": "string"
+                },
+                "vulnerability_key": {
+                    "description": "Jira issue key (e.g. LTWL-5717)",
                     "type": "string"
                 }
             }

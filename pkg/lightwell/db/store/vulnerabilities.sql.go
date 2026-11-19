@@ -279,6 +279,7 @@ func (q *Queries) ListLtwlsuptTicketIds(ctx context.Context, customerID string) 
 const listVulnerabilities = `-- name: ListVulnerabilities :many
 SELECT
     v.uuid,
+    v.vulnerability_key,
     v.vulnerability_id,
     v.purl,
     v.component_name,
@@ -370,6 +371,7 @@ type ListVulnerabilitiesParams struct {
 
 type ListVulnerabilitiesRow struct {
 	Uuid               uuid.UUID `json:"uuid"`
+	VulnerabilityKey   string    `json:"vulnerability_key"`
 	VulnerabilityID    string    `json:"vulnerability_id"`
 	Purl               *string   `json:"purl"`
 	ComponentName      string    `json:"component_name"`
@@ -423,6 +425,7 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 		var i ListVulnerabilitiesRow
 		if err := rows.Scan(
 			&i.Uuid,
+			&i.VulnerabilityKey,
 			&i.VulnerabilityID,
 			&i.Purl,
 			&i.ComponentName,
