@@ -12,6 +12,7 @@ ORDER BY ticket_id;
 -- name: ListVulnerabilities :many
 SELECT
     v.uuid,
+    v.vulnerability_key,
     v.vulnerability_id,
     v.purl,
     v.component_name,
