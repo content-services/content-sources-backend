@@ -469,6 +469,37 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 	return items, nil
 }
 
+const listVulnerabilitySyncStates = `-- name: ListVulnerabilitySyncStates :many
+SELECT vulnerability_key, stage, last_updated
+FROM lightwell_vulnerabilities
+`
+
+type ListVulnerabilitySyncStatesRow struct {
+	VulnerabilityKey string    `json:"vulnerability_key"`
+	Stage            string    `json:"stage"`
+	LastUpdated      time.Time `json:"last_updated"`
+}
+
+func (q *Queries) ListVulnerabilitySyncStates(ctx context.Context) ([]ListVulnerabilitySyncStatesRow, error) {
+	rows, err := q.db.Query(ctx, listVulnerabilitySyncStates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListVulnerabilitySyncStatesRow{}
+	for rows.Next() {
+		var i ListVulnerabilitySyncStatesRow
+		if err := rows.Scan(&i.VulnerabilityKey, &i.Stage, &i.LastUpdated); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertVulnerability = `-- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
     uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,

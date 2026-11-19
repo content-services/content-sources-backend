@@ -119,6 +119,10 @@ FROM lightwell_filtered_vulnerabilities(
 GROUP BY v.stage
 ORDER BY v.stage;
 
+-- name: ListVulnerabilitySyncStates :many
+SELECT vulnerability_key, stage, last_updated
+FROM lightwell_vulnerabilities;
+
 -- name: GetVulnerabilityByKey :one
 SELECT *
 FROM lightwell_vulnerabilities

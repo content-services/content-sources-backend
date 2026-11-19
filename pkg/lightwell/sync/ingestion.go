@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/dao"
@@ -24,6 +25,10 @@ const ignoredCustomerIDLog = "ignoring customer id without CID- prefix"
 // a "blocked:" label in Jira.
 const onHoldNoReasonLog = "beacon_on_hold_without_reason"
 
+// missingPackagePublishedAtLog is the stable message when a shipped IVT has no
+// package publish time to freeze last_updated on.
+const missingPackagePublishedAtLog = "beacon_missing_package_published_at"
+
 // blockerFields are the Jira fields fetched for an On Hold blocker. Whether the blocker
 // is open already comes with the IVT's issue links. The blocker's own labels carry its
 // "blocked:" reasons, and for a Component Upgrade its own issue links show whether an
@@ -38,13 +43,14 @@ var stagesBeforeShipping = []string{"Submitted", "Classified", "Fix in Progress"
 // VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
 const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
 
-// ComponentUpgradeJQL - JQL for the shipped Component Upgrade (CT) issues whose
-// "Incorporates" links drive CID inheritance onto their member IVTs.
-const ComponentUpgradeJQL = "project = LTWL AND issuetype = \"Component Upgrade\" AND component in (\"Backport\", \"Novel Fix\") AND status = Closed AND resolution = Done ORDER BY created ASC"
+// ComponentUpgradeJQL fetches every Backport and Novel Fix Component Upgrade,
+// including ones that are still open. An IVT stays out of Lightwell Network
+// until each CT that incorporates it is closed, done, or resolved.
+const ComponentUpgradeJQL = "project = LTWL AND issuetype = \"Component Upgrade\" AND component in (\"Backport\", \"Novel Fix\") ORDER BY created ASC"
 
-// componentUpgradeFields are the Jira fields fetched for CTs. Only the issue links
-// are needed; member CID labels and status are read from the fetched IVT set.
-var componentUpgradeFields = []string{"issuelinks"}
+// componentUpgradeFields are the Jira fields fetched for CTs. Status decides
+// whether the CT is finished; the links identify its member IVTs.
+var componentUpgradeFields = []string{"issuelinks", "status", "resolution"}
 
 var vulnerabilityFields = []string{
 	"summary",
@@ -90,6 +96,15 @@ type SyncSummary struct {
 type VulnerabilityStore interface {
 	Save(ctx context.Context, input dao.LightwellVulnerabilityInput) (dao.LightwellVulnerabilitySaveOutcome, error)
 	DeleteByKey(ctx context.Context, vulnerabilityKey string) (bool, error)
+	// ListStates returns the stage and last_updated already stored for each IVT.
+	// The sync uses it to keep last_updated still after Unremediated, and to keep
+	// a shipped IVT's timestamp when the package publish time cannot be read.
+	ListStates(ctx context.Context) (map[string]VulnerabilityState, error)
+}
+
+// PackagePublishTimes reads publish timestamps for package versions.
+type PackagePublishTimes interface {
+	List(ctx context.Context, versions []string) ([]dao.PackagePublishTime, error)
 }
 
 // AdvisoryStore is the subset of dao.LightwellAdvisoryDao used to decide
@@ -103,6 +118,7 @@ type Ingestor struct {
 	vulnerabilities    VulnerabilityStore
 	advisories         AdvisoryStore
 	packageVerifier    PublicationPackageVerifier
+	publications       PackagePublishTimes
 	cache              map[string]cachedIssue
 	promoteByJiraState bool
 	// blockers and blockerErrs hold what was read from (or the fetch error of) On Hold
@@ -128,6 +144,12 @@ type Option func(*Ingestor)
 // is published. It is intended for local use only and is disabled by default.
 func WithPromoteByJiraState(enabled bool) Option {
 	return func(i *Ingestor) { i.promoteByJiraState = enabled }
+}
+
+// WithPackagePublishTimes supplies the catalog used to freeze last_updated on
+// shipped IVTs. Without it, a shipped IVT keeps the Jira updated time.
+func WithPackagePublishTimes(times PackagePublishTimes) Option {
+	return func(i *Ingestor) { i.publications = times }
 }
 
 func NewIngestor(
@@ -166,8 +188,13 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 	if err != nil {
 		return SyncSummary{}, err
 	}
-	inheritedCIDs := buildInheritedCIDs(issues, cts)
-	ctMembers := ctMemberKeys(cts)
+	inheritedCIDs := buildInheritedCIDs(issues, finishedComponentUpgrades(cts))
+	readyToShip := ivtsReadyToShip(cts)
+
+	states, err := i.vulnerabilities.ListStates(ctx)
+	if err != nil {
+		return SyncSummary{}, err
+	}
 
 	advisories, err := i.loadAdvisories(ctx)
 	if err != nil {
@@ -177,8 +204,10 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 	var summary SyncSummary
 	confirmedByIssue := i.verifyBreadcrumbPackages(ctx, issues, &summary)
 	for _, issue := range issues {
-		_, inCT := ctMembers[issue.Key]
-		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], inheritedCIDs[issue.Key], inCT, &summary); err != nil {
+		_, ready := readyToShip[issue.Key]
+		state, found := states[issue.Key]
+		stored := storedVulnerability{Found: found, Stage: state.Stage, LastUpdated: state.LastUpdated}
+		if err := i.syncIssue(ctx, issue, accountFieldID, advisories, confirmedByIssue[issue.Key], inheritedCIDs[issue.Key], ready, stored, &summary); err != nil {
 			summary.Failed++
 			summary.Failures = append(summary.Failures, err.Error())
 		}
@@ -429,8 +458,8 @@ func (i *Ingestor) searchAll(ctx context.Context) ([]jira_client.JiraIssue, erro
 	return i.searchPaged(ctx, VulnerabilityJQL, vulnerabilityFields)
 }
 
-// searchCTs fetches all shipped Component Upgrade issues (Closed/Done) whose
-// "Incorporates" links drive CID inheritance.
+// searchCTs fetches Backport and Novel Fix Component Upgrades in every status.
+// Open CTs are required so an IVT is not treated as shipped while one remains.
 func (i *Ingestor) searchCTs(ctx context.Context) ([]jira_client.JiraIssue, error) {
 	return i.searchPaged(ctx, ComponentUpgradeJQL, componentUpgradeFields)
 }
@@ -484,7 +513,8 @@ func (i *Ingestor) syncIssue(
 	advisories []PublishedAdvisory,
 	confirmedVersions []string,
 	inheritedCIDs []string,
-	inCT bool,
+	readyToShip bool,
+	stored storedVulnerability,
 	summary *SyncSummary,
 ) error {
 	if resolution, detail, discarded := beaconDiscardReason(issue.Fields); discarded {
@@ -504,17 +534,17 @@ func (i *Ingestor) syncIssue(
 
 	applyPublishedStage(&vulnerability, confirmedVersions, advisories)
 	if i.promoteByJiraState && vulnerability.Stage == "Validation" && releasedOrDone(issue.Fields) {
-		vulnerability.Stage = "Lightwell Network"
+		vulnerability.Stage = stageLightwellNetwork
 	}
 
-	// Count an IVT as shipped (Lightwell Network) only when it is a member of a
-	// Closed/Done Component Upgrade — an IVT with no CT is not "done", matching the
-	// remediation-dashboard's shipped definition.
-	if vulnerability.Stage == "Lightwell Network" && !inCT {
+	// A published fix reaches Lightwell Network only when every Component Upgrade
+	// that incorporates the IVT is closed, done, or resolved. An open CT, or no
+	// CT at all, leaves the IVT in Validation.
+	if vulnerability.Stage == stageLightwellNetwork && !readyToShip {
 		vulnerability.Stage = "Validation"
 	}
 
-	if vulnerability.Stage == "Lightwell Network" {
+	if vulnerability.Stage == stageLightwellNetwork {
 		tickets = mergeInheritedCustomers(tickets, inheritedCIDs)
 	}
 
@@ -544,6 +574,18 @@ func (i *Ingestor) syncIssue(
 			logOnHoldWithoutReason(issue.Key, openBlockers)
 		}
 	}
+
+	publishedAt, hasPublishedAt, err := i.packagePublishedAt(ctx, vulnerability)
+	if err != nil {
+		return fmt.Errorf("issue %s package publish time: %w", issue.Key, err)
+	}
+	if vulnerability.Stage == stageLightwellNetwork && i.publications != nil && len(vulnerability.PublishedVersions) > 0 && !hasPublishedAt {
+		log.Warn().
+			Str("issue", issue.Key).
+			Strs("versions", vulnerability.PublishedVersions).
+			Msg(missingPackagePublishedAtLog)
+	}
+	applyLastUpdated(&vulnerability, stored, publishedAt, hasPublishedAt)
 
 	outcome, err := i.vulnerabilities.Save(ctx, vulnerabilityInput(vulnerability, tickets))
 	if err != nil {
@@ -627,6 +669,18 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 	return input
 }
 
+func (i *Ingestor) packagePublishedAt(ctx context.Context, vulnerability Vulnerability) (time.Time, bool, error) {
+	if i.publications == nil || vulnerability.Stage != stageLightwellNetwork || len(vulnerability.PublishedVersions) == 0 {
+		return time.Time{}, false, nil
+	}
+	rows, err := i.publications.List(ctx, vulnerability.PublishedVersions)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	publishedAt, ok := latestPackagePublishedAt(vulnerability.ComponentName, vulnerability.Language, rows)
+	return publishedAt, ok, nil
+}
+
 func applyPublishedStage(vulnerability *Vulnerability, confirmedVersions []string, advisories []PublishedAdvisory) {
 	if vulnerability.Stage != "Validation" {
 		return
@@ -639,7 +693,7 @@ func applyPublishedStage(vulnerability *Vulnerability, confirmedVersions []strin
 	versions = slices.Compact(versions)
 	slices.Reverse(versions)
 	vulnerability.PublishedVersions = versions
-	vulnerability.Stage = "Lightwell Network"
+	vulnerability.Stage = stageLightwellNetwork
 }
 
 // issueRelationships resolves the customer and support-ticket links for a

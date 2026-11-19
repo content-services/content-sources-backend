@@ -165,10 +165,11 @@ type LightwellVulnerabilitySupportTicket struct {
 }
 
 type Repository struct {
-	Uuid          uuid.UUID   `json:"uuid"`
-	ContentType   string      `json:"content_type"`
-	SecurityLevel pgtype.Text `json:"security_level"`
-	Origin        pgtype.Text `json:"origin"`
+	Uuid                          uuid.UUID   `json:"uuid"`
+	ContentType                   string      `json:"content_type"`
+	SecurityLevel                 pgtype.Text `json:"security_level"`
+	Origin                        pgtype.Text `json:"origin"`
+	PublishedDistributionBasePath pgtype.Text `json:"published_distribution_base_path"`
 }
 
 type RepositoryConfiguration struct {
