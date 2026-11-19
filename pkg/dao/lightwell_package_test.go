@@ -115,6 +115,56 @@ func (s *LightwellPackageSuite) createLightwellRepoWithOrg(ctx context.Context, 
 	return repoConfigUUID, repoUUID
 }
 
+func (s *LightwellPackageSuite) createLightwellRepoWithPath(ctx context.Context, name, orgID, basePath string) string {
+	repoUUID := uuid.New().String()
+	repoConfigUUID := uuid.New().String()
+
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO repositories (uuid, created_at, updated_at, origin, content_type, security_level, published_distribution_base_path)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?)`,
+		repoUUID, config.OriginLightwell, config.ContentTypeMaven, "remediated", basePath,
+	).Error
+	s.Require().NoError(err)
+
+	err = db.DB.WithContext(ctx).Exec(`
+		INSERT INTO repository_configurations (uuid, created_at, updated_at, name, org_id, repository_uuid, feature_name, arch, versions, snapshot, label)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?, 'any', '{any}', false, ?)`,
+		repoConfigUUID, name, orgID, repoUUID, "lightwell-maven", name,
+	).Error
+	s.Require().NoError(err)
+
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM repository_configurations WHERE uuid = ?`, repoConfigUUID).Error
+		_ = db.DB.Exec(`DELETE FROM repositories WHERE uuid = ?`, repoUUID).Error
+	})
+
+	return repoConfigUUID
+}
+
+func (s *LightwellPackageSuite) createPackageVersionAt(ctx context.Context, repoConfigUUID, name, group, version, publishedAt string) {
+	pkgUUID := uuid.New().String()
+	versionUUID := uuid.New().String()
+
+	err := db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_packages (uuid, created_at, updated_at, repository_configuration_uuid, name, package_group)
+		VALUES (?, NOW(), NOW(), ?, ?, ?)`,
+		pkgUUID, repoConfigUUID, name, group,
+	).Error
+	s.Require().NoError(err)
+
+	err = db.DB.WithContext(ctx).Exec(`
+		INSERT INTO lightwell_package_versions (uuid, created_at, updated_at, lightwell_package_uuid, repository_configuration_uuid, version, published_at)
+		VALUES (?, NOW(), NOW(), ?, ?, ?, ?)`,
+		versionUUID, pkgUUID, repoConfigUUID, version, publishedAt,
+	).Error
+	s.Require().NoError(err)
+
+	s.T().Cleanup(func() {
+		_ = db.DB.Exec(`DELETE FROM lightwell_package_versions WHERE uuid = ?`, versionUUID).Error
+		_ = db.DB.Exec(`DELETE FROM lightwell_packages WHERE uuid = ?`, pkgUUID).Error
+	})
+}
+
 func (s *LightwellPackageSuite) createPackageWithVersions(ctx context.Context, repoConfigUUID string, name string, group string, versions []string, releases []string, purls []string) string {
 	pkgUUID := uuid.New().String()
 
@@ -460,6 +510,33 @@ func (s *LightwellPackageSuite) TestListPackagesDemoFilter() {
 	s.Require().Len(demoRows, 1)
 	assert.Equal(s.T(), demoPkg, demoRows[0].Name)
 	assert.Equal(s.T(), demoRepo, demoRows[0].RepositoryConfigurationUUID)
+}
+
+func (s *LightwellPackageSuite) TestListPackagePublishTimesUsesPublicationReposOnly() {
+	ctx := context.Background()
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	version := "1.2.3.rhlw-" + suffix
+
+	publication := s.createLightwellRepoWithPath(ctx, "pub-"+suffix, config.LightwellOrg, "java/remediated")
+	predisclosure := s.createLightwellRepoWithPath(ctx, "pre-"+suffix, config.LightwellOrg, "python/predisclosure/")
+	demo := s.createLightwellRepoWithPath(ctx, "demo-"+suffix, config.LightwellDemoOrg, "java/remediated")
+	other := s.createLightwellRepoWithPath(ctx, "other-"+suffix, config.LightwellOrg, "java/validated")
+
+	s.createPackageVersionAt(ctx, publication, "demo-lib", "com.example", version, "2026-01-15T12:00:00Z")
+	s.createPackageVersionAt(ctx, predisclosure, "demo-lib", "com.example", version, "2026-03-01T00:00:00Z")
+	s.createPackageVersionAt(ctx, demo, "demo-lib", "com.example", version, "2026-09-01T00:00:00Z")
+	s.createPackageVersionAt(ctx, other, "demo-lib", "com.example", version, "2026-08-01T00:00:00Z")
+
+	got, err := NewPackagePublishTimeLookup(db.LightwellQueries).List(ctx, []string{version})
+	s.NoError(err)
+
+	publishedAt := make([]string, 0, len(got))
+	for _, row := range got {
+		assert.Equal(s.T(), "com.example", row.Group)
+		assert.Equal(s.T(), "demo-lib", row.Name)
+		publishedAt = append(publishedAt, row.PublishedAt)
+	}
+	assert.ElementsMatch(s.T(), []string{"2026-01-15T12:00:00Z", "2026-03-01T00:00:00Z"}, publishedAt)
 }
 
 func (s *LightwellPackageSuite) TestListPackagesZeroVersions() {

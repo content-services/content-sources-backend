@@ -876,6 +876,67 @@ func (q *Queries) ListLightwellRepositoryPackages(ctx context.Context, arg ListL
 	return items, nil
 }
 
+const listPackageVersionPublishTimes = `-- name: ListPackageVersionPublishTimes :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.published_at
+FROM lightwell_package_versions pv
+JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+JOIN repository_configurations rc ON rc.uuid = p.repository_configuration_uuid
+JOIN repositories r ON r.uuid = rc.repository_uuid
+WHERE pv.version = ANY($1::text[])
+    AND btrim(pv.published_at) <> ''
+    AND rc.org_id = $2::text
+    AND EXISTS (
+        SELECT 1
+        FROM unnest($3::text[]) AS path_suffix
+        WHERE right(
+            rtrim(btrim(COALESCE(r.published_distribution_base_path, '')), '/'),
+            length(path_suffix)
+        ) = path_suffix
+    )
+`
+
+type ListPackageVersionPublishTimesParams struct {
+	Versions     []string `json:"versions"`
+	OrgID        string   `json:"org_id"`
+	PathSuffixes []string `json:"path_suffixes"`
+}
+
+type ListPackageVersionPublishTimesRow struct {
+	PackageGroup string `json:"package_group"`
+	Name         string `json:"name"`
+	Version      string `json:"version"`
+	PublishedAt  string `json:"published_at"`
+}
+
+func (q *Queries) ListPackageVersionPublishTimes(ctx context.Context, arg ListPackageVersionPublishTimesParams) ([]ListPackageVersionPublishTimesRow, error) {
+	rows, err := q.db.Query(ctx, listPackageVersionPublishTimes, arg.Versions, arg.OrgID, arg.PathSuffixes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPackageVersionPublishTimesRow{}
+	for rows.Next() {
+		var i ListPackageVersionPublishTimesRow
+		if err := rows.Scan(
+			&i.PackageGroup,
+			&i.Name,
+			&i.Version,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStoredPackageVersions = `-- name: ListStoredPackageVersions :many
 SELECT pv.version
 FROM lightwell_package_versions pv

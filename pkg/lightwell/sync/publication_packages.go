@@ -226,7 +226,7 @@ func (v *publicationPackageVerifier) publicationRepositories(ctx context.Context
 	warnings := make([]string, 0)
 	for _, repo := range configured {
 		basePath := strings.TrimRight(strings.TrimSpace(repo.PublishedDistBasePath), "/")
-		if !strings.HasSuffix(basePath, "/remediated") && !strings.HasSuffix(basePath, "/predisclosure") {
+		if !isPublicationRepositoryPath(basePath) {
 			continue
 		}
 		imported := strings.TrimSpace(repo.LastImportRepositoryVersion) != ""
@@ -265,6 +265,15 @@ func (v *publicationPackageVerifier) packageVersions(
 		available[version] = true
 	}
 	return available, nil
+}
+
+func isPublicationRepositoryPath(basePath string) bool {
+	for _, suffix := range dao.PublicationPathSuffixes {
+		if strings.HasSuffix(basePath, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func publicationContentType(ecosystem string) string {

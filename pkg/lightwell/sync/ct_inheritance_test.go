@@ -25,6 +25,8 @@ func ctIncorporating(key string, memberKeys ...string) jira_client.JiraIssue {
 	raw := "[" + join(links, ",") + "]"
 	return jira_client.JiraIssue{Key: key, Fields: map[string]json.RawMessage{
 		"issuelinks": json.RawMessage(raw),
+		"status":     json.RawMessage(`{"name":"Closed"}`),
+		"resolution": json.RawMessage(`{"name":"Done"}`),
 	}}
 }
 
@@ -39,6 +41,8 @@ func ctIncorporatingInward(key string, memberKeys ...string) jira_client.JiraIss
 	raw := "[" + join(links, ",") + "]"
 	return jira_client.JiraIssue{Key: key, Fields: map[string]json.RawMessage{
 		"issuelinks": json.RawMessage(raw),
+		"status":     json.RawMessage(`{"name":"Closed"}`),
+		"resolution": json.RawMessage(`{"name":"Done"}`),
 	}}
 }
 
@@ -106,4 +110,32 @@ func TestBuildInheritedCIDsSkipsUnknownAndMalformed(t *testing.T) {
 		[]jira_client.JiraIssue{ctUnknownMember, ctBadLinks})
 	assert.NotContains(t, got, "LTWL-404")
 	assert.Equal(t, []string{"CID-663171"}, got["LTWL-1"])
+}
+
+func TestCTFinished(t *testing.T) {
+	for _, status := range []string{"Closed", "Done", "Resolved", "resolved"} {
+		ct := ctIncorporating("CT-1", "LTWL-1")
+		ct.Fields["status"] = json.RawMessage(`{"name":"` + status + `"}`)
+		assert.True(t, ctFinished(ct), status)
+	}
+	for _, status := range []string{"In Progress", "Verified", "Release Pending", ""} {
+		ct := ctIncorporating("CT-1", "LTWL-1")
+		ct.Fields["status"] = json.RawMessage(`{"name":"` + status + `"}`)
+		assert.False(t, ctFinished(ct), status)
+	}
+}
+
+func TestIVTsReadyToShipRequiresEveryLinkedCT(t *testing.T) {
+	closed := ctIncorporating("CT-1", "LTWL-1", "LTWL-2")
+	open := ctIncorporating("CT-2", "LTWL-1")
+	open.Fields["status"] = json.RawMessage(`{"name":"In Progress"}`)
+	resolved := ctIncorporating("CT-3", "LTWL-2")
+	resolved.Fields["status"] = json.RawMessage(`{"name":"Resolved"}`)
+
+	ready := ivtsReadyToShip([]jira_client.JiraIssue{closed, open, resolved})
+	_, lt1 := ready["LTWL-1"]
+	_, lt2 := ready["LTWL-2"]
+	assert.False(t, lt1, "an open CT holds the IVT back")
+	assert.True(t, lt2, "every linked CT is finished")
+	assert.NotContains(t, ivtsReadyToShip(nil), "LTWL-1")
 }

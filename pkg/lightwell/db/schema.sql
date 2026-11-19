@@ -16,7 +16,8 @@ CREATE TABLE repositories (
     uuid UUID PRIMARY KEY,
     content_type VARCHAR(255) NOT NULL DEFAULT 'rpm',
     security_level VARCHAR(255) DEFAULT NULL,
-    origin VARCHAR(255) DEFAULT NULL
+    origin VARCHAR(255) DEFAULT NULL,
+    published_distribution_base_path VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE lightwell_advisories (
