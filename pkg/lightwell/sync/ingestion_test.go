@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
@@ -83,6 +84,7 @@ type fakeVulnerabilityStore struct {
 	deleted       []string
 	outcome       dao.LightwellVulnerabilitySaveOutcome
 	deleteExisted bool
+	states        map[string]VulnerabilityState
 }
 
 func (f *fakeVulnerabilityStore) Save(_ context.Context, input dao.LightwellVulnerabilityInput) (dao.LightwellVulnerabilitySaveOutcome, error) {
@@ -93,6 +95,13 @@ func (f *fakeVulnerabilityStore) Save(_ context.Context, input dao.LightwellVuln
 func (f *fakeVulnerabilityStore) DeleteByKey(_ context.Context, key string) (bool, error) {
 	f.deleted = append(f.deleted, key)
 	return f.deleteExisted, nil
+}
+
+func (f *fakeVulnerabilityStore) ListStates(context.Context) (map[string]VulnerabilityState, error) {
+	if f.states == nil {
+		return map[string]VulnerabilityState{}, nil
+	}
+	return f.states, nil
 }
 
 func TestIngestorBatchLoadsRelationships(t *testing.T) {
@@ -1134,4 +1143,167 @@ func TestIngestorPromotesIVTWithCT(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+}
+
+func TestIngestorHoldsIVTWhileACTIsOpen(t *testing.T) {
+	issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Released", "java", "com.example:demo-lib", "1.2.3")
+	closed := ctIncorporating("CT-1", "LTWL-1")
+	open := ctIncorporating("CT-2", "LTWL-1")
+	open.Fields["status"] = json.RawMessage(`{"name":"In Progress"}`)
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+		ctPages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{closed, open}}},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	publications := &fakePublishTimes{rows: []dao.PackagePublishTime{{
+		Group: "com.example", Name: "demo-lib", Version: "1.2.3.build-00001", PublishedAt: "2026-01-15T12:00:00Z",
+	}}}
+
+	_, err := NewIngestor(jira, store, fakeAdvisories{rows: []dao.LightwellAdvisoryInput{matchingJavaAdvisory("LW-0000-0001")}}, nil, WithPackagePublishTimes(publications)).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Validation", store.saved[0].Stage)
+	assert.Equal(t, time.Date(2026, 8, 17, 1, 40, 0, 0, time.UTC), store.saved[0].LastUpdated)
+	assert.Empty(t, publications.calls)
+}
+
+func TestIngestorPromotesWhenEveryCTIsResolved(t *testing.T) {
+	issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Released", "java", "com.example:demo-lib", "1.2.3")
+	first := ctIncorporating("CT-1", "LTWL-1")
+	first.Fields["status"] = json.RawMessage(`{"name":"Resolved"}`)
+	second := ctIncorporating("CT-2", "LTWL-1")
+	second.Fields["status"] = json.RawMessage(`{"name":"Done"}`)
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+		ctPages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{first, second}}},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, fakeAdvisories{rows: []dao.LightwellAdvisoryInput{matchingJavaAdvisory("LW-0000-0001")}}, nil).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+}
+
+func TestIngestorFreezesShippedLastUpdatedAtPackagePublishTime(t *testing.T) {
+	issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Released", "java", "com.example:demo-lib", "1.2.3")
+	issue.Fields["updated"] = json.RawMessage(`"2026-11-01T00:00:00Z"`)
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+		ctPages: ctPagesFor("LTWL-1"),
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	publications := &fakePublishTimes{rows: []dao.PackagePublishTime{
+		{Group: "com.example", Name: "demo-lib", Version: "1.2.3.build-00001", PublishedAt: "2026-01-15T12:00:00Z"},
+		{Group: "com.example", Name: "demo-lib", Version: "1.2.3.build-00002", PublishedAt: "2026-04-01T08:30:00Z"},
+		{Group: "com.example", Name: "other-lib", Version: "1.2.3.build-00001", PublishedAt: "2026-09-01T00:00:00Z"},
+	}}
+	advisory := matchingJavaAdvisory("LW-0000-0001")
+	advisory.FixedVersions = []string{"1.2.3.build-00001", "1.2.3.build-00002"}
+
+	_, err := NewIngestor(
+		jira, store,
+		fakeAdvisories{rows: []dao.LightwellAdvisoryInput{advisory}},
+		nil,
+		WithPackagePublishTimes(publications),
+	).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+	assert.Equal(t, time.Date(2026, 4, 1, 8, 30, 0, 0, time.UTC), store.saved[0].LastUpdated)
+	require.Len(t, publications.calls, 1)
+	assert.Equal(t, []string{"1.2.3.build-00002", "1.2.3.build-00001"}, publications.calls[0])
+}
+
+func TestIngestorKeepsStoredLastUpdatedWhenPublishTimeIsMissing(t *testing.T) {
+	issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Released", "java", "com.example:demo-lib", "1.2.3")
+	issue.Fields["updated"] = json.RawMessage(`"2026-11-01T00:00:00Z"`)
+	frozen := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+	jira := &fakeJira{
+		pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+		ctPages: ctPagesFor("LTWL-1"),
+	}
+	store := &fakeVulnerabilityStore{
+		outcome: dao.LightwellVulnerabilityInserted,
+		states:  map[string]VulnerabilityState{"LTWL-1": {Stage: "Lightwell Network", LastUpdated: frozen}},
+	}
+	publications := &fakePublishTimes{}
+
+	_, err := NewIngestor(
+		jira, store,
+		fakeAdvisories{rows: []dao.LightwellAdvisoryInput{matchingJavaAdvisory("LW-0000-0001")}},
+		nil,
+		WithPackagePublishTimes(publications),
+	).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Lightwell Network", store.saved[0].Stage)
+	assert.Equal(t, frozen, store.saved[0].LastUpdated)
+}
+
+func TestIngestorSnapshotsUnremediatedLastUpdatedOnce(t *testing.T) {
+	issue := unremediatedJiraIssue("LTWL-1", "2026-11-01T00:00:00Z")
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Unremediated", store.saved[0].Stage)
+	assert.Equal(t, time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC), store.saved[0].LastUpdated)
+
+	frozen := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
+	store.states = map[string]VulnerabilityState{"LTWL-1": {Stage: "Unremediated", LastUpdated: frozen}}
+	store.saved = nil
+	_, err = NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Unremediated", store.saved[0].Stage)
+	assert.Equal(t, frozen, store.saved[0].LastUpdated)
+}
+
+func TestIngestorResumesLastUpdatedWhenLeavingUnremediated(t *testing.T) {
+	issue := validJiraIssue("LTWL-1")
+	issue.Fields["status"] = json.RawMessage(`{"name":"In Progress"}`)
+	issue.Fields["updated"] = json.RawMessage(`"2026-11-02T00:00:00Z"`)
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}}}
+	store := &fakeVulnerabilityStore{
+		outcome: dao.LightwellVulnerabilityInserted,
+		states: map[string]VulnerabilityState{"LTWL-1": {
+			Stage: "Unremediated", LastUpdated: time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC),
+		}},
+	}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Fix in Progress", store.saved[0].Stage)
+	assert.Equal(t, time.Date(2026, 11, 2, 0, 0, 0, 0, time.UTC), store.saved[0].LastUpdated)
+}
+
+type fakePublishTimes struct {
+	rows  []dao.PackagePublishTime
+	err   error
+	calls [][]string
+}
+
+func (f *fakePublishTimes) List(_ context.Context, versions []string) ([]dao.PackagePublishTime, error) {
+	f.calls = append(f.calls, versions)
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.rows, nil
+}
+
+func unremediatedJiraIssue(key, updated string) jira_client.JiraIssue {
+	issue := validJiraIssue(key)
+	issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+	issue.Fields["resolution"] = json.RawMessage(`{"name":"Won't Do"}`)
+	issue.Fields[fieldClosureReason] = json.RawMessage(`{"value":"Invalid License"}`)
+	updatedJSON, err := json.Marshal(updated)
+	if err != nil {
+		panic(err)
+	}
+	issue.Fields["updated"] = updatedJSON
+	return issue
 }

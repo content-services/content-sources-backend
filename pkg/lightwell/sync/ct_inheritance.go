@@ -64,9 +64,65 @@ func isShipReady(status string) bool {
 	return ok
 }
 
+// ctFinished reports whether a Component Upgrade has reached a terminal state.
+// Closed, Done, and Resolved all count. An open CT does not.
+func ctFinished(issue jira_client.JiraIssue) bool {
+	switch strings.ToLower(statusName(issue.Fields["status"])) {
+	case "closed", "done", "resolved":
+		return true
+	default:
+		return false
+	}
+}
+
+// finishedComponentUpgrades returns CTs in a terminal status. CID inheritance
+// uses only these, so an open Component Upgrade does not grant customer credit.
+func finishedComponentUpgrades(cts []jira_client.JiraIssue) []jira_client.JiraIssue {
+	finished := make([]jira_client.JiraIssue, 0, len(cts))
+	for _, ct := range cts {
+		if ctFinished(ct) {
+			finished = append(finished, ct)
+		}
+	}
+	return finished
+}
+
+// ivtsReadyToShip returns IVT keys whose every linked Component Upgrade is
+// finished. An IVT with no CT, or with any CT still open, is absent.
+func ivtsReadyToShip(cts []jira_client.JiraIssue) map[string]struct{} {
+	type counts struct {
+		total    int
+		finished int
+	}
+	byIVT := make(map[string]*counts)
+	for _, ct := range cts {
+		done := ctFinished(ct)
+		for _, key := range ctIncorporatedKeys(ct) {
+			if key == "" {
+				continue
+			}
+			c := byIVT[key]
+			if c == nil {
+				c = &counts{}
+				byIVT[key] = c
+			}
+			c.total++
+			if done {
+				c.finished++
+			}
+		}
+	}
+	ready := make(map[string]struct{})
+	for key, c := range byIVT {
+		if c.total > 0 && c.finished == c.total {
+			ready[key] = struct{}{}
+		}
+	}
+	return ready
+}
+
 // ctMemberKeys returns the set of IVT keys incorporated by any of the given
-// (Closed/Done) Component Upgrades. An IVT is "shipped" only if it is a member of
-// one of these CTs.
+// Component Upgrades.
 func ctMemberKeys(cts []jira_client.JiraIssue) map[string]struct{} {
 	members := make(map[string]struct{})
 	for _, ct := range cts {
