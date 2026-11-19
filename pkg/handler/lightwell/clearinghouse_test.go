@@ -203,6 +203,40 @@ func (s *ClearinghouseSuite) TestCreate() {
 	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 1)
 	s.Equal(submission, string(stored))
 }
+func (s *ClearinghouseSuite) TestCreateRedactsPersonalData() {
+	s.enableClearinghouse()
+	var stored []byte
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).
+		Return(func(_ context.Context, _ string, body io.Reader, _ int64) error {
+			stored, _ = io.ReadAll(body)
+			return nil
+		}).Once()
+	var upload dao.CreateClearinghouseUploadParams
+	s.reg.ClearinghouseUpload.On("CreateWithFiles", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(func(_ context.Context, params dao.CreateClearinghouseUploadParams, files []dao.CreateClearinghouseUploadFileParams, before func([]dao.ClearinghouseUploadFile) error) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
+			upload = params
+			rows := clearinghouseRows(files)
+			if err := before(rows); err != nil {
+				return dao.ClearinghouseUpload{}, nil, err
+			}
+			return dao.ClearinghouseUpload{UUID: params.UUID, OrgID: params.OrgID, Username: params.Username, Name: params.Name, Status: params.Status}, rows, nil
+		}).Once()
+
+	vuln := `{"vulnerability_id":"CVE-1","packageurl":"pkg:maven/org.x/y@1.0.Final","title":"t",` +
+		`"description":"Reported by jsmith@corp.com from /home/jsmith/poc using AKIAIOSFODNN7EXAMPLE"}`
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", clearinghouseSubmissionJSON("Batch for jsmith@corp.com", vuln)))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+
+	want := clearinghouseSubmissionJSON("Batch for <EMAIL_1>",
+		`{"vulnerability_id":"CVE-1","packageurl":"pkg:maven/org.x/y@1.0.Final","title":"t",`+
+			`"description":"Reported by <EMAIL_1> from /home/<USER_1>/poc using <CREDENTIAL>"}`)
+	s.Equal(want, string(stored))
+	s.Equal("Batch for <EMAIL_1>", upload.Name)
+	s.Require().Len(upload.Packages, 1)
+	s.Equal("pkg:maven/org.x/y@1.0.Final", upload.Packages[0].Packageurl)
+	s.NotContains(string(body), "jsmith")
+}
+
 func (s *ClearinghouseSuite) TestCreatePutFailure() {
 	s.enableClearinghouse()
 	s.expectCreate()

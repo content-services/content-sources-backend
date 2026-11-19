@@ -18,6 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/redact"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -115,9 +116,9 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 }
 
 // readIntakeSubmission reads and validates the intake submission JSON body. It
-// returns the raw bytes exactly as received (preserving any additional top-level
-// metadata), the submission name to store it under, and the vulnerabilities it
-// contains.
+// returns the bytes as received (preserving any additional top-level metadata)
+// with personal data redacted, the submission name to store it under, and the
+// vulnerabilities it contains.
 func readIntakeSubmission(c echo.Context) ([]byte, string, []intakeVulnerability, error) {
 	body, err := io.ReadAll(io.LimitReader(c.Request().Body, maxClearinghouseFileBytes+1))
 	if err != nil {
@@ -125,6 +126,11 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, []intakeVulnerability
 	}
 	if int64(len(body)) > maxClearinghouseFileBytes {
 		return nil, "", nil, ce.NewErrorResponse(http.StatusRequestEntityTooLarge, "Error reading submission", "Submission exceeds maximum size")
+	}
+	// Remove personal data before anything is parsed or stored.
+	body, _, err = redact.JSON(body)
+	if err != nil {
+		return nil, "", nil, ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Invalid JSON submission")
 	}
 	var parsed struct {
 		Name            string                `json:"name"`
