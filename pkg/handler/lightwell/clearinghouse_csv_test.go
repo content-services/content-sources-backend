@@ -141,6 +141,32 @@ func (s *ClearinghouseSuite) TestCreateCSV() {
 	s.Len(params.Packages, 2)
 }
 
+func (s *ClearinghouseSuite) TestCreateCSVCountsFindings() {
+	s.enableClearinghouse()
+	s.allowPut()
+	var params dao.CreateClearinghouseUploadParams
+	s.reg.ClearinghouseUpload.On("CreateWithFiles", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(func(_ context.Context, upload dao.CreateClearinghouseUploadParams, files []dao.CreateClearinghouseUploadFileParams, before func([]dao.ClearinghouseUploadFile) error) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
+			params = upload
+			rows := clearinghouseRows(files)
+			if err := before(rows); err != nil {
+				return dao.ClearinghouseUpload{}, nil, err
+			}
+			return dao.ClearinghouseUpload{UUID: upload.UUID, OrgID: upload.OrgID, Status: upload.Status, FindingsSummary: upload.FindingsSummary}, rows, nil
+		}).Once()
+
+	csv := "vulnerability_id,packageurl,title,description\n" +
+		"CVE-1,pkg:maven/org.x/y@1.0,t,Reported by jsmith@corp.com on 10.1.2.3\n"
+	code, body := s.serve(clearinghouseCSVRequest(s.T(), map[string]string{"name": "scan.csv"}, "scan.csv", csv))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+
+	want := &api.ClearinghouseFindingsSummary{Total: 2, Emails: 1, IPAddresses: 1}
+	s.Equal(want, params.FindingsSummary)
+	var created api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &created))
+	s.Equal(want, created.FindingsSummary)
+}
+
 func (s *ClearinghouseSuite) TestCreateCSVValidation() {
 	// Feature not enabled.
 	code, body := s.serve(clearinghouseCSVRequest(s.T(), map[string]string{"name": "a"}, "a.csv", validCSV))

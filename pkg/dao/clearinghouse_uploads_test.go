@@ -218,6 +218,7 @@ func TestClearinghouseUploadDaoPackages(t *testing.T) {
 			{Ecosystem: api.ClearinghouseEcosystemUnknown, Total: 1},
 		},
 	}
+	findings := &api.ClearinghouseFindingsSummary{Total: 4, Emails: 1, HomeUsernames: 1, Credentials: 1, IPAddresses: 1}
 	created, _, err := uploads.CreateWithFiles(ctx, CreateClearinghouseUploadParams{
 		UUID:     uploadID,
 		OrgID:    "clearinghouse-dao-" + uuid.NewString(),
@@ -231,14 +232,17 @@ func TestClearinghouseUploadDaoPackages(t *testing.T) {
 				InvalidReason: api.ClearinghouseInvalidReasonNotAPurl, InvalidDetail: "purl scheme is not \"pkg\""},
 			{Packageurl: "pkg:maven/org.example/a@1.0", Ecosystem: "Java", Namespace: "org.example", Name: "a", Version: "1.0", ValidPurl: true},
 		},
-		PackageSummary: summary,
+		PackageSummary:  summary,
+		FindingsSummary: findings,
 	}, nil, nil)
 	require.NoError(t, err)
 	assert.Equal(t, summary, created.PackageSummary)
+	assert.Equal(t, findings, created.FindingsSummary)
 
 	fetched, err := uploads.Get(ctx, uploadID)
 	require.NoError(t, err)
 	assert.Equal(t, summary, fetched.PackageSummary)
+	assert.Equal(t, findings, fetched.FindingsSummary)
 
 	all, total, err := uploads.ListPackages(ctx, uploadID, ListClearinghouseUploadPackagesParams{Limit: 10})
 	require.NoError(t, err)

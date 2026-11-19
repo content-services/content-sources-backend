@@ -234,7 +234,8 @@ CREATE TABLE clearinghouse_uploads (
     submitted_by TEXT,
     processed_at TIMESTAMPTZ,
     processed_by TEXT,
-    package_summary JSONB
+    package_summary JSONB,
+    findings_summary JSONB
 );
 
 CREATE INDEX idx_clearinghouse_uploads_org_id ON clearinghouse_uploads (org_id);

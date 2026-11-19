@@ -8,7 +8,8 @@ INSERT INTO clearinghouse_uploads (
     vulnerability_count,
     status,
     error_message,
-    package_summary
+    package_summary,
+    findings_summary
 ) VALUES (
     sqlc.arg(uuid),
     sqlc.arg(org_id),
@@ -18,7 +19,8 @@ INSERT INTO clearinghouse_uploads (
     sqlc.narg(vulnerability_count),
     sqlc.arg(status),
     sqlc.narg(error_message),
-    sqlc.narg(package_summary)
+    sqlc.narg(package_summary),
+    sqlc.narg(findings_summary)
 )
 RETURNING *;
 

@@ -203,6 +203,84 @@ func (s *ClearinghouseSuite) TestCreate() {
 	s.s3Client.AssertNumberOfCalls(s.T(), "Put", 1)
 	s.Equal(submission, string(stored))
 }
+func (s *ClearinghouseSuite) TestCreateCountsFindings() {
+	s.enableClearinghouse()
+	var stored []byte
+	s.s3Client.On("Put", mock.Anything, mock.AnythingOfType("string"), mock.Anything, mock.Anything).
+		Return(func(_ context.Context, _ string, body io.Reader, _ int64) error {
+			stored, _ = io.ReadAll(body)
+			return nil
+		}).Once()
+	var upload dao.CreateClearinghouseUploadParams
+	s.reg.ClearinghouseUpload.On("CreateWithFiles", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(func(_ context.Context, params dao.CreateClearinghouseUploadParams, files []dao.CreateClearinghouseUploadFileParams, before func([]dao.ClearinghouseUploadFile) error) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
+			upload = params
+			rows := clearinghouseRows(files)
+			if err := before(rows); err != nil {
+				return dao.ClearinghouseUpload{}, nil, err
+			}
+			return dao.ClearinghouseUpload{UUID: params.UUID, OrgID: params.OrgID, Username: params.Username, Name: params.Name, Status: params.Status, FindingsSummary: params.FindingsSummary}, rows, nil
+		}).Once()
+
+	vuln := `{"vulnerability_id":"CVE-1","packageurl":"pkg:maven/org.x/y@1.0.Final","title":"t",` +
+		`"description":"Reported by jsmith@corp.com from /home/jsmith/poc on 10.1.2.3 using AKIAIOSFODNN7EXAMPLE"}`
+	submission := clearinghouseSubmissionJSON("Batch for jsmith@corp.com", vuln)
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", submission))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+
+	// The submission is stored exactly as uploaded; only the counts are recorded.
+	s.Equal(submission, string(stored))
+	s.Equal("Batch for jsmith@corp.com", upload.Name)
+	wantFindings := &api.ClearinghouseFindingsSummary{Total: 5, Emails: 2, HomeUsernames: 1, Credentials: 1, IPAddresses: 1}
+	s.Equal(wantFindings, upload.FindingsSummary)
+	// The customer creating the submission sees the counts.
+	var created api.ClearinghouseSubmission
+	s.Require().NoError(json.Unmarshal(body, &created))
+	s.Equal(wantFindings, created.FindingsSummary)
+}
+
+func (s *ClearinghouseSuite) TestCreateStoresZeroFindingsSummary() {
+	s.enableClearinghouse()
+	s.allowPut()
+	var upload dao.CreateClearinghouseUploadParams
+	s.reg.ClearinghouseUpload.On("CreateWithFiles", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(func(_ context.Context, params dao.CreateClearinghouseUploadParams, files []dao.CreateClearinghouseUploadFileParams, before func([]dao.ClearinghouseUploadFile) error) (dao.ClearinghouseUpload, []dao.ClearinghouseUploadFile, error) {
+			upload = params
+			rows := clearinghouseRows(files)
+			if err := before(rows); err != nil {
+				return dao.ClearinghouseUpload{}, nil, err
+			}
+			return dao.ClearinghouseUpload{UUID: params.UUID, OrgID: params.OrgID, Status: params.Status}, rows, nil
+		}).Once()
+
+	code, body := s.serve(clearinghouseJSONRequest(s.T(), http.MethodPost, "/clearinghouse/submissions/create", clearinghouseSubmissionJSON("Clean")))
+	s.Require().Equal(http.StatusCreated, code, string(body))
+	s.Equal(&api.ClearinghouseFindingsSummary{}, upload.FindingsSummary)
+}
+
+func (s *ClearinghouseSuite) TestFindingsSummaryVisibleToCustomersAndReadUsers() {
+	s.enableClearinghouse()
+	id := uuid.New()
+	upload := clearinghouseUpload(id, api.ClearinghouseSubmissionStatusSubmitted)
+	findings := &api.ClearinghouseFindingsSummary{Total: 3, Emails: 1, Credentials: 2}
+	upload.FindingsSummary = findings
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(upload, nil)
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return([]dao.ClearinghouseUploadFile{}, nil)
+
+	code, body := s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	var fetched api.ClearinghouseSubmissionWithCID
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Equal(findings, fetched.FindingsSummary)
+
+	s.enableRead()
+	code, body = s.serve(clearinghouseRequest(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	fetched = api.ClearinghouseSubmissionWithCID{}
+	s.Require().NoError(json.Unmarshal(body, &fetched))
+	s.Equal(findings, fetched.FindingsSummary)
+}
+
 func (s *ClearinghouseSuite) TestCreatePutFailure() {
 	s.enableClearinghouse()
 	s.expectCreate()

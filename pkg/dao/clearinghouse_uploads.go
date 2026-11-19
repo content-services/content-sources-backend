@@ -31,6 +31,7 @@ type ClearinghouseUpload struct {
 	ProcessedAt        *time.Time
 	ProcessedBy        *string
 	PackageSummary     *api.ClearinghousePackageSummary
+	FindingsSummary    *api.ClearinghouseFindingsSummary
 }
 
 type ClearinghouseUploadFile struct {
@@ -54,6 +55,8 @@ type CreateClearinghouseUploadParams struct {
 	// Packages are stored in order with the upload. PackageSummary is stored on the upload.
 	Packages       []CreateClearinghouseUploadPackageParams
 	PackageSummary *api.ClearinghousePackageSummary
+	// FindingsSummary is stored on the upload.
+	FindingsSummary *api.ClearinghouseFindingsSummary
 }
 
 // CreateClearinghouseUploadPackageParams is one unique package parsed from a submission.
@@ -173,6 +176,12 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 			return ClearinghouseUpload{}, nil, err
 		}
 	}
+	var findingsSummary []byte
+	if upload.FindingsSummary != nil {
+		if findingsSummary, err = json.Marshal(upload.FindingsSummary); err != nil {
+			return ClearinghouseUpload{}, nil, err
+		}
+	}
 	q := store.New(tx)
 	row, err := q.CreateClearinghouseUpload(ctx, store.CreateClearinghouseUploadParams{
 		Uuid:               upload.UUID,
@@ -183,6 +192,7 @@ func (d clearinghouseUploadDaoImpl) CreateWithFiles(ctx context.Context, upload 
 		VulnerabilityCount: upload.VulnerabilityCount,
 		Status:             upload.Status,
 		PackageSummary:     packageSummary,
+		FindingsSummary:    findingsSummary,
 	})
 	if err != nil {
 		return ClearinghouseUpload{}, nil, err
@@ -587,6 +597,13 @@ func clearinghouseUploadFromStore(row store.ClearinghouseUpload) (ClearinghouseU
 			return ClearinghouseUpload{}, fmt.Errorf("decoding package summary of clearinghouse upload %s: %w", row.Uuid, err)
 		}
 	}
+	var findingsSummary *api.ClearinghouseFindingsSummary
+	if len(row.FindingsSummary) > 0 {
+		findingsSummary = &api.ClearinghouseFindingsSummary{}
+		if err := json.Unmarshal(row.FindingsSummary, findingsSummary); err != nil {
+			return ClearinghouseUpload{}, fmt.Errorf("decoding findings summary of clearinghouse upload %s: %w", row.Uuid, err)
+		}
+	}
 	return ClearinghouseUpload{
 		UUID:               row.Uuid,
 		CreatedAt:          row.CreatedAt,
@@ -602,6 +619,7 @@ func clearinghouseUploadFromStore(row store.ClearinghouseUpload) (ClearinghouseU
 		ProcessedAt:        row.ProcessedAt,
 		ProcessedBy:        row.ProcessedBy,
 		PackageSummary:     packageSummary,
+		FindingsSummary:    findingsSummary,
 	}, nil
 }
 

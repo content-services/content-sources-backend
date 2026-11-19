@@ -1767,6 +1767,31 @@ const docTemplatelightwell = `{
         }
     },
     "definitions": {
+        "api.ClearinghouseFindingsSummary": {
+            "type": "object",
+            "properties": {
+                "credentials": {
+                    "description": "Credentials is the number of tokens, keys, and other credentials found.",
+                    "type": "integer"
+                },
+                "emails": {
+                    "description": "Emails is the number of email addresses found.",
+                    "type": "integer"
+                },
+                "home_usernames": {
+                    "description": "HomeUsernames is the number of usernames found in home directory paths such as /home/\u003cuser\u003e.",
+                    "type": "integer"
+                },
+                "ip_addresses": {
+                    "description": "IPAddresses is the number of IPv4 and IPv6 addresses found.",
+                    "type": "integer"
+                },
+                "total": {
+                    "description": "Total is the number of findings across all kinds.",
+                    "type": "integer"
+                }
+            }
+        },
         "api.ClearinghousePackageEcosystemSummary": {
             "type": "object",
             "properties": {
@@ -1832,6 +1857,14 @@ const docTemplatelightwell = `{
                     "items": {
                         "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
                     }
+                },
+                "findings_summary": {
+                    "description": "FindingsSummary counts the possible personal data and secrets found in the submission JSON. The submission is stored unchanged. Counts can include false positives, and zero does not prove the submission holds no sensitive data. Absent for submissions created before scanning was added.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.ClearinghouseFindingsSummary"
+                        }
+                    ]
                 },
                 "name": {
                     "type": "string"
@@ -2011,6 +2044,14 @@ const docTemplatelightwell = `{
                     "items": {
                         "$ref": "#/definitions/api.ClearinghouseSubmissionFile"
                     }
+                },
+                "findings_summary": {
+                    "description": "FindingsSummary counts the possible personal data and secrets found in the submission JSON. The submission is stored unchanged. Counts can include false positives, and zero does not prove the submission holds no sensitive data. Absent for submissions created before scanning was added.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/api.ClearinghouseFindingsSummary"
+                        }
+                    ]
                 },
                 "name": {
                     "type": "string"
