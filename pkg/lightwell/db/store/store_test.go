@@ -45,6 +45,7 @@ func TestMain(m *testing.M) {
 
 type testVulnSpec struct {
 	vulnID      string
+	vulnKey     string
 	severity    string
 	stage       string
 	language    string
@@ -76,6 +77,10 @@ func insertTestVulnerabilities(t *testing.T, ctx context.Context, tx pgx.Tx, spe
 	for _, spec := range specs {
 		id := uuid.New()
 		ids[spec.vulnID] = id
+		vulnKey := spec.vulnKey
+		if vulnKey == "" {
+			vulnKey = spec.vulnID
+		}
 		_, err := tx.Exec(ctx, `
 			INSERT INTO lightwell_vulnerabilities (
 				uuid, vulnerability_key, vulnerability_id, component_name, component_version, title, severity, stage, language, complexity,
@@ -84,7 +89,7 @@ func insertTestVulnerabilities(t *testing.T, ctx context.Context, tx pgx.Tx, spe
 				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_DATE - $11::int, NOW(), $12, $13, $14
 			)`,
 			id,
-			spec.vulnID,
+			vulnKey,
 			spec.vulnID,
 			spec.component,
 			"1.0.0",
@@ -175,6 +180,7 @@ func TestStore_CustomerScopingAndFilters(t *testing.T) {
 	specs := []testVulnSpec{
 		{
 			vulnID:      "LWL-TEST-CRIT-STANDARD",
+			vulnKey:     "LTWL-SEARCH-ONLY",
 			severity:    "Critical",
 			stage:       "Submitted",
 			language:    "java",
@@ -365,6 +371,14 @@ func TestStore_CustomerScopingAndFilters(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, byID, 1)
 	assert.Equal(t, "LWL-TEST-MOD-COMPLEX", byID[0].VulnerabilityID)
+
+	searchKey := listParams(customerA)
+	searchKey.Search = textSearch("LTWL-SEARCH-ONLY")
+	byKey, err := q.ListVulnerabilities(ctx, searchKey)
+	require.NoError(t, err)
+	assert.Len(t, byKey, 1)
+	assert.Equal(t, "LTWL-SEARCH-ONLY", byKey[0].VulnerabilityKey)
+	assert.Equal(t, "LWL-TEST-CRIT-STANDARD", byKey[0].VulnerabilityID)
 
 	searchCase := listParams(customerA)
 	searchCase.Search = textSearch("LOG4J")

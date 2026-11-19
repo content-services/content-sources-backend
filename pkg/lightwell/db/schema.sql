@@ -167,6 +167,7 @@ WHERE vc.customer_id = p_customer_id
     AND (
         p_search IS NULL
         OR v.vulnerability_id ILIKE '%' || p_search || '%'
+        OR v.vulnerability_key ILIKE '%' || p_search || '%'
         OR v.component_name ILIKE '%' || p_search || '%'
         OR v.title ILIKE '%' || p_search || '%'
     )
