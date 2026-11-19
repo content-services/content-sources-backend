@@ -2,12 +2,14 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/db"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/db/store"
 	lightwellsync "github.com/content-services/content-sources-backend/pkg/lightwell/sync"
 	"github.com/rs/zerolog/log"
 )
@@ -52,10 +54,11 @@ func runLightwellVulnerabilitySync(ctx context.Context) (lightwellsync.SyncSumma
 
 	ingestor := lightwellsync.NewIngestor(
 		jiraClient,
-		daos.LightwellVulnerability,
+		lightwellVulnerabilitySyncStore{LightwellVulnerabilityDao: daos.LightwellVulnerability, queries: db.LightwellQueries},
 		daos.LightwellAdvisory,
 		verifier,
 		lightwellsync.WithPromoteByJiraState(config.Get().Options.LightwellPromoteByJiraState),
+		lightwellsync.WithPackagePublishTimes(dao.NewPackagePublishTimeLookup(db.LightwellQueries)),
 	)
 	summary, err := ingestor.Sync(ctx)
 	if err != nil {
@@ -69,4 +72,29 @@ func runLightwellVulnerabilitySync(ctx context.Context) (lightwellsync.SyncSumma
 
 func publicationPackageVerifier(daos *dao.DaoRegistry) lightwellsync.PublicationPackageVerifier {
 	return lightwellsync.NewPublicationPackageVerifier(daos.RepositoryConfig, daos.LightwellPackage)
+}
+
+// lightwellVulnerabilitySyncStore adds the stored stage and last_updated read
+// the beacon sync needs. Save and delete stay on the vulnerability DAO.
+type lightwellVulnerabilitySyncStore struct {
+	dao.LightwellVulnerabilityDao
+	queries store.Querier
+}
+
+func (s lightwellVulnerabilitySyncStore) ListStates(ctx context.Context) (map[string]lightwellsync.VulnerabilityState, error) {
+	if s.queries == nil {
+		return nil, fmt.Errorf("lightwell querier is not initialized")
+	}
+	rows, err := s.queries.ListVulnerabilitySyncStates(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list vulnerability sync states: %w", err)
+	}
+	states := make(map[string]lightwellsync.VulnerabilityState, len(rows))
+	for _, row := range rows {
+		states[row.VulnerabilityKey] = lightwellsync.VulnerabilityState{
+			Stage:       row.Stage,
+			LastUpdated: row.LastUpdated.UTC(),
+		}
+	}
+	return states, nil
 }

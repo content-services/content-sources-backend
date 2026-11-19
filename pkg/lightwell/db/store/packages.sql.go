@@ -876,6 +876,50 @@ func (q *Queries) ListLightwellRepositoryPackages(ctx context.Context, arg ListL
 	return items, nil
 }
 
+const listPackageVersionPublishTimes = `-- name: ListPackageVersionPublishTimes :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.published_at
+FROM lightwell_package_versions pv
+JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+WHERE pv.version = ANY($1::text[])
+    AND btrim(pv.published_at) <> ''
+`
+
+type ListPackageVersionPublishTimesRow struct {
+	PackageGroup string `json:"package_group"`
+	Name         string `json:"name"`
+	Version      string `json:"version"`
+	PublishedAt  string `json:"published_at"`
+}
+
+func (q *Queries) ListPackageVersionPublishTimes(ctx context.Context, versions []string) ([]ListPackageVersionPublishTimesRow, error) {
+	rows, err := q.db.Query(ctx, listPackageVersionPublishTimes, versions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPackageVersionPublishTimesRow{}
+	for rows.Next() {
+		var i ListPackageVersionPublishTimesRow
+		if err := rows.Scan(
+			&i.PackageGroup,
+			&i.Name,
+			&i.Version,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStoredPackageVersions = `-- name: ListStoredPackageVersions :many
 SELECT pv.version
 FROM lightwell_package_versions pv

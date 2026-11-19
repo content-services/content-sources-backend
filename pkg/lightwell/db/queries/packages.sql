@@ -304,3 +304,14 @@ ORDER BY
     p.package_group ASC,
     p.name ASC
 LIMIT sqlc.arg(page_limit) OFFSET sqlc.arg(page_offset);
+
+-- name: ListPackageVersionPublishTimes :many
+SELECT
+    p.package_group,
+    p.name,
+    pv.version,
+    pv.published_at
+FROM lightwell_package_versions pv
+JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
+WHERE pv.version = ANY(sqlc.arg(versions)::text[])
+    AND btrim(pv.published_at) <> '';
