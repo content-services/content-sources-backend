@@ -89,8 +89,10 @@ When a vulnerability's stored stage is **On Hold**, the sync also records why. T
 | Linked ticket | Link | Where the reason comes from |
 | --- | --- | --- |
 | Build Task | "is blocked by" | Its `blocked:<reason>` labels |
-| Component Upgrade | "Incorporates" (either direction) | Its `blocked:<reason>` labels |
+| Component Upgrade | "Incorporates" (either direction) | Its `blocked:<reason>` labels, plus `blocked-by-ticket` if an open ticket blocks the Component Upgrade itself (its own "is blocked by" link) |
 | Any other issue type | "is blocked by" | No label needed: `blocked-by-ticket` |
+
+A vulnerability's stored stage is On Hold when its own Jira status is On Hold, or when **any open Component Upgrade that incorporates it is On Hold** (Jira embeds that Component Upgrade's status name in the link). The second case applies only to vulnerabilities in Submitted, Classified, Fix in Progress or Validation that Jira does not show as Released or Closed/Done. Shipped vulnerabilities (Lightwell Network) and ones closed without a fix (Unremediated) are never changed. Such a vulnerability takes its reasons only from its On Hold Component Upgrades, and its own blocking tickets are not read. The stage is worked out on every run, so it goes back to its own stage, with no reasons, when the Component Upgrade leaves On Hold.
 
 Each `blocked:<reason>` label has its prefix stripped and is lowercased to a slug. Slugs are de-duplicated, sorted, and stored in `lightwell_vulnerabilities.on_hold_reasons` (`TEXT[]`, never `NULL`). An open Build Task or Component Upgrade without a `blocked:` label contributes nothing, so an On Hold vulnerability can legitimately have no reasons. Any other stage saves an empty list, which clears reasons left from an earlier On Hold period.
 
@@ -98,12 +100,13 @@ The slugs the API knows how to word are `ant-build`, `native-build`, `missing-so
 
 The database keeps the slugs. The list API returns `on_hold_reasons` as customer-facing text, in stored order, and omits the field when there is nothing to show. The wording lives in one place, `onHoldReasonDisplay` in `pkg/dao/lightwell_vulnerability.go`. A slug that map does not contain is shown as "Blocked on a dependency", so a new Jira label never silently disappears.
 
-Labels are batch-fetched once per sync for the open blockers of On Hold vulnerabilities. If a blocker's labels cannot be fetched, that vulnerability is counted as failed and not saved, so the reasons it already has are not wiped.
+The blockers' labels, issue links and issue type are batch-fetched once per sync for the open blockers of On Hold vulnerabilities and for the On Hold Component Upgrades of other vulnerabilities. If a blocker cannot be fetched, that vulnerability is counted as failed and not saved, so the reasons it already has are not wiped.
 
 Observability:
 
 - An On Hold vulnerability saved with no reasons is logged at **debug** level with the message `beacon_on_hold_without_reason`, plus `issue` and `open_blockers` (open Build Task and Component Upgrade blockers that had no `blocked:` label).
-- The job's final "Finished syncing" line includes `on_hold_without_reason`, the number of such vulnerabilities.
+- A vulnerability saved as On Hold only because a Component Upgrade is On Hold is logged at **debug** level with the message `beacon_on_hold_from_component_upgrade`, plus `issue` and `on_hold_component_upgrades` (the keys).
+- The job's final "Finished syncing" line includes `on_hold_without_reason` and `on_hold_from_component_upgrade`, the number of vulnerabilities in each case.
 - Set `logging.level: debug` in `configs/config.yaml` to see the per-issue lines (the example config already does).
 
 The demo seed gives the three On Hold rows one case each: `PROJ-3501` has `cumulative-build-failure` and `missing-sources`, `PROJ-3502` has `blocked-by-ticket`, and `PROJ-3503` has none. The seeder only loads into a database without the demo rows, so on a database seeded before this change, delete the demo rows (those with a `uuid` starting `00000000-0000-4000-8000-`) and run migrations again.
