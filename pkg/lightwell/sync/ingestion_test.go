@@ -522,6 +522,494 @@ func captureLogs(t *testing.T) *bytes.Buffer {
 	return &buf
 }
 
+// onHoldIVT builds an On Hold vulnerability carrying the given issue links.
+func onHoldIVT(key string, links ...string) jira_client.JiraIssue {
+	issue := validJiraIssue(key)
+	issue.Fields["status"] = json.RawMessage(`{"name":"On Hold"}`)
+	issue.Fields["issuelinks"] = json.RawMessage("[" + strings.Join(links, ",") + "]")
+	return issue
+}
+
+func buildTaskBlocker(key, statusCategory string) string {
+	return blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", key, "Build Task", statusCategory)
+}
+
+// labelledBlocker is a blocker as returned when its labels are requested.
+func labelledBlocker(key string, labels ...string) jira_client.JiraIssue {
+	raw, _ := json.Marshal(labels)
+	return jira_client.JiraIssue{Key: key, Fields: map[string]json.RawMessage{"labels": raw}}
+}
+
+func TestIngestorSavesOnHoldReasonsFromBlockerLabels(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		buildTaskBlocker("VBT-1", "new"),
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"),
+		blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-1", "Bug", "new"),
+		buildTaskBlocker("VBT-2", "done"),
+	)
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources"),
+			"CT-1":  labelledBlocker("CT-1", "blocked:monorepo"),
+			"VBT-2": labelledBlocker("VBT-2", "blocked:ant-build"),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket", "missing-sources", "monorepo"}, store.saved[0].OnHoldReasons)
+	// One batch search for the open blockers only: the done blocker is skipped and no
+	// ticket is fetched individually.
+	assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1", "VBT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Equal(t, []string{"labels", "issuelinks", "issuetype"}, jira.searchFields[1])
+	assert.Empty(t, jira.issueCalls)
+}
+
+// A Component Upgrade can be blocked by an open ticket instead of a label. That is a
+// reason on its own, worded the same as an open ticket that blocks the IVT directly.
+func TestIngestorSavesBlockedByTicketFromComponentUpgradeLinks(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"))
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "indeterminate")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket"}, store.saved[0].OnHoldReasons)
+	assert.Zero(t, summary.OnHoldWithoutReason)
+	assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Equal(t, []string{"labels", "issuelinks", "issuetype"}, jira.searchFields[1])
+	assert.Empty(t, jira.issueCalls)
+}
+
+func TestIngestorIgnoresClosedTicketBlockingComponentUpgrade(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"))
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "done")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Equal(t, 1, summary.OnHoldWithoutReason)
+}
+
+// The one-ticket-at-a-time fallback must read the Component Upgrade's links too, not
+// only its labels.
+func TestIngestorFallbackReadsComponentUpgradeLinks(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{"blocked:monorepo"},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "new")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket", "monorepo"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{"CT-1"}, jira.issueCalls)
+	assert.Equal(t, [][]string{{"labels", "issuelinks", "issuetype"}}, jira.issueFields)
+}
+
+func TestIngestorOnHoldBlockedByTicketNeedsNoLabelFetch(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-1", "Bug", "indeterminate"))
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{VulnerabilityJQL, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Empty(t, jira.issueCalls)
+	assert.Zero(t, summary.OnHoldWithoutReason)
+}
+
+func TestIngestorSavesNoReasonsWhenNotOnHold(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	ivt.Fields["status"] = json.RawMessage(`{"name":"In Progress"}`)
+	jira := &fakeJira{
+		pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Fix in Progress", store.saved[0].Stage)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{VulnerabilityJQL, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Empty(t, jira.issueCalls)
+	assert.Zero(t, summary.OnHoldWithoutReason)
+}
+
+func TestIngestorCountsOnHoldWithoutReason(t *testing.T) {
+	logs := captureLogs(t)
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"), buildTaskBlocker("VBT-2", "done"))
+	jira := &fakeJira{
+		pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{"VBT-1": labelledBlocker("VBT-1", "java")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Inserted)
+	assert.Equal(t, 1, summary.OnHoldWithoutReason)
+	require.Len(t, store.saved, 1)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Contains(t, logs.String(), onHoldNoReasonLog)
+	assert.Contains(t, logs.String(), `"issue":"LTWL-1"`)
+	assert.Contains(t, logs.String(), `"open_blockers":1`)
+}
+
+// An earlier prefetch for other fields can leave a copy of a blocker in the shared
+// cache without labels. The fallback must ask Jira for the labels instead of reading it.
+func TestIngestorFetchesBlockerLabelsDirectlyWhenBatchFails(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+		issues:         map[string]jira_client.JiraIssue{"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	ingestor := NewIngestor(jira, store, nil, nil)
+	ingestor.cache["VBT-1"] = cachedIssue{issue: jira_client.JiraIssue{
+		Key:    "VBT-1",
+		Fields: map[string]json.RawMessage{"issuelinks": json.RawMessage(`[]`)},
+	}}
+
+	summary, err := ingestor.Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Inserted)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"missing-sources"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{"VBT-1"}, jira.issueCalls)
+	assert.Equal(t, [][]string{{"labels", "issuelinks", "issuetype"}}, jira.issueFields)
+}
+
+// ivtWithJiraStatus builds a vulnerability with the given Jira status and issue links.
+func ivtWithJiraStatus(key, status string, links ...string) jira_client.JiraIssue {
+	issue := validJiraIssue(key)
+	issue.Fields["status"] = json.RawMessage(`{"name":"` + status + `"}`)
+	issue.Fields["issuelinks"] = json.RawMessage("[" + strings.Join(links, ",") + "]")
+	return issue
+}
+
+func onHoldCTLink(key string) string {
+	return incorporatedCT("outwardIssue", key, "On Hold", "indeterminate")
+}
+
+// A Component Upgrade that is On Hold blocks the vulnerabilities it incorporates, even
+// when their own Jira status says they are somewhere else in the pipeline.
+func TestIngestorSavesVulnerabilityAsOnHoldWhenComponentUpgradeIsOnHold(t *testing.T) {
+	for _, status := range []string{"New", "To Do", "In Progress", "Verified"} {
+		t.Run(status, func(t *testing.T) {
+			ivt := ivtWithJiraStatus("LTWL-1", status, onHoldCTLink("CT-1"))
+			jira := &fakeJira{
+				pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+				issues: map[string]jira_client.JiraIssue{"CT-1": labelledBlocker("CT-1", "blocked:native-build")},
+			}
+			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+			summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+			require.NoError(t, err)
+			require.Len(t, store.saved, 1)
+			assert.Equal(t, "On Hold", store.saved[0].Stage)
+			assert.Equal(t, []string{"native-build"}, store.saved[0].OnHoldReasons)
+			assert.Equal(t, 1, summary.OnHoldFromComponentUpgrade)
+			assert.Zero(t, summary.OnHoldWithoutReason)
+			// The Component Upgrade comes in the same batch lookup as any other blocker.
+			assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
+			assert.Empty(t, jira.issueCalls)
+		})
+	}
+}
+
+func TestIngestorKeepsStageWhenComponentUpgradeIsNotOnHold(t *testing.T) {
+	ivt := ivtWithJiraStatus("LTWL-1", "Verified", incorporatedCT("outwardIssue", "CT-1", "In Progress", "indeterminate"))
+	jira := &fakeJira{pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}}}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "Validation", store.saved[0].Stage)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Zero(t, summary.OnHoldFromComponentUpgrade)
+	assert.Equal(t, []string{VulnerabilityJQL, ComponentUpgradeJQL}, jira.searchJQLs)
+}
+
+// Only vulnerabilities still on their way to customers can be held. Shipped ones and
+// ones closed without a fix keep their stage, whatever their Component Upgrade says.
+func TestIngestorDoesNotHoldShippedOrClosedVulnerabilities(t *testing.T) {
+	newJira := func(issue jira_client.JiraIssue) *fakeJira {
+		return &fakeJira{
+			pages:   map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{issue}}},
+			ctPages: ctPagesFor("LTWL-1"),
+		}
+	}
+	cases := []struct {
+		name       string
+		issue      func() jira_client.JiraIssue
+		advisories AdvisoryStore
+		wantStage  string
+	}{
+		{
+			name:      "released in Jira",
+			issue:     func() jira_client.JiraIssue { return ivtWithJiraStatus("LTWL-1", "Released", onHoldCTLink("CT-1")) },
+			wantStage: "Validation",
+		},
+		{
+			name: "closed as done",
+			issue: func() jira_client.JiraIssue {
+				issue := ivtWithJiraStatus("LTWL-1", "Closed", onHoldCTLink("CT-1"))
+				issue.Fields["resolution"] = resolutionJSON("Done")
+				return issue
+			},
+			wantStage: "Validation",
+		},
+		{
+			name: "closed without a fix",
+			issue: func() jira_client.JiraIssue {
+				issue := ivtWithJiraStatus("LTWL-1", "Closed", onHoldCTLink("CT-1"))
+				issue.Fields["resolution"] = resolutionJSON("Won't do")
+				issue.Fields[fieldClosureReason] = json.RawMessage(`{"value":"Invalid License"}`)
+				return issue
+			},
+			wantStage: "Unremediated",
+		},
+		{
+			name: "published on the Lightwell Network",
+			issue: func() jira_client.JiraIssue {
+				issue := publishedJiraIssue("LTWL-1", "LW-0000-0001 Example", "Verified", "java", "com.example:demo-lib", "1.2.3")
+				issue.Fields["issuelinks"] = json.RawMessage("[" + onHoldCTLink("CT-1") + "]")
+				return issue
+			},
+			advisories: fakeAdvisories{rows: []dao.LightwellAdvisoryInput{matchingJavaAdvisory("LW-0000-0001")}},
+			wantStage:  "Lightwell Network",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			jira := newJira(tt.issue())
+			store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+			summary, err := NewIngestor(jira, store, tt.advisories, nil).Sync(context.Background())
+
+			require.NoError(t, err)
+			require.Len(t, store.saved, 1)
+			assert.Equal(t, tt.wantStage, store.saved[0].Stage)
+			assert.Empty(t, store.saved[0].OnHoldReasons)
+			assert.Zero(t, summary.OnHoldFromComponentUpgrade)
+			assert.Zero(t, summary.OnHoldWithoutReason)
+		})
+	}
+}
+
+// A vulnerability held only by its Component Upgrades shows the reasons of the On Hold
+// ones. Labels on another, progressing Component Upgrade, on a Build Task, or a ticket
+// that blocks the vulnerability itself are not read.
+func TestIngestorHeldByComponentUpgradeUsesOnlyTheOnHoldOnes(t *testing.T) {
+	ivt := ivtWithJiraStatus("LTWL-1", "Verified",
+		onHoldCTLink("CT-1"),
+		incorporatedCT("outwardIssue", "CT-2", "In Progress", "indeterminate"),
+		buildTaskBlocker("VBT-1", "new"),
+		blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "new"),
+	)
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1":  labelledBlocker("CT-1", "blocked:monorepo"),
+			"CT-2":  labelledBlocker("CT-2", "blocked:ant-build"),
+			"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources"),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "On Hold", store.saved[0].Stage)
+	assert.Equal(t, []string{"monorepo"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, 1, summary.OnHoldFromComponentUpgrade)
+	assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
+}
+
+func TestIngestorHeldByComponentUpgradeWithoutReason(t *testing.T) {
+	ivt := ivtWithJiraStatus("LTWL-1", "Verified", onHoldCTLink("CT-1"))
+	jira := &fakeJira{
+		pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{"CT-1": labelledBlocker("CT-1", "java")},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "On Hold", store.saved[0].Stage)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Equal(t, 1, summary.OnHoldFromComponentUpgrade)
+	assert.Equal(t, 1, summary.OnHoldWithoutReason)
+}
+
+func TestIngestorHeldByComponentUpgradeBlockedByTicket(t *testing.T) {
+	ivt := ivtWithJiraStatus("LTWL-1", "Verified", onHoldCTLink("CT-1"))
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "indeterminate")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, "On Hold", store.saved[0].Stage)
+	assert.Equal(t, []string{"blocked-by-ticket"}, store.saved[0].OnHoldReasons)
+}
+
+// A vulnerability that is already On Hold in Jira is not counted as held by a Component
+// Upgrade, and still reads every open blocker.
+func TestIngestorOnHoldInJiraStillReadsEveryBlocker(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", onHoldCTLink("CT-1"), buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1":  labelledBlocker("CT-1", "blocked:monorepo"),
+			"VBT-1": labelledBlocker("VBT-1", "blocked:missing-sources"),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"missing-sources", "monorepo"}, store.saved[0].OnHoldReasons)
+	assert.Zero(t, summary.OnHoldFromComponentUpgrade)
+}
+
+// Stages are worked out again on every sync, so a vulnerability returns to its own stage
+// and loses its reasons once its Component Upgrade leaves On Hold.
+func TestIngestorLeavesOnHoldWhenComponentUpgradeLeavesOnHold(t *testing.T) {
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+	runSync := func(ctStatus string) {
+		ivt := ivtWithJiraStatus("LTWL-1", "Verified", incorporatedCT("outwardIssue", "CT-1", ctStatus, "indeterminate"))
+		jira := &fakeJira{
+			pages:  map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+			issues: map[string]jira_client.JiraIssue{"CT-1": labelledBlocker("CT-1", "blocked:native-build")},
+		}
+		_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+		require.NoError(t, err)
+	}
+
+	runSync("On Hold")
+	runSync("In Progress")
+
+	require.Len(t, store.saved, 2)
+	assert.Equal(t, "On Hold", store.saved[0].Stage)
+	assert.Equal(t, []string{"native-build"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, "Validation", store.saved[1].Stage)
+	assert.Empty(t, store.saved[1].OnHoldReasons)
+}
+
+func TestIngestorFailsVulnerabilityWhenOnHoldComponentUpgradeCannotBeRead(t *testing.T) {
+	ivt := ivtWithJiraStatus("LTWL-1", "Verified", onHoldCTLink("CT-1"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Failed)
+	// Not saved, so what an earlier sync stored is never replaced by a guess.
+	assert.Empty(t, store.saved)
+	require.Len(t, summary.Failures, 1)
+	assert.Contains(t, summary.Failures[0], "CT-1")
+}
+
+func TestIngestorFailsOnHoldIssueWhenBlockerLabelsUnavailable(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, summary.Failed)
+	assert.Zero(t, summary.Inserted)
+	// Not saved, so reasons stored by an earlier sync are never wiped by a failed fetch.
+	assert.Empty(t, store.saved)
+	require.Len(t, summary.Failures, 1)
+	assert.Contains(t, summary.Failures[0], "LTWL-1")
+	assert.Contains(t, summary.Failures[0], "VBT-1")
+}
+
+func TestIngestorRequestsUnavailableBlockerOnlyOnce(t *testing.T) {
+	first := onHoldIVT("LTWL-1", buildTaskBlocker("VBT-1", "new"))
+	second := onHoldIVT("LTWL-2", buildTaskBlocker("VBT-1", "new"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{first, second}}},
+		batchSearchErr: errors.New("bulk search failed"),
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, summary.Failed)
+	assert.Empty(t, store.saved)
+	assert.Equal(t, []string{"VBT-1"}, jira.issueCalls)
+}
+
 func TestIngestorSavesClosedResolutions(t *testing.T) {
 	for _, tt := range []struct {
 		resolution string
