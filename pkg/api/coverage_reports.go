@@ -46,11 +46,14 @@ type EcosystemCoverageSummary struct {
 
 // CoverageReportPackageResponse represents a package in a coverage report
 type CoverageReportPackageResponse struct {
-	Name        string `json:"name"`         // Package name from the manifest
-	Version     string `json:"version"`      // Package version from the manifest
-	Ecosystem   string `json:"ecosystem"`    // Ecosystem of the package
-	Covered     bool   `json:"covered"`      // Whether the package is covered (true = exact or partial match)
-	MatchStatus string `json:"match_status"` // Match status of the package (exact, partial, none)
+	Name                 string   `json:"name"`                   // Package name from the manifest
+	Version              string   `json:"version"`                // Package version from the manifest
+	Ecosystem            string   `json:"ecosystem"`              // Ecosystem of the package
+	Covered              bool     `json:"covered"`                // Whether the package is covered (true = exact or partial match)
+	MatchStatus          string   `json:"match_status"`           // Match status of the package (exact, partial, none)
+	LightwellVersions    []string `json:"lightwell_versions"`     // Distinct upstream versions of this package in the Lightwell catalog
+	NearestHigherVersion string   `json:"nearest_higher_version"` // Smallest catalog upstream version strictly above the manifest version
+	MatchSegment         string   `json:"match_segment"`          // How far nearest_higher_version agrees with the manifest version: major, minor, patch, or none
 
 	CveCount CveCount  `json:"cve_count"`           // Count of CVEs fixed in remediated repos for this package, by severity
 	CveRange *CveRange `json:"cve_range,omitempty"` // Min/max CVSS severity score across this package's CVEs; omitted when the package has no CVEs

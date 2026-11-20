@@ -13,6 +13,7 @@ import (
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/utils"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -115,12 +116,19 @@ func (d coverageReportDaoImpl) ListPackages(ctx context.Context, orgID string, r
 		if pkg.Namespace != nil {
 			identity.Namespace = *pkg.Namespace
 		}
+		segment := pkg.MatchSegment
+		if segment == "" {
+			segment = models.CoverageMatchSegmentNone
+		}
 		items[i] = api.CoverageReportPackageResponse{
-			Name:        identity.FullName(),
-			Version:     pkg.Version,
-			Ecosystem:   pkg.Ecosystem,
-			Covered:     pkg.MatchStatus != models.CoverageMatchStatusNone,
-			MatchStatus: pkg.MatchStatus,
+			Name:                 identity.FullName(),
+			Version:              pkg.Version,
+			Ecosystem:            pkg.Ecosystem,
+			Covered:              pkg.MatchStatus != models.CoverageMatchStatusNone,
+			MatchStatus:          pkg.MatchStatus,
+			LightwellVersions:    coverageVersions(pkg.LightwellVersions),
+			NearestHigherVersion: pkg.NearestHigherVersion,
+			MatchSegment:         segment,
 			CveCount: api.CveCount{
 				Critical:  pkg.CveCritical,
 				Important: pkg.CveImportant,
@@ -186,13 +194,20 @@ func (d coverageReportDaoImpl) SaveCoverageAnalysis(ctx context.Context, reportU
 		if result.Namespace != "" {
 			namespace = utils.Ptr(result.Namespace)
 		}
+		segment := result.MatchSegment
+		if segment == "" {
+			segment = matcher.MatchSegmentNone
+		}
 		pkg := models.CoverageReportPackage{
-			CoverageReportUUID: reportUUID,
-			Ecosystem:          result.Ecosystem,
-			Name:               result.Name,
-			Version:            result.Version,
-			Namespace:          namespace,
-			MatchStatus:        result.MatchStatus,
+			CoverageReportUUID:   reportUUID,
+			Ecosystem:            result.Ecosystem,
+			Name:                 result.Name,
+			Version:              result.Version,
+			Namespace:            namespace,
+			MatchStatus:          result.MatchStatus,
+			LightwellVersions:    pq.StringArray(coverageVersions(result.LightwellVersions)),
+			NearestHigherVersion: result.NearestHigherVersion,
+			MatchSegment:         segment,
 		}
 		if i < len(params.PackageCVEs) {
 			pkgCVE := params.PackageCVEs[i]
@@ -333,6 +348,15 @@ func (d coverageReportDaoImpl) modelToResponse(r models.CoverageReport) api.Cove
 		resp.EcosystemCoverageSummary = summary
 	}
 	return resp
+}
+
+func coverageVersions(versions []string) []string {
+	if len(versions) == 0 {
+		return []string{}
+	}
+	out := make([]string, len(versions))
+	copy(out, versions)
+	return out
 }
 
 func (d coverageReportDaoImpl) toApiError(e error) *ce.DaoError {

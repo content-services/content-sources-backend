@@ -302,7 +302,10 @@ func (suite *CoverageReportSuite) TestCreateCoverageReport() {
 	suite.reg.CoverageReport.On("Create", mock.Anything, mock.Anything, mock.Anything).
 		Return(expectedReport, nil)
 	suite.s3Mock.On("Put", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	suite.tcMock.On("Enqueue", mock.Anything).Return(uuid.New(), nil)
+	suite.tcMock.On("Enqueue", mock.MatchedBy(func(task queue.Task) bool {
+		payload, ok := task.Payload.(payloads.CoverageAnalysisPayload)
+		return ok && payload.CatalogSource == config.CatalogSourceDB
+	})).Return(uuid.New(), nil)
 	suite.reg.CoverageReport.On("SetAnalysisTaskUUID", mock.Anything, expectedReport.UUID, mock.Anything).
 		Return(nil)
 

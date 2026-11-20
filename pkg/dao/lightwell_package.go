@@ -105,6 +105,7 @@ type LensCatalogPackageRow struct {
 	Name            string
 	Version         string
 	UpstreamVersion string
+	PublishedAt     string
 }
 
 type lightwellPackageDaoImpl struct {
@@ -794,6 +795,7 @@ func (d lightwellPackageDaoImpl) InternalOnlyListLensCatalog(ctx context.Context
 			Name:            row.Name,
 			Version:         row.Version,
 			UpstreamVersion: row.UpstreamVersion,
+			PublishedAt:     row.PublishedAt,
 		})
 	}
 	return out, nil

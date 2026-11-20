@@ -118,9 +118,10 @@ func loadCatalogFromDB(ctx context.Context, daoReg *dao.DaoRegistry, snapshotAt 
 			version, _ = rhlw.SplitVersion(row.Version)
 		}
 		pkg := matcher.Package{
-			Name:      row.Name,
-			Namespace: row.Group,
-			Version:   version,
+			Name:        row.Name,
+			Namespace:   row.Group,
+			Version:     version,
+			PublishedAt: row.PublishedAt,
 		}
 		switch row.Ecosystem {
 		case config.ContentTypeMaven:

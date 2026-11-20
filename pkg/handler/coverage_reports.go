@@ -70,7 +70,7 @@ func RegisterCoverageReportRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, t
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file formData file true "Manifest file (CycloneDX, SPDX, etc.)"
-// @Param        catalog_source formData string false "Catalog source for analysis: pulp (default) or db"
+// @Param        catalog_source formData string false "Catalog source for analysis: db (default) or pulp"
 // @Success      201 {object} api.CoverageReportResponse
 // @Failure      400 {object} ce.ErrorResponse
 // @Failure      401 {object} ce.ErrorResponse
@@ -84,6 +84,7 @@ func (ch *CoverageReportHandler) createCoverageReport(c echo.Context) error {
 	if !config.ValidCatalogSource(catalogSource) {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "Catalog source must be empty, pulp, or db")
 	}
+	catalogSource = config.ResolveCatalogSource(catalogSource)
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		return ce.NewErrorResponse(http.StatusBadRequest, "Error binding parameters", "File is required")
