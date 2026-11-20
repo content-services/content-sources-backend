@@ -679,6 +679,111 @@ func TestOnHoldReasonsFromComponentUpgradeBlockers(t *testing.T) {
 	}
 }
 
+// linkWithStatus builds one issuelinks entry like blockerLink, but the linked issue also
+// carries its status name, which Jira embeds next to the status category.
+func linkWithStatus(linkName, inward, outward, side, key, issueType, statusName, statusCategory string) string {
+	linked := `{"key":"` + key + `","fields":{"issuetype":{"name":"` + issueType + `"},"status":{"name":"` + statusName + `","statusCategory":{"key":"` + statusCategory + `"}}}}`
+	return `{"type":{"name":"` + linkName + `","inward":"` + inward + `","outward":"` + outward + `"},"` + side + `":` + linked + `}`
+}
+
+// incorporatedCT builds an "Incorporates" link to a Component Upgrade with the given status.
+func incorporatedCT(side, key, statusName, statusCategory string) string {
+	return linkWithStatus("Incorporates", "is incorporated by", "incorporates", side, key, "Component Upgrade", statusName, statusCategory)
+}
+
+func TestOnHoldComponentUpgrades(t *testing.T) {
+	tests := []struct {
+		name  string
+		links []string
+		want  []string
+	}{
+		{
+			name:  "on hold component upgrade on the outward side",
+			links: []string{incorporatedCT("outwardIssue", "CT-1", "On Hold", "indeterminate")},
+			want:  []string{"CT-1"},
+		},
+		{
+			name:  "on hold component upgrade on the inward side",
+			links: []string{incorporatedCT("inwardIssue", "CT-1", "On Hold", "indeterminate")},
+			want:  []string{"CT-1"},
+		},
+		{
+			name:  "status name ignores case and surrounding spaces",
+			links: []string{incorporatedCT("outwardIssue", "CT-1", " on hold ", "indeterminate")},
+			want:  []string{"CT-1"},
+		},
+		{
+			name:  "component upgrade in progress is not on hold",
+			links: []string{incorporatedCT("outwardIssue", "CT-1", "In Progress", "indeterminate")},
+			want:  nil,
+		},
+		{
+			name:  "on hold status in a done category is not open",
+			links: []string{incorporatedCT("outwardIssue", "CT-1", "On Hold", "done")},
+			want:  nil,
+		},
+		{
+			name: "on hold ticket that is not a component upgrade",
+			links: []string{linkWithStatus("Incorporates", "is incorporated by", "incorporates",
+				"outwardIssue", "LWLP-1", "Story", "On Hold", "indeterminate")},
+			want: nil,
+		},
+		{
+			name: "on hold component upgrade linked another way",
+			links: []string{linkWithStatus("Relates", "relates to", "relates to",
+				"inwardIssue", "CT-1", "Component Upgrade", "On Hold", "indeterminate")},
+			want: nil,
+		},
+		{
+			name:  "link without a status name",
+			links: []string{blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate")},
+			want:  nil,
+		},
+		{
+			name: "several on hold component upgrades keep link order",
+			links: []string{
+				incorporatedCT("outwardIssue", "CT-2", "On Hold", "indeterminate"),
+				incorporatedCT("inwardIssue", "CT-1", "On Hold", "indeterminate"),
+				incorporatedCT("outwardIssue", "CT-3", "In Progress", "indeterminate"),
+			},
+			want: []string{"CT-2", "CT-1"},
+		},
+		{
+			name: "the same component upgrade linked twice is listed once",
+			links: []string{
+				incorporatedCT("outwardIssue", "CT-1", "On Hold", "indeterminate"),
+				incorporatedCT("outwardIssue", "CT-1", "On Hold", "indeterminate"),
+			},
+			want: []string{"CT-1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, onHoldComponentUpgrades(ivtWithLinks(tt.links...)))
+		})
+	}
+}
+
+func TestOnHoldComponentUpgradesHandlesMissingOrMalformedLinks(t *testing.T) {
+	assert.Nil(t, onHoldComponentUpgrades(jira_client.JiraIssue{Key: "LTWL-1", Fields: map[string]json.RawMessage{}}))
+	assert.Nil(t, onHoldComponentUpgrades(jira_client.JiraIssue{Key: "LTWL-1", Fields: map[string]json.RawMessage{
+		"issuelinks": json.RawMessage(`{"broken"`),
+	}}))
+}
+
+func TestBlockerReasonsUsesOnlyTheGivenBlockers(t *testing.T) {
+	blockers := map[string]blockerDetails{
+		"CT-1": {Labels: []string{"blocked:monorepo"}},
+		"CT-2": {Labels: []string{"blocked:ant-build"}, BlockedByTicket: true},
+	}
+
+	assert.Equal(t, []string{"monorepo"}, blockerReasons([]string{"CT-1"}, false, blockers))
+	assert.Equal(t, []string{"ant-build", "blocked-by-ticket", "monorepo"}, blockerReasons([]string{"CT-1", "CT-2"}, false, blockers))
+	assert.Equal(t, []string{"blocked-by-ticket", "monorepo"}, blockerReasons([]string{"CT-1"}, true, blockers))
+	assert.Nil(t, blockerReasons(nil, false, blockers))
+}
+
 func TestOnHoldReasonsHandlesMissingOrMalformedLinks(t *testing.T) {
 	assert.Nil(t, onHoldReasons(jira_client.JiraIssue{Key: "LTWL-1", Fields: map[string]json.RawMessage{}}, nil))
 	assert.Nil(t, onHoldReasons(jira_client.JiraIssue{Key: "LTWL-1", Fields: map[string]json.RawMessage{
