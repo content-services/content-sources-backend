@@ -24,11 +24,21 @@ const ignoredCustomerIDLog = "ignoring customer id without CID- prefix"
 // a "blocked:" label in Jira.
 const onHoldNoReasonLog = "beacon_on_hold_without_reason"
 
+// onHoldFromComponentUpgradeLog is the stable message (logged at debug level) for a
+// vulnerability saved as On Hold only because a Component Upgrade that incorporates it
+// is On Hold. Grep this string to see which vulnerabilities were changed that way.
+const onHoldFromComponentUpgradeLog = "beacon_on_hold_from_component_upgrade"
+
 // blockerFields are the Jira fields fetched for an On Hold blocker. Whether the blocker
 // is open already comes with the IVT's issue links. The blocker's own labels carry its
 // "blocked:" reasons, and for a Component Upgrade its own issue links show whether an
 // open ticket blocks it (the issue type tells it apart from a Build Task).
 var blockerFields = []string{"labels", "issuelinks", "issuetype"}
+
+// stagesBeforeShipping are the stages whose vulnerabilities can still become On Hold
+// because a Component Upgrade that incorporates them is On Hold. Lightwell Network
+// (shipped) and Unremediated (closed without a fix) are left alone.
+var stagesBeforeShipping = []string{"Submitted", "Classified", "Fix in Progress", "Validation"}
 
 // VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
 const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
@@ -68,6 +78,10 @@ type SyncSummary struct {
 	// OnHoldWithoutReason counts On Hold vulnerabilities saved with no reasons, because
 	// none of their open blockers carried a "blocked:" label and no work ticket blocks them.
 	OnHoldWithoutReason int
+	// OnHoldFromComponentUpgrade counts vulnerabilities saved as On Hold only because a
+	// Component Upgrade that incorporates them is On Hold. Their own Jira status says
+	// something else, usually Verified.
+	OnHoldFromComponentUpgrade int
 	// Failures are per-issue problems encountered while the sync still completed.
 	// A non-nil Sync error means the job could not run at all.
 	Failures []string
@@ -300,14 +314,22 @@ func (i *Ingestor) searchIssueChunk(ctx context.Context, keys []string, fields [
 func (i *Ingestor) prefetchBlockers(ctx context.Context, vulnerabilities []jira_client.JiraIssue) {
 	keys := make(map[string]struct{})
 	for _, vulnerability := range vulnerabilities {
-		if beaconDiscarded(vulnerability.Fields) || stage(vulnerability.Fields["status"]) != "On Hold" {
+		if beaconDiscarded(vulnerability.Fields) {
 			continue
 		}
 		if _, closed := closedResolutionStatus(vulnerability.Fields["resolution"]); closed {
 			continue
 		}
-		labelSources, _ := onHoldBlockers(vulnerability)
-		for _, key := range labelSources {
+		var sources []string
+		if stage(vulnerability.Fields["status"]) == "On Hold" {
+			sources, _ = onHoldBlockers(vulnerability)
+		}
+		// An IVT that is not On Hold in Jira becomes On Hold when a Component Upgrade
+		// that incorporates it is (see syncIssue), so fetch those Component Upgrades too.
+		if !releasedOrDone(vulnerability.Fields) {
+			sources = append(sources, onHoldComponentUpgrades(vulnerability)...)
+		}
+		for _, key := range sources {
 			keys[key] = struct{}{}
 		}
 	}
@@ -327,13 +349,18 @@ func (i *Ingestor) prefetchBlockers(ctx context.Context, vulnerabilities []jira_
 }
 
 // onHoldReasonsFor returns the reason slugs for an On Hold vulnerability and how many
-// open Build Task or Component Upgrade blockers it has. Blockers that were not
-// prefetched are fetched directly (not through cache, which would return a copy without
-// labels or links). A blocker that cannot be fetched is an error, so the caller does not
-// save the vulnerability and its previously stored reasons are not wiped. The failure is
-// remembered so a blocker shared by many vulnerabilities is only requested once.
-func (i *Ingestor) onHoldReasonsFor(ctx context.Context, vulnerability jira_client.JiraIssue) ([]string, int, error) {
-	labelSources, _ := onHoldBlockers(vulnerability)
+// open Build Task or Component Upgrade blockers it has. heldBy is the On Hold Component
+// Upgrades of a vulnerability that is On Hold only because of them; then only those
+// count. Otherwise every open blocker of the vulnerability counts. Blockers that were
+// not prefetched are fetched directly (not through cache, which would return a copy
+// without labels or links). A blocker that cannot be fetched is an error, so the caller
+// does not save the vulnerability and its previously stored reasons are not wiped. The
+// failure is remembered so a blocker shared by many vulnerabilities is only requested once.
+func (i *Ingestor) onHoldReasonsFor(ctx context.Context, vulnerability jira_client.JiraIssue, heldBy []string) ([]string, int, error) {
+	labelSources := heldBy
+	if len(heldBy) == 0 {
+		labelSources, _ = onHoldBlockers(vulnerability)
+	}
 	for _, key := range labelSources {
 		if err := i.blockerErrs[key]; err != nil {
 			return nil, 0, fmt.Errorf("blocker %s: %w", key, err)
@@ -347,6 +374,9 @@ func (i *Ingestor) onHoldReasonsFor(ctx context.Context, vulnerability jira_clie
 			return nil, 0, fmt.Errorf("blocker %s: %w", key, err)
 		}
 		i.blockers[key] = blockerDetailsOf(blocker)
+	}
+	if len(heldBy) > 0 {
+		return blockerReasons(heldBy, false, i.blockers), len(heldBy), nil
 	}
 	return onHoldReasons(vulnerability, i.blockers), len(labelSources), nil
 }
@@ -493,10 +523,24 @@ func (i *Ingestor) syncIssue(
 		tickets = mergeInheritedCustomers(tickets, inheritedCIDs)
 	}
 
+	// A vulnerability is also blocked while a Component Upgrade that incorporates it is
+	// On Hold, even if its own Jira status says something else (usually Verified). This
+	// runs after the stage is final so a shipped vulnerability is never changed, and only
+	// for vulnerabilities still on their way to customers.
+	var heldBy []string
+	if slices.Contains(stagesBeforeShipping, vulnerability.Stage) && !releasedOrDone(issue.Fields) {
+		heldBy = onHoldComponentUpgrades(issue)
+		if len(heldBy) > 0 {
+			vulnerability.Stage = "On Hold"
+			summary.OnHoldFromComponentUpgrade++
+			log.Debug().Str("issue", issue.Key).Strs("on_hold_component_upgrades", heldBy).Msg(onHoldFromComponentUpgradeLog)
+		}
+	}
+
 	// Reasons are only meaningful while On Hold. Any other stage saves an empty list,
 	// which clears reasons left over from an earlier On Hold period.
 	if vulnerability.Stage == "On Hold" {
-		reasons, openBlockers, err := i.onHoldReasonsFor(ctx, issue)
+		reasons, openBlockers, err := i.onHoldReasonsFor(ctx, issue, heldBy)
 		if err != nil {
 			return fmt.Errorf("issue %s on hold reasons: %w", issue.Key, err)
 		}
