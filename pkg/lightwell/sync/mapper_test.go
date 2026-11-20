@@ -491,7 +491,134 @@ func TestOnHoldReasons(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, onHoldReasons(ivtWithLinks(tt.links...), tt.labels))
+			blockers := make(map[string]blockerDetails, len(tt.labels))
+			for key, labels := range tt.labels {
+				blockers[key] = blockerDetails{Labels: labels}
+			}
+			assert.Equal(t, tt.want, onHoldReasons(ivtWithLinks(tt.links...), blockers))
+		})
+	}
+}
+
+// blockerIssue is a Build Task or Component Upgrade as returned when its blocker
+// fields (labels, issuelinks, issuetype) are requested.
+func blockerIssue(key, issueType string, labels []string, links ...string) jira_client.JiraIssue {
+	rawLabels, _ := json.Marshal(labels)
+	return jira_client.JiraIssue{Key: key, Fields: map[string]json.RawMessage{
+		"labels":     rawLabels,
+		"issuetype":  json.RawMessage(`{"name":"` + issueType + `"}`),
+		"issuelinks": json.RawMessage("[" + strings.Join(links, ",") + "]"),
+	}}
+}
+
+func TestBlockerDetailsOf(t *testing.T) {
+	blockedBy := func(key, category string) string {
+		return blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", key, "Bug", category)
+	}
+	const ct, buildTask = "Component Upgrade", "Build Task"
+
+	noLinkField := blockerIssue("CT-1", ct, []string{"blocked:monorepo"})
+	delete(noLinkField.Fields, "issuelinks")
+	noIssueType := blockerIssue("CT-1", ct, []string{}, blockedBy("LWLP-1", "new"))
+	delete(noIssueType.Fields, "issuetype")
+	malformedLinks := blockerIssue("CT-1", ct, []string{})
+	malformedLinks.Fields["issuelinks"] = json.RawMessage(`{"broken"`)
+
+	tests := []struct {
+		name  string
+		issue jira_client.JiraIssue
+		want  bool
+	}{
+		{name: "component upgrade blocked by an open ticket", issue: blockerIssue("CT-1", ct, []string{}, blockedBy("LWLP-1", "indeterminate")), want: true},
+		{name: "component upgrade blocked by a ticket not yet started", issue: blockerIssue("CT-1", ct, []string{}, blockedBy("LWLP-1", "new")), want: true},
+		{name: "component upgrade blocked by a done ticket", issue: blockerIssue("CT-1", ct, []string{}, blockedBy("LWLP-1", "done")), want: false},
+		{
+			name: "an open ticket that only appears after a done one still blocks",
+			issue: blockerIssue("CT-1", ct, []string{},
+				blockedBy("LWLP-1", "done"), blockedBy("LWLP-2", "new")),
+			want: true,
+		},
+		{
+			name: "component upgrade that blocks another ticket is not blocked",
+			issue: blockerIssue("CT-1", ct, []string{},
+				blockerLink("Blocks", "is blocked by", "blocks", "outwardIssue", "LWLP-1", "Bug", "new")),
+			want: false,
+		},
+		{
+			name: "other link types are ignored",
+			issue: blockerIssue("CT-1", ct, []string{},
+				blockerLink("Relates", "relates to", "relates to", "inwardIssue", "LWLP-1", "Bug", "new")),
+			want: false,
+		},
+		{name: "component upgrade with no links", issue: blockerIssue("CT-1", ct, []string{}), want: false},
+		{name: "component upgrade with no links field", issue: noLinkField, want: false},
+		{name: "component upgrade with malformed links", issue: malformedLinks, want: false},
+		{name: "build task links are not read", issue: blockerIssue("VBT-1", buildTask, []string{}, blockedBy("LWLP-1", "new")), want: false},
+		{name: "unknown issue type is not read", issue: noIssueType, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := blockerDetailsOf(tt.issue)
+			assert.Equal(t, tt.want, got.BlockedByTicket)
+			assert.Equal(t, labelsOf(tt.issue), got.Labels, "labels are always carried over")
+		})
+	}
+}
+
+func TestOnHoldReasonsFromComponentUpgradeBlockers(t *testing.T) {
+	incorporates := func(key, category string) string {
+		return blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", key, "Component Upgrade", category)
+	}
+	workTicket := blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-1", "Bug", "new")
+
+	tests := []struct {
+		name     string
+		links    []string
+		blockers map[string]blockerDetails
+		want     []string
+	}{
+		{
+			name:     "component upgrade blocked by a ticket and no label",
+			links:    []string{incorporates("CT-1", "indeterminate")},
+			blockers: map[string]blockerDetails{"CT-1": {BlockedByTicket: true}},
+			want:     []string{"blocked-by-ticket"},
+		},
+		{
+			name:     "label and blocking ticket on the same component upgrade",
+			links:    []string{incorporates("CT-1", "indeterminate")},
+			blockers: map[string]blockerDetails{"CT-1": {Labels: []string{"blocked:monorepo"}, BlockedByTicket: true}},
+			want:     []string{"blocked-by-ticket", "monorepo"},
+		},
+		{
+			name:     "same reason from the IVT's own ticket is stored once",
+			links:    []string{workTicket, incorporates("CT-1", "indeterminate")},
+			blockers: map[string]blockerDetails{"CT-1": {BlockedByTicket: true}},
+			want:     []string{"blocked-by-ticket"},
+		},
+		{
+			name:     "done component upgrade is ignored even if its details say blocked",
+			links:    []string{incorporates("CT-1", "done")},
+			blockers: map[string]blockerDetails{"CT-1": {BlockedByTicket: true}},
+			want:     nil,
+		},
+		{
+			name:     "details of a ticket the IVT is not linked to are ignored",
+			links:    []string{incorporates("CT-1", "indeterminate")},
+			blockers: map[string]blockerDetails{"CT-2": {BlockedByTicket: true}},
+			want:     nil,
+		},
+		{
+			name:     "component upgrade neither labelled nor blocked adds nothing",
+			links:    []string{incorporates("CT-1", "indeterminate")},
+			blockers: map[string]blockerDetails{"CT-1": {Labels: []string{"java"}}},
+			want:     nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, onHoldReasons(ivtWithLinks(tt.links...), tt.blockers))
 		})
 	}
 }

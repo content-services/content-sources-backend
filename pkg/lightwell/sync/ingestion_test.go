@@ -563,11 +563,80 @@ func TestIngestorSavesOnHoldReasonsFromBlockerLabels(t *testing.T) {
 	assert.Equal(t, SyncSummary{Inserted: 1}, summary)
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []string{"blocked-by-ticket", "missing-sources", "monorepo"}, store.saved[0].OnHoldReasons)
-	// One batch search for the open blockers' labels only: the done blocker is skipped
-	// and no ticket is fetched individually.
+	// One batch search for the open blockers only: the done blocker is skipped and no
+	// ticket is fetched individually.
 	assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1", "VBT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
-	assert.Equal(t, []string{"labels"}, jira.searchFields[1])
+	assert.Equal(t, []string{"labels", "issuelinks", "issuetype"}, jira.searchFields[1])
 	assert.Empty(t, jira.issueCalls)
+}
+
+// A Component Upgrade can be blocked by an open ticket instead of a label. That is a
+// reason on its own, worded the same as an open ticket that blocks the IVT directly.
+func TestIngestorSavesBlockedByTicketFromComponentUpgradeLinks(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"))
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "indeterminate")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket"}, store.saved[0].OnHoldReasons)
+	assert.Zero(t, summary.OnHoldWithoutReason)
+	assert.Equal(t, []string{VulnerabilityJQL, `key IN ("CT-1") ORDER BY key ASC`, ComponentUpgradeJQL}, jira.searchJQLs)
+	assert.Equal(t, []string{"labels", "issuelinks", "issuetype"}, jira.searchFields[1])
+	assert.Empty(t, jira.issueCalls)
+}
+
+func TestIngestorIgnoresClosedTicketBlockingComponentUpgrade(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"))
+	jira := &fakeJira{
+		pages: map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "done")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	summary, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Empty(t, store.saved[0].OnHoldReasons)
+	assert.Equal(t, 1, summary.OnHoldWithoutReason)
+}
+
+// The one-ticket-at-a-time fallback must read the Component Upgrade's links too, not
+// only its labels.
+func TestIngestorFallbackReadsComponentUpgradeLinks(t *testing.T) {
+	ivt := onHoldIVT("LTWL-1",
+		blockerLink("Incorporates", "is incorporated by", "incorporates", "outwardIssue", "CT-1", "Component Upgrade", "indeterminate"))
+	jira := &fakeJira{
+		pages:          map[string]jira_client.JiraPage{"": {Issues: []jira_client.JiraIssue{ivt}}},
+		batchSearchErr: errors.New("bulk search failed"),
+		issues: map[string]jira_client.JiraIssue{
+			"CT-1": blockerIssue("CT-1", "Component Upgrade", []string{"blocked:monorepo"},
+				blockerLink("Blocks", "is blocked by", "blocks", "inwardIssue", "LWLP-9", "Bug", "new")),
+		},
+	}
+	store := &fakeVulnerabilityStore{outcome: dao.LightwellVulnerabilityInserted}
+
+	_, err := NewIngestor(jira, store, nil, nil).Sync(context.Background())
+
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, []string{"blocked-by-ticket", "monorepo"}, store.saved[0].OnHoldReasons)
+	assert.Equal(t, []string{"CT-1"}, jira.issueCalls)
+	assert.Equal(t, [][]string{{"labels", "issuelinks", "issuetype"}}, jira.issueFields)
 }
 
 func TestIngestorOnHoldBlockedByTicketNeedsNoLabelFetch(t *testing.T) {
@@ -649,7 +718,7 @@ func TestIngestorFetchesBlockerLabelsDirectlyWhenBatchFails(t *testing.T) {
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, []string{"missing-sources"}, store.saved[0].OnHoldReasons)
 	assert.Equal(t, []string{"VBT-1"}, jira.issueCalls)
-	assert.Equal(t, [][]string{{"labels"}}, jira.issueFields)
+	assert.Equal(t, [][]string{{"labels", "issuelinks", "issuetype"}}, jira.issueFields)
 }
 
 func TestIngestorFailsOnHoldIssueWhenBlockerLabelsUnavailable(t *testing.T) {
