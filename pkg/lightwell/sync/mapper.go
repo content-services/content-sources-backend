@@ -104,6 +104,7 @@ type linkedIssue struct {
 			Name string `json:"name"`
 		} `json:"issuetype"`
 		Status struct {
+			Name           string `json:"name"`
 			StatusCategory struct {
 				Key string `json:"key"`
 			} `json:"statusCategory"`
@@ -690,6 +691,33 @@ func isOpenIssue(issue linkedIssue) bool {
 	return issue.Fields.Status.StatusCategory.Key != "done"
 }
 
+// onHoldComponentUpgrades returns the keys of the open Component Upgrades linked to an
+// IVT ("Incorporates", either direction) whose own Jira status is On Hold. Jira embeds
+// each linked issue's status in the link, so this needs no extra request. A Component
+// Upgrade that is On Hold blocks every IVT it incorporates, even one whose own Jira
+// status says something else (for example Verified).
+func onHoldComponentUpgrades(ivt jira_client.JiraIssue) []string {
+	var links []issueLink
+	if json.Unmarshal(ivt.Fields["issuelinks"], &links) != nil {
+		return nil
+	}
+	var keys []string
+	for _, link := range links {
+		if link.Type.Name != linkTypeIncorporates {
+			continue
+		}
+		for _, other := range []*linkedIssue{link.InwardIssue, link.OutwardIssue} {
+			if other == nil || other.Fields.IssueType.Name != issueTypeComponentUpgrade || !isOpenIssue(*other) {
+				continue
+			}
+			if strings.EqualFold(strings.TrimSpace(other.Fields.Status.Name), "On Hold") && !slices.Contains(keys, other.Key) {
+				keys = append(keys, other.Key)
+			}
+		}
+	}
+	return keys
+}
+
 // blockerDetails is what the sync reads from an IVT's Build Task or Component Upgrade
 // blocker, beyond what the IVT's own links already show.
 type blockerDetails struct {
@@ -738,7 +766,17 @@ func blockerDetailsOf(blocker jira_client.JiraIssue) blockerDetails {
 // link order changes would look like data changes to the database upsert.
 func onHoldReasons(ivt jira_client.JiraIssue, blockers map[string]blockerDetails) []string {
 	labelSources, blockedByTicket := onHoldBlockers(ivt)
+	return blockerReasons(labelSources, blockedByTicket, blockers)
+}
 
+// blockerReasons turns the given blocker keys into sorted, de-duplicated reason slugs.
+// blockedByTicket says an open work ticket already blocks the IVT directly. It is also
+// set when any listed Component Upgrade is itself blocked by an open ticket.
+//
+// onHoldReasons uses every open blocker of an IVT that is On Hold in Jira. An IVT that
+// is On Hold only because its Component Upgrades are On Hold passes just those, so a
+// label left on some other, progressing Component Upgrade does not become a reason.
+func blockerReasons(labelSources []string, blockedByTicket bool, blockers map[string]blockerDetails) []string {
 	var reasons []string
 	for _, key := range labelSources {
 		details := blockers[key]
