@@ -24,9 +24,11 @@ const ignoredCustomerIDLog = "ignoring customer id without CID- prefix"
 // a "blocked:" label in Jira.
 const onHoldNoReasonLog = "beacon_on_hold_without_reason"
 
-// blockerLabelFields are the Jira fields fetched for an On Hold blocker. Whether the
-// blocker is open already comes with the IVT's issue links, so only labels are needed.
-var blockerLabelFields = []string{"labels"}
+// blockerFields are the Jira fields fetched for an On Hold blocker. Whether the blocker
+// is open already comes with the IVT's issue links. The blocker's own labels carry its
+// "blocked:" reasons, and for a Component Upgrade its own issue links show whether an
+// open ticket blocks it (the issue type tells it apart from a Build Task).
+var blockerFields = []string{"labels", "issuelinks", "issuetype"}
 
 // VulnerabilityJQL - JQL statement for fetching the vulnerabilities (LTWL-340 and LTWL-5810 are testing issues)
 const VulnerabilityJQL = "project = LTWL AND type = Vulnerability AND issuekey NOT IN (\"LTWL-5810\", \"LTWL-340\") ORDER BY created ASC"
@@ -94,11 +96,11 @@ type Ingestor struct {
 	packageVerifier    PublicationPackageVerifier
 	cache              map[string]cachedIssue
 	promoteByJiraState bool
-	// blockerLabels and blockerErrs hold the labels (or the fetch error) of On Hold
+	// blockers and blockerErrs hold what was read from (or the fetch error of) On Hold
 	// blockers by issue key. They are deliberately separate from cache: cache entries
-	// are fetched for other fields and carry no labels.
-	blockerLabels map[string][]string
-	blockerErrs   map[string]error
+	// are fetched for other fields and carry no labels or links.
+	blockers    map[string]blockerDetails
+	blockerErrs map[string]error
 }
 
 type cachedIssue struct {
@@ -129,7 +131,7 @@ func NewIngestor(
 	i := &Ingestor{
 		jira: jira, vulnerabilities: vulnerabilities, advisories: advisories,
 		packageVerifier: packageVerifier, cache: make(map[string]cachedIssue),
-		blockerLabels: make(map[string][]string), blockerErrs: make(map[string]error),
+		blockers: make(map[string]blockerDetails), blockerErrs: make(map[string]error),
 	}
 	for _, opt := range opts {
 		opt(i)
@@ -149,7 +151,7 @@ func (i *Ingestor) Sync(ctx context.Context) (SyncSummary, error) {
 	}
 
 	i.prefetchRelationships(ctx, issues, accountFieldID)
-	i.prefetchBlockerLabels(ctx, issues)
+	i.prefetchBlockers(ctx, issues)
 
 	cts, err := i.searchCTs(ctx)
 	if err != nil {
@@ -290,12 +292,12 @@ func (i *Ingestor) searchIssueChunk(ctx context.Context, keys []string, fields [
 	}
 }
 
-// prefetchBlockerLabels batch-fetches the labels of the open Build Task and Component
-// Upgrade blockers of On Hold vulnerabilities, so syncIssue can usually resolve On Hold
-// reasons without a request per ticket. Only the labels field is requested, and results
-// go to blockerLabels, never cache. A failed chunk is not fatal: onHoldReasonsFor
-// fetches whatever is still missing one ticket at a time.
-func (i *Ingestor) prefetchBlockerLabels(ctx context.Context, vulnerabilities []jira_client.JiraIssue) {
+// prefetchBlockers batch-fetches the open Build Task and Component Upgrade blockers of
+// On Hold vulnerabilities, so syncIssue can usually resolve On Hold reasons without a
+// request per ticket. Only the blockerFields are requested, and results go to blockers,
+// never cache. A failed chunk is not fatal: onHoldReasonsFor fetches whatever is still
+// missing one ticket at a time.
+func (i *Ingestor) prefetchBlockers(ctx context.Context, vulnerabilities []jira_client.JiraIssue) {
 	keys := make(map[string]struct{})
 	for _, vulnerability := range vulnerabilities {
 		if beaconDiscarded(vulnerability.Fields) || stage(vulnerability.Fields["status"]) != "On Hold" {
@@ -312,41 +314,41 @@ func (i *Ingestor) prefetchBlockerLabels(ctx context.Context, vulnerabilities []
 
 	missing := make([]string, 0, len(keys))
 	for _, key := range sortedKeys(keys) {
-		if _, loaded := i.blockerLabels[key]; !loaded {
+		if _, loaded := i.blockers[key]; !loaded {
 			missing = append(missing, key)
 		}
 	}
 	for start := 0; start < len(missing); start += relationshipBatchSize {
 		end := min(start+relationshipBatchSize, len(missing))
-		_ = i.searchIssueChunk(ctx, missing[start:end], blockerLabelFields, func(issue jira_client.JiraIssue) {
-			i.blockerLabels[issue.Key] = labelsOf(issue)
+		_ = i.searchIssueChunk(ctx, missing[start:end], blockerFields, func(issue jira_client.JiraIssue) {
+			i.blockers[issue.Key] = blockerDetailsOf(issue)
 		})
 	}
 }
 
 // onHoldReasonsFor returns the reason slugs for an On Hold vulnerability and how many
-// open Build Task or Component Upgrade blockers it has. Blockers whose labels were not
+// open Build Task or Component Upgrade blockers it has. Blockers that were not
 // prefetched are fetched directly (not through cache, which would return a copy without
-// labels). A blocker that cannot be fetched is an error, so the caller does not save
-// the vulnerability and its previously stored reasons are not wiped. The failure is
+// labels or links). A blocker that cannot be fetched is an error, so the caller does not
+// save the vulnerability and its previously stored reasons are not wiped. The failure is
 // remembered so a blocker shared by many vulnerabilities is only requested once.
 func (i *Ingestor) onHoldReasonsFor(ctx context.Context, vulnerability jira_client.JiraIssue) ([]string, int, error) {
 	labelSources, _ := onHoldBlockers(vulnerability)
 	for _, key := range labelSources {
 		if err := i.blockerErrs[key]; err != nil {
-			return nil, 0, fmt.Errorf("blocker %s labels: %w", key, err)
+			return nil, 0, fmt.Errorf("blocker %s: %w", key, err)
 		}
-		if _, loaded := i.blockerLabels[key]; loaded {
+		if _, loaded := i.blockers[key]; loaded {
 			continue
 		}
-		blocker, err := i.jira.Issue(ctx, key, blockerLabelFields)
+		blocker, err := i.jira.Issue(ctx, key, blockerFields)
 		if err != nil {
 			i.blockerErrs[key] = err
-			return nil, 0, fmt.Errorf("blocker %s labels: %w", key, err)
+			return nil, 0, fmt.Errorf("blocker %s: %w", key, err)
 		}
-		i.blockerLabels[key] = labelsOf(blocker)
+		i.blockers[key] = blockerDetailsOf(blocker)
 	}
-	return onHoldReasons(vulnerability, i.blockerLabels), len(labelSources), nil
+	return onHoldReasons(vulnerability, i.blockers), len(labelSources), nil
 }
 
 // labelsOf returns an issue's Jira labels.
