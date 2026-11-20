@@ -2,6 +2,10 @@
 
 The package mirror is filled by `external-repos import-lightwell-packages`, which reads Maven from Pulp and Python and npm from Tang. This doc covers the manual local seed and how that job is meant to run.
 
+The [LWLP-1226 Python package files proposal](decisions/2026-11-20-python-package-files-contract.md)
+defines the first list-files contract and implementation acceptance cases. It is
+a proposal; the list-files endpoint is not implemented yet.
+
 ## Apply dev seed data
 
 The seed is not applied by `dbmigrate`. `scripts/create_lightwell_repo.sh` creates the Pulp repositories, imports them into the app, loads vulnerabilities, advisories, and package rows from SQL (so Pulp can be seeded from those coordinates), uploads that catalog into Pulp, then runs `import-lightwell-packages --force` so the mirror matches Pulp:
