@@ -266,7 +266,7 @@ func (s *CatalogSuite) TestLoadCatalogFromDB() {
 	s.mockDao.LightwellPackage.On("InternalOnlyListLensCatalog", s.ctx).
 		Return([]dao.LensCatalogPackageRow{
 			{Ecosystem: config.ContentTypeMaven, Group: "org.springframework", Name: "spring-core", Version: "6.1.0"},
-			{Ecosystem: config.ContentTypePython, Group: "", Name: "flask", Version: "3.0.3"},
+			{Ecosystem: config.ContentTypePython, Group: "", Name: "flask", Version: "3.0.3", PublishedAt: "2024-05-01T00:00:00Z"},
 			{Ecosystem: config.ContentTypeNpm, Group: "-", Name: "left-pad", Version: "1.0.0"},
 			{Ecosystem: config.ContentTypeNpm, Group: "@angular", Name: "core", Version: "15.0.0+rhlw.1", UpstreamVersion: "15.0.0"},
 			{Ecosystem: "other", Name: "ignored"},
@@ -277,7 +277,7 @@ func (s *CatalogSuite) TestLoadCatalogFromDB() {
 	assert.False(s.T(), snapshotAt.IsZero())
 	assert.ElementsMatch(s.T(), []matcher.Package{
 		{Ecosystem: matcher.EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "6.1.0"},
-		{Ecosystem: matcher.EcosystemPython, Name: "flask", Version: "3.0.3"},
+		{Ecosystem: matcher.EcosystemPython, Name: "flask", Version: "3.0.3", PublishedAt: "2024-05-01T00:00:00Z"},
 		{Ecosystem: matcher.EcosystemJavaScript, Name: "left-pad", Version: "1.0.0"},
 		{Ecosystem: matcher.EcosystemJavaScript, Namespace: "@angular", Name: "core", Version: "15.0.0"},
 	}, catalog)

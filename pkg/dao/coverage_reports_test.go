@@ -106,6 +106,55 @@ func (s *CoverageReportDaoSuite) TestFetch() {
 	assert.Equal(s.T(), 1, resp.EcosystemCoverageSummary[1].Unmatched)
 }
 
+func (s *CoverageReportDaoSuite) TestFetchCoveragePercentages() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusCompleted)
+	report.EcosystemCoverageSummary = &models.EcosystemCoverageSummary{
+		{Ecosystem: "Java", Supported: true, Total: 7, ExactMatches: 2, PartialMatches: 4, Unmatched: 1},
+		{Ecosystem: "JavaScript", Supported: false, Total: 1, Unmatched: 1},
+		{Ecosystem: "Python", Supported: true, Total: 0},
+	}
+	require.NoError(s.T(), s.tx.Save(&report).Error)
+
+	for _, pkg := range []models.CoverageReportPackage{
+		{Name: "exact-a", MatchStatus: models.CoverageMatchStatusExact, MatchSegment: models.CoverageMatchSegmentNone},
+		{Name: "exact-b", MatchStatus: models.CoverageMatchStatusExact, MatchSegment: models.CoverageMatchSegmentNone},
+		{Name: "major", MatchStatus: models.CoverageMatchStatusPartial, MatchSegment: models.CoverageMatchSegmentMajor},
+		{Name: "minor", MatchStatus: models.CoverageMatchStatusPartial, MatchSegment: models.CoverageMatchSegmentMinor},
+		{Name: "patch", MatchStatus: models.CoverageMatchStatusPartial, MatchSegment: models.CoverageMatchSegmentPatch},
+		{Name: "name-only", MatchStatus: models.CoverageMatchStatusPartial, MatchSegment: models.CoverageMatchSegmentNone},
+		{Name: "missing", MatchStatus: models.CoverageMatchStatusNone, MatchSegment: models.CoverageMatchSegmentNone},
+	} {
+		pkg.CoverageReportUUID = report.UUID
+		pkg.Ecosystem = "Java"
+		pkg.Version = "1.0.0"
+		require.NoError(s.T(), s.tx.Create(&pkg).Error)
+	}
+	s.createPackage(report.UUID, "lodash", "4.17.21", "JavaScript", models.CoverageMatchStatusNone)
+
+	resp, err := s.dao().Fetch(context.Background(), orgID, report.UUID)
+	require.NoError(s.T(), err)
+	require.Len(s.T(), resp.EcosystemCoveragePercentages, 3)
+
+	java := resp.EcosystemCoveragePercentages[0]
+	assert.Equal(s.T(), "Java", java.Ecosystem)
+	assert.InDelta(s.T(), 28.5, java.Exact, 0.001)
+	assert.InDelta(s.T(), 14.3, java.Major, 0.001)
+	assert.InDelta(s.T(), 14.3, java.Minor, 0.001)
+	assert.InDelta(s.T(), 14.3, java.Patch, 0.001)
+	assert.InDelta(s.T(), 14.3, java.None, 0.001)
+	assert.InDelta(s.T(), 14.3, java.NoCoverage, 0.001)
+
+	javascript := resp.EcosystemCoveragePercentages[1]
+	assert.Equal(s.T(), "JavaScript", javascript.Ecosystem)
+	assert.Equal(s.T(), 0.0, javascript.Exact)
+	assert.Equal(s.T(), 100.0, javascript.NoCoverage)
+
+	python := resp.EcosystemCoveragePercentages[2]
+	assert.Equal(s.T(), "Python", python.Ecosystem)
+	assert.Equal(s.T(), api.EcosystemCoveragePercentages{Ecosystem: "Python"}, python)
+}
+
 func (s *CoverageReportDaoSuite) TestFetchNotFound() {
 	_, err := s.dao().Fetch(context.Background(), seeds.RandomOrgId(), "00000000-0000-0000-0000-000000000099")
 	require.Error(s.T(), err)
@@ -154,6 +203,9 @@ func (s *CoverageReportDaoSuite) TestListPackages() {
 	assert.Equal(s.T(), models.CoverageMatchStatusExact, byName["spring-core"].MatchStatus)
 	assert.Equal(s.T(), models.CoverageMatchStatusPartial, byName["idna"].MatchStatus)
 	assert.Equal(s.T(), models.CoverageMatchStatusNone, byName["lodash"].MatchStatus)
+	assert.Equal(s.T(), models.CoverageMatchSegmentNone, byName["spring-core"].MatchSegment)
+	assert.Empty(s.T(), byName["spring-core"].NearestHigherVersion)
+	assert.Empty(s.T(), byName["spring-core"].LightwellVersions)
 }
 
 func (s *CoverageReportDaoSuite) TestListPackagesFilterByEcosystem() {
@@ -458,6 +510,56 @@ func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysis() {
 	assert.Equal(s.T(), models.CoverageDemandMatchStatusNone, signals[1].MatchStatus)
 	assert.Equal(s.T(), "flask", signals[2].Name)
 	assert.Equal(s.T(), models.CoverageDemandMatchStatusPartial, signals[2].MatchStatus)
+}
+
+func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsNearestVersion() {
+	orgID := seeds.RandomOrgId()
+	report := s.createReport(orgID, config.TaskStatusRunning)
+
+	err := s.dao().SaveCoverageAnalysis(context.Background(), report.UUID, SaveCoverageAnalysisParams{
+		InputFormat: "csv",
+		Results: []matcher.MatchResult{
+			{
+				Package:              matcher.Package{Ecosystem: "Python", Name: "flask", Version: "1.0.2"},
+				MatchStatus:          matcher.MatchStatusPartial,
+				LightwellVersions:    []string{"1.0.0", "1.0.9", "1.1.0"},
+				NearestHigherVersion: "1.0.9",
+				MatchSegment:         matcher.MatchSegmentMinor,
+			},
+			{
+				Package:      matcher.Package{Ecosystem: "Python", Name: "missing", Version: "1.0.0"},
+				MatchStatus:  matcher.MatchStatusNone,
+				MatchSegment: matcher.MatchSegmentNone,
+			},
+		},
+		Summary: matcher.MatchSummary{
+			Total:          2,
+			PartialMatches: 1,
+			Unmatched:      1,
+			EcosystemCoverageSummary: []matcher.EcosystemSummary{
+				{Ecosystem: "Python", Supported: true, Total: 2, PartialMatches: 1, Unmatched: 1},
+			},
+		},
+	})
+	require.NoError(s.T(), err)
+
+	resp, total, err := s.dao().ListPackages(context.Background(), orgID, report.UUID,
+		api.PaginationData{Limit: 100, Offset: 0}, api.ListCoverageReportPackagesRequest{})
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), int64(2), total)
+
+	byName := map[string]api.CoverageReportPackageResponse{}
+	for _, pkg := range resp.Data {
+		byName[pkg.Name] = pkg
+	}
+	assert.Equal(s.T(), []string{"1.0.0", "1.0.9", "1.1.0"}, byName["flask"].LightwellVersions)
+	assert.Equal(s.T(), "1.0.9", byName["flask"].NearestHigherVersion)
+	assert.Equal(s.T(), matcher.MatchSegmentMinor, byName["flask"].MatchSegment)
+	assert.True(s.T(), byName["flask"].Covered)
+	assert.Empty(s.T(), byName["missing"].LightwellVersions)
+	assert.Empty(s.T(), byName["missing"].NearestHigherVersion)
+	assert.Equal(s.T(), matcher.MatchSegmentNone, byName["missing"].MatchSegment)
+	assert.False(s.T(), byName["missing"].Covered)
 }
 
 func (s *CoverageReportDaoSuite) TestSaveCoverageAnalysisPersistsCVEData() {

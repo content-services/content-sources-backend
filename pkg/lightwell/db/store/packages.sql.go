@@ -43,7 +43,8 @@ SELECT
     p.package_group,
     p.name,
     pv.version,
-    pv.upstream_version
+    pv.upstream_version,
+    pv.published_at
 FROM lightwell_package_versions pv
 JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
 JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid
@@ -68,6 +69,7 @@ type ListLensCatalogRow struct {
 	Name            string `json:"name"`
 	Version         string `json:"version"`
 	UpstreamVersion string `json:"upstream_version"`
+	PublishedAt     string `json:"published_at"`
 }
 
 func (q *Queries) ListLensCatalog(ctx context.Context, arg ListLensCatalogParams) ([]ListLensCatalogRow, error) {
@@ -85,6 +87,7 @@ func (q *Queries) ListLensCatalog(ctx context.Context, arg ListLensCatalogParams
 			&i.Name,
 			&i.Version,
 			&i.UpstreamVersion,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}

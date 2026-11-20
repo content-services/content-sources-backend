@@ -49,6 +49,9 @@ func (s *CoverageReportPackageSuite) TestCoverageReportPackageCreate() {
 	assert.Equal(s.T(), pkg.Version, readPkg.Version)
 	assert.Equal(s.T(), *pkg.Namespace, *readPkg.Namespace)
 	assert.Equal(s.T(), pkg.MatchStatus, readPkg.MatchStatus)
+	assert.Equal(s.T(), CoverageMatchSegmentNone, readPkg.MatchSegment)
+	assert.Empty(s.T(), readPkg.LightwellVersions)
+	assert.Empty(s.T(), readPkg.NearestHigherVersion)
 }
 
 func (s *CoverageReportPackageSuite) TestCoverageReportPackageCreateEmptyVersion() {
@@ -147,6 +150,17 @@ func (s *CoverageReportPackageSuite) TestCoverageReportPackageValidations() {
 				MatchStatus:        "invalid",
 			},
 			expected: "Invalid package match status.",
+		},
+		{
+			given: CoverageReportPackage{
+				CoverageReportUUID: report.UUID,
+				Ecosystem:          testEcosystem,
+				Name:               testName,
+				Version:            testVersion,
+				MatchStatus:        testMatchStatus,
+				MatchSegment:       "build",
+			},
+			expected: "Invalid package match segment.",
 		},
 	}
 

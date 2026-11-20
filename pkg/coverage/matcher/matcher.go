@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/content-services/content-sources-backend/pkg/lightwell/rhlw"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -24,6 +25,9 @@ type Package struct {
 	Name      string
 	Version   string
 	Namespace string
+	// PublishedAt is set on catalog entries. It orders versions that are not numeric.
+	// Manifest packages leave it empty.
+	PublishedAt string
 }
 
 // FullName preserves the namespace and name using the ecosystem's separator.
@@ -39,7 +43,10 @@ func (p Package) FullName() string {
 
 type MatchResult struct {
 	Package
-	MatchStatus string
+	MatchStatus          string
+	LightwellVersions    []string
+	NearestHigherVersion string
+	MatchSegment         string
 }
 
 type MatchSummary struct {
@@ -72,17 +79,14 @@ func IsSupportedEcosystem(ecosystem string) bool {
 
 // MatchCatalog compares manifest packages against a catalog and returns per-package match results and an aggregate summary.
 func MatchCatalog(catalog, parsedPackages []Package, snapshotAt time.Time) ([]MatchResult, MatchSummary) {
-	catalogedNames, catalogedNameVersions := buildIndex(catalog)
+	index := newCatalogIndex(catalog)
 
 	results := make([]MatchResult, len(parsedPackages))
 	ecosystemSummaries := map[string]*EcosystemSummary{}
 
 	for i, pkg := range parsedPackages {
-		status := matchPackage(pkg, catalogedNames, catalogedNameVersions)
-		results[i] = MatchResult{
-			Package:     pkg,
-			MatchStatus: status,
-		}
+		result := matchPackage(pkg, index)
+		results[i] = result
 
 		entry, exists := ecosystemSummaries[pkg.Ecosystem]
 		if !exists {
@@ -93,7 +97,7 @@ func MatchCatalog(catalog, parsedPackages []Package, snapshotAt time.Time) ([]Ma
 			ecosystemSummaries[pkg.Ecosystem] = entry
 		}
 		entry.Total++
-		switch status {
+		switch result.MatchStatus {
 		case MatchStatusExact:
 			entry.ExactMatches++
 		case MatchStatusPartial:
@@ -120,37 +124,57 @@ func MatchCatalog(catalog, parsedPackages []Package, snapshotAt time.Time) ([]Ma
 
 // matchPackage classifies one manifest package. The catalog stores upstream versions only,
 // so a Lightwell rebuild version (for example "3.0.1+rhlw.1") is compared by its upstream part.
-func matchPackage(pkg Package, catalogedNames, catalogedNameVersions map[string]struct{}) string {
+// An upstream version with more than four dot components is a partial match with match segment patch.
+// A trailing word such as Final is a tag and is compared by the numeric prefix in front of it.
+func matchPackage(pkg Package, index catalogIndex) MatchResult {
 	nameKey := NormalizeKey(pkg)
-
-	if pkg.Version != "" {
-		upstreamVersion, _ := rhlw.SplitVersion(pkg.Version)
-		versionKey := nameKey + ":" + upstreamVersion
-		if _, found := catalogedNameVersions[versionKey]; found {
-			return MatchStatusExact
-		}
+	catalogPkg := index.packages[nameKey]
+	userUpstream, _ := rhlw.SplitVersion(pkg.Version)
+	userTooLong := versionHasTooManyComponents(userUpstream)
+	if userTooLong {
+		warnTooManyComponents(pkg, userUpstream)
 	}
 
-	if _, found := catalogedNames[nameKey]; found {
-		return MatchStatusPartial
+	result := MatchResult{
+		Package:      pkg,
+		MatchStatus:  MatchStatusNone,
+		MatchSegment: MatchSegmentNone,
+	}
+	if catalogPkg == nil {
+		result.LightwellVersions = []string{}
+		return result
 	}
 
-	return MatchStatusNone
+	result.LightwellVersions = catalogPkg.versionList()
+	if userUpstream != "" && catalogPkg.hasVersion(userUpstream) && !userTooLong {
+		result.MatchStatus = MatchStatusExact
+		return result
+	}
+
+	result.MatchStatus = MatchStatusPartial
+	if userUpstream == "" {
+		return result
+	}
+
+	nearest, segment, nearestTooLong := catalogPkg.nearestHigher(userUpstream)
+	result.NearestHigherVersion = nearest
+	result.MatchSegment = segment
+	if nearestTooLong {
+		warnTooManyComponents(pkg, nearest)
+		result.MatchSegment = MatchSegmentPatch
+	}
+	if userTooLong {
+		result.MatchSegment = MatchSegmentPatch
+	}
+	return result
 }
 
-func buildIndex(catalog []Package) (catalogedNames, catalogedNameVersions map[string]struct{}) {
-	catalogedNames = make(map[string]struct{}, len(catalog))
-	catalogedNameVersions = make(map[string]struct{}, len(catalog))
-
-	for _, pkg := range catalog {
-		key := NormalizeKey(pkg)
-		catalogedNames[key] = struct{}{}
-		if pkg.Version != "" {
-			catalogedNameVersions[key+":"+pkg.Version] = struct{}{}
-		}
-	}
-
-	return catalogedNames, catalogedNameVersions
+func warnTooManyComponents(pkg Package, version string) {
+	log.Warn().
+		Str("ecosystem", pkg.Ecosystem).
+		Str("package", pkg.FullName()).
+		Str("version", version).
+		Msg("upstream version has more than 4 components")
 }
 
 // NormalizeKey returns the canonical lookup key for a package: PEP 503-normalized
