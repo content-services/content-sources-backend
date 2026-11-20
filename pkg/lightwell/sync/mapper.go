@@ -690,25 +690,66 @@ func isOpenIssue(issue linkedIssue) bool {
 	return issue.Fields.Status.StatusCategory.Key != "done"
 }
 
+// blockerDetails is what the sync reads from an IVT's Build Task or Component Upgrade
+// blocker, beyond what the IVT's own links already show.
+type blockerDetails struct {
+	// Labels are the blocker's Jira labels. A "blocked:<reason>" label carries a reason.
+	Labels []string
+	// BlockedByTicket is true for a Component Upgrade that is itself blocked by an open
+	// ticket (an open "is blocked by" link). A Component Upgrade can be blocked by a
+	// label, by such a link, or both. It is never set for a Build Task.
+	BlockedByTicket bool
+}
+
+// blockerDetailsOf reads the labels of a fetched blocker and, for a Component Upgrade,
+// whether one of its own "is blocked by" tickets is still open. The issue must have
+// been fetched with the labels, issuelinks and issuetype fields.
+func blockerDetailsOf(blocker jira_client.JiraIssue) blockerDetails {
+	details := blockerDetails{Labels: labelsOf(blocker)}
+
+	var issueType struct {
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(blocker.Fields["issuetype"], &issueType) != nil || issueType.Name != issueTypeComponentUpgrade {
+		return details
+	}
+	var links []issueLink
+	if json.Unmarshal(blocker.Fields["issuelinks"], &links) != nil {
+		return details
+	}
+	for _, link := range links {
+		if link.InwardIssue != nil && link.Type.Inward == linkIsBlockedBy && isOpenIssue(*link.InwardIssue) {
+			details.BlockedByTicket = true
+			break
+		}
+	}
+	return details
+}
+
 // onHoldReasons returns the sorted, de-duplicated reason slugs for an IVT.
-// blockerLabels maps a blocker's issue key to its Jira labels. A "blocked:<reason>"
-// label on an open Build Task or Component Upgrade yields "<reason>" (lowercased),
-// and any open work ticket yields ReasonBlockedByTicket. An open Build Task or
-// Component Upgrade with no "blocked:" label contributes nothing.
+// blockers maps a Build Task or Component Upgrade's issue key to what was read from it.
+// A "blocked:<reason>" label on an open one yields "<reason>" (lowercased). Any open
+// work ticket that blocks the IVT, or that blocks one of its Component Upgrades, yields
+// ReasonBlockedByTicket. An open Build Task or Component Upgrade with neither contributes
+// nothing.
 //
 // It does not look at the IVT's stage; the caller only asks for On Hold IVTs. The
 // result is sorted so the same Jira state always stores the same value, otherwise
 // link order changes would look like data changes to the database upsert.
-func onHoldReasons(ivt jira_client.JiraIssue, blockerLabels map[string][]string) []string {
+func onHoldReasons(ivt jira_client.JiraIssue, blockers map[string]blockerDetails) []string {
 	labelSources, blockedByTicket := onHoldBlockers(ivt)
 
 	var reasons []string
 	for _, key := range labelSources {
-		for _, label := range blockerLabels[key] {
+		details := blockers[key]
+		for _, label := range details.Labels {
 			label = strings.ToLower(strings.TrimSpace(label))
 			if reason, found := strings.CutPrefix(label, blockedLabelPrefix); found && reason != "" {
 				reasons = append(reasons, reason)
 			}
+		}
+		if details.BlockedByTicket {
+			blockedByTicket = true
 		}
 	}
 	if blockedByTicket {
