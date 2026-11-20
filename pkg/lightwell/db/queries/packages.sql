@@ -119,7 +119,8 @@ SELECT
     p.package_group,
     p.name,
     pv.version,
-    pv.upstream_version
+    pv.upstream_version,
+    pv.published_at
 FROM lightwell_package_versions pv
 JOIN lightwell_packages p ON p.uuid = pv.lightwell_package_uuid
 JOIN repository_configurations rc ON rc.uuid = pv.repository_configuration_uuid

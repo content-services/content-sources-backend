@@ -54,10 +54,7 @@ func CoverageAnalysisHandler(ctx context.Context, task *models.TaskInfo, _ *queu
 		return fmt.Errorf("failed to initialize s3 client: %w", err)
 	}
 
-	source := opts.CatalogSource
-	if source == "" {
-		source = config.CatalogSourcePulp
-	}
+	source := config.ResolveCatalogSource(opts.CatalogSource)
 	opts.CatalogSource = source
 
 	var pulpClient pulp_client.PulpClient
@@ -98,6 +95,8 @@ func CoverageAnalysisHandler(ctx context.Context, task *models.TaskInfo, _ *queu
 }
 
 func (c *CoverageAnalysis) Run() error {
+	c.payload.CatalogSource = config.ResolveCatalogSource(c.payload.CatalogSource)
+
 	upload, err := c.daoReg.CoverageReport.InternalOnlyFetchCoverageUpload(c.ctx, c.payload.CoverageUploadUUID)
 	if err != nil {
 		return fmt.Errorf("failed to fetch upload: %w", err)

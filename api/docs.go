@@ -43,7 +43,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Catalog source for analysis: pulp (default) or db",
+                        "description": "Catalog source for analysis: db (default) or pulp",
                         "name": "catalog_source",
                         "in": "formData"
                     }
@@ -5380,12 +5380,27 @@ const docTemplate = `{
                     "description": "Ecosystem of the package",
                     "type": "string"
                 },
+                "lightwell_versions": {
+                    "description": "Distinct upstream versions of this package in the Lightwell catalog",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "match_segment": {
+                    "description": "How far nearest_higher_version agrees with the manifest version: major, minor, patch, or none",
+                    "type": "string"
+                },
                 "match_status": {
                     "description": "Match status of the package (exact, partial, none)",
                     "type": "string"
                 },
                 "name": {
                     "description": "Package name from the manifest",
+                    "type": "string"
+                },
+                "nearest_higher_version": {
+                    "description": "Smallest catalog upstream version strictly above the manifest version",
                     "type": "string"
                 },
                 "version": {

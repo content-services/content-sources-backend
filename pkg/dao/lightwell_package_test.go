@@ -361,7 +361,8 @@ func (s *LightwellPackageSuite) TestInternalOnlyListLensCatalog() {
 	for _, row := range rows {
 		found[row.Ecosystem+":"+row.Group+":"+row.Name+":"+row.Version] = row
 	}
-	_, hasJava := found["maven:org.springframework:spring-core:6.1.0"]
+	javaRow, hasJava := found["maven:org.springframework:spring-core:6.1.0"]
+	assert.Equal(s.T(), "2026-09-25T00:00:00Z", javaRow.PublishedAt)
 	_, hasPython := found["python::flask:3.0.3"]
 	_, hasOther := found["maven:com.example:ignored:1.0.0"]
 	_, hasNpm := found["npm:@angular:core:15.0.0"]
