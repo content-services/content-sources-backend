@@ -481,6 +481,17 @@ objects:
               - cleanup-missing-domains
             env:{{ENV_VARS}}
 
+        - name: update-all-template-content
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - update-all-template-content
+            env:{{ENV_VARS}}
 
         - name: update-domains
           podSpec:
