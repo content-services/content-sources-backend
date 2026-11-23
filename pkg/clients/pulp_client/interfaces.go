@@ -113,4 +113,7 @@ type PulpClient interface {
 	ListMavenFlatPackages(ctx context.Context, repoHref string) (zest.PaginatedMavenRepositoryFlatPackageResponseList, error)
 	GetMavenRepositoryMetrics(ctx context.Context, repoHref string) (zest.MavenRepositoryMetricsResponse, error)
 	ListMavenPackageContent(ctx context.Context, repoHref, groupId, artifactId, baseVersion string) ([]zest.MavenMavenPackageResponse, error)
+
+	// Python distribution inventory (caller supplies an authorized base path and normalized name)
+	ListPythonPackageFiles(ctx context.Context, basePath, name, version string) ([]zest.PythonPythonPackageContentResponse, error)
 }
