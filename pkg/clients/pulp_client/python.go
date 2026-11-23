@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -13,6 +14,8 @@ import (
 )
 
 const pythonPackagePageSize int32 = 100
+
+var pythonPackageNameSeparators = regexp.MustCompile(`[-_.]+`)
 
 // ListPythonPackageFiles returns the complete distribution inventory for one
 // exact Python release, ordered by filename. The caller must authorize the
@@ -59,7 +62,7 @@ func (r *pulpDaoImpl) ListPythonPackageFiles(ctx context.Context, basePath, name
 		}
 		previousCount := len(files)
 		for _, file := range page.Results {
-			if file.GetName() != name || file.GetVersion() != version {
+			if normalizePythonPackageName(file.GetName()) != name || file.GetVersion() != version {
 				return nil, fmt.Errorf("python inventory record does not match the requested release")
 			}
 			if err := validatePythonPackageFile(&file); err != nil {
@@ -138,6 +141,12 @@ func (r *pulpDaoImpl) pythonPackagePage(ctx context.Context, client *zest.APICli
 		return nil, fmt.Errorf("empty or malformed Python inventory response")
 	}
 	return page, nil
+}
+
+// normalizePythonPackageName matches Pulp's PEP 503 name filtering while leaving
+// the original metadata name intact in the returned content record.
+func normalizePythonPackageName(name string) string {
+	return pythonPackageNameSeparators.ReplaceAllString(strings.ToLower(name), "-")
 }
 
 func validatePythonPackageFile(file *zest.PythonPythonPackageContentResponse) error {

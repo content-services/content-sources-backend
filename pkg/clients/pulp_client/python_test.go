@@ -107,6 +107,36 @@ func TestListPythonPackageFilesExactReleaseAndPagination(t *testing.T) {
 	}
 }
 
+func TestListPythonPackageFilesEquivalentNames(t *testing.T) {
+	for _, storedName := range []string{
+		"Lightwell-Fixture",
+		"lightwell_fixture",
+		"lightwell.fixture",
+		"Lightwell__.-Fixture",
+	} {
+		t.Run(storedName, func(t *testing.T) {
+			files := pythonInventoryFixture(t, "rhlw-2")
+			for i := range files {
+				files[i].Name = zest.PtrString(storedName)
+			}
+			client := pythonInventoryTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if servePythonInventoryMapping(t, w, r) {
+					return
+				}
+				assert.Equal(t, pythonTestContent, r.URL.Path)
+				assert.Equal(t, pythonTestName, r.URL.Query().Get("name"))
+				assert.Equal(t, "3.0.1+rhlw.2", r.URL.Query().Get("version"))
+				// Pulp filters by normalized name but preserves the metadata name.
+				writePythonInventoryJSON(t, w, pythonInventoryPage(len(files), files...))
+			})
+
+			got, err := client.ListPythonPackageFiles(context.Background(), pythonTestBasePath, pythonTestName, "3.0.1+rhlw.2")
+			require.NoError(t, err)
+			assert.Equal(t, files, got, "preserve the original metadata names")
+		})
+	}
+}
+
 func TestListPythonPackageFilesDistributionMapping(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
