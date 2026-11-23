@@ -3,6 +3,31 @@
 Status: **proposed for review**. This document selects defaults for the first
 implementation; it does not add an endpoint or mark LWLP-1226 complete.
 
+## Summary for review
+
+Add an endpoint that lists the actual Python files for one exact package release
+in a repository the caller can access. Use Pulp's inventory, including every
+wheel and source archive present. This first increment returns file metadata;
+downloads, security artifacts, and other ecosystems follow separately.
+
+## Approval questions
+
+1. **Approve the Python-only first increment?** Start with wheels and source
+   archives, with downloads, OSV/VEX/SBOMs, sidecars, and Maven/npm tracked as
+   follow-ups.
+2. **Approve the route and response shape?** Extend the existing repository/Python
+   route with `/files`, select an exact full version, and use `data/meta/links`.
+   Each file has `filename`, `category`, `packagetype`, `size`, and `sha256`.
+3. **Approve access checks and failure behavior?** Apply identity/RBAC, terms,
+   repository entitlement, and Lightwell-origin checks before querying Pulp.
+   Hidden/missing repositories or no exact-release records return `404`;
+   mapping, Pulp, or malformed-inventory failures return `500`.
+
+The sections below provide the detailed rules, examples, and implementation
+reference for these proposed defaults.
+
+---
+
 ## First increment
 
 List the actual Python distribution files for one exact release in a repository
