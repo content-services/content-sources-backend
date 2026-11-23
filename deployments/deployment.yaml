@@ -9252,8 +9252,7 @@ objects:
               - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
                 value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
-
-        - name: update-domains
+        - name: update-all-template-content
           podSpec:
             securityContext:
               runAsNonRoot: true
@@ -9262,7 +9261,7 @@ objects:
             inheritEnv: true
             command:
               - /jobs
-              - update-domains
+              - update-all-template-content
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
@@ -9614,7 +9613,7 @@ objects:
               - name: OPTIONS_LIGHTWELL_IGNORE_REPOS
                 value: ${OPTIONS_LIGHTWELL_IGNORE_REPOS}
 
-        - name: update-all-template-content
+        - name: update-domains
           podSpec:
             securityContext:
               runAsNonRoot: true
@@ -9623,7 +9622,7 @@ objects:
             inheritEnv: true
             command:
               - /jobs
-              - update-all-template-content
+              - update-domains
             env:
               - name: CLOWDER_ENABLED
                 value: ${CLOWDER_ENABLED}
@@ -9949,12 +9948,6 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
-                    optional: true
-              - name: JFROG_BRIDGE_SIGNING_KEY_PEM
-                valueFrom:
-                  secretKeyRef:
-                    name: jfrog-bridge-signing-key
-                    key: pem
                     optional: true
               - name: CLIENTS_JIRA_URL
                 value: ${{CLIENTS_JIRA_URL}}
