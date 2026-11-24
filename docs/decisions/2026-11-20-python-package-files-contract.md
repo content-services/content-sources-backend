@@ -16,7 +16,8 @@ downloads, security artifacts, and other ecosystems follow separately.
    archives, with downloads, OSV/VEX/SBOMs, sidecars, and Maven/npm tracked as
    follow-ups.
 2. **Approve the route and response shape?** Extend the existing repository/Python
-   route with `/files`, select an exact full version, and use `data/meta/links`.
+   route with `/files` under both `/api/lightwell` and `/api/content-sources`,
+   select an exact full version, and use `data/meta/links`.
    Each file has `filename`, `category`, `packagetype`, `size`, and `sha256`.
 3. **Approve access checks and failure behavior?** Apply identity/RBAC, terms,
    repository entitlement, and Lightwell-origin checks before querying Pulp.
@@ -45,7 +46,14 @@ no partial-results mode. Download behavior belongs to LWLP-1227.
 
 ```http
 GET /api/lightwell/v0.1/repositories/{uuid}/python_packages/{name}/{version}/files
+GET /api/content-sources/v1.0/repositories/{uuid}/python_packages/{name}/{version}/files
 ```
+
+Serve the same operation under both prefixes, following the existing Python
+package routes, including the Content Sources `/api/content-sources/v1` alias.
+Both route families use the same request/response contract and equivalent
+identity/RBAC, terms, repository-entitlement, and Lightwell-origin guards.
+The Lightwell-prefixed examples below also apply to Content Sources.
 
 - `uuid` is the Network repository configuration UUID returned by the repository
   API, not a Pulp repository UUID or a repository name.
@@ -118,7 +126,9 @@ pagination. `meta.limit` is the effective limit after defaulting/capping;
 `meta.offset` is the parsed offset. Preserve negative parsed values in metadata,
 matching existing collections; safe slice bounds do not replace those values.
 `data` is always an array.
-`links.first` and `links.last` are relative Network API links;
+`links.first` and `links.last` are relative API links using the incoming request's
+versioned prefix (`/api/lightwell/v0.1`, `/api/content-sources/v1.0`, or
+`/api/content-sources/v1`);
 `links.next` and `links.prev` follow the shared pagination rules and are omitted
 when unset, matching `api.Links`. Match the shared collection metadata/link
 conventions for negative values as well.
@@ -176,7 +186,7 @@ middleware. Resolve the repository through entitlement-aware
 `origin == lightwell` and `content_type == python`. The existing
 `fetchLightwellRepo` helper supplies visibility but does not itself check origin.
 No privileged Pulp request may run before these guards pass. Any shared handler
-used from another route family must receive equivalent guards.
+registered under either prefix must receive equivalent guards.
 
 Use the scoped Pulp inventory as the authority for exact-release existence in
 this operation. Do not require a package-mirror row: the mirror is asynchronously
@@ -245,9 +255,10 @@ For example, an exact release not present in the scoped inventory returns:
    filename fail with `500` rather than choosing arbitrary bytes. Missing
    filename, negative size, or malformed nonempty digest also fail as malformed
    inventory. Absent size/hash remain nullable.
-4. Wire the guarded Network route, response types, and focused tests together.
-   Add handler annotations and generate the Network spec with
-   `make openapi-lightwell` during implementation; follow repository generation
+4. Wire the guarded route into both the Lightwell and Content Sources route
+   registrations, with shared response types and focused tests. Add handler
+   annotations and generate both specs with `make openapi-lightwell` and
+   `make openapi-doc` during implementation; follow repository generation
    requirements for any shared API types. The served spec remains an account
    of implemented endpoints, so this proposal does not edit generated API files.
 
@@ -262,6 +273,9 @@ of stage/production parity or real producer naming.
 
 The implementation must cover:
 
+- Both route prefixes and the Content Sources version alias: identical response
+  and error semantics, equivalent access guards before any Pulp lookup, and
+  pagination links retaining the incoming versioned prefix.
 - Exact build selection, no implicit latest-build fallback, Python name
   normalization, and encoded `+` through routing, Pulp filtering, and links.
 - Multiple platform wheels plus source archives, upstream pagination, both sort
