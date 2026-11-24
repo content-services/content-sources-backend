@@ -292,6 +292,11 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
+  partner_repositories_view:
+    enabled: true
+    accounts: #["partnerRepoViewAccount"]
+    users: #["partnerRepoViewUser"]
+    organizations: #["partnerRepoViewOrg"]
   lightwell_lens:
     enabled: true
     accounts: #["lightwellAccount"]
