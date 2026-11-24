@@ -59,7 +59,7 @@ Copr repository
 ### Ingestion Flow
 
 1. **Copr** finishes a build in a chroot, adds a repository version, publishes it, and sends a build end event with the publication href.
-2. **copr-ingest consumer** (once deployed, runs in the `service` deployment next to the API; the deployment comes in a separate PR):
+2. **copr-ingest consumer** (runs in the `service` deployment, next to the API):
    - Decodes and validates the event.
    - Skips other event types, failed builds, unsupported chroots, and invalid messages.
    - Enqueues a `create-partner-snapshot` task for the Copr org (`clients.pulp.copr_org_id`). The task's request ID is the event ID, so one search in the logs finds both.
@@ -141,13 +141,13 @@ Snapshots:
 - `clients.pulp.copr_domain` — the Copr Pulp domain (default `cs-partner`). Copr creates it; Content Sources creates it only if it's missing.
 - `clients.pulp.copr_org_id` — the org that owns the Copr repositories (default `-5`). The content guard checks this org ID, so it goes together with `copr_domain`.
 
-Once deployed, both are set in the deployment template through the `CLIENTS_PULP_COPR_DOMAIN` and `CLIENTS_PULP_COPR_ORG_ID` parameters, see [Org ID and Pulp Domain](#org-id-and-pulp-domain).
+Both are set in the deployment template through the `CLIENTS_PULP_COPR_DOMAIN` and `CLIENTS_PULP_COPR_ORG_ID` parameters, see [Org ID and Pulp Domain](#org-id-and-pulp-domain).
 
 ### Kafka Setup
 
 The consumer is configured with HCC-like settings, so this setup assumes Copr is already onboarded to HCC Kafka:
 
-- It reads from our own cluster, with the shared `kafka` brokers and auth settings (from Clowder in the deployments). Once deployed, Clowder provisions the `COPR_INGEST_TOPIC` topic there.
+- It reads from our own cluster, with the shared `kafka` brokers and auth settings (from Clowder in the deployments), and Clowder provisions the `COPR_INGEST_TOPIC` topic there.
 - It expects structured-mode CloudEvents, as other HCC services send.
 
 Copr currently publishes to the IT-managed Kafka instance, while the consumer connects to the HCC Kafka cluster, so it receives no events. The integration details, such as separate broker and authentication settings for copr-ingest, still need to be agreed with the Copr team.

@@ -24,6 +24,9 @@ objects:
         - partitions: 3
           replicas: 3
           topicName: platform.notifications.ingress
+        - partitions: 3
+          replicas: 3
+          topicName: ${COPR_INGEST_TOPIC}
       deployments:
         - name: task-worker
           replicas: ${{TASK_WORKER_REPLICAS}}
@@ -120,6 +123,7 @@ objects:
               - api
               - instrumentation
               - jfrog-bridge
+              - copr-ingest
             livenessProbe:
               failureThreshold: 3
               httpGet:
