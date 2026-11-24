@@ -12,7 +12,7 @@ import (
 
 const (
 	deleteLightwellDemoSeedMigration = "db/migrations/20261023215619_delete_lightwell_demo_seed.up.sql"
-	lightwellSeedVulnerabilityCount  = 63
+	lightwellSeedVulnerabilityCount  = 65
 )
 
 var lightwellSeedBeaconProcessedAt = time.Date(2026, time.August, 18, 7, 0, 0, 0, time.UTC)
