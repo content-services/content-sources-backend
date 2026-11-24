@@ -24,6 +24,7 @@ import (
 	"github.com/content-services/yummy/pkg/yum"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -4239,7 +4240,15 @@ func (s *RepositoryConfigSuite) TestSetPartnerRepo_DoesNotDuplicateRepositoryOrM
 	assert.Equal(t, repo.UUID, linkedRepoUUID, "rpm join must stay on the original repository")
 }
 
-func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToForeignOrg() {
+func setPartnerRepositoriesView(t *testing.T, feature config.Feature) {
+	t.Helper()
+	features := &config.Get().Features
+	original := features.PartnerRepositoriesView
+	t.Cleanup(func() { features.PartnerRepositoriesView = original })
+	features.PartnerRepositoriesView = feature
+}
+
+func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibilityToForeignOrg() {
 	t := suite.T()
 	ownerOrg := seeds.RandomOrgId()
 	viewerOrg := seeds.RandomOrgId()
@@ -4265,28 +4274,55 @@ func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToForeignOrg() {
 
 	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
 
-	suite.mockFsClient.Mock.On("GetEntitledFeatures", context.Background(), viewerOrg).Return([]string{}, nil).Once()
-	suite.mockPulpForListOrFetch(1)
+	viewerAccount := seeds.RandomAccountId()
+	const viewerUsername = "partner-preview-user"
+	ctx := identity.WithIdentity(context.Background(), identity.XRHID{Identity: identity.Identity{
+		OrgID:         viewerOrg,
+		AccountNumber: viewerAccount,
+		User:          &identity.User{Username: viewerUsername},
+	}})
+	for _, tc := range []struct {
+		name    string
+		feature config.Feature
+		visible bool
+	}{
+		{name: "disabled", feature: config.Feature{Organizations: &[]string{viewerOrg}}},
+		{name: "enabled without allowlists", feature: config.Feature{Enabled: true}, visible: true},
+		{name: "org not allowlisted", feature: config.Feature{Enabled: true, Organizations: &[]string{ownerOrg}}},
+		{name: "org allowlisted", feature: config.Feature{Enabled: true, Organizations: &[]string{viewerOrg}}, visible: true},
+		{name: "account not allowlisted", feature: config.Feature{Enabled: true, Accounts: &[]string{"unrelated-account"}}},
+		{name: "account allowlisted", feature: config.Feature{Enabled: true, Accounts: &[]string{viewerAccount}}, visible: true},
+		{name: "user not allowlisted", feature: config.Feature{Enabled: true, Users: &[]string{"unrelated-user"}}},
+		{name: "user allowlisted", feature: config.Feature{Enabled: true, Users: &[]string{viewerUsername}}, visible: true},
+	} {
+		suite.Run(tc.name, func() {
+			t := suite.T()
+			setPartnerRepositoriesView(t, tc.feature)
+			suite.mockFsClient.Mock.On("GetEntitledFeatures", ctx, viewerOrg).Return([]string{}, nil).Once()
+			suite.mockPulpForListOrFetch(1)
 
-	response, total, err := rDao.List(context.Background(), viewerOrg, api.PaginationData{Limit: 100}, api.FilterData{})
-	require.NoError(t, err)
+			response, total, err := rDao.List(ctx, viewerOrg, api.PaginationData{Limit: 100}, api.FilterData{UUID: partnerRC.UUID})
+			require.NoError(t, err)
+			if !tc.visible {
+				assert.Zero(t, total)
+				assert.Empty(t, response.Data)
+				return
+			}
 
-	var found *api.RepositoryResponse
-	for i := range response.Data {
-		if response.Data[i].UUID == partnerRC.UUID {
-			found = &response.Data[i]
-			break
-		}
+			assert.EqualValues(t, 1, total)
+			require.Len(t, response.Data, 1)
+			found := response.Data[0]
+			assert.Equal(t, config.OriginCommunity, found.Origin)
+			assert.Equal(t, config.CommunityOrg, found.OrgID)
+			assert.NotNil(t, found.LastSnapshot)
+			assert.Equal(t, publishedSnap.UUID, found.LastSnapshotUUID)
+		})
 	}
-	require.NotNil(t, found, "partner repo with published snapshot should be visible to foreign org, total=%d", total)
-	assert.Equal(t, config.OriginCommunity, found.Origin)
-	assert.Equal(t, config.CommunityOrg, found.OrgID)
-	assert.NotNil(t, found.LastSnapshot)
-	assert.Equal(t, publishedSnap.UUID, found.LastSnapshotUUID)
 }
 
 func (suite *RepositoryConfigSuite) TestListPartnerRepoNotVisibleWithoutPublishedSnapshot() {
 	t := suite.T()
+	setPartnerRepositoriesView(t, config.Feature{Enabled: true})
 	ownerOrg := seeds.RandomOrgId()
 	viewerOrg := seeds.RandomOrgId()
 
@@ -4308,6 +4344,7 @@ func (suite *RepositoryConfigSuite) TestListPartnerRepoNotVisibleWithoutPublishe
 
 func (suite *RepositoryConfigSuite) TestListOriginCommunityIncludesForeignPartner() {
 	t := suite.T()
+	setPartnerRepositoriesView(t, config.Feature{Enabled: true})
 	ownerOrg := seeds.RandomOrgId()
 	viewerOrg := seeds.RandomOrgId()
 
@@ -4351,6 +4388,7 @@ func (suite *RepositoryConfigSuite) TestListOriginCommunityIncludesForeignPartne
 
 func (suite *RepositoryConfigSuite) TestListOriginUploadExcludesForeignPartner() {
 	t := suite.T()
+	setPartnerRepositoriesView(t, config.Feature{Enabled: true})
 	ownerOrg := seeds.RandomOrgId()
 	viewerOrg := seeds.RandomOrgId()
 
@@ -4388,6 +4426,7 @@ func (suite *RepositoryConfigSuite) TestListOriginUploadExcludesForeignPartner()
 
 func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibleToOwner() {
 	t := suite.T()
+	setPartnerRepositoriesView(t, config.Feature{})
 	ownerOrg := seeds.RandomOrgId()
 
 	repo := createTestUploadRepository(t, suite.tx)
@@ -4454,6 +4493,8 @@ func (suite *RepositoryConfigSuite) TestListPartnerFilter() {
 
 func (suite *RepositoryConfigSuite) TestFetchPartnerRepoByForeignOrg() {
 	t := suite.T()
+	// The feature flag controls discovery in List, not direct fetches.
+	setPartnerRepositoriesView(t, config.Feature{})
 	ownerOrg := seeds.RandomOrgId()
 	viewerOrg := seeds.RandomOrgId()
 
