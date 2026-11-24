@@ -71,8 +71,10 @@ Supported query parameters:
   `filename:asc`. Other sort values return `400`. Order by the exact filename,
   case-sensitively, without locale-dependent collation.
 
-The validation of malformed pagination is explicit for this new operation;
-the shared parser currently logs binding errors rather than rejecting them.
+Reject negative or non-integer limits and offsets in this new HTTP handler only.
+The shared parser currently logs binding errors rather than rejecting them and
+passes negative values through; existing tasks, jobs, and tests use that behavior.
+Do not change the shared parser or other handlers as part of this operation.
 
 ## Successful response
 
@@ -108,6 +110,11 @@ pagination. `meta.limit` is the effective limit after defaulting/capping;
 Preserve the encoded coordinates and sorting in every link. Never return Pulp's
 pagination links. Offset pagination is deterministic for unchanged inventory;
 there is no snapshot guarantee across separate HTTP requests.
+
+Upstream pagination is the adapter fetching all inventory pages from Pulp.
+Public pagination is the Network HTTP handler selecting the caller's requested
+page from the complete, deduplicated, sorted inventory. The two page sizes are
+independent; a public page must not be a slice of just one upstream page.
 
 Example: the repository UUID below is illustrative. File metadata comes from
 the existing local Pulp fixture captured on 19 November 2026.
@@ -178,6 +185,15 @@ imported and its detail lookup can group builds by upstream version.
 
 Use the existing `errors` envelope (`pkg/errors/handler_error.go`) and redact
 upstream URLs, credentials, and raw response bodies from public error details.
+Preserve Pulp response details in internal client errors, for example with
+`errorWithResponseBody`, while wrapping the original error so callers can still
+use `errors.Is` and `errors.As`. This diagnostic information is internal only.
+The HTTP handler owns the public boundary: return a safe server-error response
+rather than copying the upstream error's `Error()` string into `detail`.
+`NewErrorResponseFromError` copies that string and must not be used directly on
+these upstream errors. Retaining an internal response body does not authorize
+returning it to the API caller.
+
 For example, an exact release not present in the scoped inventory returns:
 
 ```json
@@ -207,9 +223,13 @@ For example, an exact release not present in the scoped inventory returns:
    or incomplete pagination and fail the request.
 3. Preserve filename and content/artifact identity internally for the later
    download lookup. Collapse repeated occurrences of the same content record;
-   conflicting records for one filename fail with `500` rather than choosing
-   arbitrary bytes. Missing filename, negative size, or malformed nonempty
-   digest also fail as malformed inventory. Absent size/hash remain nullable.
+   compare only the requested inventory fields (`pulp_href`, `artifact`, `name`,
+   `version`, `filename`, `packagetype`, `size`, and `sha256`) after normalizing
+   optional metadata, ignoring unrelated Pulp fields. Unknown size and zero
+   bytes remain distinct. Conflicting records for the same content identity or
+   filename fail with `500` rather than choosing arbitrary bytes. Missing
+   filename, negative size, or malformed nonempty digest also fail as malformed
+   inventory. Absent size/hash remain nullable.
 4. Wire the guarded Network route, response types, and focused tests together.
    Add handler annotations and generate the Network spec with
    `make openapi-lightwell` during implementation; follow repository generation
@@ -237,6 +257,8 @@ The implementation must cover:
   terms guards, with no content lookup after a failed guard.
 - Missing release versus a failed upstream page, including timeout and broken
   repository mapping; never return an apparently complete partial inventory.
+- Pulp error details and the wrapped cause remain available internally, while
+  public server errors omit upstream bodies, URLs, credentials, and storage paths.
 
 Before rollout, compare the endpoint against a real producer release in a target
 environment, including multiple wheels where available. This is a verification
