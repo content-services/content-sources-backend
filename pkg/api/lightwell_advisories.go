@@ -42,4 +42,5 @@ type LightwellAdvisoryFilterData struct {
 	AdvisoryID     string `query:"advisory_id"`
 	Name           string `query:"name"`
 	LatestRelease  bool   `query:"latest_release"`
+	Demo           bool   `query:"demo"`
 }

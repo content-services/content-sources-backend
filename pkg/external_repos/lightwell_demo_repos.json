@@ -3,7 +3,8 @@
     "name": "lightwell/java/remediated-demo",
     "type": "maven",
     "base_path": "java/remediated",
-    "feature_name": "lightwell-network-demo"
+    "feature_name": "lightwell-network-demo",
+    "osv_path": "lightwell/demo/osv/java/remediated/"
   },
   {
     "name": "lightwell/java/validated-demo",

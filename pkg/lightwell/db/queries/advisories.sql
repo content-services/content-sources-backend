@@ -58,6 +58,7 @@ WITH filtered AS (
             sqlc.narg(package_version)::text IS NULL
             OR la.package_version = sqlc.narg(package_version)::text
         )
+        AND ((rc.org_id = sqlc.arg(demo_org)::text) = sqlc.arg(is_demo)::bool)
         AND (
             sqlc.narg(entitled_features)::text[] IS NULL
             OR EXISTS (
