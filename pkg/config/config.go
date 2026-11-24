@@ -110,6 +110,7 @@ type FeatureSet struct {
 	Lightwell                             Feature `mapstructure:"lightwell"`
 	LightwellNotifications                Feature `mapstructure:"lightwell_notifications"`
 	AdminPartnerRepositories              Feature `mapstructure:"admin_partner_repositories"`
+	PartnerRepositoriesView               Feature `mapstructure:"partner_repositories_view"`
 	AdminNotifications                    Feature `mapstructure:"admin_notifications"`
 	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
@@ -580,6 +581,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_partner_repositories.accounts", nil)
 	v.SetDefault("features.admin_partner_repositories.organizations", nil)
 	v.SetDefault("features.admin_partner_repositories.users", nil)
+	v.SetDefault("features.partner_repositories_view.enabled", false)
+	v.SetDefault("features.partner_repositories_view.accounts", nil)
+	v.SetDefault("features.partner_repositories_view.organizations", nil)
+	v.SetDefault("features.partner_repositories_view.users", nil)
 	v.SetDefault("features.admin_notifications.enabled", false)
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
