@@ -13,6 +13,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/config"
 	zest "github.com/content-services/zest/release/v2026"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -233,6 +234,55 @@ func TestListPythonPackageFilesMetadataAndDuplicates(t *testing.T) {
 	assert.Nil(t, got[2].Sha256)
 }
 
+func TestListPythonPackageFilesDuplicateContentFields(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		change    func(*zest.PythonPythonPackageContentResponse)
+		wantError bool
+	}{
+		{name: "unrequested metadata", change: func(f *zest.PythonPythonPackageContentResponse) {
+			f.Summary = zest.PtrString("updated package summary")
+			f.Prn = zest.PtrString("prn:content:extra-metadata")
+		}},
+		{name: "equivalent digest", change: func(f *zest.PythonPythonPackageContentResponse) {
+			f.Sha256 = zest.PtrString(strings.ToUpper(f.GetSha256()))
+		}},
+		{name: "different artifact", wantError: true, change: func(f *zest.PythonPythonPackageContentResponse) {
+			f.Artifact = zest.PtrString("/api/pulp/lightwell/api/v3/artifacts/other/")
+		}},
+		{name: "different package type", wantError: true, change: func(f *zest.PythonPythonPackageContentResponse) {
+			f.Packagetype = zest.PtrString("unfamiliar-distribution")
+		}},
+		{name: "different digest", wantError: true, change: func(f *zest.PythonPythonPackageContentResponse) {
+			f.Sha256 = zest.PtrString(strings.Repeat("ab", 32))
+		}},
+		{name: "unknown size versus zero bytes", wantError: true, change: func(f *zest.PythonPythonPackageContentResponse) {
+			f.Size = nil
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			file := pythonInventoryFixture(t, "rhlw-2")[0]
+			file.Size = zest.PtrInt64(0)
+			duplicate := file
+			tc.change(&duplicate)
+			client := pythonInventoryTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if !servePythonInventoryMapping(t, w, r) {
+					writePythonInventoryJSON(t, w, pythonInventoryPage(2, file, duplicate))
+				}
+			})
+
+			got, err := client.ListPythonPackageFiles(context.Background(), pythonTestBasePath, pythonTestName, "3.0.1+rhlw.2")
+			if tc.wantError {
+				require.ErrorContains(t, err, "conflicting Python inventory content records")
+				assert.Nil(t, got)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, []zest.PythonPythonPackageContentResponse{file}, got)
+			}
+		})
+	}
+}
+
 func TestListPythonPackageFilesRejectsInvalidRecords(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -310,6 +360,51 @@ func TestListPythonPackageFilesPageFailures(t *testing.T) {
 			require.Error(t, err)
 			assert.Nil(t, got)
 			assert.Equal(t, len(tc.pages), page)
+		})
+	}
+}
+
+func TestListPythonPackageFilesUpstreamErrorDetails(t *testing.T) {
+	const upstreamBody = `{"detail":"Pulp failure at https://pulp.internal/storage/private; credential=test-only-secret"}`
+	for _, tc := range []struct {
+		name   string
+		status int
+		later  bool
+	}{
+		{name: "authentication failure", status: http.StatusUnauthorized},
+		{name: "server failure", status: http.StatusServiceUnavailable},
+		{name: "later page failure", status: http.StatusServiceUnavailable, later: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			file := pythonInventoryFixture(t, "rhlw-2")[0]
+			client := pythonInventoryTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+				if servePythonInventoryMapping(t, w, r) {
+					return
+				}
+				if tc.later && r.URL.Query().Get("offset") == "0" {
+					writePythonInventoryJSON(t, w, pythonInventoryPage(2, file))
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(upstreamBody))
+			})
+
+			files, err := client.ListPythonPackageFiles(context.Background(), pythonTestBasePath, pythonTestName, "3.0.1+rhlw.2")
+			require.ErrorContains(t, err, "error listing Python package files")
+			assert.ErrorContains(t, err, upstreamBody, "retain Pulp diagnostics internally")
+			assert.Nil(t, files, "discard any files fetched before the failure")
+			var upstreamErr *zest.GenericOpenAPIError
+			require.ErrorAs(t, err, &upstreamErr, "preserve the wrapped client error")
+			assert.Equal(t, upstreamBody, string(upstreamErr.Body()))
+
+			// The adapter returns an internal error, not a public ErrorResponse.
+			// Keep diagnostics out of the existing HTTP error handler's response.
+			recorder := httptest.NewRecorder()
+			c := echo.New().NewContext(httptest.NewRequest(http.MethodGet, "/", http.NoBody), recorder)
+			config.CustomHTTPErrorHandler(err, c)
+			assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+			assert.JSONEq(t, `{"errors":[{"status":500,"detail":"Internal Server Error"}]}`, recorder.Body.String())
 		})
 	}
 }

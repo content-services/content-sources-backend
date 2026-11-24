@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -26,6 +25,8 @@ var pythonPackageNameSeparators = regexp.MustCompile(`[-_.]+`)
 // inventory is a successful lookup, while any mapping, page, or record failure
 // returns no files. Content/artifact hrefs are retained for internal download
 // resolution; callers must map these records to the public response type.
+// Errors retain upstream diagnostics for internal use; HTTP handlers must return
+// sanitized public error details rather than serializing these errors directly.
 func (r *pulpDaoImpl) ListPythonPackageFiles(ctx context.Context, basePath, name, version string) ([]zest.PythonPythonPackageContentResponse, error) {
 	if basePath == "" || name == "" || version == "" {
 		return nil, fmt.Errorf("python inventory requires a distribution base path, normalized name, and exact version")
@@ -70,7 +71,7 @@ func (r *pulpDaoImpl) ListPythonPackageFiles(ctx context.Context, basePath, name
 			}
 			href, filename := file.GetPulpHref(), file.GetFilename()
 			if previous, exists := byContent[href]; exists {
-				if !reflect.DeepEqual(previous, file) {
+				if !samePythonPackageFile(previous, file) {
 					return nil, fmt.Errorf("conflicting Python inventory content records")
 				}
 				continue
@@ -135,12 +136,25 @@ func (r *pulpDaoImpl) pythonPackagePage(ctx context.Context, client *zest.APICli
 		defer httpResp.Body.Close()
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error listing Python package files: %w", err)
+		return nil, errorWithResponseBody("error listing Python package files", httpResp, err)
 	}
 	if page == nil || page.Results == nil {
 		return nil, fmt.Errorf("empty or malformed Python inventory response")
 	}
 	return page, nil
+}
+
+// samePythonPackageFile compares only the requested inventory fields, after
+// validation normalizes optional metadata. Unknown size differs from zero bytes.
+func samePythonPackageFile(a, b zest.PythonPythonPackageContentResponse) bool {
+	return a.GetPulpHref() == b.GetPulpHref() &&
+		a.GetArtifact() == b.GetArtifact() &&
+		a.GetName() == b.GetName() &&
+		a.GetVersion() == b.GetVersion() &&
+		a.GetFilename() == b.GetFilename() &&
+		a.GetPackagetype() == b.GetPackagetype() &&
+		(a.Size == nil) == (b.Size == nil) && a.GetSize() == b.GetSize() &&
+		a.GetSha256() == b.GetSha256()
 }
 
 // normalizePythonPackageName matches Pulp's PEP 503 name filtering while leaving
