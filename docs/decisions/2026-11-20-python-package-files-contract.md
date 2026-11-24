@@ -64,17 +64,28 @@ GET /api/lightwell/v0.1/repositories/{uuid}/python_packages/{name}/{version}/fil
 Supported query parameters:
 
 - `limit`: integer, default `100`. `0` uses the default; values above `200` are
-  capped at `200`, following shared pagination. Negative or non-integer values
-  return `400`.
-- `offset`: nonnegative integer, default `0`; invalid values return `400`.
+  capped at `200`, following shared pagination. Any negative value means no
+  limit: return all files remaining after the offset. The cap applies only to
+  positive limits.
+- `offset`: integer, default `0`. Negative values skip no records, behaving like
+  `0` when selecting results.
 - `sort_by`: `filename`, `filename:asc`, or `filename:desc`; default
   `filename:asc`. Other sort values return `400`. Order by the exact filename,
   case-sensitively, without locale-dependent collation.
 
-Reject negative or non-integer limits and offsets in this new HTTP handler only.
-The shared parser currently logs binding errors rather than rejecting them and
-passes negative values through; existing tasks, jobs, and tests use that behavior.
-Do not change the shared parser or other handlers as part of this operation.
+Reuse `ParsePagination` and its existing binding behavior. It passes negative
+values through and logs non-integer binding errors without returning `400`.
+Binding stops at the first error, retaining values already bound and defaults
+for fields not bound; for example, `limit=invalid&offset=5` retains the default
+limit and offset. Do not add handler-specific rejection of these values or
+change the shared parser as part of this operation.
+
+These result-selection semantics match existing task handlers, whose DAOs pass
+the parsed values to GORM: a negative limit omits the SQL limit and a negative
+offset omits the SQL offset. Tasks, jobs, and tests also use `Limit: -1` to fetch
+all results. The new handler paginates an in-memory inventory instead, so compute
+safe slice bounds separately: treat a negative offset as zero, clamp the start
+to the inventory length, and select through the end for a negative limit.
 
 ## Successful response
 
@@ -104,9 +115,13 @@ time. Omit `signature_type` until downloadable sidecars are actually supported.
 
 `meta.count` is the total number of files for this release before public
 pagination. `meta.limit` is the effective limit after defaulting/capping;
-`meta.offset` is the requested offset. `data` is always an array.
+`meta.offset` is the parsed offset. Preserve negative parsed values in metadata,
+matching existing collections; safe slice bounds do not replace those values.
+`data` is always an array.
 `links.first` and `links.last` are relative Network API links;
-`links.next` and `links.prev` are omitted when unavailable, matching `api.Links`.
+`links.next` and `links.prev` follow the shared pagination rules and are omitted
+when unset, matching `api.Links`. Match the shared collection metadata/link
+conventions for negative values as well.
 Preserve the encoded coordinates and sorting in every link. Never return Pulp's
 pagination links. Offset pagination is deterministic for unchanged inventory;
 there is no snapshot guarantee across separate HTTP requests.
@@ -250,7 +265,11 @@ The implementation must cover:
 - Exact build selection, no implicit latest-build fallback, Python name
   normalization, and encoded `+` through routing, Pulp filtering, and links.
 - Multiple platform wheels plus source archives, upstream pagination, both sort
-  directions, public page boundaries, total count, and invalid pagination.
+  directions, public page boundaries, total count, and shared pagination
+  conventions: default/zero limits, positive limit capping, negative limits
+  (including values other than `-1`), negative offsets, non-integer binding
+  behavior, and metadata/links. Verify safe slice bounds, including an offset
+  beyond the inventory length with an unlimited limit.
 - Unknown types/names, filename inference, missing size/hash versus zero size,
   duplicate content, conflicting filenames, and malformed records.
 - Org/entitlement denial, non-Lightwell origin, wrong content type, RBAC and
@@ -276,6 +295,8 @@ not claim to close the broader list-files requirement.
 - [Network registration and guards](../../pkg/handler/lightwell/api.go)
 - [Shared collection types](../../pkg/api/api.go)
 - [Shared pagination helpers](../../pkg/handler/api.go)
+- [Existing task handler pagination](../../pkg/handler/task_info.go)
+- [Task DAO pagination semantics](../../pkg/dao/task_info.go)
 - [Existing Python name normalization](../../pkg/lightwell/sync/publication_packages.go)
 - [Current generated Network specification](../../api/lightwell/openapi.json)
 - [Local fixture/import workflow](../lightwell_packages_dev.md)
