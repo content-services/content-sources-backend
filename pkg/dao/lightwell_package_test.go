@@ -1894,3 +1894,31 @@ func (s *LightwellPackageSuite) TestListRepositoryPackages() {
 	s.Require().ErrorAs(err, &daoErr)
 	assert.True(s.T(), daoErr.BadValidation)
 }
+
+func TestIsLaterRelease(t *testing.T) {
+	// higher release wins even with older timestamp
+	assert.True(t, isLaterRelease("rhlw-00010", "2024-10-01T00:00:00Z", "rhlw-00009", "2024-11-01T00:00:00Z"), "higher baseline wins despite older date")
+	assert.False(t, isLaterRelease("rhlw-00009", "2024-11-01T00:00:00Z", "rhlw-00010", "2024-10-01T00:00:00Z"))
+	// novel/hotfix
+	assert.True(t, isLaterRelease("rhlw-00003.n00001", "2024-01-01T00:00:00Z", "rhlw-00003", "2024-02-01T00:00:00Z"))
+	assert.True(t, isLaterRelease("rhlw-00003.n00001.hf00002", "2024-01-01T00:00:00Z", "rhlw-00003.n00001.hf00001", "2024-02-01T00:00:00Z"))
+	// same rank - newer published_at wins
+	assert.True(t, isLaterRelease("rhlw-00003", "2024-03-01T00:00:00Z", "rhlw-00003", "2024-02-01T00:00:00Z"))
+	assert.False(t, isLaterRelease("rhlw-00003", "2024-02-01T00:00:00Z", "rhlw-00003", "2024-03-01T00:00:00Z"))
+	// fallback lex when one release not parsable
+	assert.True(t, isLaterRelease("rhlw-00002", "2024-01-01T00:00:00Z", "", "2024-02-01T00:00:00Z"))
+}
+
+func TestRepositoryPackageItemPrefersRankOverDate(t *testing.T) {
+	item := repositoryPackageItem(
+		"example-lib",
+		"com.example",
+		[]string{"1.2.3.rhlw-00009", "1.2.3.rhlw-00010"},
+		[]string{"rhlw-00009", "rhlw-00010"},
+		[]string{"2024-11-01T00:00:00Z", "2024-10-01T00:00:00Z"},
+		[]string{"1.2.3", "1.2.3"},
+	)
+	require.Len(t, item.LatestReleases, 1)
+	assert.Equal(t, "rhlw-00010", item.LatestReleases[0].Release)
+	assert.Equal(t, "2024-10-01T00:00:00Z", item.LatestReleases[0].CreatedAt)
+}

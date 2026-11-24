@@ -64,6 +64,8 @@ INSERT INTO lightwell_vulnerabilities (uuid, vulnerability_key, vulnerability_id
 INSERT INTO lightwell_vulnerabilities (uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason) VALUES ('00000000-0000-4000-8000-000000000047', 'PROJ-3407', 'LWL-2026-3407', 'pkg:npm/dead-path@3.2.1', 'dead-path', '3.2.1', 'Vulnerable code is not reachable', 'CWE-1104', 'The vulnerable code is present but is not on an executed path', 'Moderate', 4.8, 'CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N', false, false, 'Priority 3', 'Unremediated', 'javascript', 'Standard', '2026-06-26', '2026-07-16 09:00:00+00', false, false, NULL, 'Vulnerable code not in execute path');
 INSERT INTO lightwell_vulnerabilities (uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason) VALUES ('00000000-0000-4000-8000-000000000048', 'PROJ-3408', 'LWL-2026-3408', 'pkg:maven/com.example/locked-input@1.5.0', 'locked-input', '1.5.0', 'Attacker cannot control the vulnerable input', 'CWE-1104', 'The vulnerable code cannot be controlled by an attacker in this package', 'Moderate', 5.0, 'CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N', false, false, 'Priority 3', 'Unremediated', 'java', 'Standard', '2026-06-27', '2026-07-17 09:00:00+00', false, false, NULL, 'Vulnerable code cannot be controlled by adversary');
 INSERT INTO lightwell_vulnerabilities (uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason) VALUES ('00000000-0000-4000-8000-000000000049', 'PROJ-3409', 'LWL-2026-3409', 'pkg:pypi/already-mitigated@2.3.0', 'already-mitigated', '2.3.0', 'An existing mitigation covers this issue', 'CWE-1104', 'An inline mitigation already addresses this vulnerability', 'Low', 2.8, 'CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N', false, false, 'Priority 4', 'Unremediated', 'python', 'Standard', '2026-06-28', '2026-07-18 09:00:00+00', false, false, NULL, 'Inline mitigations already exist');
+INSERT INTO lightwell_vulnerabilities (uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of) VALUES ('00000000-0000-4000-8000-00000000b001', 'PROJ-4501', 'LWL-2026-4501', 'pkg:maven/org.apache.logging.log4j/log4j-core@2.17.1', 'log4j-core', '2.17.1', 'Improper input validation in log message lookup', 'CWE-20', 'Additional build for testing rank vs timestamp handling', 'Important', 7.5, 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N', true, false, 'Priority 2', 'Lightwell Network', 'java', 'Standard', '2026-08-16', '2026-08-19 08:00:00+00', false, false, NULL);
+INSERT INTO lightwell_vulnerabilities (uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of) VALUES ('00000000-0000-4000-8000-00000000b002', 'PROJ-4502', 'LWL-2026-4502', 'pkg:maven/org.apache.logging.log4j/log4j-core@2.17.1', 'log4j-core', '2.17.1', 'Buffer overflow in layout component', 'CWE-120', 'Additional build for testing multiple versions per package', 'Moderate', 5.5, 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H', false, false, 'Priority 3', 'Lightwell Network', 'java', 'Standard', '2026-08-15', '2026-08-18 08:00:00+00', false, false, NULL);
 
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-1', '00000000-0000-4000-8000-000000000001');
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-2', '00000000-0000-4000-8000-000000000002');
@@ -181,6 +183,8 @@ INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) 
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-1', '00000000-0000-4000-8000-000000000047');
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-2', '00000000-0000-4000-8000-000000000048');
 INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-1', '00000000-0000-4000-8000-000000000049');
+INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-1', '00000000-0000-4000-8000-00000000b001');
+INSERT INTO lightwell_vulnerability_customers (customer_id, vulnerability_uuid) VALUES ('demo-customer-2', '00000000-0000-4000-8000-00000000b002');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-00000000003d', 'demo-customer-1', 'demo-tk-1');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-00000000003e', 'demo-customer-2', 'demo-tk-2');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-00000000003f', 'demo-customer-1', 'demo-tk-1');
@@ -192,6 +196,8 @@ INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, custome
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000047', 'demo-customer-1', 'demo-tk-1');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000048', 'demo-customer-2', 'demo-tk-2');
 INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-000000000049', 'demo-customer-1', 'demo-tk-3');
+INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-00000000b001', 'demo-customer-1', 'demo-tk-1');
+INSERT INTO lightwell_vulnerability_support_tickets (vulnerability_uuid, customer_id, ticket_id) VALUES ('00000000-0000-4000-8000-00000000b002', 'demo-customer-2', 'demo-tk-1');
 
 UPDATE lightwell_vulnerabilities
 SET published_versions = ARRAY[component_version || '.rhlw-00001']
@@ -227,6 +233,14 @@ WHERE vulnerability_id = 'LWL-2026-3501';
 UPDATE lightwell_vulnerabilities
 SET on_hold_reasons = ARRAY['blocked-by-ticket']
 WHERE vulnerability_id = 'LWL-2026-3502';
+
+UPDATE lightwell_vulnerabilities
+SET published_versions = ARRAY['2.17.1.rhlw-00001']
+WHERE vulnerability_id = 'LWL-2026-4501';
+
+UPDATE lightwell_vulnerabilities
+SET published_versions = ARRAY['2.17.1.rhlw-00002']
+WHERE vulnerability_id = 'LWL-2026-4502';
 
 -- Fixed freshness for this dummy dataset. A timestamp written by a real sync is left as-is.
 INSERT INTO lightwell_beacon_sync (id, last_processed_at)

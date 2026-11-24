@@ -252,7 +252,8 @@ func repositoryPackageItem(name, group string, versions, releases, publishedAts,
 			latest[public] = latestRelease{release: release, publishedAt: publishedAt}
 			continue
 		}
-		if publishedAt >= prev.publishedAt {
+		// determine latest release by version string rather than publishedAt
+		if isLaterRelease(release, publishedAt, prev.release, prev.publishedAt) {
 			latest[public] = latestRelease{release: release, publishedAt: publishedAt}
 		}
 	}
@@ -275,6 +276,32 @@ func repositoryPackageItem(name, group string, versions, releases, publishedAts,
 		UpstreamVersions: itemVersions,
 		LatestReleases:   itemReleases,
 	}
+}
+
+// isLaterRelease reports whether cur should replace prev as the latest build
+// for one upstream version. It prefers the rhlw version string over the published_at timestamp
+// (e.g. 1.2.3.rhlw-00002 published at 2026-10-01 is newer than 1.2.3.rhlw-00001 published at 2026-11-01).
+// For rhlw releases the rank is compared, for non-rhlw releases it falls back to lexical compare.
+// published_at is only used when ranks are equal.
+func isLaterRelease(curRelease, curPublishedAt, prevRelease, prevPublishedAt string) bool {
+	curRank, curOk := rhlw.Parse(curRelease)
+	prevRank, prevOk := rhlw.Parse(prevRelease)
+	if curOk && prevOk {
+		if curRank.Baseline != prevRank.Baseline {
+			return curRank.Baseline > prevRank.Baseline
+		}
+		if curRank.Novel != prevRank.Novel {
+			return curRank.Novel > prevRank.Novel
+		}
+		if curRank.Hotfix != prevRank.Hotfix {
+			return curRank.Hotfix > prevRank.Hotfix
+		}
+		return curPublishedAt >= prevPublishedAt
+	}
+	if curRelease != prevRelease {
+		return curRelease > prevRelease
+	}
+	return curPublishedAt >= prevPublishedAt
 }
 
 func (d lightwellPackageDaoImpl) ListPackageVersions(ctx context.Context, opts ListLightwellPackageVersionsOptions) ([]LightwellPackageVersionRow, int64, error) {
