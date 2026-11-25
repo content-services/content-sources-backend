@@ -159,6 +159,8 @@ env:
     value: ${OPTIONS_FEATURE_FILTER}
   - name: OPTIONS_ENTITLE_ALL
     value: ${OPTIONS_ENTITLE_ALL}
+  - name: OPTIONS_PARTNER_REPO_LIST_PROJECT_FILTER
+    value: ${OPTIONS_PARTNER_REPO_LIST_PROJECT_FILTER}
   - name: TASKING_WORKER_COUNT
     value: ${TASKING_WORKER_COUNT}
   - name: TASKING_POOL_LIMIT
@@ -714,3 +716,6 @@ parameters:
     description: comma separated list of org ids to skip when turning snapshotting off
   - name: OPTIONS_INTERNAL_USER
     value: ''
+  - name: OPTIONS_PARTNER_REPO_LIST_PROJECT_FILTER
+    description: Comma separated list of COPR project ids gating which partner repos to include in the repo list. If blank it will include all partner repos.
+    required: false

@@ -634,7 +634,11 @@ func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gor
 
 	orgFilter := r.db.Where("repository_configurations.org_id in ?", orgs)
 	if canViewPartnerRepos {
-		orgFilter = orgFilter.Or(foreignPartnerVisibleSQL, OrgID)
+		partnerFilter := r.db.Where(foreignPartnerVisibleSQL, OrgID)
+		if projectIDs := config.Get().Options.PartnerRepoListProjectFilter; len(projectIDs) > 0 {
+			partnerFilter = partnerFilter.Where("repository_configurations.copr_project_id IN ?", projectIDs)
+		}
+		orgFilter = orgFilter.Or(partnerFilter)
 	}
 
 	filteredDB = filteredDB.

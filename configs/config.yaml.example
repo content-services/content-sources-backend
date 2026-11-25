@@ -68,6 +68,7 @@ options:
   feature_filter: ["RHEL-OS-x86_64", "RHEL-OS-aarch64"]
   entitle_all: true
   internal_user: "internal-user"
+  partner_repo_list_project_filter: []
   seed_lightwell: true
   seed_lightwell_coverage_reports: true
   # Example: "2026-10-09T13:00:00Z". A new value forces one package import.
