@@ -4320,6 +4320,60 @@ func (suite *RepositoryConfigSuite) TestListPartnerRepoVisibilityToForeignOrg() 
 	}
 }
 
+func (suite *RepositoryConfigSuite) TestListPartnerRepoProjectFilter() {
+	t := suite.T()
+	setPartnerRepositoriesView(t, config.Feature{Enabled: true})
+	options := &config.Get().Options
+	original := options.PartnerRepoListProjectFilter
+	t.Cleanup(func() { options.PartnerRepoListProjectFilter = original })
+
+	ownerOrg := seeds.RandomOrgId()
+	viewerOrg := seeds.RandomOrgId()
+	createPublishedPartnerRepo := func(projectID string) string {
+		t.Helper()
+		repo := createTestUploadRepository(t, suite.tx)
+		repoConfig := createTestPartnerRepoConfig(t, suite.tx, repo, ownerOrg, "partner-project-"+projectID, true)
+		require.NoError(t, suite.tx.Model(&repoConfig).Update("copr_project_id", projectID).Error)
+		snaps, err := seeds.SeedSnapshots(suite.tx, repoConfig.UUID, 1)
+		require.NoError(t, err)
+		require.NoError(t, suite.tx.Model(&snaps[0]).Update("published", true).Error)
+		return repoConfig.UUID
+	}
+	matching := createPublishedPartnerRepo("1234")
+	nonmatching := createPublishedPartnerRepo("5678")
+	both := []string{matching, nonmatching}
+	filter := api.FilterData{UUID: strings.Join(both, ",")}
+	rDao := repositoryConfigDaoImpl{db: suite.tx, pulpClient: suite.mockPulpClient, fsClient: suite.mockFsClient}
+
+	for _, tc := range []struct {
+		name       string
+		orgID      string
+		projectIDs []string
+		want       []string
+	}{
+		{name: "empty filter lists both projects", orgID: viewerOrg, projectIDs: []string{}, want: both},
+		{name: "filter lists only the matching project", orgID: viewerOrg, projectIDs: []string{"1234"}, want: []string{matching}},
+		{name: "owner still sees both projects", orgID: ownerOrg, projectIDs: []string{"1234"}, want: both},
+	} {
+		suite.Run(tc.name, func() {
+			t := suite.T()
+			options.PartnerRepoListProjectFilter = tc.projectIDs
+			ctx := context.Background()
+			suite.mockFsClient.Mock.On("GetEntitledFeatures", ctx, tc.orgID).Return([]string{}, nil).Once()
+			suite.mockPulpForListOrFetch(1)
+
+			response, total, err := rDao.List(ctx, tc.orgID, api.PaginationData{Limit: 100}, filter)
+			require.NoError(t, err)
+			assert.EqualValues(t, len(tc.want), total)
+			got := make([]string, len(response.Data))
+			for i, repo := range response.Data {
+				got[i] = repo.UUID
+			}
+			assert.ElementsMatch(t, tc.want, got)
+		})
+	}
+}
+
 func (suite *RepositoryConfigSuite) TestListPartnerRepoNotVisibleWithoutPublishedSnapshot() {
 	t := suite.T()
 	setPartnerRepositoriesView(t, config.Feature{Enabled: true})
