@@ -2,6 +2,7 @@ package lightwell
 
 import (
 	"net/http"
+	"slices"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
 	"github.com/content-services/content-sources-backend/pkg/config"
@@ -38,8 +39,9 @@ func newClearinghouseCaller(c echo.Context) clearinghouseCaller {
 	}
 }
 
-// listParams limits list queries to the caller's org, or, for a read caller, to
-// the orgs whose CID lists their username.
+// listParams returns the caller's org when they have the clearinghouse feature,
+// plus the orgs whose CID lists their username when they have clearinghouse read.
+// A caller with both sees the union. Read access does not hide the caller's org.
 func (p clearinghouseCaller) listParams(page clearinghousePageParams) (dao.ListClearinghouseUploadsParams, error) {
 	if p.readErr == nil {
 		if p.usernameErr != nil {
@@ -48,6 +50,10 @@ func (p clearinghouseCaller) listParams(page clearinghousePageParams) (dao.ListC
 		orgIDs := config.Get().Clients.Lightwell.ClearinghouseMapping.OrgIDsForUser(p.username)
 		if orgIDs == nil {
 			orgIDs = []string{}
+		}
+		if p.featureErr == nil && p.orgID != "" && !slices.Contains(orgIDs, p.orgID) {
+			orgIDs = append(orgIDs, p.orgID)
+			slices.Sort(orgIDs)
 		}
 		return dao.ListClearinghouseUploadsParams{
 			OrgIDs:         orgIDs,
@@ -69,7 +75,12 @@ func (p clearinghouseCaller) listParams(page clearinghousePageParams) (dao.ListC
 }
 
 // allowsOrg reports whether this caller may see a submission in orgID.
+// A customer can see their own org even when they also have clearinghouse read.
+// A read caller can see an org when their username is listed on its CID.
 func (p clearinghouseCaller) allowsOrg(orgID string) (bool, error) {
+	if p.featureErr == nil && p.orgID == orgID {
+		return true, nil
+	}
 	if p.readErr == nil {
 		if p.usernameErr != nil {
 			return false, p.usernameErr

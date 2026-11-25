@@ -545,11 +545,31 @@ func (s *ClearinghouseSuite) TestListAndGet() {
 		`{"CID-00000":["`+test_handler.MockOrgId+`"]}`,
 		`{"CID-00000":["user"],"CID-00001":["other"]}`,
 	)
+	// "other" is a reader for a CID that does not include their org. Their org's submissions stay visible.
+	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseReadParams(test_handler.MockOrgId))).
+		Return([]dao.ClearinghouseUpload{mine}, nil).Once()
+	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(clearinghouseReadParams(test_handler.MockOrgId))).
+		Return(int64(1), nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFilesByUploads", mock.Anything, []uuid.UUID{id}).Return(files, nil).Once()
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions", clearinghouseOtherUser()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+	s.Require().NoError(json.Unmarshal(body, &listed))
+	s.Require().Len(listed.Data, 1)
+	s.Equal(id.String(), listed.Data[0].UUID)
+
+	s.reg.ClearinghouseUpload.On("Get", mock.Anything, id).Return(mine, nil).Once()
+	s.reg.ClearinghouseUpload.On("ListFiles", mock.Anything, id).Return(files, nil).Once()
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions/"+id.String(), clearinghouseOtherUser()))
+	s.Require().Equal(http.StatusOK, code, string(body))
+
+	// A reader whose org is not a clearinghouse customer, and whose CID lists no orgs, sees nothing.
+	outsider := clearinghouseOtherUser()
+	outsider.Identity.Internal.OrgID = "unmapped-org"
 	s.reg.ClearinghouseUpload.On("List", mock.Anything, mock.MatchedBy(clearinghouseReadParams())).
 		Return([]dao.ClearinghouseUpload{}, nil).Once()
 	s.reg.ClearinghouseUpload.On("Count", mock.Anything, mock.MatchedBy(clearinghouseReadParams())).
 		Return(int64(0), nil).Once()
-	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions", clearinghouseOtherUser()))
+	code, body = s.serve(clearinghouseRequestAs(s.T(), http.MethodGet, "/clearinghouse/submissions", outsider))
 	s.Require().Equal(http.StatusOK, code, string(body))
 	s.Require().NoError(json.Unmarshal(body, &listed))
 	s.Empty(listed.Data)
