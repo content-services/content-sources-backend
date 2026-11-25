@@ -42,6 +42,12 @@ const LightwellOrg = "-3"
 const LightwellDomainName = "lightwell"
 const LightwellDemoOrg = "-4"
 const LightwellDemoDomainName = "public-lightwell-demo"
+
+// CoprChrootDistros maps supported Copr distros to labels used in repository names.
+var CoprChrootDistros = map[string]string{
+	"rhel": "RHEL",
+}
+
 const OriginLightwell = "lightwell"
 
 const IntrospectTimeInterval = time.Hour * 23

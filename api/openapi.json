@@ -726,11 +726,15 @@
                         "type": "string"
                     },
                     "duplicate": {
-                        "description": "Duplicate flag",
+                        "description": "True when this finding duplicates another tracker",
                         "type": "boolean"
                     },
                     "duplicate_of": {
-                        "description": "Canonical vulnerability_id when duplicate",
+                        "description": "Canonical Jira issue key this finding duplicates",
+                        "type": "string"
+                    },
+                    "duplicate_of_status": {
+                        "description": "Beacon status of the canonical tracker, read from that stored issue",
                         "type": "string"
                     },
                     "ecosystem": {

@@ -134,6 +134,7 @@ clients:
     proxy:
     # Pulp domain used for Copr-initiated partner repository snapshots
     copr_domain: cs-partner
+    copr_org_id: "-5"
     database:
       host: localhost
       port: 5432
@@ -289,6 +290,11 @@ sonatype_bridge:
   # true for MinIO, false for AWS
   use_path_style: false
 
+copr_ingest:
+  enabled: false
+  topic: "copr.build.events"
+  consumer_group_id: "content-sources-copr"
+
 features:
   # Internal Lens and coverage-upload access. Values must also be in options.feature_filter.
   lightwell_lens_internal_entitled_features: #["lightwellFeature"]
@@ -317,6 +323,10 @@ features:
     accounts: #["partnerRepoAdminAccount"]
     users: #["partnerRepoAdminUser"]
     organizations: #["partnerRepoAdminOrg"]
+  admin_lens_demand_signals:
+    enabled: true
+    users: #["lightwellUser"]
+    organizations: #["lightwellOrg"]
   lightwell_lens:
     enabled: true
     accounts: #["lightwellAccount"]

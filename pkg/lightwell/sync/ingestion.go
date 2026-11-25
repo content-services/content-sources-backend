@@ -463,6 +463,7 @@ func vulnerabilityInput(vulnerability Vulnerability, tickets []TicketLink) dao.L
 		LastUpdated:        vulnerability.LastUpdated,
 		Embargo:            vulnerability.Embargo,
 		Duplicate:          vulnerability.Duplicate,
+		DuplicateOf:        vulnerability.DuplicateOf,
 		JiraStatus:         vulnerability.JiraStatus,
 		JiraResolution:     vulnerability.JiraResolution,
 	}

@@ -24,6 +24,9 @@ objects:
         - partitions: 3
           replicas: 3
           topicName: platform.notifications.ingress
+        - partitions: 3
+          replicas: 3
+          topicName: ${COPR_INGEST_TOPIC}
       deployments:
         - name: task-worker
           replicas: ${{TASK_WORKER_REPLICAS}}
@@ -121,6 +124,7 @@ objects:
               - instrumentation
               - jfrog-bridge
               - sonatype-bridge
+              - copr-ingest
             livenessProbe:
               failureThreshold: 3
               httpGet:
@@ -468,6 +472,42 @@ objects:
             command:
               - /jobs
               - send-template-update-events
+            env:{{ENV_VARS}}
+
+        - name: cleanup-missing-domains
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - cleanup-missing-domains
+            env:{{ENV_VARS}}
+
+        - name: update-all-template-content
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - update-all-template-content
+            env:{{ENV_VARS}}
+
+        - name: update-domains
+          podSpec:
+            securityContext:
+              runAsNonRoot: true
+              runAsUser: 1001
+            image: ${IMAGE}:${IMAGE_TAG}
+            inheritEnv: true
+            command:
+              - /jobs
+              - update-domains
             env:{{ENV_VARS}}
 
       database:

@@ -124,8 +124,8 @@ func TestMapVulnerabilityRejectsMissingTimestamp(t *testing.T) {
 }
 
 func TestDiscardedResolution(t *testing.T) {
-	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Duplicate"}`)))
-	assert.True(t, discardedResolution(json.RawMessage(`{"name":" duplicate "}`)))
+	assert.False(t, discardedResolution(json.RawMessage(`{"name":"Duplicate"}`)))
+	assert.False(t, discardedResolution(json.RawMessage(`{"name":" duplicate "}`)))
 	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Obsolete"}`)))
 	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Cannot Reproduce"}`)))
 	assert.True(t, discardedResolution(json.RawMessage(`{"name":"Won't Fix"}`)))
@@ -145,6 +145,8 @@ func TestClosedResolutionStatus(t *testing.T) {
 		{name: "Won't do", want: "Unremediated"},
 		{name: "Won’t Do", want: "Unremediated"},
 		{name: "Not a bug", want: "Unremediated"},
+		{name: "Duplicate", want: "Unremediated"},
+		{name: " duplicate ", want: "Unremediated"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -156,7 +158,7 @@ func TestClosedResolutionStatus(t *testing.T) {
 		})
 	}
 
-	for _, name := range []string{"Done", "Duplicate", "Obsolete", "Cannot reproduce", "Won't Fix"} {
+	for _, name := range []string{"Done", "Obsolete", "Cannot reproduce", "Won't Fix"} {
 		_, ok := closedResolutionStatus(json.RawMessage(`{"name":"` + name + `"}`))
 		assert.False(t, ok, name)
 	}
@@ -182,6 +184,54 @@ func TestMapVulnerabilityStoresClosureSelection(t *testing.T) {
 	assert.Equal(t, "Unremediated", vulnerability.Stage)
 	require.NotNil(t, vulnerability.ResolutionReason)
 	assert.Equal(t, "Component not Present", *vulnerability.ResolutionReason)
+}
+
+func TestMapVulnerabilityRetainsDuplicate(t *testing.T) {
+	issue := validJiraIssue("LTWL-9")
+	issue.Fields["status"] = json.RawMessage(`{"name":"Closed"}`)
+	issue.Fields["resolution"] = json.RawMessage(`{"name":"Duplicate"}`)
+	issue.Fields["issuelinks"] = json.RawMessage(`[
+		{"type":{"name":"Relates","inward":"relates to","outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}},
+		{"type":{"name":"Duplicate","inward":"is duplicated by","outward":"duplicates"},"outwardIssue":{"key":"LTWL-100","fields":{"status":{"name":"In Progress"}}}}
+	]`)
+
+	vulnerability, err := mapVulnerability(issue)
+	require.NoError(t, err)
+	assert.Equal(t, "Unremediated", vulnerability.Stage)
+	assert.True(t, vulnerability.Duplicate)
+	require.NotNil(t, vulnerability.ResolutionReason)
+	assert.Equal(t, "Duplicate", *vulnerability.ResolutionReason)
+	require.NotNil(t, vulnerability.DuplicateOf)
+	assert.Equal(t, "LTWL-100", *vulnerability.DuplicateOf)
+	require.NotNil(t, vulnerability.JiraResolution)
+	assert.Equal(t, "Duplicate", *vulnerability.JiraResolution)
+}
+
+func TestCanonicalDuplicateLinkDirections(t *testing.T) {
+	inward := validJiraIssue("LTWL-9")
+	inward.Fields["issuelinks"] = json.RawMessage(`[{
+		"type":{"name":"Duplicate","inward":"duplicates","outward":"is duplicated by"},
+		"inwardIssue":{"key":"LTWL-200","fields":{"status":{"name":"Released"}}}
+	}]`)
+	assert.Equal(t, "LTWL-200", canonicalDuplicate(inward))
+
+	onlyInward := validJiraIssue("LTWL-9")
+	onlyInward.Fields["issuelinks"] = json.RawMessage(`[{
+		"type":{"name":"Duplicate","inward":"is duplicated by","outward":"duplicates"},
+		"inwardIssue":{"key":"LTWL-300"}
+	}]`)
+	assert.Equal(t, "LTWL-300", canonicalDuplicate(onlyInward))
+
+	unrelated := validJiraIssue("LTWL-9")
+	unrelated.Fields["issuelinks"] = json.RawMessage(`[{"type":{"outward":"relates to"},"outwardIssue":{"key":"BATCH-1"}}]`)
+	assert.Empty(t, canonicalDuplicate(unrelated))
+
+	prefersDuplicates := validJiraIssue("LTWL-9")
+	prefersDuplicates.Fields["issuelinks"] = json.RawMessage(`[
+		{"type":{"name":"Duplicate","inward":"is duplicated by","outward":"duplicates"},"inwardIssue":{"key":"LTWL-OTHER"}},
+		{"type":{"name":"Duplicate","inward":"is duplicated by","outward":"duplicates"},"outwardIssue":{"key":"LTWL-CANON"}}
+	]`)
+	assert.Equal(t, "LTWL-CANON", canonicalDuplicate(prefersDuplicates))
 }
 
 func TestBeaconDiscardsInternalClosure(t *testing.T) {
@@ -279,6 +329,12 @@ func TestMapVulnerabilityUsesPURLWhenDescriptionOmitsComponent(t *testing.T) {
 	assert.Equal(t, "com.example:demo-lib", vulnerability.ComponentName)
 	assert.Equal(t, "1.2.3", vulnerability.ComponentVersion)
 	assert.Equal(t, "java", *vulnerability.Language)
+}
+
+func TestDecodeUTF8(t *testing.T) {
+	assert.Equal(t, "SQL extension — URL ⇒ RCE", decodeUTF8("SQL extension \u00e2\u0080\u0094 URL \u00e2\u0087\u0092 RCE"))
+	assert.Equal(t, "café", decodeUTF8("café"))
+	assert.Equal(t, "already — fine", decodeUTF8("already — fine"))
 }
 
 func TestTitlePrefersDescriptionOverSummary(t *testing.T) {

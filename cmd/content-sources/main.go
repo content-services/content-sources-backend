@@ -13,6 +13,7 @@ import (
 
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/copr_ingest"
 	"github.com/content-services/content-sources-backend/pkg/db"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
@@ -93,6 +94,10 @@ func main() {
 	}
 	if argsContain(args, "sonatype-bridge") && config.Get().SonatypeBridge.Enabled {
 		sonatype_bridge.Start(ctx, &wg)
+	}
+
+	if argsContain(args, "copr-ingest") && config.Get().CoprIngest.Enabled {
+		copr_ingest.Start(ctx, &wg, metrics)
 	}
 
 	config.SetupNotifications()

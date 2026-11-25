@@ -45,6 +45,7 @@ type Configuration struct {
 	Features                       FeatureSet         `mapstructure:"features"`
 	JFrogBridge                    JFrogBridge        `mapstructure:"jfrog_bridge"`
 	SonatypeBridge                 SonatypeBridge     `mapstructure:"sonatype_bridge"`
+	CoprIngest                     CoprIngest         `mapstructure:"copr_ingest"`
 }
 
 type JFrogBridge struct {
@@ -73,6 +74,12 @@ type SonatypeBridge struct {
 	ConsumerGroupID string      `mapstructure:"consumer_group_id"`
 	MaxRetries      int         `mapstructure:"max_retries"`
 	RequestTimeout  int         `mapstructure:"request_timeout"`
+}
+
+type CoprIngest struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	Topic           string `mapstructure:"topic"`
+	ConsumerGroupID string `mapstructure:"consumer_group_id"`
 }
 
 type Jira struct {
@@ -132,6 +139,7 @@ type FeatureSet struct {
 	LightwellTerms                        Feature `mapstructure:"lightwell_terms"`
 	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
 	AdminSonatypeUpload                   Feature `mapstructure:"admin_sonatype_upload"`
+	AdminLensDemandSignals                Feature `mapstructure:"admin_lens_demand_signals"`
 }
 
 type Feature struct {
@@ -165,6 +173,7 @@ type Pulp struct {
 	ContentPathPrefix      string       `mapstructure:"content_path_prefix"`
 	Proxy                  string       `mapstructure:"proxy"`
 	CoprDomain             string       `mapstructure:"copr_domain"` // Pulp domain for Copr-initiated snapshots
+	CoprOrgID              string       `mapstructure:"copr_org_id"`
 }
 
 type Lightwell struct {
@@ -501,6 +510,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.content_path_prefix", "/api/pulp-content/")
 	v.SetDefault("clients.pulp.proxy", "")
 	v.SetDefault("clients.pulp.copr_domain", "cs-partner")
+	v.SetDefault("clients.pulp.copr_org_id", "-5")
 
 	v.SetDefault("sentry.dsn", "")
 
@@ -601,6 +611,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
 	v.SetDefault("features.admin_notifications.users", nil)
+	v.SetDefault("features.admin_lens_demand_signals.enabled", false)
+	v.SetDefault("features.admin_lens_demand_signals.accounts", nil)
+	v.SetDefault("features.admin_lens_demand_signals.organizations", nil)
+	v.SetDefault("features.admin_lens_demand_signals.users", nil)
 	v.SetDefault("features.lightwell_lens.enabled", false)
 	v.SetDefault("features.lightwell_lens.accounts", nil)
 	v.SetDefault("features.lightwell_lens.organizations", nil)
@@ -651,6 +665,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("sonatype_bridge.consumer_group_id", "content-sources-sonatype-bridge")
 	v.SetDefault("sonatype_bridge.max_retries", 3)
 	v.SetDefault("sonatype_bridge.request_timeout", 60)
+	v.SetDefault("copr_ingest.enabled", false)
+	v.SetDefault("copr_ingest.topic", "copr.build.events")
+	v.SetDefault("copr_ingest.consumer_group_id", "content-sources-copr")
 
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)
