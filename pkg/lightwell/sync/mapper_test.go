@@ -281,6 +281,12 @@ func TestMapVulnerabilityUsesPURLWhenDescriptionOmitsComponent(t *testing.T) {
 	assert.Equal(t, "java", *vulnerability.Language)
 }
 
+func TestDecodeUTF8(t *testing.T) {
+	assert.Equal(t, "SQL extension — URL ⇒ RCE", decodeUTF8("SQL extension \u00e2\u0080\u0094 URL \u00e2\u0087\u0092 RCE"))
+	assert.Equal(t, "café", decodeUTF8("café"))
+	assert.Equal(t, "already — fine", decodeUTF8("already — fine"))
+}
+
 func TestTitlePrefersDescriptionOverSummary(t *testing.T) {
 	assert.Equal(t, "from description", title("Title: from description\n", "LW-0000-0001 Example component"))
 }
