@@ -37,6 +37,8 @@ type Querier interface {
 	// add a GIN index on lightwell_advisories.upstream.
 	ListAdvisoriesByCveID(ctx context.Context, cveID string) ([]ListAdvisoriesByCveIDRow, error)
 	ListAdvisoriesByPackage(ctx context.Context, packageName string) ([]ListAdvisoriesByPackageRow, error)
+	ListBeaconPackageVulnerabilities(ctx context.Context, arg ListBeaconPackageVulnerabilitiesParams) (ListBeaconPackageVulnerabilitiesRow, error)
+	ListBeaconPackages(ctx context.Context, arg ListBeaconPackagesParams) (ListBeaconPackagesRow, error)
 	ListClearinghouseUploadFiles(ctx context.Context, clearinghouseUploadUuid uuid.UUID) ([]ClearinghouseUploadFile, error)
 	ListClearinghouseUploadFilesByUploads(ctx context.Context, uploadUuids []uuid.UUID) ([]ClearinghouseUploadFile, error)
 	ListClearinghouseUploadPackages(ctx context.Context, arg ListClearinghouseUploadPackagesParams) ([]ClearinghouseUploadPackage, error)

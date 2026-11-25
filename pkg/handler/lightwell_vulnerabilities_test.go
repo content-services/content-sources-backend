@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -721,4 +722,45 @@ func (suite *LightwellVulnerabilitiesSuite) TestListLtwlsuptTicketIdsDaoError() 
 	code, _, err := suite.serveRouter(suite.newGet(path))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusInternalServerError, code)
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestBeaconPackageRoutesHideOtherCustomers() {
+	for _, path := range []string{
+		"/lightwell/beacon/packages/?customer_id=unmapped",
+		"/lightwell/beacon/packages/vulnerabilities/?customer_id=unmapped&component_name=example&component_version=",
+	} {
+		status, body, err := suite.serveRouter(suite.newGet(api.FullRootPath() + path))
+		suite.Require().NoError(err)
+		suite.Require().Equal(http.StatusOK, status)
+		var response struct {
+			Data []json.RawMessage    `json:"data"`
+			Meta api.ResponseMetadata `json:"meta"`
+		}
+		suite.Require().NoError(json.Unmarshal(body, &response))
+		suite.NotNil(response.Data)
+		suite.Empty(response.Data)
+		suite.Zero(response.Meta.Count)
+	}
+}
+
+func (suite *LightwellVulnerabilitiesSuite) TestBeaconPackageDetailPaginationPreservesIdentity() {
+	query := url.Values{
+		"customer_id": {"demo-customer-1"}, "component_name": {"@scope/pkg&name"},
+		"component_version": {"1.2+rhlw.1"}, "ecosystem": {"javascript"}, "limit": {"1"}, "status": {"Published"},
+	}
+	suite.reg.LightwellVulnerability.On("ListBeaconPackageVulnerabilities",
+		mock.Anything, mock.MatchedBy(func(opts dao.ListLightwellVulnerabilitiesOptions) bool {
+			return opts.CustomerID == "demo-customer-1" && opts.Limit == 1 && len(opts.Stages) == 0
+		}), dao.BeaconPackageKey{Ecosystem: "javascript", ComponentName: "@scope/pkg&name", ComponentVersion: "1.2+rhlw.1"},
+	).Return(api.LightwellBeaconPackageVulnerabilityCollection{}, int64(2), nil).Once()
+
+	status, body, err := suite.serveRouter(suite.newGet(api.FullRootPath() + "/lightwell/beacon/packages/vulnerabilities/?" + query.Encode()))
+	suite.Require().NoError(err)
+	suite.Require().Equal(http.StatusOK, status)
+	var response api.LightwellBeaconPackageVulnerabilityCollection
+	suite.Require().NoError(json.Unmarshal(body, &response))
+	next, err := url.Parse(response.Links.Next)
+	suite.Require().NoError(err)
+	query.Set("offset", "1")
+	suite.Equal(query, next.Query())
 }
