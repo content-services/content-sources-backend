@@ -87,7 +87,7 @@ func main() {
 	}
 
 	config.SetupLightwellAdvisoryCreatedEvent()
-	if argsContain(args, "jfrog-bridge") && config.Get().JFrogBridge.Enabled {
+	if argsContain(args, "content-bridge") {
 		jfrog_bridge.Start(ctx, &wg)
 	}
 
