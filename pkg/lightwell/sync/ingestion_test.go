@@ -508,9 +508,8 @@ func TestIngestorSkipsInternalWontDoReason(t *testing.T) {
 	assert.Equal(t, SyncSummary{}, summary)
 	assert.Empty(t, store.saved)
 	assert.Equal(t, []string{"LTWL-1"}, store.deleted)
-	assert.Contains(t, logs.String(), ignoredResolutionLog)
-	assert.Contains(t, logs.String(), `"resolution":"Won't Do"`)
-	assert.Contains(t, logs.String(), `"detail":"Not a Customer"`)
+	assert.NotContains(t, logs.String(), ignoredResolutionLog)
+	assert.NotContains(t, logs.String(), "Not a Customer")
 }
 
 func captureLogs(t *testing.T) *bytes.Buffer {
