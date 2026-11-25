@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/utils"
@@ -96,7 +97,7 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 	if issue.Key == "" {
 		return Vulnerability{}, errors.New("issue has no key")
 	}
-	summary := rawString(issue.Fields["summary"])
+	summary := decodeUTF8(rawString(issue.Fields["summary"]))
 	vulnerabilityID := vulnerabilityIDFromSummary(strings.TrimSpace(summary))
 	if vulnerabilityID == "" {
 		return Vulnerability{}, fmt.Errorf("issue %s has no LW- or CVE- vulnerability id in summary", issue.Key)
@@ -111,7 +112,7 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		return Vulnerability{}, fmt.Errorf("issue %s updated timestamp: %w", issue.Key, err)
 	}
 
-	description := flattenADF(issue.Fields["description"])
+	description := decodeUTF8(flattenADF(issue.Fields["description"]))
 	customerPriority := descriptionValue(description, "customer priority")
 	workflowStage := stage(issue.Fields["status"])
 	var resolutionReason *string
@@ -161,6 +162,21 @@ func parseJiraTime(value string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("unsupported timestamp %q", value)
+}
+
+// decodeUTF8 reads Latin-1 text as UTF-8 when those bytes are valid UTF-8.
+func decodeUTF8(value string) string {
+	raw := make([]byte, 0, len(value))
+	for _, r := range value {
+		if r > 0xFF {
+			return value
+		}
+		raw = append(raw, byte(r)) //nolint:gosec // r is at most 0xFF
+	}
+	if !utf8.Valid(raw) {
+		return value
+	}
+	return string(raw)
 }
 
 func flattenADF(raw json.RawMessage) string {
