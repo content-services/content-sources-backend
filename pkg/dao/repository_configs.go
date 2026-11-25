@@ -547,7 +547,9 @@ func (r repositoryConfigDaoImpl) List(
 		log.Error().Err(err).Msg("error getting entitled features, proceeding with default")
 	}
 
-	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, accessibleFeatures)
+	canViewPartnerRepos := canViewPartnerRepos(ctx)
+
+	filteredDB, err := r.filteredDbForList(OrgID, r.db.WithContext(ctx), filterData, accessibleFeatures, canViewPartnerRepos)
 	if err != nil {
 		return api.RepositoryCollectionResponse{}, totalRepos, err
 	}
@@ -627,13 +629,20 @@ func (r repositoryConfigDaoImpl) List(
 	return api.RepositoryCollectionResponse{Data: repos}, totalRepos, nil
 }
 
-func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string) (*gorm.DB, error) {
+func (r repositoryConfigDaoImpl) filteredDbForList(OrgID string, filteredDB *gorm.DB, filterData api.FilterData, accessibleFeatures []string, canViewPartnerRepos bool) (*gorm.DB, error) {
 	orgs := []string{OrgID, config.RedHatOrg, config.CommunityOrg, config.LightwellOrg, config.LightwellDemoOrg}
+
+	orgFilter := r.db.Where("repository_configurations.org_id in ?", orgs)
+	if canViewPartnerRepos {
+		partnerFilter := r.db.Where(foreignPartnerVisibleSQL, OrgID)
+		if projectIDs := config.Get().Options.PartnerRepoListProjectFilter; len(projectIDs) > 0 {
+			partnerFilter = partnerFilter.Where("repository_configurations.copr_project_id IN ?", projectIDs)
+		}
+		orgFilter = orgFilter.Or(partnerFilter)
+	}
+
 	filteredDB = filteredDB.
-		Where(
-			r.db.Where("repository_configurations.org_id in ?", orgs).
-				Or(foreignPartnerVisibleSQL, OrgID),
-		).
+		Where(orgFilter).
 		Joins("inner join repositories on repository_configurations.repository_uuid = repositories.uuid")
 
 	if filterData.Name != "" {

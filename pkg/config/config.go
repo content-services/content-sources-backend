@@ -117,6 +117,7 @@ type FeatureSet struct {
 	Lightwell                             Feature `mapstructure:"lightwell"`
 	LightwellNotifications                Feature `mapstructure:"lightwell_notifications"`
 	AdminPartnerRepositories              Feature `mapstructure:"admin_partner_repositories"`
+	PartnerRepositoriesView               Feature `mapstructure:"partner_repositories_view"`
 	AdminNotifications                    Feature `mapstructure:"admin_notifications"`
 	LightwellLens                         Feature `mapstructure:"lightwell_lens"`
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
@@ -344,6 +345,7 @@ type Options struct {
 	FeatureFilter                 []string `mapstructure:"feature_filter"` // Used to control which repos are imported based on feature name
 	EntitleAll                    bool     `mapstructure:"entitle_all"`    // Used in ephemeral to allow access to all layered repos
 	InternalUser                  string   `mapstructure:"internal_user"`
+	PartnerRepoListProjectFilter  []string `mapstructure:"partner_repo_list_project_filter"` // Filters partner repos in the repo list to only include those with these COPR project ids. If empty it includes all COPR project ids.
 	LoadLightwellDemo             bool     `mapstructure:"load_lightwell_demo"`
 	SeedLightwell                 bool     `mapstructure:"seed_lightwell"`
 	SeedLightwellCoverageReports  bool     `mapstructure:"seed_lightwell_coverage_reports"`
@@ -434,6 +436,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("options.lightwell_package_import_force_at", "")
 	v.SetDefault("options.lightwell_ignore_repos", []string{})
 	v.SetDefault("options.lightwell_promote_by_jira_state", false)
+	v.SetDefault("options.partner_repo_list_project_filter", []string{})
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("logging.metrics_level", "error")
 	v.SetDefault("logging.db_level", "")
@@ -589,6 +592,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_partner_repositories.accounts", nil)
 	v.SetDefault("features.admin_partner_repositories.organizations", nil)
 	v.SetDefault("features.admin_partner_repositories.users", nil)
+	v.SetDefault("features.partner_repositories_view.enabled", false)
+	v.SetDefault("features.partner_repositories_view.accounts", nil)
+	v.SetDefault("features.partner_repositories_view.organizations", nil)
+	v.SetDefault("features.partner_repositories_view.users", nil)
 	v.SetDefault("features.admin_notifications.enabled", false)
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)

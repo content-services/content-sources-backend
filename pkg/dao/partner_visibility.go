@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
+	"github.com/content-services/content-sources-backend/pkg/config"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"gorm.io/gorm"
 )
@@ -32,6 +33,10 @@ const readableSnapshotOrgFilterSQL = `
 			AND s.published = true
 		)
 	)`
+
+func canViewPartnerRepos(ctx context.Context) bool {
+	return config.FeatureAccessible(ctx, config.Get().Features.PartnerRepositoriesView)
+}
 
 // IsForeignPartnerView reports whether viewerOrgID is accessing a partner repository it does not own.
 func IsForeignPartnerView(repoConfig models.RepositoryConfiguration, viewerOrgID string) bool {
