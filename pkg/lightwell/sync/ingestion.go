@@ -488,7 +488,9 @@ func (i *Ingestor) syncIssue(
 	summary *SyncSummary,
 ) error {
 	if resolution, detail, discarded := beaconDiscardReason(issue.Fields); discarded {
-		logIgnoredResolution(issue.Key, resolution, detail)
+		if !strings.EqualFold(detail, "Not a Customer") {
+			logIgnoredResolution(issue.Key, resolution, detail)
+		}
 		return i.deleteDiscardedIssue(ctx, issue.Key, summary)
 	}
 
