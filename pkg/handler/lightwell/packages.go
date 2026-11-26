@@ -44,6 +44,7 @@ func RegisterLightwellPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry,
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name", h.listJavaPackageVersions, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", h.getJavaPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", h.getPythonPackageDetail, rbac.RbacVerbRead, middleware...)
+	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version/files", h.listPythonPackageFiles, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", h.getPythonPackageVersions, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name/:version", h.getJsPackageDetail, rbac.RbacVerbRead, middleware...)
 	addLightwellRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name", h.getJsPackageVersions, rbac.RbacVerbRead, middleware...)
@@ -179,6 +180,29 @@ func (h *LightwellPackageHandler) getJavaPackageDetail(c echo.Context) error {
 // @Router       /repositories/{uuid}/python_packages/{name}/{version} [get]
 func (h *LightwellPackageHandler) getPythonPackageDetail(c echo.Context) error {
 	return h.PackageHandler.GetPythonPackageDetail(c)
+}
+
+// listPythonPackageFiles godoc
+// @Summary      List Python Package Files
+// @ID           listLightwellPythonPackageFiles
+// @Description  List Python distribution files for one exact full package version, including its Lightwell build suffix. Downloads and security artifacts are not included.
+// @Tags         lightwell
+// @Param        uuid path string true "Repository configuration UUID"
+// @Param        name path string true "Python package name, normalized before lookup"
+// @Param        version path string true "Exact full Python package version, including any build suffix"
+// @Param        limit query int false "Number of files per page. Default/zero: 100; positive maximum: 200; any negative value: unlimited."
+// @Param        offset query int false "Starting offset. Default: 0; negative values select from the start."
+// @Param        sort_by query string false "Filename ordering: filename, filename:asc, or filename:desc. Default: filename:asc."
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} api.PythonPackageFileCollectionResponse
+// @Failure      400 {object} ce.ErrorResponse
+// @Failure      404 {object} ce.ErrorResponse
+// @Failure      428 {object} ce.ErrorResponse
+// @Failure      500 {object} ce.ErrorResponse
+// @Router       /repositories/{uuid}/python_packages/{name}/{version}/files [get]
+func (h *LightwellPackageHandler) listPythonPackageFiles(c echo.Context) error {
+	return h.PackageHandler.ListPythonPackageFiles(c)
 }
 
 // getPythonPackageVersions godoc

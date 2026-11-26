@@ -45,6 +45,7 @@ func TestTermsMiddlewareRoutes(t *testing.T) {
 		"/repositories/repo/java_packages/group/name/version",
 		"/repositories/repo/python_packages/name",
 		"/repositories/repo/python_packages/name/version",
+		"/repositories/repo/python_packages/name/version/files",
 		"/repositories/repo/javascript_packages/scope/name",
 		"/repositories/repo/javascript_packages/scope/name/version",
 		"/advisories",
