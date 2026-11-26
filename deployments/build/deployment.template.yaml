@@ -123,6 +123,7 @@ objects:
               - api
               - instrumentation
               - jfrog-bridge
+              - sonatype-bridge
               - copr-ingest
             livenessProbe:
               failureThreshold: 3

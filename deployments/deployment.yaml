@@ -224,6 +224,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -422,6 +428,32 @@ objects:
                     name: jfrog-bridge-catalog-token
                     key: token
                     optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
+                    optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
               - name: COPR_INGEST_TOPIC
@@ -494,6 +526,7 @@ objects:
               - api
               - instrumentation
               - jfrog-bridge
+              - sonatype-bridge
               - copr-ingest
             livenessProbe:
               failureThreshold: 3
@@ -651,6 +684,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -848,6 +887,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -1044,6 +1109,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1241,6 +1312,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -1425,6 +1522,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -1622,6 +1725,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -1809,6 +1938,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2006,6 +2141,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -2194,6 +2355,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2391,6 +2558,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -2581,6 +2774,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -2778,6 +2977,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -2966,6 +3191,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3163,6 +3394,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -3348,6 +3605,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3545,6 +3808,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -3728,6 +4017,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -3925,6 +4220,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -4110,6 +4431,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4307,6 +4634,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -4492,6 +4845,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -4689,6 +5048,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -4874,6 +5259,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5071,6 +5462,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -5279,6 +5696,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5476,6 +5899,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -5662,6 +6111,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -5859,6 +6314,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -6062,6 +6543,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -6259,6 +6746,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -6441,6 +6954,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -6638,6 +7157,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -6820,6 +7365,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -7017,6 +7568,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -7199,6 +7776,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -7396,6 +7979,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -7578,6 +8187,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -7775,6 +8390,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -7957,6 +8598,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -8154,6 +8801,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -8336,6 +9009,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -8533,6 +9212,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -8715,6 +9420,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -8912,6 +9623,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -9094,6 +9831,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -9291,6 +10034,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -9473,6 +10242,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -9670,6 +10445,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -9852,6 +10653,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -10049,6 +10856,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -10231,6 +11064,12 @@ objects:
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_USERS}
               - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
                 value: ${FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_USERS}
+              - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+                value: ${FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS}
               - name: OPTIONS_ALWAYS_RUN_CRON_TASKS
                 value: ${OPTIONS_ALWAYS_RUN_CRON_TASKS}
               - name: OPTIONS_ENABLE_NOTIFICATIONS
@@ -10428,6 +11267,32 @@ objects:
                   secretKeyRef:
                     name: jfrog-bridge-catalog-token
                     key: token
+                    optional: true
+              - name: SONATYPE_BRIDGE_ENABLED
+                value: ${SONATYPE_BRIDGE_ENABLED}
+              - name: SONATYPE_BRIDGE_S3_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: bucket
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_REGION
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_region
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_access_key_id
+                    optional: true
+              - name: SONATYPE_BRIDGE_S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: sonatype-bridge-s3
+                    key: aws_secret_access_key
                     optional: true
               - name: COPR_INGEST_ENABLED
                 value: ${COPR_INGEST_ENABLED}
@@ -10752,6 +11617,13 @@ parameters:
     description: Comma separated list of account numbers that can access the feature
   - name: FEATURES_ADMIN_JFROG_UPLOAD_ORGANIZATIONS
     description: Comma separated list of org ids that can access the feature
+  - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ENABLED
+    description: Whether the Admin Sonatype Upload feature should be turned on
+    value: 'false'
+  - name: FEATURES_ADMIN_SONATYPE_UPLOAD_USERS
+    description: Comma separated list of usernames that can access the feature
+  - name: FEATURES_ADMIN_SONATYPE_UPLOAD_ORGANIZATIONS
+    description: Comma separated list of org ids that can access the feature
   - name: OPTIONS_LOAD_LIGHTWELL_DEMO
     value: 'true'
   - name: OPTIONS_SEED_LIGHTWELL
@@ -10863,6 +11735,10 @@ parameters:
     value: ''
   - name: JFROG_BRIDGE_ENABLED
     description: Whether the JFrog bridge Kafka consumer should be enabled
+    value: 'false'
+  - name: SONATYPE_BRIDGE_ENABLED
+    description: Whether the Sonatype bridge Kafka consumer (uploads to the partner
+      S3 bucket) should be enabled
     value: 'false'
   - name: COPR_INGEST_ENABLED
     description: Whether the Copr build end Kafka consumer should be enabled
