@@ -3066,6 +3066,107 @@ const docTemplate = `{
                 }
             }
         },
+        "/repositories/{uuid}/python_packages/{name}/{version}/files": {
+            "get": {
+                "description": "List actual Python distribution files for one exact full release, including its build suffix. Downloads and security artifacts are not included. Unknown metadata is null. Uses the complete Pulp inventory independently of the package mirror.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "packages"
+                ],
+                "summary": "List Python Package Files",
+                "operationId": "listPythonPackageFiles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Python package name (PEP 503 normalized)",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact full Python version; encode + as %2B",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Default 100; zero uses default; positive maximum 200; any negative value is unlimited",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Default 0; negative values select from the beginning",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filename, filename:asc, or filename:desc (default filename:asc)",
+                        "name": "sort_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PythonPackageFileCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/repositories/{uuid}/rpms": {
             "get": {
                 "description": "List RPMs in a repository.",
@@ -6534,6 +6635,63 @@ const docTemplate = `{
                 },
                 "version": {
                     "type": "string"
+                }
+            }
+        },
+        "api.PythonPackageFileCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PythonPackageFileResponse"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.PythonPackageFileResponse": {
+            "type": "object",
+            "required": [
+                "category",
+                "filename",
+                "packagetype",
+                "sha256",
+                "size"
+            ],
+            "properties": {
+                "category": {
+                    "description": "File category; clients should tolerate future values",
+                    "type": "string",
+                    "enum": [
+                        "package",
+                        "unknown"
+                    ]
+                },
+                "filename": {
+                    "description": "Actual inventory filename",
+                    "type": "string"
+                },
+                "packagetype": {
+                    "description": "Pulp type, inferred from the filename only when absent",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "sha256": {
+                    "description": "Lowercase SHA-256 digest, or null when unknown",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "size": {
+                    "description": "File size in bytes, or null when unknown",
+                    "type": "integer",
+                    "minimum": 0,
+                    "x-nullable": true
                 }
             }
         },

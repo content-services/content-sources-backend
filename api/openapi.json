@@ -1299,6 +1299,63 @@
                 },
                 "type": "object"
             },
+            "api.PythonPackageFileCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.PythonPackageFileResponse"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.ResponseMetadata"
+                    }
+                },
+                "type": "object"
+            },
+            "api.PythonPackageFileResponse": {
+                "properties": {
+                    "category": {
+                        "description": "File category; clients should tolerate future values",
+                        "enum": [
+                            "package",
+                            "unknown"
+                        ],
+                        "type": "string"
+                    },
+                    "filename": {
+                        "description": "Actual inventory filename",
+                        "type": "string"
+                    },
+                    "packagetype": {
+                        "description": "Pulp type, inferred from the filename only when absent",
+                        "nullable": true,
+                        "type": "string"
+                    },
+                    "sha256": {
+                        "description": "Lowercase SHA-256 digest, or null when unknown",
+                        "nullable": true,
+                        "type": "string"
+                    },
+                    "size": {
+                        "description": "File size in bytes, or null when unknown",
+                        "minimum": 0,
+                        "nullable": true,
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "category",
+                    "filename",
+                    "packagetype",
+                    "sha256",
+                    "size"
+                ],
+                "type": "object"
+            },
             "api.PythonPackageVersionsResponse": {
                 "properties": {
                     "name": {
@@ -7190,6 +7247,141 @@
                     }
                 },
                 "summary": "Get Python Package Detail",
+                "tags": [
+                    "packages"
+                ]
+            }
+        },
+        "/repositories/{uuid}/python_packages/{name}/{version}/files": {
+            "get": {
+                "description": "List actual Python distribution files for one exact full release, including its build suffix. Downloads and security artifacts are not included. Unknown metadata is null. Uses the complete Pulp inventory independently of the package mirror.",
+                "operationId": "listPythonPackageFiles",
+                "parameters": [
+                    {
+                        "description": "Repository UUID",
+                        "in": "path",
+                        "name": "uuid",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Python package name (PEP 503 normalized)",
+                        "in": "path",
+                        "name": "name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Exact full Python version; encode + as %2B",
+                        "in": "path",
+                        "name": "version",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Default 100; zero uses default; positive maximum 200; any negative value is unlimited",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Default 0; negative values select from the beginning",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "filename, filename:asc, or filename:desc (default filename:asc)",
+                        "in": "query",
+                        "name": "sort_by",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.PythonPackageFileCollectionResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Python Package Files",
                 "tags": [
                     "packages"
                 ]

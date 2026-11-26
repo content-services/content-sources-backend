@@ -1655,6 +1655,95 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/repositories/{uuid}/python_packages/{name}/{version}/files": {
+            "get": {
+                "description": "List Python distribution files for one exact full package version, including its Lightwell build suffix. Downloads and security artifacts are not included.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "List Python Package Files",
+                "operationId": "listLightwellPythonPackageFiles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Repository configuration UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Python package name, normalized before lookup",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact full Python package version, including any build suffix",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of files per page. Default/zero: 100; positive maximum: 200; any negative value: unlimited.",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Starting offset. Default: 0; negative values select from the start.",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filename ordering: filename, filename:asc, or filename:desc. Default: filename:asc.",
+                        "name": "sort_by",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.PythonPackageFileCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/terms/required": {
             "get": {
                 "description": "Check whether the current user must accept Lightwell terms.",
@@ -2434,6 +2523,63 @@ const docTemplatelightwell = `{
                 },
                 "version": {
                     "type": "string"
+                }
+            }
+        },
+        "api.PythonPackageFileCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.PythonPackageFileResponse"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.ResponseMetadata"
+                }
+            }
+        },
+        "api.PythonPackageFileResponse": {
+            "type": "object",
+            "required": [
+                "category",
+                "filename",
+                "packagetype",
+                "sha256",
+                "size"
+            ],
+            "properties": {
+                "category": {
+                    "description": "File category; clients should tolerate future values",
+                    "type": "string",
+                    "enum": [
+                        "package",
+                        "unknown"
+                    ]
+                },
+                "filename": {
+                    "description": "Actual inventory filename",
+                    "type": "string"
+                },
+                "packagetype": {
+                    "description": "Pulp type, inferred from the filename only when absent",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "sha256": {
+                    "description": "Lowercase SHA-256 digest, or null when unknown",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "size": {
+                    "description": "File size in bytes, or null when unknown",
+                    "type": "integer",
+                    "minimum": 0,
+                    "x-nullable": true
                 }
             }
         },

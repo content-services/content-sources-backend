@@ -2,9 +2,49 @@
 
 The package mirror is filled by `external-repos import-lightwell-packages`, which reads Maven from Pulp and Python and npm from Tang. This doc covers the manual local seed and how that job is meant to run.
 
-The [LWLP-1226 Python package files proposal](decisions/2026-11-20-python-package-files-contract.md)
-defines the first list-files contract and implementation acceptance cases. It is
-a proposal; the list-files endpoint is not implemented yet.
+The [LWLP-1226 Python package files contract](decisions/2026-11-20-python-package-files-contract.md)
+defines the first list-files operation and implementation acceptance cases.
+
+## List files for an exact Python build
+
+An entitled caller can list distribution metadata through
+`GET /api/lightwell/v0.1/repositories/{uuid}/python_packages/{name}/{version}/files`.
+The same operation is available under `/api/content-sources/v1.0` and its `/v1`
+alias, with the same identity/RBAC, terms, repository-visibility, and
+Lightwell-origin checks. Use the repository configuration UUID returned by the
+repository API.
+
+For example, using an authorized local API session and a repository UUID:
+
+```http
+GET /api/lightwell/v0.1/repositories/11111111-1111-4111-8111-111111111111/python_packages/lightwell-fixture/3.0.1%2Brhlw.2/files?limit=100&offset=0&sort_by=filename%3Aasc
+```
+
+Python names are normalized before lookup. The full version selects exactly one
+build: `3.0.1+rhlw.2` does not select build 1, and `3.0.1` never selects the latest
+rebuild implicitly. Percent-encode each path segment once, including `+` as `%2B`.
+
+The response uses `data/meta/links`; each file has `filename`, `category`,
+`packagetype`, `size`, and `sha256`. Missing metadata is JSON `null`, while a
+known zero-byte file has size `0`. All wheels and source distributions actually
+present are returned, including multiple platform wheels; unknown types are
+retained. This Python-only increment provides metadata. Downloads are LWLP-1227;
+OSV/VEX/SBOMs, signatures/checksum sidecars, Maven, and npm remain follow-ups.
+
+The endpoint reads the authorized repository's complete scoped Pulp inventory,
+independently of the asynchronous package mirror. Public pagination applies
+after upstream pages are collected and deduplicated. The default/zero limit is
+100, positive limits are capped at 200, and any negative limit returns the
+remaining inventory. Negative offsets select from the beginning. Sorting accepts
+`filename`, `filename:asc`, or `filename:desc`; ascending is the default. Links
+retain the incoming API prefix, encoded coordinates, and sorting.
+
+A complete inventory with no exact-release records returns `404`. An offset
+beyond a nonempty inventory returns `200` with `data: []` and the real total
+count. Repository mapping, malformed inventory, or any upstream-page failure
+returns a sanitized `500`; no partial inventory is exposed. Compare with a real
+producer release in the target environment before rollout, including multiple
+wheels where available; the local fixture is synthetic.
 
 ## Apply dev seed data
 

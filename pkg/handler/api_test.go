@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 
 	"github.com/content-services/content-sources-backend/pkg/api"
@@ -146,4 +149,68 @@ func TestCollectionResponse(t *testing.T) {
 func TestCreateLink(t *testing.T) {
 	link := createLink(getTestContext(""), DefaultLimit, 99)
 	assert.Equal(t, "/api/"+config.DefaultAppName+"/v1.0/repositories/?limit=100&offset=99", link)
+}
+
+func TestCreateLinkPreservesPathAndQueryEncoding(t *testing.T) {
+	for _, path := range []string{
+		api.FullRootPath() + "/repositories/",
+		api.MajorRootPath() + "/tasks/",
+		"/api/lightwell/v0.1/repositories/repo/python_packages/fixture/3.0.1%2Brhlw.2/files",
+		"/api/lightwell/v0.1/repositories/repo/python_packages/fixture/3.0.1%252Brhlw.2/files",
+	} {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path+"?search=C%2B%2B+%26+data%2Fscience&sort_by=name%3Adesc&arch=x86_64&limit=1&offset=0", nil)
+			c := echo.New().NewContext(req, httptest.NewRecorder())
+			link, err := url.Parse(createLink(c, 5, 10))
+			require.NoError(t, err)
+			assert.Empty(t, link.Host)
+			assert.Equal(t, req.URL.EscapedPath(), link.EscapedPath())
+			assert.Equal(t, "C++ & data/science", link.Query().Get("search"))
+			assert.Equal(t, "name:desc", link.Query().Get("sort_by"))
+			assert.Equal(t, "x86_64", link.Query().Get("arch"))
+			assert.Equal(t, "5", link.Query().Get("limit"))
+			assert.Equal(t, "10", link.Query().Get("offset"))
+		})
+	}
+}
+
+func TestCollectionResponsePageBoundaries(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		limit, offset int
+		count         int64
+		last          string
+		next, prev    string
+	}{
+		{name: "middle page", limit: 3, offset: 3, count: 10, last: "9", next: "6", prev: "0"},
+		{name: "past final page", limit: 5, offset: 10, count: 10, last: "5", prev: "5"},
+		{name: "empty collection", limit: 100, count: 0, last: "0"},
+		{name: "unlimited shared links", limit: -1, count: 3, last: "4", next: "-1", prev: "1"},
+		{name: "negative limit and offset", limit: -2, offset: -3, count: 3, last: "2", next: "-5"},
+		{name: "next offset overflow", limit: 200, offset: math.MaxInt, count: 3, last: "0", prev: strconv.Itoa(math.MaxInt - 200)},
+		{name: "next offset underflow", limit: -1, offset: math.MinInt, count: 3, last: "4"},
+		{name: "minimum integers", limit: math.MinInt, offset: math.MinInt, count: 3, last: "0", prev: "0"},
+		{name: "last offset overflow", limit: -1, count: math.MaxInt, last: strconv.Itoa(math.MaxInt), next: "-1", prev: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			collection := api.RepositoryCollectionResponse{}
+			SetCollectionResponseMetadataForPage(&collection, getTestContext("?sort_by=name:asc"), api.PaginationData{Limit: tc.limit, Offset: tc.offset}, tc.count)
+			assert.Equal(t, api.ResponseMetadata{Count: tc.count, Limit: tc.limit, Offset: tc.offset}, collection.Meta)
+			for _, link := range []struct{ value, offset string }{
+				{collection.Links.First, "0"}, {collection.Links.Last, tc.last},
+				{collection.Links.Next, tc.next}, {collection.Links.Prev, tc.prev},
+			} {
+				if link.offset == "" {
+					assert.Empty(t, link.value)
+					continue
+				}
+				parsed, err := url.Parse(link.value)
+				require.NoError(t, err)
+				assert.Equal(t, api.FullRootPath()+"/repositories/", parsed.Path)
+				assert.Equal(t, link.offset, parsed.Query().Get("offset"))
+				assert.Equal(t, strconv.Itoa(tc.limit), parsed.Query().Get("limit"))
+				assert.Equal(t, "name:asc", parsed.Query().Get("sort_by"))
+			}
+		})
+	}
 }

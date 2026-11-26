@@ -32,6 +32,7 @@ func RegisterPackageRoutes(engine *echo.Group, daoReg *dao.DaoRegistry, tangClie
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name", ph.ListJavaPackageVersions, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/java_packages/:group/:name/:version", ph.GetJavaPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version", ph.GetPythonPackageDetail, rbac.RbacVerbRead, middleware...)
+	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name/:version/files", ph.ListPythonPackageFiles, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/python_packages/:name", ph.GetPythonPackageVersions, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name/:version", ph.GetNpmPackageDetail, rbac.RbacVerbRead, middleware...)
 	addRepoRoute(engine, http.MethodGet, "/repositories/:uuid/javascript_packages/:scope/:name", ph.GetNpmPackageVersions, rbac.RbacVerbRead, middleware...)
