@@ -3032,6 +3032,86 @@ func (_c *MockPulpClient_ListPythonPackageContent_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// ListPythonPackageFiles provides a mock function for the type MockPulpClient
+func (_mock *MockPulpClient) ListPythonPackageFiles(ctx context.Context, basePath string, name string, version string) ([]zest.PythonPythonPackageContentResponse, error) {
+	ret := _mock.Called(ctx, basePath, name, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListPythonPackageFiles")
+	}
+
+	var r0 []zest.PythonPythonPackageContentResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) ([]zest.PythonPythonPackageContentResponse, error)); ok {
+		return returnFunc(ctx, basePath, name, version)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) []zest.PythonPythonPackageContentResponse); ok {
+		r0 = returnFunc(ctx, basePath, name, version)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]zest.PythonPythonPackageContentResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
+		r1 = returnFunc(ctx, basePath, name, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockPulpClient_ListPythonPackageFiles_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListPythonPackageFiles'
+type MockPulpClient_ListPythonPackageFiles_Call struct {
+	*mock.Call
+}
+
+// ListPythonPackageFiles is a helper method to define mock.On call
+//   - ctx context.Context
+//   - basePath string
+//   - name string
+//   - version string
+func (_e *MockPulpClient_Expecter) ListPythonPackageFiles(ctx any, basePath any, name any, version any) *MockPulpClient_ListPythonPackageFiles_Call {
+	return &MockPulpClient_ListPythonPackageFiles_Call{Call: _e.mock.On("ListPythonPackageFiles", ctx, basePath, name, version)}
+}
+
+func (_c *MockPulpClient_ListPythonPackageFiles_Call) Run(run func(ctx context.Context, basePath string, name string, version string)) *MockPulpClient_ListPythonPackageFiles_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockPulpClient_ListPythonPackageFiles_Call) Return(pythonPythonPackageContentResponses []zest.PythonPythonPackageContentResponse, err error) *MockPulpClient_ListPythonPackageFiles_Call {
+	_c.Call.Return(pythonPythonPackageContentResponses, err)
+	return _c
+}
+
+func (_c *MockPulpClient_ListPythonPackageFiles_Call) RunAndReturn(run func(ctx context.Context, basePath string, name string, version string) ([]zest.PythonPythonPackageContentResponse, error)) *MockPulpClient_ListPythonPackageFiles_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListVersionAllPackages provides a mock function for the type MockPulpClient
 func (_mock *MockPulpClient) ListVersionAllPackages(ctx context.Context, versionHref string) ([]zest.RpmPackageResponse, error) {
 	ret := _mock.Called(ctx, versionHref)

@@ -1,0 +1,22 @@
+[
+  {
+    "pulp_href": "/api/pulp/lightwell/api/v3/content/python/packages/01a12079-e9e6-78c8-956d-d87e02d62e89/",
+    "artifact": "/api/pulp/lightwell/api/v3/artifacts/01a12079-e95e-7bea-8065-daaa5a411df9/",
+    "name": "lightwell-fixture",
+    "version": "3.0.1+rhlw.2",
+    "filename": "lightwell_fixture-3.0.1+rhlw.2-py3-none-any.whl",
+    "packagetype": "bdist_wheel",
+    "size": 1082,
+    "sha256": "6e2bba7e461225e2328ad69be15a8c7bed2bb1d96416b1133984bf4fe48ba34d"
+  },
+  {
+    "pulp_href": "/api/pulp/lightwell/api/v3/content/python/packages/01a12079-f57d-755e-8755-3ac45135e117/",
+    "artifact": "/api/pulp/lightwell/api/v3/artifacts/01a12079-f508-702e-b594-ff3c9736b32b/",
+    "name": "lightwell-fixture",
+    "version": "3.0.1+rhlw.2",
+    "filename": "lightwell_fixture-3.0.1+rhlw.2.tar.gz",
+    "packagetype": "sdist",
+    "size": 1790,
+    "sha256": "580c9aa62e63a828e94a96aa08624763a3eaaeda1519347a9a4d0300506c920d"
+  }
+]

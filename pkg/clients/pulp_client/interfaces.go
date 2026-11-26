@@ -116,4 +116,7 @@ type PulpClient interface {
 
 	// Python content (one unit per distribution file)
 	ListPythonPackageContent(ctx context.Context, filters PythonPackageContentFilters, each func([]zest.PythonPythonPackageContentResponse) error) error
+
+	// Python distribution inventory (caller supplies an authorized base path and normalized name)
+	ListPythonPackageFiles(ctx context.Context, basePath, name, version string) ([]zest.PythonPythonPackageContentResponse, error)
 }
