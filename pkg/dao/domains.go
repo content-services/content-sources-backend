@@ -47,6 +47,8 @@ func (dDao domainDaoImpl) Create(ctx context.Context, orgId string) (string, err
 		name = config.RedHatDomainName
 	case config.CommunityOrg:
 		name = config.CommunityDomainName
+	case config.Get().Clients.Pulp.CoprOrgID:
+		name = config.Get().Clients.Pulp.CoprDomain
 	}
 
 	toCreate := models.Domain{

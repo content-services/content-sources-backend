@@ -338,6 +338,7 @@ type LightwellPackageDao interface {
 	ListNpmPackageVersions(ctx context.Context, repoConfigUUID string, scope string, name string) (api.NpmPackageVersionsResponse, error)
 	GetNpmPackageDetail(ctx context.Context, repoConfigUUID string, scope string, name string, version string) (api.NpmPackageDetailResponse, error)
 	SyncPackagesForRepository(ctx context.Context, repoConfigUUID string, pkgs []LightwellPackageInput) error
+	ApplyPackageChangesForRepository(ctx context.Context, repoConfigUUID string, upserts []LightwellPackageInput, removals []LightwellPackageVersionKey) error
 	InternalOnlyListLensCatalog(ctx context.Context) ([]LensCatalogPackageRow, error)
 	InternalOnlyListStoredPackageVersions(ctx context.Context, repoConfigUUID string, group string, name string) ([]string, error)
 	InternalOnlyCountStoredContent(ctx context.Context, repoConfigUUID string) (packageCount int, buildCount int, versionCount int, err error)
@@ -373,6 +374,7 @@ type CoverageReportDao interface {
 	Create(ctx context.Context, report CreateCoverageReportParams, upload CreateCoverageUploadParams) (api.CoverageReportResponse, error)
 	Fetch(ctx context.Context, orgID string, uuid string) (api.CoverageReportResponse, error)
 	ListPackages(ctx context.Context, orgID string, reportUUID string, pageData api.PaginationData, filterData api.ListCoverageReportPackagesRequest) (api.CoverageReportPackageCollectionResponse, int64, error)
+	ListDemandSignals(ctx context.Context, pageData api.PaginationData, filterData api.AdminDemandSignalFilterData) (api.AdminDemandSignalCollectionResponse, int64, error)
 	InternalOnlyFetchCoverageUpload(ctx context.Context, uploadUUID string) (models.CoverageUpload, error)
 	SetAnalysisTaskUUID(ctx context.Context, reportUUID string, taskUUID string) error
 	UpdateCoverageReportStatus(ctx context.Context, reportUUID string, status string, errMsg *string) error

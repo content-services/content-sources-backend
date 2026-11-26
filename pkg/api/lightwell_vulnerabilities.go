@@ -4,33 +4,35 @@ import "time"
 
 // LightwellVulnerabilityResponse is a single vulnerability in list responses.
 type LightwellVulnerabilityResponse struct {
-	UUID               string    `json:"uuid"`                        // UUID of the vulnerability
-	VulnerabilityID    string    `json:"vulnerability_id"`            // Business identifier (e.g. LWL-2026-4401)
-	Purl               *string   `json:"purl,omitempty"`              // Package URL
-	ComponentName      string    `json:"component_name"`              // Component / package name
-	Package            string    `json:"package"`                     // Alias of component_name
-	ComponentVersion   string    `json:"component_version"`           // Component version
-	PublishedVersions  []string  `json:"published_versions"`          // Published package versions that fix this vulnerability
-	Title              *string   `json:"title,omitempty"`             // Vulnerability title
-	Cwe                *string   `json:"cwe,omitempty"`               // CWE identifier
-	Description        *string   `json:"description,omitempty"`       // Vulnerability description
-	Severity           string    `json:"severity"`                    // Severity (Critical, Important, Moderate, Low)
-	Cvss               *float64  `json:"cvss,omitempty"`              // CVSS score
-	CvssVector         *string   `json:"cvss_vector,omitempty"`       // CVSS vector string
-	ExploitTested      bool      `json:"exploit_tested"`              // Whether an exploit was tested
-	ReproducerIncluded bool      `json:"reproducer_included"`         // Whether a reproducer is included
-	CustomerPriority   *string   `json:"customer_priority,omitempty"` // Customer priority
-	Status             string    `json:"status"`                      // Workflow status. A closure without a shipped fix is Unremediated
-	ResolutionReason   *string   `json:"resolution_reason,omitempty"` // Explanation when a vulnerability is closed without a shipped fix
-	Ecosystem          *string   `json:"ecosystem,omitempty"`         // Derived ecosystem (java, python, javascript, csharp)
-	Complexity         string    `json:"complexity"`                  // Standard, Complex, or Extensive
-	SubmittedDate      time.Time `json:"submitted_date"`              // Date the vulnerability was submitted
-	LastUpdated        time.Time `json:"last_updated"`                // Last update timestamp
-	AgeDays            int       `json:"age_days"`                    // UTC calendar days since submitted_date
-	Embargo            bool      `json:"embargo"`                     // Embargo flag
-	Duplicate          bool      `json:"duplicate"`                   // Duplicate flag
-	DuplicateOf        *string   `json:"duplicate_of,omitempty"`      // Canonical vulnerability_id when duplicate
-	LtwlsuptTicketIDs  []string  `json:"ltwlsupt_ticket_ids"`         // Lightwell support ticket IDs
+	UUID               string    `json:"uuid"`                          // UUID of the vulnerability
+	VulnerabilityID    string    `json:"vulnerability_id"`              // Business identifier (e.g. LWL-2026-4401)
+	Purl               *string   `json:"purl,omitempty"`                // Package URL
+	ComponentName      string    `json:"component_name"`                // Component / package name
+	Package            string    `json:"package"`                       // Alias of component_name
+	ComponentVersion   string    `json:"component_version"`             // Component version
+	PublishedVersions  []string  `json:"published_versions"`            // Published package versions that fix this vulnerability
+	Title              *string   `json:"title,omitempty"`               // Vulnerability title
+	Cwe                *string   `json:"cwe,omitempty"`                 // CWE identifier
+	Description        *string   `json:"description,omitempty"`         // Vulnerability description
+	Severity           string    `json:"severity"`                      // Severity (Critical, Important, Moderate, Low)
+	Cvss               *float64  `json:"cvss,omitempty"`                // CVSS score
+	CvssVector         *string   `json:"cvss_vector,omitempty"`         // CVSS vector string
+	ExploitTested      bool      `json:"exploit_tested"`                // Whether an exploit was tested
+	ReproducerIncluded bool      `json:"reproducer_included"`           // Whether a reproducer is included
+	CustomerPriority   *string   `json:"customer_priority,omitempty"`   // Customer priority
+	Status             string    `json:"status"`                        // Workflow status. A closure without a shipped fix is Unremediated
+	ResolutionReason   *string   `json:"resolution_reason,omitempty"`   // Explanation when a vulnerability is closed without a shipped fix
+	OnHoldReasons      []string  `json:"on_hold_reasons,omitempty"`     // Customer-facing reasons an On Hold vulnerability is blocked
+	Ecosystem          *string   `json:"ecosystem,omitempty"`           // Derived ecosystem (java, python, javascript, csharp)
+	Complexity         string    `json:"complexity"`                    // Standard, Complex, or Extensive
+	SubmittedDate      time.Time `json:"submitted_date"`                // Date the vulnerability was submitted
+	LastUpdated        time.Time `json:"last_updated"`                  // Last update timestamp
+	AgeDays            int       `json:"age_days"`                      // UTC calendar days since submitted_date
+	Embargo            bool      `json:"embargo"`                       // Embargo flag
+	Duplicate          bool      `json:"duplicate"`                     // True when this finding duplicates another tracker
+	DuplicateOf        *string   `json:"duplicate_of,omitempty"`        // Canonical Jira issue key this finding duplicates
+	DuplicateOfStatus  *string   `json:"duplicate_of_status,omitempty"` // Beacon status of the canonical tracker, read from that stored issue
+	LtwlsuptTicketIDs  []string  `json:"ltwlsupt_ticket_ids"`           // Lightwell support ticket IDs
 }
 
 // LightwellVulnerabilityCollectionMeta extends pagination metadata with list aggregates.

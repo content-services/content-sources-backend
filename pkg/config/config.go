@@ -44,6 +44,8 @@ type Configuration struct {
 	Tasking                        Tasking            `mapstructure:"tasking"`
 	Features                       FeatureSet         `mapstructure:"features"`
 	JFrogBridge                    JFrogBridge        `mapstructure:"jfrog_bridge"`
+	SonatypeBridge                 SonatypeBridge     `mapstructure:"sonatype_bridge"`
+	CoprIngest                     CoprIngest         `mapstructure:"copr_ingest"`
 }
 
 type JFrogBridge struct {
@@ -57,6 +59,27 @@ type JFrogBridge struct {
 	ConsumerGroupID string `mapstructure:"consumer_group_id"`
 	MaxRetries      int    `mapstructure:"max_retries"`
 	RequestTimeout  int    `mapstructure:"request_timeout"`
+}
+
+// SonatypeBridge configures the bridge that uploads remediated artifacts to a
+// partner-owned S3 bucket. The S3 settings are unrelated to any other object
+// store configured for this service.
+type SonatypeBridge struct {
+	Enabled         bool        `mapstructure:"enabled"`
+	S3              ObjectStore `mapstructure:"s3"`
+	UsePathStyle    bool        `mapstructure:"use_path_style"`
+	RegistryURL     string      `mapstructure:"registry_url"`
+	RegistryOSVURL  string      `mapstructure:"registry_osv_url"`
+	RegistryVEXURL  string      `mapstructure:"registry_vex_url"`
+	ConsumerGroupID string      `mapstructure:"consumer_group_id"`
+	MaxRetries      int         `mapstructure:"max_retries"`
+	RequestTimeout  int         `mapstructure:"request_timeout"`
+}
+
+type CoprIngest struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	Topic           string `mapstructure:"topic"`
+	ConsumerGroupID string `mapstructure:"consumer_group_id"`
 }
 
 type Jira struct {
@@ -115,6 +138,8 @@ type FeatureSet struct {
 	LightwellStoreUploads                 Feature `mapstructure:"lightwell_store_uploads"`
 	LightwellTerms                        Feature `mapstructure:"lightwell_terms"`
 	AdminJfrogUpload                      Feature `mapstructure:"admin_jfrog_upload"`
+	AdminSonatypeUpload                   Feature `mapstructure:"admin_sonatype_upload"`
+	AdminLensDemandSignals                Feature `mapstructure:"admin_lens_demand_signals"`
 }
 
 type Feature struct {
@@ -148,6 +173,7 @@ type Pulp struct {
 	ContentPathPrefix      string       `mapstructure:"content_path_prefix"`
 	Proxy                  string       `mapstructure:"proxy"`
 	CoprDomain             string       `mapstructure:"copr_domain"` // Pulp domain for Copr-initiated snapshots
+	CoprOrgID              string       `mapstructure:"copr_org_id"`
 }
 
 type Lightwell struct {
@@ -484,6 +510,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("clients.pulp.content_path_prefix", "/api/pulp-content/")
 	v.SetDefault("clients.pulp.proxy", "")
 	v.SetDefault("clients.pulp.copr_domain", "cs-partner")
+	v.SetDefault("clients.pulp.copr_org_id", "-5")
 
 	v.SetDefault("sentry.dsn", "")
 
@@ -584,6 +611,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_notifications.accounts", nil)
 	v.SetDefault("features.admin_notifications.organizations", nil)
 	v.SetDefault("features.admin_notifications.users", nil)
+	v.SetDefault("features.admin_lens_demand_signals.enabled", false)
+	v.SetDefault("features.admin_lens_demand_signals.accounts", nil)
+	v.SetDefault("features.admin_lens_demand_signals.organizations", nil)
+	v.SetDefault("features.admin_lens_demand_signals.users", nil)
 	v.SetDefault("features.lightwell_lens.enabled", false)
 	v.SetDefault("features.lightwell_lens.accounts", nil)
 	v.SetDefault("features.lightwell_lens.organizations", nil)
@@ -600,6 +631,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("features.admin_jfrog_upload.accounts", nil)
 	v.SetDefault("features.admin_jfrog_upload.organizations", nil)
 	v.SetDefault("features.admin_jfrog_upload.users", nil)
+	v.SetDefault("features.admin_sonatype_upload.enabled", false)
+	v.SetDefault("features.admin_sonatype_upload.accounts", nil)
+	v.SetDefault("features.admin_sonatype_upload.organizations", nil)
+	v.SetDefault("features.admin_sonatype_upload.users", nil)
 	v.SetDefault("features.lightwell_lens_internal_entitled_features", nil)
 
 	v.SetDefault("mocks.kessel.user_read_write", []string{"write-user"})
@@ -616,6 +651,23 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("jfrog_bridge.consumer_group_id", "content-sources-jfrog-bridge")
 	v.SetDefault("jfrog_bridge.max_retries", 3)
 	v.SetDefault("jfrog_bridge.request_timeout", 60)
+
+	v.SetDefault("sonatype_bridge.enabled", false)
+	v.SetDefault("sonatype_bridge.s3.url", "")
+	v.SetDefault("sonatype_bridge.s3.name", "")
+	v.SetDefault("sonatype_bridge.s3.region", "")
+	v.SetDefault("sonatype_bridge.s3.access_key", "")
+	v.SetDefault("sonatype_bridge.s3.secret_key", "")
+	v.SetDefault("sonatype_bridge.use_path_style", false)
+	v.SetDefault("sonatype_bridge.registry_url", "https://packages.redhat.com/lightwell/java/remediated")
+	v.SetDefault("sonatype_bridge.registry_osv_url", "https://packages.redhat.com/lightwell/osv/java/remediated")
+	v.SetDefault("sonatype_bridge.registry_vex_url", "https://packages.redhat.com/lightwell/vex/java/remediated")
+	v.SetDefault("sonatype_bridge.consumer_group_id", "content-sources-sonatype-bridge")
+	v.SetDefault("sonatype_bridge.max_retries", 3)
+	v.SetDefault("sonatype_bridge.request_timeout", 60)
+	v.SetDefault("copr_ingest.enabled", false)
+	v.SetDefault("copr_ingest.topic", "copr.build.events")
+	v.SetDefault("copr_ingest.consumer_group_id", "content-sources-copr")
 
 	addEventConfigDefaults(v)
 	addStorageDefaults(v)

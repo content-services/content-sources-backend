@@ -165,7 +165,7 @@ func (q *Queries) DeleteVulnerabilityTicketsNotIn(ctx context.Context, arg Delet
 }
 
 const getVulnerabilityByKey = `-- name: GetVulnerabilityByKey :one
-SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason, jira_status, jira_resolution, created_at, updated_at
+SELECT uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description, severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage, language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason, jira_status, jira_resolution, on_hold_reasons, created_at, updated_at
 FROM lightwell_vulnerabilities
 WHERE vulnerability_key = $1
 `
@@ -201,6 +201,7 @@ func (q *Queries) GetVulnerabilityByKey(ctx context.Context, vulnerabilityKey st
 		&i.ResolutionReason,
 		&i.JiraStatus,
 		&i.JiraResolution,
+		&i.OnHoldReasons,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -301,7 +302,9 @@ SELECT
     v.embargo,
     v.duplicate,
     v.duplicate_of,
+    canonical.stage AS duplicate_of_status,
     v.resolution_reason,
+    v.on_hold_reasons,
     ARRAY(
         SELECT t.ticket_id
         FROM lightwell_vulnerability_support_tickets t
@@ -320,6 +323,8 @@ FROM lightwell_filtered_vulnerabilities(
     $6::text[],
     $7::text
 ) AS v
+LEFT JOIN lightwell_vulnerabilities canonical
+    ON canonical.vulnerability_key = v.duplicate_of
 /*
  ASC/DESC can't be parameterized and CASE branches must share a type, so each
  field/direction pair gets its own CASE; unselected CASEs are NULL for every row.
@@ -392,7 +397,9 @@ type ListVulnerabilitiesRow struct {
 	Embargo            bool      `json:"embargo"`
 	Duplicate          bool      `json:"duplicate"`
 	DuplicateOf        *string   `json:"duplicate_of"`
+	DuplicateOfStatus  *string   `json:"duplicate_of_status"`
 	ResolutionReason   *string   `json:"resolution_reason"`
+	OnHoldReasons      []string  `json:"on_hold_reasons"`
 	LtwlsuptTicketIds  []string  `json:"ltwlsupt_ticket_ids"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`
@@ -445,7 +452,9 @@ func (q *Queries) ListVulnerabilities(ctx context.Context, arg ListVulnerabiliti
 			&i.Embargo,
 			&i.Duplicate,
 			&i.DuplicateOf,
+			&i.DuplicateOfStatus,
 			&i.ResolutionReason,
+			&i.OnHoldReasons,
 			&i.LtwlsuptTicketIds,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -464,14 +473,16 @@ const upsertVulnerability = `-- name: UpsertVulnerability :one
 INSERT INTO lightwell_vulnerabilities (
     uuid, vulnerability_key, vulnerability_id, purl, component_name, component_version, published_versions, title, cwe, description,
     severity, cvss, cvss_vector, exploit_tested, reproducer_included, customer_priority, stage,
-    language, complexity, submitted_date, last_updated, embargo, duplicate, resolution_reason, jira_status, jira_resolution
+    language, complexity, submitted_date, last_updated, embargo, duplicate, duplicate_of, resolution_reason, jira_status, jira_resolution,
+    on_hold_reasons
 ) VALUES (
     $1, $2, $3, $4, $5,
     $6, COALESCE($7::text[], '{}'::text[]), $8, $9, $10,
     $11, $12, $13, $14,
     $15, $16, $17,
     $18, $19, $20, $21,
-    $22, $23, $24, $25, $26
+    $22, $23, $24, $25, $26, $27,
+    COALESCE($28::text[], '{}'::text[])
 )
 ON CONFLICT (vulnerability_key) DO UPDATE SET
     vulnerability_id = EXCLUDED.vulnerability_id,
@@ -495,9 +506,11 @@ ON CONFLICT (vulnerability_key) DO UPDATE SET
     last_updated = EXCLUDED.last_updated,
     embargo = EXCLUDED.embargo,
     duplicate = EXCLUDED.duplicate,
+    duplicate_of = EXCLUDED.duplicate_of,
     resolution_reason = EXCLUDED.resolution_reason,
     jira_status = EXCLUDED.jira_status,
     jira_resolution = EXCLUDED.jira_resolution,
+    on_hold_reasons = EXCLUDED.on_hold_reasons,
     updated_at = NOW()
 WHERE (
     lightwell_vulnerabilities.vulnerability_id, lightwell_vulnerabilities.purl,
@@ -511,8 +524,10 @@ WHERE (
     lightwell_vulnerabilities.language, lightwell_vulnerabilities.complexity,
     lightwell_vulnerabilities.submitted_date, lightwell_vulnerabilities.last_updated,
     lightwell_vulnerabilities.embargo, lightwell_vulnerabilities.duplicate,
+    lightwell_vulnerabilities.duplicate_of,
     lightwell_vulnerabilities.resolution_reason,
-    lightwell_vulnerabilities.jira_status, lightwell_vulnerabilities.jira_resolution
+    lightwell_vulnerabilities.jira_status, lightwell_vulnerabilities.jira_resolution,
+    lightwell_vulnerabilities.on_hold_reasons
 ) IS DISTINCT FROM (
     EXCLUDED.vulnerability_id, EXCLUDED.purl, EXCLUDED.component_name,
     EXCLUDED.component_version, EXCLUDED.published_versions, EXCLUDED.title, EXCLUDED.cwe, EXCLUDED.description,
@@ -520,8 +535,10 @@ WHERE (
     EXCLUDED.reproducer_included, EXCLUDED.customer_priority,
     EXCLUDED.stage,
     EXCLUDED.language, EXCLUDED.complexity, EXCLUDED.submitted_date, EXCLUDED.last_updated,
-    EXCLUDED.embargo, EXCLUDED.duplicate, EXCLUDED.resolution_reason,
-    EXCLUDED.jira_status, EXCLUDED.jira_resolution
+    EXCLUDED.embargo, EXCLUDED.duplicate, EXCLUDED.duplicate_of,
+    EXCLUDED.resolution_reason,
+    EXCLUDED.jira_status, EXCLUDED.jira_resolution,
+    EXCLUDED.on_hold_reasons
 )
 RETURNING uuid, (xmax = 0) AS inserted
 `
@@ -550,9 +567,11 @@ type UpsertVulnerabilityParams struct {
 	LastUpdated        time.Time `json:"last_updated"`
 	Embargo            bool      `json:"embargo"`
 	Duplicate          bool      `json:"duplicate"`
+	DuplicateOf        *string   `json:"duplicate_of"`
 	ResolutionReason   *string   `json:"resolution_reason"`
 	JiraStatus         *string   `json:"jira_status"`
 	JiraResolution     *string   `json:"jira_resolution"`
+	OnHoldReasons      []string  `json:"on_hold_reasons"`
 }
 
 type UpsertVulnerabilityRow struct {
@@ -585,9 +604,11 @@ func (q *Queries) UpsertVulnerability(ctx context.Context, arg UpsertVulnerabili
 		arg.LastUpdated,
 		arg.Embargo,
 		arg.Duplicate,
+		arg.DuplicateOf,
 		arg.ResolutionReason,
 		arg.JiraStatus,
 		arg.JiraResolution,
+		arg.OnHoldReasons,
 	)
 	var i UpsertVulnerabilityRow
 	err := row.Scan(&i.Uuid, &i.Inserted)

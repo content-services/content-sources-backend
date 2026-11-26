@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/content-services/content-sources-backend/pkg/clients/jira_client"
 	"github.com/content-services/content-sources-backend/pkg/utils"
@@ -58,10 +60,16 @@ type Vulnerability struct {
 	LastUpdated        time.Time
 	Embargo            bool
 	Duplicate          bool
+	// DuplicateOf is the canonical Jira issue key this finding duplicates.
+	DuplicateOf *string
 	// JiraStatus and JiraResolution are the raw Jira state, stored for debugging
 	// stage/promotion mismatches against Jira.
 	JiraStatus     *string
 	JiraResolution *string
+	// OnHoldReasons are slugs (e.g. "missing-sources") explaining why an On Hold
+	// vulnerability is stuck. Set by the ingestor once the final stage is known;
+	// mapVulnerability leaves it empty.
+	OnHoldReasons []string
 }
 
 // TicketLink associates a vulnerability with a customer account. CustomerID comes
@@ -81,6 +89,7 @@ type adfNode struct {
 
 type issueLink struct {
 	Type struct {
+		Name    string `json:"name"`
 		Inward  string `json:"inward"`
 		Outward string `json:"outward"`
 	} `json:"type"`
@@ -88,15 +97,29 @@ type issueLink struct {
 	OutwardIssue *linkedIssue `json:"outwardIssue"`
 }
 
+// linkedIssue is the issue on the far side of an issue link. Jira embeds the
+// linked issue's type and status in the link payload, so an On Hold blocker can be
+// classified without fetching it.
 type linkedIssue struct {
-	Key string `json:"key"`
+	Key    string `json:"key"`
+	Fields struct {
+		IssueType struct {
+			Name string `json:"name"`
+		} `json:"issuetype"`
+		Status struct {
+			Name           string `json:"name"`
+			StatusCategory struct {
+				Key string `json:"key"`
+			} `json:"statusCategory"`
+		} `json:"status"`
+	} `json:"fields"`
 }
 
 func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 	if issue.Key == "" {
 		return Vulnerability{}, errors.New("issue has no key")
 	}
-	summary := rawString(issue.Fields["summary"])
+	summary := decodeUTF8(rawString(issue.Fields["summary"]))
 	vulnerabilityID := vulnerabilityIDFromSummary(strings.TrimSpace(summary))
 	if vulnerabilityID == "" {
 		return Vulnerability{}, fmt.Errorf("issue %s has no LW- or CVE- vulnerability id in summary", issue.Key)
@@ -111,13 +134,17 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		return Vulnerability{}, fmt.Errorf("issue %s updated timestamp: %w", issue.Key, err)
 	}
 
-	description := flattenADF(issue.Fields["description"])
+	description := decodeUTF8(flattenADF(issue.Fields["description"]))
 	customerPriority := descriptionValue(description, "customer priority")
 	workflowStage := stage(issue.Fields["status"])
 	var resolutionReason *string
 	if closed, ok := closedResolutionStatus(issue.Fields["resolution"]); ok {
 		workflowStage = closed
 		resolutionReason = optionalString(closureSelection(issue.Fields))
+	}
+	var duplicateOf *string
+	if duplicateResolution(issue.Fields["resolution"]) {
+		duplicateOf = optionalString(canonicalDuplicate(issue))
 	}
 	cvss, vector := parseCVSS(issue.Fields[fieldCVSS])
 	purl := packageURL(issue.Fields[fieldPURL], description)
@@ -146,6 +173,8 @@ func mapVulnerability(issue jira_client.JiraIssue) (Vulnerability, error) {
 		SubmittedDate:    created.UTC(),
 		LastUpdated:      updated.UTC(),
 		Embargo:          rawBool(issue.Fields[fieldEmbargo]),
+		Duplicate:        duplicateResolution(issue.Fields["resolution"]),
+		DuplicateOf:      duplicateOf,
 		JiraStatus:       optionalString(statusName(issue.Fields["status"])),
 		JiraResolution:   optionalString(resolutionName(issue.Fields["resolution"])),
 	}, nil
@@ -161,6 +190,21 @@ func parseJiraTime(value string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("unsupported timestamp %q", value)
+}
+
+// decodeUTF8 reads Latin-1 text as UTF-8 when those bytes are valid UTF-8.
+func decodeUTF8(value string) string {
+	raw := make([]byte, 0, len(value))
+	for _, r := range value {
+		if r > 0xFF {
+			return value
+		}
+		raw = append(raw, byte(r)) //nolint:gosec // r is at most 0xFF
+	}
+	if !utf8.Valid(raw) {
+		return value
+	}
+	return string(raw)
 }
 
 func flattenADF(raw json.RawMessage) string {
@@ -380,16 +424,19 @@ func mapSeverityName(value string) string {
 }
 
 var discardedResolutions = map[string]struct{}{
-	"duplicate":        {},
 	"obsolete":         {},
 	"cannot reproduce": {},
 	"won't fix":        {},
 }
 
+const duplicateResolutionReason = "Duplicate"
+
 // Customer closures are stored as Unremediated. The Jira resolution only selects which reason field to read.
+// Duplicate keeps the finding and records the canonical tracker separately.
 var closedResolutionStatuses = map[string]string{
 	"won't do":  "Unremediated",
 	"not a bug": "Unremediated",
+	"duplicate": "Unremediated",
 }
 
 func resolutionName(raw json.RawMessage) string {
@@ -434,12 +481,18 @@ func beaconDiscardReason(fields map[string]json.RawMessage) (resolution, detail 
 	return "", "", false
 }
 
+func duplicateResolution(raw json.RawMessage) bool {
+	return normalizeResolutionName(resolutionName(raw)) == "duplicate"
+}
+
 func closureSelection(fields map[string]json.RawMessage) string {
 	switch normalizeResolutionName(resolutionName(fields["resolution"])) {
 	case "won't do":
 		return optionValue(fields[fieldClosureReason])
 	case "not a bug":
 		return optionValue(fields[fieldVEXJustification])
+	case "duplicate":
+		return duplicateResolutionReason
 	default:
 		return ""
 	}
@@ -594,6 +647,77 @@ func parseCVSS(raw json.RawMessage) (*float64, *string) {
 	return &score, &value
 }
 
+// canonicalDuplicate returns the Jira key this issue duplicates. The canonical
+// is the issue on the "duplicates" side of a duplicates / is duplicated by
+// link. A link that only says "is duplicated by" is used when no "duplicates"
+// target is present.
+func canonicalDuplicate(issue jira_client.JiraIssue) string {
+	var links []issueLink
+	if json.Unmarshal(issue.Fields["issuelinks"], &links) != nil {
+		return ""
+	}
+	fallback := ""
+	for _, link := range links {
+		if !duplicateIssueLink(link) {
+			continue
+		}
+		if key, ok := canonicalKey(issue.Key, duplicatesDirectionTarget(link)); ok {
+			return key
+		}
+		if fallback == "" {
+			if key, ok := canonicalKey(issue.Key, otherLinkedIssue(link)); ok {
+				fallback = key
+			}
+		}
+	}
+	return fallback
+}
+
+func duplicateIssueLink(link issueLink) bool {
+	for _, label := range []string{link.Type.Name, link.Type.Inward, link.Type.Outward} {
+		switch normalizeLinkLabel(label) {
+		case "duplicate", "duplicates", "is duplicated by":
+			return true
+		}
+	}
+	return false
+}
+
+func duplicatesDirectionTarget(link issueLink) *linkedIssue {
+	if normalizeLinkLabel(link.Type.Outward) == "duplicates" && link.OutwardIssue != nil {
+		return link.OutwardIssue
+	}
+	if normalizeLinkLabel(link.Type.Inward) == "duplicates" && link.InwardIssue != nil {
+		return link.InwardIssue
+	}
+	return nil
+}
+
+func otherLinkedIssue(link issueLink) *linkedIssue {
+	if link.OutwardIssue != nil && strings.TrimSpace(link.OutwardIssue.Key) != "" {
+		return link.OutwardIssue
+	}
+	if link.InwardIssue != nil && strings.TrimSpace(link.InwardIssue.Key) != "" {
+		return link.InwardIssue
+	}
+	return nil
+}
+
+func canonicalKey(self string, issue *linkedIssue) (string, bool) {
+	if issue == nil {
+		return "", false
+	}
+	key := strings.TrimSpace(issue.Key)
+	if key == "" || key == self {
+		return "", false
+	}
+	return key, true
+}
+
+func normalizeLinkLabel(label string) string {
+	return strings.ToLower(strings.Join(strings.Fields(label), " "))
+}
+
 func linkedIssueKey(issue jira_client.JiraIssue, label string) string {
 	keys := linkedIssueKeys(issue, label)
 	if len(keys) == 0 {
@@ -620,6 +744,162 @@ func linkedIssueKeys(issue jira_client.JiraIssue, label string) []string {
 		}
 	}
 	return keys
+}
+
+const (
+	issueTypeBuildTask        = "Build Task"
+	issueTypeComponentUpgrade = "Component Upgrade"
+	linkTypeIncorporates      = "Incorporates"
+	linkIsBlockedBy           = "is blocked by"
+	blockedLabelPrefix        = "blocked:"
+	// ReasonBlockedByTicket is the slug used when an open work ticket blocks the
+	// vulnerability. Unlike the label-based reasons it needs no Jira label.
+	ReasonBlockedByTicket = "blocked-by-ticket"
+)
+
+// onHoldBlockers inspects an IVT's issue links and returns the keys of its open
+// Build Task and Component Upgrade blockers (whose labels carry the reason) and
+// whether any other open ticket blocks it. A blocker is open unless its Jira status
+// category is "done".
+//
+//   - "Incorporates" link (either direction) to a Component Upgrade: label source
+//   - "is blocked by" link to a Build Task: label source
+//   - "is blocked by" link to any other issue type: work ticket
+func onHoldBlockers(ivt jira_client.JiraIssue) (labelSources []string, blockedByTicket bool) {
+	var links []issueLink
+	if json.Unmarshal(ivt.Fields["issuelinks"], &links) != nil {
+		return nil, false
+	}
+	for _, link := range links {
+		if link.Type.Name == linkTypeIncorporates {
+			for _, other := range []*linkedIssue{link.InwardIssue, link.OutwardIssue} {
+				if other != nil && other.Fields.IssueType.Name == issueTypeComponentUpgrade && isOpenIssue(*other) {
+					labelSources = append(labelSources, other.Key)
+				}
+			}
+			continue
+		}
+		if link.InwardIssue == nil || link.Type.Inward != linkIsBlockedBy || !isOpenIssue(*link.InwardIssue) {
+			continue
+		}
+		if link.InwardIssue.Fields.IssueType.Name == issueTypeBuildTask {
+			labelSources = append(labelSources, link.InwardIssue.Key)
+		} else {
+			blockedByTicket = true
+		}
+	}
+	return labelSources, blockedByTicket
+}
+
+func isOpenIssue(issue linkedIssue) bool {
+	return issue.Fields.Status.StatusCategory.Key != "done"
+}
+
+// onHoldComponentUpgrades returns the keys of the open Component Upgrades linked to an
+// IVT ("Incorporates", either direction) whose own Jira status is On Hold. Jira embeds
+// each linked issue's status in the link, so this needs no extra request. A Component
+// Upgrade that is On Hold blocks every IVT it incorporates, even one whose own Jira
+// status says something else (for example Verified).
+func onHoldComponentUpgrades(ivt jira_client.JiraIssue) []string {
+	var links []issueLink
+	if json.Unmarshal(ivt.Fields["issuelinks"], &links) != nil {
+		return nil
+	}
+	var keys []string
+	for _, link := range links {
+		if link.Type.Name != linkTypeIncorporates {
+			continue
+		}
+		for _, other := range []*linkedIssue{link.InwardIssue, link.OutwardIssue} {
+			if other == nil || other.Fields.IssueType.Name != issueTypeComponentUpgrade || !isOpenIssue(*other) {
+				continue
+			}
+			if strings.EqualFold(strings.TrimSpace(other.Fields.Status.Name), "On Hold") && !slices.Contains(keys, other.Key) {
+				keys = append(keys, other.Key)
+			}
+		}
+	}
+	return keys
+}
+
+// blockerDetails is what the sync reads from an IVT's Build Task or Component Upgrade
+// blocker, beyond what the IVT's own links already show.
+type blockerDetails struct {
+	// Labels are the blocker's Jira labels. A "blocked:<reason>" label carries a reason.
+	Labels []string
+	// BlockedByTicket is true for a Component Upgrade that is itself blocked by an open
+	// ticket (an open "is blocked by" link). A Component Upgrade can be blocked by a
+	// label, by such a link, or both. It is never set for a Build Task.
+	BlockedByTicket bool
+}
+
+// blockerDetailsOf reads the labels of a fetched blocker and, for a Component Upgrade,
+// whether one of its own "is blocked by" tickets is still open. The issue must have
+// been fetched with the labels, issuelinks and issuetype fields.
+func blockerDetailsOf(blocker jira_client.JiraIssue) blockerDetails {
+	details := blockerDetails{Labels: labelsOf(blocker)}
+
+	var issueType struct {
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(blocker.Fields["issuetype"], &issueType) != nil || issueType.Name != issueTypeComponentUpgrade {
+		return details
+	}
+	var links []issueLink
+	if json.Unmarshal(blocker.Fields["issuelinks"], &links) != nil {
+		return details
+	}
+	for _, link := range links {
+		if link.InwardIssue != nil && link.Type.Inward == linkIsBlockedBy && isOpenIssue(*link.InwardIssue) {
+			details.BlockedByTicket = true
+			break
+		}
+	}
+	return details
+}
+
+// onHoldReasons returns the sorted, de-duplicated reason slugs for an IVT.
+// blockers maps a Build Task or Component Upgrade's issue key to what was read from it.
+// A "blocked:<reason>" label on an open one yields "<reason>" (lowercased). Any open
+// work ticket that blocks the IVT, or that blocks one of its Component Upgrades, yields
+// ReasonBlockedByTicket. An open Build Task or Component Upgrade with neither contributes
+// nothing.
+//
+// It does not look at the IVT's stage; the caller only asks for On Hold IVTs. The
+// result is sorted so the same Jira state always stores the same value, otherwise
+// link order changes would look like data changes to the database upsert.
+func onHoldReasons(ivt jira_client.JiraIssue, blockers map[string]blockerDetails) []string {
+	labelSources, blockedByTicket := onHoldBlockers(ivt)
+	return blockerReasons(labelSources, blockedByTicket, blockers)
+}
+
+// blockerReasons turns the given blocker keys into sorted, de-duplicated reason slugs.
+// blockedByTicket says an open work ticket already blocks the IVT directly. It is also
+// set when any listed Component Upgrade is itself blocked by an open ticket.
+//
+// onHoldReasons uses every open blocker of an IVT that is On Hold in Jira. An IVT that
+// is On Hold only because its Component Upgrades are On Hold passes just those, so a
+// label left on some other, progressing Component Upgrade does not become a reason.
+func blockerReasons(labelSources []string, blockedByTicket bool, blockers map[string]blockerDetails) []string {
+	var reasons []string
+	for _, key := range labelSources {
+		details := blockers[key]
+		for _, label := range details.Labels {
+			label = strings.ToLower(strings.TrimSpace(label))
+			if reason, found := strings.CutPrefix(label, blockedLabelPrefix); found && reason != "" {
+				reasons = append(reasons, reason)
+			}
+		}
+		if details.BlockedByTicket {
+			blockedByTicket = true
+		}
+	}
+	if blockedByTicket {
+		reasons = append(reasons, ReasonBlockedByTicket)
+	}
+
+	slices.Sort(reasons)
+	return slices.Compact(reasons)
 }
 
 func parentIssueKey(issue jira_client.JiraIssue) string {

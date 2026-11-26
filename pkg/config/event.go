@@ -1,13 +1,11 @@
 package config
 
 import (
-	"crypto/sha512"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/IBM/sarama"
-	"github.com/RedHatInsights/insights-operator-utils/tls"
 	"github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2"
 	"github.com/cloudevents/sdk-go/v2"
 	"github.com/content-services/content-sources-backend/pkg/kafka"
@@ -24,6 +22,7 @@ func addEventConfigDefaults(options *viper.Viper) {
 	options.SetDefault("kafka.request.required.acks", -1) // -1 == "all"
 	options.SetDefault("kafka.message.send.max.retries", 15)
 	options.SetDefault("kafka.retry.backoff.ms", 100)
+	options.SetDefault("kafka.consumer.retry.backoff.ms", 2000)
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
 		kafka.TopicTranslationConfig = kafka.NewTopicTranslationWithClowder(cfg)
@@ -185,34 +184,5 @@ func SetupNotifications() {
 }
 
 func GetSaramaConfig() (*sarama.Config, error) {
-	saramaConfig := sarama.NewConfig()
-
-	saramaConfig.Version = sarama.V2_0_0_0
-	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetOldest
-
-	if strings.Contains(LoadedConfig.Kafka.Sasl.Protocol, "SSL") {
-		saramaConfig.Net.TLS.Enable = true
-	}
-
-	if LoadedConfig.Kafka.Capath != "" {
-		tlsConfig, err := tlsutil.NewTLSConfig(LoadedConfig.Kafka.Capath)
-		if err != nil {
-			return nil, fmt.Errorf("unable to load TLS config for %s cert: %w", LoadedConfig.Kafka.Capath, err)
-		}
-		saramaConfig.Net.TLS.Config = tlsConfig
-	}
-
-	if strings.HasPrefix(LoadedConfig.Kafka.Sasl.Protocol, "SASL_") {
-		saramaConfig.Net.SASL.Enable = true
-		saramaConfig.Net.SASL.User = LoadedConfig.Kafka.Sasl.Username
-		saramaConfig.Net.SASL.Password = LoadedConfig.Kafka.Sasl.Password
-		saramaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(LoadedConfig.Kafka.Sasl.Mechanism)
-		if saramaConfig.Net.SASL.Mechanism == sarama.SASLTypeSCRAMSHA512 {
-			saramaConfig.Net.SASL.Handshake = true
-			saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-				return &kafka.SCRAMClient{HashGeneratorFcn: sha512.New}
-			}
-		}
-	}
-	return saramaConfig, nil
+	return kafka.NewSaramaConfig(LoadedConfig.Kafka)
 }

@@ -5965,11 +5965,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "duplicate": {
-                    "description": "Duplicate flag",
+                    "description": "True when this finding duplicates another tracker",
                     "type": "boolean"
                 },
                 "duplicate_of": {
-                    "description": "Canonical vulnerability_id when duplicate",
+                    "description": "Canonical Jira issue key this finding duplicates",
+                    "type": "string"
+                },
+                "duplicate_of_status": {
+                    "description": "Beacon status of the canonical tracker, read from that stored issue",
                     "type": "string"
                 },
                 "ecosystem": {
@@ -5990,6 +5994,13 @@ const docTemplate = `{
                 },
                 "ltwlsupt_ticket_ids": {
                     "description": "Lightwell support ticket IDs",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "on_hold_reasons": {
+                    "description": "Customer-facing reasons an On Hold vulnerability is blocked",
                     "type": "array",
                     "items": {
                         "type": "string"

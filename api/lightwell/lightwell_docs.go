@@ -229,6 +229,70 @@ const docTemplatelightwell = `{
                 }
             }
         },
+        "/clearinghouse/submissions/create/csv": {
+            "post": {
+                "description": "Create a new clearinghouse submission from a CSV file of up to 50 MiB. The first row is a header naming the columns, using the intake submission field names: vulnerability_id, packageurl, title and description are required; component_name, component_version, cvss_severity, cvss_score, cwe, cvss_vector, exploit_tested, reproducer_filename and customer_priority are optional. Columns may appear in any order, unknown columns are rejected, and each further row is one vulnerability. Empty optional cells are treated as unset. cvss_score must be a number and exploit_tested must be true or false. The CSV must be UTF-8. It is converted to an intake submission JSON, which is stored as submission.json; the CSV itself is not kept. Requires the Lightwell clearinghouse feature.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell"
+                ],
+                "summary": "Create a clearinghouse submission from a CSV file",
+                "operationId": "createClearinghouseSubmissionCSV",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "CSV file with a header row and one vulnerability per row.",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User-facing label for the submission, up to 255 characters.",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClearinghouseSubmission"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/clearinghouse/submissions/{uuid}": {
             "get": {
                 "description": "Customers with Lightwell clearinghouse can fetch their own submission. Callers with Lightwell clearinghouse read can fetch a submission when their username is listed on its CID. File contents are not included.",

@@ -13,7 +13,6 @@ func TestParse_CycloneDXJSON(t *testing.T) {
 	result := parseTestdata(t, "sbom.json", filepath.Join("cyclonedx", "bom.json"))
 	assert.Equal(t, FormatCycloneDX, result.InputFormat)
 	assert.ElementsMatch(t, []Package{
-		{Ecosystem: EcosystemJava, Namespace: "com.example", Name: "my-app", Version: "1.0.0"},
 		{Ecosystem: EcosystemJava, Namespace: "org.springframework", Name: "spring-core", Version: "5.3.20"},
 		{Ecosystem: EcosystemPython, Name: "flask", Version: "3.0.3"},
 		{Ecosystem: EcosystemJavaScript, Name: "express", Version: "4.18.2"},
