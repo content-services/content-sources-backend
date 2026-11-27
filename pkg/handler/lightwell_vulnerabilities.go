@@ -41,6 +41,8 @@ func RegisterLightwellVulnerabilityRoutes(group *echo.Group, daoReg *dao.DaoRegi
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/customers/", h.listCustomerIds, rbac.RbacVerbRead, routeMiddleware...)
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/ltwlsupt-ticket-ids/", h.listLtwlsuptTicketIds, rbac.RbacVerbRead, routeMiddleware...)
 	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/vulnerabilities/", h.listVulnerabilities, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/packages/", h.listBeaconPackages, rbac.RbacVerbRead, routeMiddleware...)
+	addRepoRoute(group, http.MethodGet, "/lightwell/beacon/packages/vulnerabilities/", h.listBeaconPackageVulnerabilities, rbac.RbacVerbRead, routeMiddleware...)
 }
 
 // GetLightwellBeaconStatus godoc

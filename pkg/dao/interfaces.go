@@ -318,6 +318,8 @@ type LightwellAdvisoryDao interface {
 }
 
 type LightwellVulnerabilityDao interface {
+	ListBeaconPackages(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, allAddressed bool) (api.LightwellBeaconPackageCollection, int64, error)
+	ListBeaconPackageVulnerabilities(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, key BeaconPackageKey) (api.LightwellBeaconPackageVulnerabilityCollection, int64, error)
 	ListCustomerIds(ctx context.Context) ([]string, error)
 	ListLtwlsuptTicketIds(ctx context.Context, customerID string) ([]string, error)
 	List(ctx context.Context, opts ListLightwellVulnerabilitiesOptions) ([]api.LightwellVulnerabilityResponse, LightwellVulnerabilityAggregates, []LightwellVulnerabilityStageCount, int64, error)

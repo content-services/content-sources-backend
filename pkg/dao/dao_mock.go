@@ -10807,6 +10807,162 @@ func (_c *MockLightwellVulnerabilityDao_List_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// ListBeaconPackageVulnerabilities provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) ListBeaconPackageVulnerabilities(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, key BeaconPackageKey) (api.LightwellBeaconPackageVulnerabilityCollection, int64, error) {
+	ret := _mock.Called(ctx, opts, key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListBeaconPackageVulnerabilities")
+	}
+
+	var r0 api.LightwellBeaconPackageVulnerabilityCollection
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListLightwellVulnerabilitiesOptions, BeaconPackageKey) (api.LightwellBeaconPackageVulnerabilityCollection, int64, error)); ok {
+		return returnFunc(ctx, opts, key)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListLightwellVulnerabilitiesOptions, BeaconPackageKey) api.LightwellBeaconPackageVulnerabilityCollection); ok {
+		r0 = returnFunc(ctx, opts, key)
+	} else {
+		r0 = ret.Get(0).(api.LightwellBeaconPackageVulnerabilityCollection)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ListLightwellVulnerabilitiesOptions, BeaconPackageKey) int64); ok {
+		r1 = returnFunc(ctx, opts, key)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, ListLightwellVulnerabilitiesOptions, BeaconPackageKey) error); ok {
+		r2 = returnFunc(ctx, opts, key)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListBeaconPackageVulnerabilities'
+type MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call struct {
+	*mock.Call
+}
+
+// ListBeaconPackageVulnerabilities is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts ListLightwellVulnerabilitiesOptions
+//   - key BeaconPackageKey
+func (_e *MockLightwellVulnerabilityDao_Expecter) ListBeaconPackageVulnerabilities(ctx any, opts any, key any) *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call {
+	return &MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call{Call: _e.mock.On("ListBeaconPackageVulnerabilities", ctx, opts, key)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call) Run(run func(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, key BeaconPackageKey)) *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 ListLightwellVulnerabilitiesOptions
+		if args[1] != nil {
+			arg1 = args[1].(ListLightwellVulnerabilitiesOptions)
+		}
+		var arg2 BeaconPackageKey
+		if args[2] != nil {
+			arg2 = args[2].(BeaconPackageKey)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call) Return(lightwellBeaconPackageVulnerabilityCollection api.LightwellBeaconPackageVulnerabilityCollection, n int64, err error) *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call {
+	_c.Call.Return(lightwellBeaconPackageVulnerabilityCollection, n, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call) RunAndReturn(run func(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, key BeaconPackageKey) (api.LightwellBeaconPackageVulnerabilityCollection, int64, error)) *MockLightwellVulnerabilityDao_ListBeaconPackageVulnerabilities_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListBeaconPackages provides a mock function for the type MockLightwellVulnerabilityDao
+func (_mock *MockLightwellVulnerabilityDao) ListBeaconPackages(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, allAddressed bool) (api.LightwellBeaconPackageCollection, int64, error) {
+	ret := _mock.Called(ctx, opts, allAddressed)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListBeaconPackages")
+	}
+
+	var r0 api.LightwellBeaconPackageCollection
+	var r1 int64
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListLightwellVulnerabilitiesOptions, bool) (api.LightwellBeaconPackageCollection, int64, error)); ok {
+		return returnFunc(ctx, opts, allAddressed)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ListLightwellVulnerabilitiesOptions, bool) api.LightwellBeaconPackageCollection); ok {
+		r0 = returnFunc(ctx, opts, allAddressed)
+	} else {
+		r0 = ret.Get(0).(api.LightwellBeaconPackageCollection)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ListLightwellVulnerabilitiesOptions, bool) int64); ok {
+		r1 = returnFunc(ctx, opts, allAddressed)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, ListLightwellVulnerabilitiesOptions, bool) error); ok {
+		r2 = returnFunc(ctx, opts, allAddressed)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockLightwellVulnerabilityDao_ListBeaconPackages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListBeaconPackages'
+type MockLightwellVulnerabilityDao_ListBeaconPackages_Call struct {
+	*mock.Call
+}
+
+// ListBeaconPackages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - opts ListLightwellVulnerabilitiesOptions
+//   - allAddressed bool
+func (_e *MockLightwellVulnerabilityDao_Expecter) ListBeaconPackages(ctx any, opts any, allAddressed any) *MockLightwellVulnerabilityDao_ListBeaconPackages_Call {
+	return &MockLightwellVulnerabilityDao_ListBeaconPackages_Call{Call: _e.mock.On("ListBeaconPackages", ctx, opts, allAddressed)}
+}
+
+func (_c *MockLightwellVulnerabilityDao_ListBeaconPackages_Call) Run(run func(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, allAddressed bool)) *MockLightwellVulnerabilityDao_ListBeaconPackages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 ListLightwellVulnerabilitiesOptions
+		if args[1] != nil {
+			arg1 = args[1].(ListLightwellVulnerabilitiesOptions)
+		}
+		var arg2 bool
+		if args[2] != nil {
+			arg2 = args[2].(bool)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_ListBeaconPackages_Call) Return(lightwellBeaconPackageCollection api.LightwellBeaconPackageCollection, n int64, err error) *MockLightwellVulnerabilityDao_ListBeaconPackages_Call {
+	_c.Call.Return(lightwellBeaconPackageCollection, n, err)
+	return _c
+}
+
+func (_c *MockLightwellVulnerabilityDao_ListBeaconPackages_Call) RunAndReturn(run func(ctx context.Context, opts ListLightwellVulnerabilitiesOptions, allAddressed bool) (api.LightwellBeaconPackageCollection, int64, error)) *MockLightwellVulnerabilityDao_ListBeaconPackages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListCustomerIds provides a mock function for the type MockLightwellVulnerabilityDao
 func (_mock *MockLightwellVulnerabilityDao) ListCustomerIds(ctx context.Context) ([]string, error) {
 	ret := _mock.Called(ctx)

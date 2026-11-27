@@ -410,6 +410,200 @@ const docTemplate = `{
                 }
             }
         },
+        "/lightwell/beacon/packages/": {
+            "get": {
+                "description": "Group matching vulnerability records by ecosystem, component name and component version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "List Beacon package summaries",
+                "operationId": "listLightwellPackageSummaries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "customer_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated severities",
+                        "name": "severity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated statuses",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated complexities",
+                        "name": "complexity",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated Lightwell support ticket IDs",
+                        "name": "ltwlsupt_ticket_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Comma-separated flags (embargo, duplicate)",
+                        "name": "flag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search vulnerability ID, package name or title",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Only packages whose customer records are all in Lightwell Network",
+                        "name": "all_addressed",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum packages to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Package offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellBeaconPackageCollection"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/lightwell/beacon/packages/vulnerabilities/": {
+            "get": {
+                "description": "Return all records for the customer and package in pipeline order, with summary fields across all pages.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ],
+                "summary": "List vulnerability records for a Beacon package",
+                "operationId": "listLightwellPackageVulnerabilities",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "customer_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact ecosystem (empty for missing ecosystem)",
+                        "name": "ecosystem",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact component name",
+                        "name": "component_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Exact component version (may be empty)",
+                        "name": "component_version",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Maximum records to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Record offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LightwellBeaconPackageVulnerabilityCollection"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "428": {
+                        "description": "Precondition Required",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/lightwell/beacon/status/": {
             "get": {
                 "description": "Return when the latest successful beacon sync started. The timestamp is omitted until the first successful sync.",
@@ -5827,12 +6021,196 @@ const docTemplate = `{
                 }
             }
         },
+        "api.LightwellBeaconPackage": {
+            "type": "object",
+            "properties": {
+                "component_name": {
+                    "type": "string"
+                },
+                "component_version": {
+                    "type": "string"
+                },
+                "ecosystem": {
+                    "type": "string"
+                },
+                "highest_published_version": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "highest_severity": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "severity_counts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "status_counts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "vulnerability_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.LightwellBeaconPackageCollection": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LightwellBeaconPackage"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.LightwellBeaconPackageMeta"
+                }
+            }
+        },
+        "api.LightwellBeaconPackageMeta": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "Total count of results",
+                    "type": "integer"
+                },
+                "limit": {
+                    "description": "Limit of results used for the request",
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Offset into results used for the request",
+                    "type": "integer"
+                },
+                "vulnerability_summary": {
+                    "$ref": "#/definitions/api.LightwellBeaconVulnerabilitySummary"
+                }
+            }
+        },
+        "api.LightwellBeaconPackageVulnerability": {
+            "type": "object",
+            "properties": {
+                "cvss": {
+                    "type": "number"
+                },
+                "last_updated": {
+                    "type": "string"
+                },
+                "published_versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "resolution_reason": {
+                    "type": "string"
+                },
+                "severity": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                },
+                "vulnerability_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.LightwellBeaconPackageVulnerabilityCollection": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.LightwellBeaconPackageVulnerability"
+                    }
+                },
+                "links": {
+                    "$ref": "#/definitions/api.Links"
+                },
+                "meta": {
+                    "$ref": "#/definitions/api.LightwellBeaconPackageVulnerabilityMeta"
+                }
+            }
+        },
+        "api.LightwellBeaconPackageVulnerabilityMeta": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "Total count of results",
+                    "type": "integer"
+                },
+                "highest_published_version": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "highest_severity": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "limit": {
+                    "description": "Limit of results used for the request",
+                    "type": "integer"
+                },
+                "offset": {
+                    "description": "Offset into results used for the request",
+                    "type": "integer"
+                },
+                "status_counts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "vulnerability_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.LightwellBeaconStatusResponse": {
             "type": "object",
             "properties": {
                 "last_processed_at": {
                     "description": "When the latest successful beacon sync started",
                     "type": "string"
+                }
+            }
+        },
+        "api.LightwellBeaconVulnerabilitySummary": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "critical_count": {
+                    "type": "integer"
+                },
+                "embargo_count": {
+                    "type": "integer"
+                },
+                "status_counts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
                 }
             }
         },

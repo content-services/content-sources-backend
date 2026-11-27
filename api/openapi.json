@@ -488,11 +488,195 @@
                 },
                 "type": "object"
             },
+            "api.LightwellBeaconPackage": {
+                "properties": {
+                    "component_name": {
+                        "type": "string"
+                    },
+                    "component_version": {
+                        "type": "string"
+                    },
+                    "ecosystem": {
+                        "type": "string"
+                    },
+                    "highest_published_version": {
+                        "nullable": true,
+                        "type": "string"
+                    },
+                    "highest_severity": {
+                        "nullable": true,
+                        "type": "string"
+                    },
+                    "severity_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "type": "object"
+                    },
+                    "status_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "type": "object"
+                    },
+                    "vulnerability_count": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "api.LightwellBeaconPackageCollection": {
+                "properties": {
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.LightwellBeaconPackage"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.LightwellBeaconPackageMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "api.LightwellBeaconPackageMeta": {
+                "properties": {
+                    "count": {
+                        "description": "Total count of results",
+                        "type": "integer"
+                    },
+                    "limit": {
+                        "description": "Limit of results used for the request",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "description": "Offset into results used for the request",
+                        "type": "integer"
+                    },
+                    "vulnerability_summary": {
+                        "$ref": "#/components/schemas/api.LightwellBeaconVulnerabilitySummary"
+                    }
+                },
+                "type": "object"
+            },
+            "api.LightwellBeaconPackageVulnerability": {
+                "properties": {
+                    "cvss": {
+                        "type": "number"
+                    },
+                    "last_updated": {
+                        "type": "string"
+                    },
+                    "published_versions": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array"
+                    },
+                    "resolution_reason": {
+                        "type": "string"
+                    },
+                    "severity": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "vulnerability_id": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.LightwellBeaconPackageVulnerabilityCollection": {
+                "properties": {
+                    "data": {
+                        "items": {
+                            "$ref": "#/components/schemas/api.LightwellBeaconPackageVulnerability"
+                        },
+                        "type": "array"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/api.Links"
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/api.LightwellBeaconPackageVulnerabilityMeta"
+                    }
+                },
+                "type": "object"
+            },
+            "api.LightwellBeaconPackageVulnerabilityMeta": {
+                "properties": {
+                    "count": {
+                        "description": "Total count of results",
+                        "type": "integer"
+                    },
+                    "highest_published_version": {
+                        "nullable": true,
+                        "type": "string"
+                    },
+                    "highest_severity": {
+                        "nullable": true,
+                        "type": "string"
+                    },
+                    "limit": {
+                        "description": "Limit of results used for the request",
+                        "type": "integer"
+                    },
+                    "offset": {
+                        "description": "Offset into results used for the request",
+                        "type": "integer"
+                    },
+                    "status_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "type": "object"
+                    },
+                    "vulnerability_count": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "api.LightwellBeaconStatusResponse": {
                 "properties": {
                     "last_processed_at": {
                         "description": "When the latest successful beacon sync started",
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "api.LightwellBeaconVulnerabilitySummary": {
+                "properties": {
+                    "count": {
+                        "type": "integer"
+                    },
+                    "critical_count": {
+                        "type": "integer"
+                    },
+                    "embargo_count": {
+                        "type": "integer"
+                    },
+                    "status_counts": {
+                        "additionalProperties": {
+                            "format": "int64",
+                            "type": "integer"
+                        },
+                        "type": "object"
                     }
                 },
                 "type": "object"
@@ -3792,6 +3976,266 @@
                 "summary": "List Lightwell Advisories",
                 "tags": [
                     "lightwell"
+                ]
+            }
+        },
+        "/lightwell/beacon/packages/": {
+            "get": {
+                "description": "Group matching vulnerability records by ecosystem, component name and component version.",
+                "operationId": "listLightwellPackageSummaries",
+                "parameters": [
+                    {
+                        "description": "Customer ID",
+                        "in": "query",
+                        "name": "customer_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated severities",
+                        "in": "query",
+                        "name": "severity",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated statuses",
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated complexities",
+                        "in": "query",
+                        "name": "complexity",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated Lightwell support ticket IDs",
+                        "in": "query",
+                        "name": "ltwlsupt_ticket_id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Comma-separated flags (embargo, duplicate)",
+                        "in": "query",
+                        "name": "flag",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Search vulnerability ID, package name or title",
+                        "in": "query",
+                        "name": "search",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Only packages whose customer records are all in Lightwell Network",
+                        "in": "query",
+                        "name": "all_addressed",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "description": "Maximum packages to return",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Package offset",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.LightwellBeaconPackageCollection"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List Beacon package summaries",
+                "tags": [
+                    "lightwell_vulnerabilities"
+                ]
+            }
+        },
+        "/lightwell/beacon/packages/vulnerabilities/": {
+            "get": {
+                "description": "Return all records for the customer and package in pipeline order, with summary fields across all pages.",
+                "operationId": "listLightwellPackageVulnerabilities",
+                "parameters": [
+                    {
+                        "description": "Customer ID",
+                        "in": "query",
+                        "name": "customer_id",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Exact ecosystem (empty for missing ecosystem)",
+                        "in": "query",
+                        "name": "ecosystem",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Exact component name",
+                        "in": "query",
+                        "name": "component_name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Exact component version (may be empty)",
+                        "in": "query",
+                        "name": "component_version",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Maximum records to return",
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "description": "Record offset",
+                        "in": "query",
+                        "name": "offset",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/api.LightwellBeaconPackageVulnerabilityCollection"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Unauthorized"
+                    },
+                    "428": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Precondition Required"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/errors.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Internal Server Error"
+                    }
+                },
+                "summary": "List vulnerability records for a Beacon package",
+                "tags": [
+                    "lightwell_vulnerabilities"
                 ]
             }
         },

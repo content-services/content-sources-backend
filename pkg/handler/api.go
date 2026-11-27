@@ -224,6 +224,10 @@ func SetCollectionResponseMetadata(collection api.CollectionMetadataSettable, c 
 // SetCollectionResponseMetadataForPage is SetCollectionResponseMetadata for handlers that parsed
 // pagination with a non-default cap, so the reported limit and page links match the page served.
 func SetCollectionResponseMetadataForPage(collection api.CollectionMetadataSettable, c echo.Context, page api.PaginationData, totalCount int64) api.CollectionMetadataSettable {
+	return setCollectionMetadata(collection, c, page, totalCount, createLink)
+}
+
+func setCollectionMetadata(collection api.CollectionMetadataSettable, c echo.Context, page api.PaginationData, totalCount int64, pageLink func(echo.Context, int, int) string) api.CollectionMetadataSettable {
 	count := int(totalCount)
 	lastPage := count - count%page.Limit
 	if count > 0 && count%page.Limit == 0 {
@@ -233,18 +237,18 @@ func SetCollectionResponseMetadataForPage(collection api.CollectionMetadataSetta
 		}
 	}
 	links := api.Links{
-		First: createLink(c, page.Limit, 0),
-		Last:  createLink(c, page.Limit, lastPage),
+		First: pageLink(c, page.Limit, 0),
+		Last:  pageLink(c, page.Limit, lastPage),
 	}
 	// Preserve shared negative-limit/offset semantics, but omit links whose
 	// mathematical offsets cannot be represented instead of wrapping integers.
 	next := page.Offset + page.Limit
 	if ((page.Limit > 0 && next > page.Offset) || (page.Limit < 0 && next < page.Offset)) && next < count {
-		links.Next = createLink(c, page.Limit, next)
+		links.Next = pageLink(c, page.Limit, next)
 	}
 	prev := page.Offset - page.Limit
 	if ((page.Limit > 0 && prev < page.Offset) || (page.Limit < 0 && prev > page.Offset)) && prev >= 0 {
-		links.Prev = createLink(c, page.Limit, prev)
+		links.Prev = pageLink(c, page.Limit, prev)
 	}
 
 	collection.SetMetadata(api.ResponseMetadata{
