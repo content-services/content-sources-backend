@@ -18,6 +18,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	ce "github.com/content-services/content-sources-backend/pkg/errors"
 	"github.com/content-services/content-sources-backend/pkg/handler"
+	"github.com/content-services/content-sources-backend/pkg/lightwell/scan"
 	"github.com/content-services/content-sources-backend/pkg/rbac"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -101,6 +102,11 @@ func (h *ClearinghouseHandler) createSubmission(c echo.Context) error {
 // createIntakeSubmission stores a validated intake submission JSON body as
 // submission.json and responds with the created submission.
 func (h *ClearinghouseHandler) createIntakeSubmission(c echo.Context, orgID, username, name string, body []byte, vulns []intakeVulnerability) error {
+	// Count possible personal data and secrets. The body is stored unchanged.
+	stats, err := scan.JSON(body)
+	if err != nil {
+		return ce.NewErrorResponse(http.StatusBadRequest, "Error reading submission", "Invalid JSON submission")
+	}
 	count := int32(len(vulns)) //nolint:gosec // vulnerability count is bounded by the 50 MiB body limit
 	packages, summary := clearinghousePackages(vulns)
 
@@ -114,6 +120,7 @@ func (h *ClearinghouseHandler) createIntakeSubmission(c echo.Context, orgID, use
 		Status:             api.ClearinghouseSubmissionStatusPending,
 		Packages:           packages,
 		PackageSummary:     &summary,
+		FindingsSummary:    clearinghouseFindingsSummary(stats),
 	}, body)
 	if err != nil {
 		return err
@@ -154,6 +161,19 @@ func readIntakeSubmission(c echo.Context) ([]byte, string, []intakeVulnerability
 		}
 	}
 	return body, name, parsed.Vulnerabilities, nil
+}
+
+// clearinghouseFindingsSummary converts scan counts into the summary stored on
+// the submission. It is stored even when nothing was found, so a zero count is
+// distinguishable from a submission created before scanning was added.
+func clearinghouseFindingsSummary(stats scan.Stats) *api.ClearinghouseFindingsSummary {
+	return &api.ClearinghouseFindingsSummary{
+		Total:         stats.Total(),
+		Emails:        stats[scan.CategoryEmail],
+		HomeUsernames: stats[scan.CategoryPathUser],
+		Credentials:   stats[scan.CategoryCredential],
+		IPAddresses:   stats[scan.CategoryIP],
+	}
 }
 
 // validateIntakeName returns the trimmed submission name, or an error when it is

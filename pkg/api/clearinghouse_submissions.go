@@ -49,6 +49,8 @@ type ClearinghouseSubmission struct {
 	ErrorMessage       *string    `json:"error_message,omitempty"`
 	// PackageSummary is the per-ecosystem breakdown of the packages in the submission JSON. Absent for submissions created before package parsing was added.
 	PackageSummary *ClearinghousePackageSummary `json:"package_summary,omitempty"`
+	// FindingsSummary counts the possible personal data and secrets found in the submission JSON. The submission is stored unchanged. Counts can include false positives, and zero does not prove the submission holds no sensitive data. Absent for submissions created before scanning was added.
+	FindingsSummary *ClearinghouseFindingsSummary `json:"findings_summary,omitempty"`
 	// CanDelete is true when the caller can delete the submission.
 	CanDelete bool `json:"can_delete"`
 	// CanDownload is true when the caller can download the submission and its files.
@@ -113,6 +115,20 @@ type ClearinghousePackageSummary struct {
 	InvalidPurls int `json:"invalid_purls"`
 	// Ecosystems is the per-ecosystem breakdown, largest first.
 	Ecosystems []ClearinghousePackageEcosystemSummary `json:"ecosystems"`
+}
+
+// ClearinghouseFindingsSummary counts the possible personal data and secrets found in a submission JSON, by kind. Every occurrence is counted.
+type ClearinghouseFindingsSummary struct {
+	// Total is the number of findings across all kinds.
+	Total int `json:"total"`
+	// Emails is the number of email addresses found.
+	Emails int `json:"emails"`
+	// HomeUsernames is the number of usernames found in home directory paths such as /home/<user>.
+	HomeUsernames int `json:"home_usernames"`
+	// Credentials is the number of tokens, keys, and other credentials found.
+	Credentials int `json:"credentials"`
+	// IPAddresses is the number of IPv4 and IPv6 addresses found.
+	IPAddresses int `json:"ip_addresses"`
 }
 
 // ClearinghousePackageEcosystemSummary is the number of unique packages in one ecosystem.

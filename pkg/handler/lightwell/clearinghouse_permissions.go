@@ -255,6 +255,7 @@ func (p clearinghouseCaller) submission(upload dao.ClearinghouseUpload, files []
 		Status:             upload.Status,
 		ErrorMessage:       upload.ErrorMessage,
 		PackageSummary:     upload.PackageSummary,
+		FindingsSummary:    upload.FindingsSummary,
 		CanDelete:          p.checkDeleteSubmission(upload) == nil,
 		CanDownload:        canDownload,
 		CanAddReproducers:  p.checkAddFiles(upload) == nil,

@@ -26,6 +26,7 @@ type ClearinghouseUpload struct {
 	ProcessedAt        *time.Time `json:"processed_at"`
 	ProcessedBy        *string    `json:"processed_by"`
 	PackageSummary     []byte     `json:"package_summary"`
+	FindingsSummary    []byte     `json:"findings_summary"`
 }
 
 type ClearinghouseUploadFile struct {
