@@ -86,12 +86,13 @@ WITH filtered AS (
             $11::text IS NULL
             OR la.package_version = $11::text
         )
+        AND ((rc.org_id = $12::text) = $13::bool)
         AND (
-            $12::text[] IS NULL
+            $14::text[] IS NULL
             OR EXISTS (
                 SELECT 1
                 FROM unnest(string_to_array(rc.feature_name, ',')) AS t(token)
-                WHERE btrim(t.token) = ANY($12::text[])
+                WHERE btrim(t.token) = ANY($14::text[])
             )
         )
 ),
@@ -150,6 +151,8 @@ type ListAdvisoriesParams struct {
 	AdvisoryID           *string       `json:"advisory_id"`
 	Name                 *string       `json:"name"`
 	PackageVersion       *string       `json:"package_version"`
+	DemoOrg              string        `json:"demo_org"`
+	IsDemo               bool          `json:"is_demo"`
 	EntitledFeatures     []string      `json:"entitled_features"`
 }
 
@@ -188,6 +191,8 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 		arg.AdvisoryID,
 		arg.Name,
 		arg.PackageVersion,
+		arg.DemoOrg,
+		arg.IsDemo,
 		arg.EntitledFeatures,
 	)
 	if err != nil {

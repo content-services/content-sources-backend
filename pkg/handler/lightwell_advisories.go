@@ -41,6 +41,7 @@ func RegisterLightwellAdvisoryRoutes(engine *echo.Group, daoReg *dao.DaoRegistry
 // @Param        severity_min     query  string  false  "Minimum severity level (low, moderate, important, critical)"
 // @Param        cve_id           query  string  false  "Filter by an exact CVE id"
 // @Param        latest_release   query  bool    false  "When true, return only advisories from the highest Lightwell rebuild (baseline, then novel, then hotfix) of the package/version. Requires package_name and package_version."
+// @Param        demo             query  bool    false  "Return advisories from demo repositories instead of production ones (default false)"
 // @Param        limit            query  int     false  "Limit of results to return"
 // @Param        offset           query  int     false  "Offset into results"
 // @Success      200 {object} api.LightwellAdvisoryCollectionResponse
@@ -80,6 +81,7 @@ func (h *LightwellAdvisoryHandler) ListAdvisories(c echo.Context) error {
 	opts := dao.ListLightwellAdvisoriesOptions{
 		SeverityMin:      filters.SeverityMin,
 		LatestRelease:    filters.LatestRelease,
+		Demo:             filters.Demo,
 		EntitledFeatures: lightwellFeatures,
 		Limit:            int32(page.Limit),  //nolint:gosec // bounded by MaxLimit (200)
 		Offset:           int32(page.Offset), //nolint:gosec // bounded by ParsePagination
@@ -124,6 +126,7 @@ func parseLightwellAdvisoryFilters(c echo.Context) api.LightwellAdvisoryFilterDa
 		String("advisory_id", &filters.AdvisoryID).
 		String("name", &filters.Name).
 		Bool("latest_release", &filters.LatestRelease).
+		Bool("demo", &filters.Demo).
 		BindError()
 	return filters
 }

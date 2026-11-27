@@ -48,12 +48,27 @@ func SyncLightwellAdvisoriesAction(c *cli.Context) error {
 	return nil
 }
 
+// advisorySyncGroup pairs allowlist entries with the org that owns their repositories.
+type advisorySyncGroup struct {
+	orgID   string
+	entries []external_repos.LightwellAllowlistEntry
+}
+
 func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool) error {
 	daoReg := dao.GetDaoRegistry(database)
 
 	lightwellEntries, err := external_repos.LoadLightwellAllowlist()
 	if err != nil {
 		return fmt.Errorf("error loading lightwell allowlist: %w", err)
+	}
+	groups := []advisorySyncGroup{{orgID: config.LightwellOrg, entries: lightwellEntries}}
+
+	if config.Get().Options.LoadLightwellDemo {
+		demoEntries, err := external_repos.LoadLightwellDemoAllowlist()
+		if err != nil {
+			return fmt.Errorf("error loading lightwell demo allowlist: %w", err)
+		}
+		groups = append(groups, advisorySyncGroup{orgID: config.LightwellDemoOrg, entries: demoEntries})
 	}
 
 	fsClient, err := feature_service_client.NewFeatureServiceClient()
@@ -64,22 +79,25 @@ func syncLightwellAdvisories(ctx context.Context, database *gorm.DB, force bool)
 	httpClient := &http.Client{Timeout: 90 * time.Second}
 
 	var errs []error
-	for _, entry := range lightwellEntries {
-		if entry.OsvPath == "" {
-			continue
-		}
-		if external_repos.IgnoredLightwellRepo(entry.Name) {
-			log.Info().Str("entry", entry.Name).Msg("Skipping ignored lightwell repository")
-			continue
-		}
+	for _, group := range groups {
+		for _, entry := range group.entries {
+			if entry.OsvPath == "" {
+				continue
+			}
+			if external_repos.IgnoredLightwellRepo(entry.Name) {
+				log.Info().Str("entry", entry.Name).Msg("Skipping ignored lightwell repository")
+				continue
+			}
 
-		err := processOSVForEntry(ctx, daoReg, fsClient, httpClient, entry, force)
-		if err != nil {
-			log.Error().Err(err).
-				Str("entry", entry.Name).
-				Str("osv_path", entry.OsvPath).
-				Msg("Failed to process OSV entry, continuing with next")
-			errs = append(errs, err)
+			err := processOSVForEntry(ctx, daoReg, fsClient, httpClient, group.orgID, entry, force)
+			if err != nil {
+				log.Error().Err(err).
+					Str("entry", entry.Name).
+					Str("org_id", group.orgID).
+					Str("osv_path", entry.OsvPath).
+					Msg("Failed to process OSV entry, continuing with next")
+				errs = append(errs, err)
+			}
 		}
 	}
 
@@ -91,6 +109,7 @@ func processOSVForEntry(
 	daoReg *dao.DaoRegistry,
 	fsClient feature_service_client.FeatureServiceClient,
 	httpClient *http.Client,
+	orgID string,
 	entry external_repos.LightwellAllowlistEntry,
 	force bool,
 ) error {
@@ -107,7 +126,7 @@ func processOSVForEntry(
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
 
-	repoConfig, err := daoReg.RepositoryConfig.InternalOnly_FetchRepoConfigByName(ctx, config.LightwellOrg, entry.Name)
+	repoConfig, err := daoReg.RepositoryConfig.InternalOnly_FetchRepoConfigByName(ctx, orgID, entry.Name)
 	if err != nil {
 		return fmt.Errorf("error finding repository for %q: %w", entry.Name, err)
 	}

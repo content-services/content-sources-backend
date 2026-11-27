@@ -82,6 +82,7 @@ type ListLightwellAdvisoriesOptions struct {
 	AdvisoryID       *string
 	Name             *string
 	LatestRelease    bool
+	Demo             bool
 	EntitledFeatures []string
 	Limit            int32
 	Offset           int32
@@ -355,6 +356,8 @@ func (d lightwellAdvisoryDaoImpl) ListAdvisories(ctx context.Context, opts ListL
 		CveID:          opts.CveID,
 		AdvisoryID:     opts.AdvisoryID,
 		Name:           opts.Name,
+		DemoOrg:        config.LightwellDemoOrg,
+		IsDemo:         opts.Demo,
 		PageOffset:     opts.Offset,
 		PageLimit:      opts.Limit,
 	}

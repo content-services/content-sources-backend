@@ -453,6 +453,10 @@ func (s *LightwellAdvisorySuite) TestListUnnotifiedAdvisoriesFixedVersions() {
 }
 
 func (s *LightwellAdvisorySuite) createCommittedLightwellRepoConfig(name, featureName string) string {
+	return s.createCommittedLightwellRepoConfigWithOrg(name, featureName, config.LightwellOrg)
+}
+
+func (s *LightwellAdvisorySuite) createCommittedLightwellRepoConfigWithOrg(name, featureName, orgID string) string {
 	repo := models.Repository{
 		Origin:                  config.OriginLightwell,
 		ContentType:             config.ContentTypeMaven,
@@ -463,7 +467,7 @@ func (s *LightwellAdvisorySuite) createCommittedLightwellRepoConfig(name, featur
 
 	repoConfig := models.RepositoryConfiguration{
 		Name:           name,
-		OrgID:          config.LightwellOrg,
+		OrgID:          orgID,
 		RepositoryUUID: repo.UUID,
 		FeatureName:    featureName,
 	}
@@ -764,6 +768,47 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestRelease() {
 	s.Require().Len(data, 2)
 	ids := []string{data[0].AdvisoryID, data[1].AdvisoryID}
 	s.ElementsMatch([]string{"x_RHLW-CVE-2015-0004-1.2.3", "x_RHLW-CVE-2015-0005-1.2.3"}, ids)
+}
+
+// TestListAdvisoriesDemoFilter verifies advisories in demo repos (LightwellDemoOrg)
+// are excluded by default and returned exclusively when Demo is true.
+func (s *LightwellAdvisorySuite) TestListAdvisoriesDemoFilter() {
+	s.Require().NotNil(db.LightwellQueries)
+	daoImpl := GetDaoRegistry(db.DB).LightwellAdvisory
+	suffix := time.Now().UnixNano()
+	prodRepo := fmt.Sprintf("lightwell/java/list-prod-%d", suffix)
+	demoRepo := fmt.Sprintf("lightwell/java/list-demo-%d", suffix)
+	prodUUID := s.createCommittedLightwellRepoConfigWithOrg(prodRepo, "lightwell-network", config.LightwellOrg)
+	demoUUID := s.createCommittedLightwellRepoConfigWithOrg(demoRepo, "lightwell-network", config.LightwellDemoOrg)
+
+	pkg := fmt.Sprintf("com.example:demo-filter-%d", suffix)
+	s.Require().NoError(daoImpl.SyncForRepository(context.Background(), prodUUID, prodRepo, []LightwellAdvisoryInput{
+		{AdvisoryID: "x_RHLW-CVE-2026-0001-1.0.0", PackageName: pkg, PackageVersion: "1.0.0", Checksum: "prod-1", FixedVersions: []string{"1.0.0.rhlw-00001"}},
+	}))
+	s.Require().NoError(daoImpl.SyncForRepository(context.Background(), demoUUID, demoRepo, []LightwellAdvisoryInput{
+		{AdvisoryID: "x_RHLW-CVE-2026-0002-1.0.0", PackageName: pkg, PackageVersion: "1.0.0", Checksum: "demo-1", FixedVersions: []string{"1.0.0.rhlw-00001"}},
+	}))
+
+	opts := ListLightwellAdvisoriesOptions{
+		PackageName:      &pkg,
+		EntitledFeatures: []string{"lightwell-network"},
+		Limit:            100,
+	}
+
+	data, total, err := daoImpl.ListAdvisories(context.Background(), opts)
+	s.Require().NoError(err)
+	s.Equal(int64(1), total)
+	s.Require().Len(data, 1)
+	s.Equal("x_RHLW-CVE-2026-0001-1.0.0", data[0].AdvisoryID)
+	s.Equal(prodRepo, data[0].Repository)
+
+	opts.Demo = true
+	data, total, err = daoImpl.ListAdvisories(context.Background(), opts)
+	s.Require().NoError(err)
+	s.Equal(int64(1), total)
+	s.Require().Len(data, 1)
+	s.Equal("x_RHLW-CVE-2026-0002-1.0.0", data[0].AdvisoryID)
+	s.Equal(demoRepo, data[0].Repository)
 }
 
 func (s *LightwellAdvisorySuite) createLightwellRepoConfigWithSecurity(name, contentType, securityLevel string) string {

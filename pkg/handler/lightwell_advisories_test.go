@@ -241,6 +241,44 @@ func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestRelease() {
 	assert.Equal(t, http.StatusOK, code)
 }
 
+// TestListAdvisoriesDemoDefaultsToProduction verifies that, without a demo query
+// param, the DAO is called with Demo=false (production repos only).
+func (s *LightwellAdvisorySuite) TestListAdvisoriesDemoDefaultsToProduction() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
+		return !opts.Demo
+	})).Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/advisories", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
+// TestListAdvisoriesDemoTrue verifies that demo=true is passed through to the DAO
+// so only advisories from demo-org repos are returned.
+func (s *LightwellAdvisorySuite) TestListAdvisoriesDemoTrue() {
+	t := s.T()
+	s.stubLightwellAccess()
+
+	s.reg.LightwellAdvisory.On("ListAdvisories", test.MockCtx(), mock.MatchedBy(func(opts dao.ListLightwellAdvisoriesOptions) bool {
+		return opts.Demo
+	})).Return([]api.LightwellAdvisoryResponse{}, int64(0), nil)
+
+	path := fmt.Sprintf("%s/lightwell/advisories?demo=true", api.FullRootPath())
+	req := httptest.NewRequest(http.MethodGet, path, nil)
+	req.Header.Set(api.IdentityHeader, test_handler.EncodedIdentity(t))
+
+	code, _, err := s.serveRouter(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, code)
+}
+
 func (s *LightwellAdvisorySuite) TestListAdvisoriesLatestReleaseRequiresPackage() {
 	t := s.T()
 	s.stubLightwellAccess()

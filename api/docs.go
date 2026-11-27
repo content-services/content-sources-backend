@@ -370,6 +370,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Return advisories from demo repositories instead of production ones (default false)",
+                        "name": "demo",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "Limit of results to return",
                         "name": "limit",
