@@ -14,6 +14,7 @@ import (
 	"github.com/content-services/content-sources-backend/pkg/clients/pulp_client"
 	"github.com/content-services/content-sources-backend/pkg/clients/s3_client"
 	"github.com/content-services/content-sources-backend/pkg/config"
+	"github.com/content-services/content-sources-backend/pkg/coverage/matcher"
 	"github.com/content-services/content-sources-backend/pkg/dao"
 	"github.com/content-services/content-sources-backend/pkg/models"
 	"github.com/content-services/content-sources-backend/pkg/tasks/payloads"
@@ -127,6 +128,7 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 	reportUUID := uuid.NewString()
 	manifest := []byte("packageurl\npkg:maven/commons-io/commons-io@2.11.0\npkg:pypi/flask@3.0.3\ninvalid\n")
 	payload := s.mockFetchManifest(ctx, reportUUID, "manifest.csv", manifest)
+	payload.CatalogSource = config.CatalogSourcePulp
 	s.mockDaoRegistry.CoverageReport.On("UpdateCoverageReportStatus", ctx, reportUUID, config.TaskStatusRunning, (*string)(nil)).Return(nil).Once()
 	s.mockCatalogRepos(ctx)
 	s.mockJavaCatalog(ctx, "commons-io", "commons-io", "2.11.0")
@@ -160,6 +162,15 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysis() {
 	assert.Equal(s.T(), 1, savedParams.SkippedEntries)
 	assert.Equal(s.T(), 1, byName["commons-io"], "the java package should carry the remediated-repo CVE")
 	assert.Equal(s.T(), 0, byName["flask"])
+	byResult := map[string]matcher.MatchResult{}
+	for _, result := range savedParams.Results {
+		byResult[result.Name] = result
+	}
+	assert.Equal(s.T(), []string{"2.11.0"}, byResult["commons-io"].LightwellVersions)
+	assert.Empty(s.T(), byResult["commons-io"].NearestHigherVersion)
+	assert.Equal(s.T(), matcher.MatchSegmentNone, byResult["commons-io"].MatchSegment)
+	assert.Equal(s.T(), []string{"3.0.3"}, byResult["flask"].LightwellVersions)
+	assert.Equal(s.T(), matcher.MatchSegmentNone, byResult["flask"].MatchSegment)
 }
 
 func (s *CoverageAnalysisSuite) TestCoverageAnalysisVerifyManifest() {
@@ -271,6 +282,7 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysisCatalogLoadFails() {
 	reportUUID := uuid.NewString()
 	manifest := []byte("packageurl\npkg:maven/commons-io/commons-io@2.11.0\n")
 	payload := s.mockFetchManifest(ctx, reportUUID, "manifest.csv", manifest)
+	payload.CatalogSource = config.CatalogSourcePulp
 	s.mockDaoRegistry.CoverageReport.On("UpdateCoverageReportStatus", ctx, reportUUID, config.TaskStatusRunning, (*string)(nil)).Return(nil).Once()
 
 	s.mockDaoRegistry.Domain.On("FetchOrCreateDomain", ctx, config.LightwellOrg).
@@ -279,6 +291,33 @@ func (s *CoverageAnalysisSuite) TestCoverageAnalysisCatalogLoadFails() {
 	err := s.newTask(ctx, &payload).Run()
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "load catalog")
+}
+
+func (s *CoverageAnalysisSuite) TestCoverageAnalysisEmptyCatalogSourceUsesDB() {
+	ctx := context.Background()
+	reportUUID := uuid.NewString()
+	manifest := []byte("packageurl\npkg:pypi/flask@1.0.1\n")
+	payload := s.mockFetchManifest(ctx, reportUUID, "manifest.csv", manifest)
+	s.mockDaoRegistry.CoverageReport.On("UpdateCoverageReportStatus", ctx, reportUUID, config.TaskStatusRunning, (*string)(nil)).Return(nil).Once()
+	s.mockDaoRegistry.LightwellPackage.On("InternalOnlyListLensCatalog", ctx).Return([]dao.LensCatalogPackageRow{
+		{Ecosystem: config.ContentTypePython, Name: "flask", Version: "1.0.2", UpstreamVersion: "1.0.2", PublishedAt: "2024-01-01T00:00:00Z"},
+	}, nil).Once()
+	s.mockDaoRegistry.LightwellAdvisory.On("ListRemediatedAdvisories", ctx, config.LightwellOrg, mock.Anything).Return([]dao.RemediatedAdvisory{}, nil).Once()
+	var saved dao.SaveCoverageAnalysisParams
+	s.mockDaoRegistry.CoverageReport.On("SaveCoverageAnalysis", ctx, reportUUID, mock.Anything).Run(func(args mock.Arguments) {
+		params, ok := args.Get(2).(dao.SaveCoverageAnalysisParams)
+		require.True(s.T(), ok)
+		saved = params
+	}).Return(nil).Once()
+
+	require.NoError(s.T(), s.newTask(ctx, &payload).Run())
+
+	require.Len(s.T(), saved.Results, 1)
+	assert.Equal(s.T(), config.CatalogSourceDB, payload.CatalogSource)
+	assert.Equal(s.T(), matcher.MatchStatusPartial, saved.Results[0].MatchStatus)
+	assert.Equal(s.T(), "1.0.2", saved.Results[0].NearestHigherVersion)
+	assert.Equal(s.T(), matcher.MatchSegmentMinor, saved.Results[0].MatchSegment)
+	assert.Equal(s.T(), []string{"1.0.2"}, saved.Results[0].LightwellVersions)
 }
 
 func (s *CoverageAnalysisSuite) TestJavaScriptCoverageAnalysis() {
@@ -306,6 +345,15 @@ func (s *CoverageAnalysisSuite) TestJavaScriptCoverageAnalysis() {
 	}).Return(nil).Once()
 	require.NoError(s.T(), s.newTask(ctx, &payload).Run())
 	assert.Equal(s.T(), "CycloneDX", saved.InputFormat)
+	require.Len(s.T(), saved.Results, 4)
+	assert.Equal(s.T(), []string{"15.0.0"}, saved.Results[0].LightwellVersions)
+	assert.Empty(s.T(), saved.Results[0].NearestHigherVersion)
+	assert.Equal(s.T(), matcher.MatchSegmentNone, saved.Results[0].MatchSegment)
+	assert.Equal(s.T(), matcher.MatchStatusPartial, saved.Results[2].MatchStatus)
+	assert.Equal(s.T(), "15.0.0", saved.Results[2].NearestHigherVersion)
+	assert.Equal(s.T(), matcher.MatchSegmentNone, saved.Results[2].MatchSegment)
+	assert.Empty(s.T(), saved.Results[3].LightwellVersions)
+	assert.Equal(s.T(), matcher.MatchSegmentNone, saved.Results[3].MatchSegment)
 	assert.Equal(s.T(), 4, saved.Summary.Total)
 	assert.Equal(s.T(), 2, saved.Summary.ExactMatches)
 	assert.Equal(s.T(), 1, saved.Summary.PartialMatches)

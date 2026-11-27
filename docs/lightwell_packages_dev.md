@@ -103,4 +103,4 @@ Package catalog import (`import-lightwell-packages`) is the read that fills the 
 
 Repository import (`pkg/external_repos/lightwell_repos_importer.go`) asks Zest for the distribution URL (`FindGenericDistributionByBasePath`). The allowlist already has the name, content type, base path, and feature name. The mirror does not store that URL, and this import creates the repository rows the mirror uses. A missing distribution fails the import, so an unpublished repository is not recorded.
 
-The coverage catalog (`pkg/coverage/catalog/catalog.go`) still loads from Pulp when the catalog source is `pulp`, which is the default. Java comes from Zest (`ListMavenPackages`) and Python from Tang (`PythonPackageList`). No client uses this path. It will be removed later.
+The coverage catalog (`pkg/coverage/catalog/catalog.go`) loads from the database mirror by default. It still loads from Pulp when the catalog source is `pulp`. Java comes from Zest (`ListMavenPackages`) and Python from Tang (`PythonPackageList`). No client uses the Pulp path. It will be removed later.

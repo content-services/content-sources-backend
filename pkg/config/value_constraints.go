@@ -222,8 +222,16 @@ func ValidExtendedReleaseLabel(label string) bool {
 	return exists
 }
 
+// ResolveCatalogSource returns source, or the database mirror when source is empty.
+func ResolveCatalogSource(source string) string {
+	if source == "" {
+		return CatalogSourceDB
+	}
+	return source
+}
+
 // ValidCatalogSource reports whether source is an allowed Lens catalog backend.
-// Empty is valid and means the default (pulp).
+// Empty is valid and means the database mirror.
 func ValidCatalogSource(source string) bool {
 	switch source {
 	case "", CatalogSourcePulp, CatalogSourceDB:

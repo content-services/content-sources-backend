@@ -4,20 +4,21 @@ import "time"
 
 // CoverageReportResponse represents the coverage report
 type CoverageReportResponse struct {
-	SkippedEntries           *int                       `json:"skipped_entries,omitempty"` // Package entries skipped because no usable identity could be extracted; absent for older reports
-	UUID                     string                     `json:"uuid"`
-	Status                   string                     `json:"status"`                        // Coverage analysis task status
-	InputFormat              string                     `json:"input_format"`                  // Detected manifest format
-	CreatedAt                time.Time                  `json:"created_at"`                    // Timestamp when the report was created
-	CompletedAt              *time.Time                 `json:"completed_at"`                  // Timestamp when coverage analysis finished
-	Total                    int                        `json:"total"`                         // Total packages parsed from the manifest
-	ExactMatches             int                        `json:"exact_matches"`                 // Number of packages with name and version found
-	PartialMatches           int                        `json:"partial_matches"`               // Number of packages with name found but not version
-	Unmatched                int                        `json:"unmatched"`                     // Number of packages with name not found
-	EcosystemCoverageSummary []EcosystemCoverageSummary `json:"ecosystem_coverage_summary"`    // Per-ecosystem breakdown
-	CveSummary               CveCount                   `json:"cve_summary"`                   // Count of CVEs fixed in remediated repos across covered packages, by severity
-	AnalysisTaskError        string                     `json:"analysis_task_error,omitempty"` // Error if coverage analysis task failed
-	AnalysisTaskUUID         string                     `json:"analysis_task_uuid"`            // UUID of the coverage analysis task
+	SkippedEntries               *int                           `json:"skipped_entries,omitempty"` // Package entries skipped because no usable identity could be extracted; absent for older reports
+	UUID                         string                         `json:"uuid"`
+	Status                       string                         `json:"status"`                         // Coverage analysis task status
+	InputFormat                  string                         `json:"input_format"`                   // Detected manifest format
+	CreatedAt                    time.Time                      `json:"created_at"`                     // Timestamp when the report was created
+	CompletedAt                  *time.Time                     `json:"completed_at"`                   // Timestamp when coverage analysis finished
+	Total                        int                            `json:"total"`                          // Total packages parsed from the manifest
+	ExactMatches                 int                            `json:"exact_matches"`                  // Number of packages with name and version found
+	PartialMatches               int                            `json:"partial_matches"`                // Number of packages with name found but not version
+	Unmatched                    int                            `json:"unmatched"`                      // Number of packages with name not found
+	EcosystemCoverageSummary     []EcosystemCoverageSummary     `json:"ecosystem_coverage_summary"`     // Per-ecosystem breakdown
+	EcosystemCoveragePercentages []EcosystemCoveragePercentages `json:"ecosystem_coverage_percentages"` // Per-ecosystem percentages, in the same order as ecosystem_coverage_summary
+	CveSummary                   CveCount                       `json:"cve_summary"`                    // Count of CVEs fixed in remediated repos across covered packages, by severity
+	AnalysisTaskError            string                         `json:"analysis_task_error,omitempty"`  // Error if coverage analysis task failed
+	AnalysisTaskUUID             string                         `json:"analysis_task_uuid"`             // UUID of the coverage analysis task
 }
 
 // CveCount represents a count of CVEs bucketed by severity
@@ -44,13 +45,28 @@ type EcosystemCoverageSummary struct {
 	Unmatched      int    `json:"unmatched"`
 }
 
+// EcosystemCoveragePercentages is the share of one ecosystem's packages in each coverage bucket.
+// Each value is a percentage from 0 to 100 with one decimal. Together they sum to 100 when the ecosystem has packages.
+type EcosystemCoveragePercentages struct {
+	Ecosystem  string  `json:"ecosystem"`
+	Exact      float64 `json:"exact"`       // Exact version match
+	Major      float64 `json:"major"`       // Partial match through the major component
+	Minor      float64 `json:"minor"`       // Partial match through the minor component
+	Patch      float64 `json:"patch"`       // Partial match through the patch component
+	None       float64 `json:"none"`        // Name is in the catalog and the match segment is none
+	NoCoverage float64 `json:"no_coverage"` // Name is not in the catalog
+}
+
 // CoverageReportPackageResponse represents a package in a coverage report
 type CoverageReportPackageResponse struct {
-	Name        string `json:"name"`         // Package name from the manifest
-	Version     string `json:"version"`      // Package version from the manifest
-	Ecosystem   string `json:"ecosystem"`    // Ecosystem of the package
-	Covered     bool   `json:"covered"`      // Whether the package is covered (true = exact or partial match)
-	MatchStatus string `json:"match_status"` // Match status of the package (exact, partial, none)
+	Name                 string   `json:"name"`                   // Package name from the manifest
+	Version              string   `json:"version"`                // Package version from the manifest
+	Ecosystem            string   `json:"ecosystem"`              // Ecosystem of the package
+	Covered              bool     `json:"covered"`                // Whether the package is covered (true = exact or partial match)
+	MatchStatus          string   `json:"match_status"`           // Match status of the package (exact, partial, none)
+	LightwellVersions    []string `json:"lightwell_versions"`     // Distinct upstream versions of this package in the Lightwell catalog
+	NearestHigherVersion string   `json:"nearest_higher_version"` // Smallest catalog upstream version strictly above the manifest version
+	MatchSegment         string   `json:"match_segment"`          // How far nearest_higher_version agrees with the manifest version: major, minor, patch, or none
 
 	CveCount CveCount  `json:"cve_count"`           // Count of CVEs fixed in remediated repos for this package, by severity
 	CveRange *CveRange `json:"cve_range,omitempty"` // Min/max CVSS severity score across this package's CVEs; omitted when the package has no CVEs
